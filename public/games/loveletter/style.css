@@ -1,0 +1,268 @@
+.loveletter-game {
+    border-color: #b85b7b;
+}
+
+.ll-status {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: #ddd;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.ll-players {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.ll-player {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #0f0f1a;
+    border-left: 3px solid #3a3a5a;
+    font-size: 13px;
+}
+
+.ll-player.is-current {
+    border-left-color: #f5a623;
+}
+
+.ll-player.is-out {
+    opacity: 0.55;
+}
+
+.ll-label {
+    color: #aaa;
+    font-size: 13px;
+    margin: 8px 0 6px;
+}
+
+.ll-cards {
+    display: grid;
+    gap: 8px;
+}
+
+.ll-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    color: #f3edf1;
+    background: #30192a;
+    border: 1px solid #6c3756;
+    white-space: normal;
+}
+
+.ll-card strong,
+.ll-card span {
+    display: block;
+}
+
+.ll-card span {
+    margin-top: 4px;
+    color: #d8b8c8;
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 400;
+}
+
+.ll-action {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.ll-action select {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #3a3a5a;
+    background: #0f0f1a;
+    color: #e0e0e0;
+}
+
+.ll-play {
+    background: #b85b7b;
+    color: #fff;
+}
+
+.ll-play:hover {
+    background: #cf6d8f;
+}
+
+.ll-wait,
+.ll-empty,
+.ll-ended {
+    color: #888;
+    font-size: 13px;
+    padding: 8px 0;
+}
+
+.ll-card.is-selected {
+    border-color: #f5a623;
+    box-shadow: 0 0 0 1px #f5a623 inset;
+}
+
+.ll-selected {
+    color: #d8b8c8;
+    font-size: 13px;
+}
+
+.ll-discard {
+    background: #b85b7b;
+    color: #fff;
+}
+
+.ll-discard:hover {
+    background: #cf6d8f;
+}
+
+.ll-play:disabled,
+.ll-discard:disabled,
+.ll-target:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ll-rule-note {
+    color: #f5d28a;
+    border: 1px solid #6c5630;
+    background: #231b10;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.ll-card em {
+    display: inline-block;
+    margin-top: 6px;
+    color: #f5a623;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+}
+
+.ll-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.ll-play {
+    background: #2a7a4a;
+    color: #fff;
+}
+
+.ll-play:hover {
+    background: #3a9a5a;
+}
+
+.ll-final-list {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.ll-final-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #0f0f1a;
+    font-size: 13px;
+}
+
+.ll-final-row span {
+    color: #d8b8c8;
+    text-align: right;
+}
+
+
+.ll-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.ll-header h3 {
+    margin: 0;
+}
+
+.ll-rules-toggle {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border: 1px solid #6c3756;
+    border-radius: 8px;
+    background: #30192a;
+    color: #f3edf1;
+    font-size: 13px;
+}
+
+.ll-rules-toggle:hover {
+    background: #402039;
+}
+
+.ll-rules {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid #6c3756;
+    border-radius: 8px;
+    background: #160f18;
+    color: #d8b8c8;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.ll-rules.is-hidden {
+    display: none;
+}
+
+.ll-rules p {
+    margin: 0;
+}
+
+.ll-rule-title {
+    color: #f3edf1;
+    font-weight: 700;
+}
+
+.ll-rule-cards {
+    display: grid;
+    gap: 6px;
+}
+
+.ll-rule-card {
+    display: grid;
+    gap: 3px;
+    padding: 7px 9px;
+    border: 1px solid #4b2940;
+    border-radius: 8px;
+    background: #0f0f1a;
+}
+
+.ll-rule-card strong {
+    color: #f3edf1;
+    font-size: 13px;
+}
+
+.ll-rule-card small {
+    color: #f5a623;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ll-rule-card span {
+    color: #d8b8c8;
+    font-size: 12px;
+    line-height: 1.4;
+}

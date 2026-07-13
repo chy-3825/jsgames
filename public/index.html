@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>&#28216;&#25103;&#22823;&#21381;</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>&#28216;&#25103;&#22823;&#21381;</h1>
+            <div id="playerCount">&#22312;&#32447;: 0</div>
+        </header>
+
+        <div id="inviteLink" class="panel invite-panel">
+            <div class="invite-copy">
+                &#36992;&#35831;&#38142;&#25509;: <span id="ipDisplay">&#33719;&#21462;&#20013;...</span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="row">
+                <input type="text" id="nameInput" placeholder="&#36755;&#20837;&#20320;&#30340;&#21517;&#23383;" maxlength="8">
+                <button id="setNameBtn">&#25913;&#21517;</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>&#21019;&#24314;&#25151;&#38388;</h3>
+            <div class="row">
+                <select id="gameTypeSelect"></select>
+                <button id="createRoomBtn">&#21019;&#24314;</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>&#25151;&#38388;&#21015;&#34920;</h3>
+            <div id="roomList">
+                <div class="empty">&#26242;&#26080;&#25151;&#38388;</div>
+            </div>
+        </div>
+
+        <div id="currentRoom" style="display:none;" class="panel">
+            <h3>&#24403;&#21069;&#25151;&#38388;</h3>
+            <div id="roomInfo"></div>
+            <div id="gameControls">
+                <button id="startGameBtn" style="display:none;">&#24320;&#22987;&#28216;&#25103;</button>
+            </div>
+            <button id="leaveRoomBtn" class="danger">&#31163;&#24320;&#25151;&#38388;</button>
+        </div>
+
+        <div id="gameMount" style="display:none;"></div>
+
+        <div class="panel">
+            <h3>&#28040;&#24687;</h3>
+            <div id="log"></div>
+            <div class="row">
+                <input type="text" id="chatInput" placeholder="&#36755;&#20837;&#28040;&#24687;..." maxlength="50">
+                <button id="sendChatBtn">&#21457;&#36865;</button>
+            </div>
+        </div>
+
+        <div id="status">&#36830;&#25509;&#20013;...</div>
+    </div>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
