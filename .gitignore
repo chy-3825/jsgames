@@ -8,7 +8,6 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
-bin/
 obj/
 .vs/
 
@@ -19,3 +18,4 @@ Thumbs.db
 coverage/
 dist/
 build/
+
