@@ -27,7 +27,7 @@ function connect() {
     statusEl.style.background = '#1a1a3e';
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${protocol}//${location.hostname}:8080`);
+    ws = new WebSocket(`${protocol}//${location.host}`);
 
     ws.onopen = () => {
         isConnected = true;
@@ -261,9 +261,10 @@ connect();
 fetch('/api/ip')
     .then(res => res.json())
     .then(data => {
-        document.getElementById('ipDisplay').textContent = `http://${data.ip}:3000`;
+        document.getElementById('ipDisplay').textContent = `${location.protocol}//${data.ip}${location.port ? ':' + location.port : ''}`;
     })
     .catch(() => {
         document.getElementById('ipDisplay').textContent = '\u8bf7\u67e5\u770b\u7ec8\u7aef\u663e\u793a\u7684 IP';
     });
+
 

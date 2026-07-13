@@ -9,7 +9,7 @@ const gameRegistry = require('./server/games/registry');
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 
-const wss = new WebSocket.Server({ port: 8080 });
+let wss = null;
 const players = new Map();
 const rooms = new Map();
 let roomIdCounter = 1;
@@ -18,7 +18,10 @@ function generateRoomId() {
     return String(roomIdCounter++).padStart(6, '0');
 }
 
-wss.on('connection', (ws) => {
+function startWebSocketServer(server) {
+    if (wss) return wss;
+    wss = new WebSocket.Server({ server });
+    wss.on('connection', (ws) => {
     const playerId = 'p' + Date.now() + Math.random().toString(36).substr(2, 4);
     players.set(ws, { id: playerId, name: 'Player' + playerId.substr(1, 4) });
 
@@ -45,7 +48,10 @@ wss.on('connection', (ws) => {
         broadcastPlayerCount();
         broadcastRoomList();
     });
-});
+    });
+    console.log('WebSocket server attached to HTTP server');
+    return wss;
+}
 
 function handleMessage(ws, data) {
     const player = players.get(ws);
@@ -365,10 +371,11 @@ app.get('/api/ip', (req, res) => {
     res.json({ ip: getLanIp() });
 });
 
+app.startWebSocketServer = startWebSocketServer;
 module.exports = app;
 
-console.log('WebSocket server started: ws://localhost:8080');
 console.log('Lobby is ready');
+
 
 
 
