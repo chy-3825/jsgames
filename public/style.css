@@ -1,4 +1,4 @@
-﻿* {
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -258,4 +258,176 @@ button {
 
 #gameControls {
     margin-bottom: 10px;
+}
+
+#lobbyView,
+#roomView {
+    width: 100%;
+}
+
+.room-page-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.game-room {
+    border-color: #f5a623;
+}
+
+.game-room-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.game-room-title strong {
+    color: #f5a623;
+    font-size: 18px;
+}
+
+.game-room-title span,
+.game-room-meta {
+    color: #aaa;
+    font-size: 13px;
+}
+
+.game-room-hint {
+    color: #d8d8e8;
+    background: #0f0f1a;
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 13px;
+    line-height: 1.45;
+    margin: 10px 0;
+}
+
+.game-room-players {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.game-room-player {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #0f0f1a;
+    border-left: 3px solid #3a3a5a;
+    color: #ddd;
+    font-size: 13px;
+}
+
+.game-room-player.is-host {
+    border-left-color: #f5a623;
+}
+
+.loveletter-room {
+    border-color: #b85b7b;
+}
+
+
+.coup-room {
+    border-color: #8e44ad;
+}
+
+.message-panel {
+    margin-top: 12px;
+}
+
+.current-room-panel {
+    border-color: #f5a623;
+}
+
+.current-room-info {
+    color: #d8d8e8;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 10px;
+}
+
+.current-room-info .highlight {
+    color: #f5a623;
+    font-weight: 700;
+}
+
+.current-room-players {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.current-room-actions {
+    justify-content: flex-end;
+}
+
+body.is-game-view {
+    background: #1a0f08;
+    padding: 0;
+    align-items: stretch;
+}
+
+body.is-game-view #app {
+    max-width: none;
+    width: 100%;
+}
+
+body.is-game-view #appHeader,
+body.is-game-view .message-panel,
+body.is-game-view #status {
+    display: none;
+}
+
+body.is-game-view .room-page-header {
+    position: fixed;
+    left: 12px;
+    top: 12px;
+    z-index: 50;
+    margin: 0;
+}
+
+body.is-game-view #leaveRoomBtn {
+    background: rgba(30, 18, 10, 0.86);
+    border: 1px solid #6a4a30;
+    color: #e8d0b0;
+}
+
+body.is-game-view #gameMount {
+    min-height: 100vh;
+}
+.fatal-error-box,
+.load-error {
+    border-color: #e74c3c;
+    background: #2a1118;
+    color: #ffd6d6;
+}
+
+.fatal-error-box {
+    display: grid;
+    gap: 6px;
+}
+
+.fatal-error-box strong {
+    color: #ff8a8a;
+}
+
+.fatal-error-box span,
+.load-error {
+    font-size: 13px;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.load-error {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid #e74c3c;
+    border-radius: 8px;
 }

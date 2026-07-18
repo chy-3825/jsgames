@@ -1,8 +1,9 @@
 const statusEl = document.getElementById('status');
 const logEl = document.getElementById('log');
+const lobbyViewEl = document.getElementById('lobbyView');
+const roomViewEl = document.getElementById('roomView');
 const roomListEl = document.getElementById('roomList');
-const currentRoomEl = document.getElementById('currentRoom');
-const roomInfoEl = document.getElementById('roomInfo');
+const roomMount = document.getElementById('roomMount');
 const nameInput = document.getElementById('nameInput');
 const setNameBtn = document.getElementById('setNameBtn');
 const createRoomBtn = document.getElementById('createRoomBtn');
@@ -13,9 +14,33 @@ const chatInput = document.getElementById('chatInput');
 const sendChatBtn = document.getElementById('sendChatBtn');
 const playerCountEl = document.getElementById('playerCount');
 const gameMount = document.getElementById('gameMount');
+const currentRoomPanel = document.getElementById('currentRoomPanel');
+const currentRoomInfo = document.getElementById('currentRoomInfo');
+const currentRoomPlayers = document.getElementById('currentRoomPlayers');
+const lobbyStartGameBtn = document.getElementById('lobbyStartGameBtn');
+const lobbyLeaveRoomBtn = document.getElementById('lobbyLeaveRoomBtn');
+
+window.addEventListener('error', event => {
+    showFatalError(event.error || event.message || '未知错误');
+});
+
+window.addEventListener('unhandledrejection', event => {
+    showFatalError(event.reason || '未知 Promise 错误');
+});
+
+function showFatalError(error) {
+    const message = error?.message || String(error);
+    console.error(error);
+    document.body.classList.remove('is-game-view');
+    const box = document.getElementById('fatalErrorBox') || document.createElement('div');
+    box.id = 'fatalErrorBox';
+    box.className = 'panel fatal-error-box';
+    box.innerHTML = `<strong>页面出错了</strong><span>${escapeHtml(message)}</span>`;
+    document.getElementById('app')?.prepend(box);
+}
 
 let ws = null;
-let myName = '\u73a9\u5bb6' + Math.random().toString(36).substr(2, 4);
+let myName = '玩家' + Math.random().toString(36).slice(2, 6);
 let myId = null;
 let currentRoomId = null;
 let currentRoom = null;
@@ -23,7 +48,7 @@ let currentGameClient = null;
 let isConnected = false;
 
 function connect() {
-    statusEl.textContent = '\u8fde\u63a5\u4e2d...';
+    statusEl.textContent = '连接中...';
     statusEl.style.background = '#1a1a3e';
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -31,30 +56,30 @@ function connect() {
 
     ws.onopen = () => {
         isConnected = true;
-        statusEl.textContent = '\u5df2\u8fde\u63a5';
+        statusEl.textContent = '已连接';
         statusEl.style.background = '#1b5e20';
-        addLog('\u8fde\u63a5\u6210\u529f', 'system');
+        addLog('连接成功', 'system');
         nameInput.value = myName;
-        ws.send(JSON.stringify({ type: 'setName', name: myName }));
+        send({ type: 'setName', name: myName });
     };
 
-    ws.onmessage = async (event) => {
+    ws.onmessage = async event => {
         try {
             await handleMessage(JSON.parse(event.data));
-        } catch (e) {
-            console.log('Failed to parse message:', e);
+        } catch (error) {
+            console.log('Failed to handle message:', error);
         }
     };
 
     ws.onclose = () => {
         isConnected = false;
-        statusEl.textContent = '\u8fde\u63a5\u65ad\u5f00';
+        statusEl.textContent = '连接断开';
         statusEl.style.background = '#b71c1c';
-        addLog('\u8fde\u63a5\u5df2\u65ad\u5f00', 'error');
+        addLog('连接已断开，正在重连...', 'error');
         setTimeout(connect, 3000);
     };
 
-    ws.onerror = () => addLog('\u8fde\u63a5\u51fa\u9519', 'error');
+    ws.onerror = () => addLog('连接出错', 'error');
 }
 
 async function handleMessage(data) {
@@ -66,44 +91,45 @@ async function handleMessage(data) {
             renderRoomList(data.rooms);
             break;
         case 'playerCount':
-            playerCountEl.textContent = `\u5728\u7ebf: ${data.count}`;
+            playerCountEl.textContent = `在线: ${data.count}`;
             break;
         case 'roomCreated':
             myId = data.playerId;
             currentRoomId = data.roomId;
             currentRoom = data.room;
-            addLog(`\u623f\u95f4 ${data.roomId} \u521b\u5efa\u6210\u529f`, 'system');
-            updateCurrentRoom(data.room);
-            await prepareGameClient(data.room.gameType);
+            addLog(`房间 ${data.roomId} 创建成功`, 'system');
+            enterWaitingRoom();
             break;
         case 'joinSuccess':
             myId = data.playerId;
             currentRoomId = data.roomId;
             currentRoom = data.room;
-            addLog(`\u6210\u529f\u52a0\u5165\u623f\u95f4 ${data.roomId}`, 'system');
-            updateCurrentRoom(data.room);
-            await prepareGameClient(data.room.gameType);
+            addLog(`成功加入房间 ${data.roomId}`, 'system');
+            enterWaitingRoom();
             break;
         case 'playerJoined':
-            addLog(`${data.player.name} \u52a0\u5165\u4e86\u623f\u95f4`, 'info');
+            addLog(`${data.player.name} 加入了房间`, 'info');
             currentRoom = data.room || currentRoom;
-            updateCurrentRoom(currentRoom || { players: data.players || [] });
+            renderWaitingRoomPanel();
             break;
         case 'playerLeft':
-            addLog('\u6709\u73a9\u5bb6\u79bb\u5f00\u4e86\u623f\u95f4', 'info');
+            addLog('有玩家离开了房间', 'info');
             currentRoom = data.room || currentRoom;
-            updateCurrentRoom(currentRoom || { players: data.players || [] });
+            renderWaitingRoomPanel();
             break;
         case 'chat':
-            addLog(`${data.player.id === myId ? '\u6211' : data.player.name}: ${data.message}`, 'chat');
+            addLog(`${data.player.id === myId ? '我' : data.player.name}: ${data.message}`, 'chat');
             break;
         case 'gameStarted':
+            if (currentRoom) currentRoom.status = 'playing';
+            await showGameMessage(data);
+            break;
         case 'gameState':
         case 'gameEnded':
-            await prepareGameClient(data.gameType || currentRoom?.gameType);
-            currentGameClient?.handleMessage(data);
+            await showGameMessage(data);
             if (data.type === 'gameEnded' && data.winner) {
-                addLog(`${data.winner.name} \u83b7\u80dc`, 'system');
+                if (currentRoom) currentRoom.status = 'ended';
+                addLog(`${data.winner.name} 获胜`, 'system');
             }
             break;
         case 'error':
@@ -116,7 +142,7 @@ async function handleMessage(data) {
 
 function renderGameList(games) {
     if (!games || games.length === 0) {
-        gameTypeSelect.innerHTML = '<option value="loveletter">\u60c5\u4e66</option>';
+        gameTypeSelect.innerHTML = '<option value="loveletter">情书</option>';
         return;
     }
     gameTypeSelect.innerHTML = games
@@ -126,91 +152,160 @@ function renderGameList(games) {
 
 function renderRoomList(rooms) {
     if (!rooms || rooms.length === 0) {
-        roomListEl.innerHTML = '<div class="empty">\u6682\u65e0\u623f\u95f4</div>';
+        roomListEl.innerHTML = '<div class="empty">暂无房间</div>';
         return;
     }
 
     roomListEl.innerHTML = rooms.map(room => `
         <div class="room-item">
             <div class="info">
-                <span class="room-name">\u623f\u95f4 ${escapeHtml(room.id)}</span>
+                <span class="room-name">房间 ${escapeHtml(room.id)}</span>
                 <span class="room-detail">
                     ${escapeHtml(room.gameName || room.gameType)} -
-                    ${room.playerCount}/${room.maxPlayers} \u4eba -
-                    ${room.status === 'playing' ? '\u6e38\u620f\u4e2d' : '\u7b49\u5f85\u4e2d'}
+                    ${room.playerCount}/${room.maxPlayers} 人 -
+                    ${roomStatusText(room.status)}
                 </span>
             </div>
-            ${room.status !== 'playing' && !isInRoom(room.id)
-                ? `<button class="join-btn" data-room-id="${escapeHtml(room.id)}">\u52a0\u5165</button>`
-                : `<span class="room-state">${isInRoom(room.id) ? '\u5df2\u52a0\u5165' : '\u6e38\u620f\u4e2d'}</span>`}
+            ${room.status !== 'playing' && room.status !== 'ended' && !isInRoom(room.id)
+                ? `<button class="join-btn" data-room-id="${escapeHtml(room.id)}">加入</button>`
+                : `<span class="room-state">${isInRoom(room.id) ? '已加入' : '不可加入'}</span>`}
         </div>
     `).join('');
 }
 
-function updateCurrentRoom(room) {
-    if (!room) return;
-    currentRoomEl.style.display = 'block';
-    const players = room.players || [];
-    roomInfoEl.innerHTML = `
-        <div>\u73a9\u5bb6\u5217\u8868:</div>
-        ${players.map(p => `<div class="player-row">${p.isHost ? '[\u623f\u4e3b] ' : ''}${escapeHtml(p.name)}${p.id === myId ? ' (\u6211)' : ''}</div>`).join('')}
-        <div class="room-summary">${escapeHtml(room.gameName || room.gameType)} - \u5171 ${players.length} \u4eba</div>
-    `;
+function enterWaitingRoom() {
+    document.body.classList.remove('is-game-view');
+    lobbyViewEl.style.display = 'block';
+    roomViewEl.style.display = 'none';
+    roomMount.innerHTML = '';
+    destroyGameClient();
+    renderWaitingRoomPanel();
+}
 
-    const canStart = room.hostId === myId && room.status === 'waiting' && players.length >= (room.minPlayers || 2);
-    startGameBtn.style.display = canStart ? 'inline-block' : 'none';
+function renderWaitingRoomPanel() {
+    if (!currentRoom || !currentRoomId || currentRoom.status === 'playing') {
+        currentRoomPanel.style.display = 'none';
+        return;
+    }
+
+    const players = currentRoom.players || [];
+    const minPlayers = currentRoom.minPlayers || 2;
+    const canStart = currentRoom.hostId === myId && currentRoom.status === 'waiting' && players.length >= minPlayers;
+
+    currentRoomPanel.style.display = 'block';
+    currentRoomInfo.innerHTML = `
+        <div><span class="highlight">${escapeHtml(currentRoom.gameName || currentRoom.gameType)}</span> 房间 ${escapeHtml(currentRoom.id)}</div>
+        <div>${roomStatusText(currentRoom.status)} - ${players.length}/${currentRoom.maxPlayers} 人，至少 ${minPlayers} 人可开始</div>
+    `;
+    currentRoomPlayers.innerHTML = players.map(player => `
+        <div class="game-room-player ${player.id === currentRoom.hostId ? 'is-host' : ''}">
+            <span>${player.id === currentRoom.hostId ? '[房主] ' : ''}${escapeHtml(player.name)}${player.id === myId ? ' (我)' : ''}</span>
+        </div>
+    `).join('');
+    lobbyStartGameBtn.style.display = canStart ? 'inline-block' : 'none';
+    createRoomBtn.disabled = Boolean(currentRoomId);
+    gameTypeSelect.disabled = Boolean(currentRoomId);
+}
+
+function openGameView() {
+    document.body.classList.add('is-game-view');
+    lobbyViewEl.style.display = 'none';
+    roomViewEl.style.display = 'block';
+    currentRoomPanel.style.display = 'none';
+    roomMount.innerHTML = '';
+    gameMount.style.display = 'block';
+    startGameBtn.style.display = 'none';
+}
+
+function returnToLobby() {
+    document.body.classList.remove('is-game-view');
+    lobbyViewEl.style.display = 'block';
+    roomViewEl.style.display = 'none';
+    currentRoomPanel.style.display = 'none';
+    roomMount.innerHTML = '';
+    destroyGameClient();
+    createRoomBtn.disabled = false;
+    gameTypeSelect.disabled = false;
+}
+
+async function showGameMessage(data) {
+    const gameType = data.gameType || currentRoom?.gameType;
+    try {
+        await prepareGameClient(gameType);
+        openGameView();
+        currentGameClient?.handleMessage(data);
+    } catch (error) {
+        console.error('Failed to open game client:', error);
+        addLog(`游戏界面加载失败：${error.message}`, 'error');
+        showGameError(error);
+    }
 }
 
 async function prepareGameClient(gameType) {
-    if (!gameType || currentGameClient?.gameType === gameType) return;
+    if (!gameType) throw new Error('缺少游戏类型');
+    if (currentGameClient?.gameType === gameType) return;
+    destroyGameClient();
     const module = await import(`/games/${gameType}/client.js?v=${Date.now()}`);
-    currentGameClient?.destroy?.();
+    if (typeof module.createGameClient !== 'function') {
+        throw new Error(`${gameType} 没有导出 createGameClient`);
+    }
     currentGameClient = module.createGameClient({
         mount: gameMount,
-        send: payload => ws.send(JSON.stringify(payload)),
+        send,
         addLog,
     });
-    gameMount.style.display = 'block';
 }
 
-function joinRoom(roomId) {
-    if (!isConnected) return addLog('\u672a\u8fde\u63a5\u5230\u670d\u52a1\u5668', 'error');
-    if (currentRoomId) return addLog('\u8bf7\u5148\u79bb\u5f00\u5f53\u524d\u623f\u95f4', 'error');
-    ws.send(JSON.stringify({ type: 'joinRoom', roomId }));
+function showGameError(error) {
+    document.body.classList.remove('is-game-view');
+    lobbyViewEl.style.display = 'block';
+    roomViewEl.style.display = 'none';
+    currentRoomPanel.style.display = 'block';
+    renderWaitingRoomPanel();
+    const message = error?.message || String(error);
+    currentRoomInfo.insertAdjacentHTML('beforeend', `<div class="load-error">游戏界面加载失败：${escapeHtml(message)}</div>`);
 }
 
-function leaveRoom() {
-    if (!currentRoomId) return;
-    ws.send(JSON.stringify({ type: 'leaveRoom' }));
-    currentRoomId = null;
-    currentRoom = null;
-    currentRoomEl.style.display = 'none';
-    startGameBtn.style.display = 'none';
+function destroyGameClient() {
     currentGameClient?.destroy?.();
     currentGameClient = null;
     gameMount.innerHTML = '';
     gameMount.style.display = 'none';
-    addLog('\u5df2\u79bb\u5f00\u623f\u95f4', 'system');
+}
+
+function joinRoom(roomId) {
+    if (!isConnected) return addLog('未连接到服务器', 'error');
+    if (currentRoomId) return addLog('请先离开当前房间', 'error');
+    send({ type: 'joinRoom', roomId });
+}
+
+function leaveRoom() {
+    if (!currentRoomId) return;
+    send({ type: 'leaveRoom' });
+    currentRoomId = null;
+    currentRoom = null;
+    returnToLobby();
+    addLog('已离开房间', 'system');
 }
 
 function createRoom() {
-    if (!isConnected) return addLog('\u672a\u8fde\u63a5\u5230\u670d\u52a1\u5668', 'error');
-    if (currentRoomId) return addLog('\u8bf7\u5148\u79bb\u5f00\u5f53\u524d\u623f\u95f4', 'error');
+    if (!isConnected) return addLog('未连接到服务器', 'error');
+    if (currentRoomId) return addLog('请先离开当前房间', 'error');
     const gameType = gameTypeSelect.value;
-    ws.send(JSON.stringify({ type: 'createRoom', gameType }));
-    addLog(`\u6b63\u5728\u521b\u5efa ${gameType} \u623f\u95f4`, 'system');
+    send({ type: 'createRoom', gameType });
+    addLog(`正在创建 ${gameType} 房间`, 'system');
 }
 
 function startGame() {
     if (!currentRoomId) return;
-    ws.send(JSON.stringify({ type: 'startGame' }));
+    send({ type: 'startGame' });
 }
 
 function sendChat() {
     const message = chatInput.value.trim();
     if (!message) return;
-    if (!isConnected) return addLog('\u672a\u8fde\u63a5\u5230\u670d\u52a1\u5668', 'error');
-    ws.send(JSON.stringify({ type: 'chat', message }));
+    if (!isConnected) return addLog('未连接到服务器', 'error');
+    send({ type: 'chat', message });
     chatInput.value = '';
 }
 
@@ -218,8 +313,12 @@ function setName() {
     const name = nameInput.value.trim();
     if (!name) return;
     myName = name;
-    if (isConnected) ws.send(JSON.stringify({ type: 'setName', name }));
-    addLog(`\u5df2\u6539\u540d\u4e3a ${name}`, 'system');
+    if (isConnected) send({ type: 'setName', name });
+    addLog(`已改名为 ${name}`, 'system');
+}
+
+function send(payload) {
+    ws?.send(JSON.stringify(payload));
 }
 
 function addLog(msg, type = 'chat') {
@@ -234,37 +333,48 @@ function isInRoom(roomId) {
     return currentRoomId === roomId;
 }
 
+function roomStatusText(status) {
+    if (status === 'playing') return '游戏中';
+    if (status === 'ended') return '已结束';
+    return '等待中';
+}
+
 function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"]/g, char => ({
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
+        "'": '&#39;',
     }[char]));
 }
 
 createRoomBtn.addEventListener('click', createRoom);
 leaveRoomBtn.addEventListener('click', leaveRoom);
 startGameBtn.addEventListener('click', startGame);
+lobbyStartGameBtn.addEventListener('click', startGame);
+lobbyLeaveRoomBtn.addEventListener('click', leaveRoom);
 sendChatBtn.addEventListener('click', sendChat);
 setNameBtn.addEventListener('click', setName);
-roomListEl.addEventListener('click', (event) => {
+roomListEl.addEventListener('click', event => {
     const button = event.target.closest('[data-room-id]');
     if (button) joinRoom(button.dataset.roomId);
 });
-chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
-nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') setName(); });
+chatInput.addEventListener('keydown', event => { if (event.key === 'Enter') sendChat(); });
+nameInput.addEventListener('keydown', event => { if (event.key === 'Enter') setName(); });
 
 nameInput.value = myName;
 connect();
 
-fetch('/api/ip')
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById('ipDisplay').textContent = `${location.protocol}//${data.ip}${location.port ? ':' + location.port : ''}`;
-    })
-    .catch(() => {
-        document.getElementById('ipDisplay').textContent = '\u8bf7\u67e5\u770b\u7ec8\u7aef\u663e\u793a\u7684 IP';
-    });
-
-
+const inviteUrl = location.origin;
+const ipDisplayEl = document.getElementById('ipDisplay');
+ipDisplayEl.textContent = inviteUrl;
+ipDisplayEl.title = '点击复制邀请链接';
+ipDisplayEl.addEventListener('click', async () => {
+    try {
+        await navigator.clipboard.writeText(inviteUrl);
+        addLog('邀请链接已复制', 'system');
+    } catch (error) {
+        addLog('复制失败，请手动复制邀请链接', 'error');
+    }
+});

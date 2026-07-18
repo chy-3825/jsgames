@@ -1,68 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>&#28216;&#25103;&#22823;&#21381;</title>
+    <title>游戏大厅</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app">
-        <header>
-            <h1>&#28216;&#25103;&#22823;&#21381;</h1>
-            <div id="playerCount">&#22312;&#32447;: 0</div>
+        <header id="appHeader">
+            <h1>游戏大厅</h1>
+            <div id="playerCount">在线: 0</div>
         </header>
 
-        <div id="inviteLink" class="panel invite-panel">
-            <div class="invite-copy">
-                &#36992;&#35831;&#38142;&#25509;: <span id="ipDisplay">&#33719;&#21462;&#20013;...</span>
+        <div id="lobbyView">
+            <div id="inviteLink" class="panel invite-panel">
+                <div class="invite-copy">
+                    邀请链接: <span id="ipDisplay">获取中...</span>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="row">
+                    <input type="text" id="nameInput" placeholder="输入你的名字" maxlength="8">
+                    <button id="setNameBtn">改名</button>
+                </div>
+            </div>
+
+            <div id="currentRoomPanel" class="panel current-room-panel" style="display:none;">
+                <h3>当前房间</h3>
+                <div id="currentRoomInfo" class="current-room-info"></div>
+                <div id="currentRoomPlayers" class="current-room-players"></div>
+                <div class="row current-room-actions">
+                    <button id="lobbyStartGameBtn" type="button" style="display:none;">开始游戏</button>
+                    <button id="lobbyLeaveRoomBtn" class="secondary" type="button">离开房间</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>创建房间</h3>
+                <div class="row">
+                    <select id="gameTypeSelect"></select>
+                    <button id="createRoomBtn">创建</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>房间列表</h3>
+                <div id="roomList">
+                    <div class="empty">暂无房间</div>
+                </div>
             </div>
         </div>
 
-        <div class="panel">
-            <div class="row">
-                <input type="text" id="nameInput" placeholder="&#36755;&#20837;&#20320;&#30340;&#21517;&#23383;" maxlength="8">
-                <button id="setNameBtn">&#25913;&#21517;</button>
+        <div id="roomView" style="display:none;">
+            <div class="room-page-header">
+                <button id="leaveRoomBtn" class="secondary" type="button">← 离开房间</button>
+                <button id="startGameBtn" style="display:none;" type="button">开始游戏</button>
             </div>
+            <div id="roomMount"></div>
+            <div id="gameMount" style="display:none;"></div>
         </div>
 
-        <div class="panel">
-            <h3>&#21019;&#24314;&#25151;&#38388;</h3>
-            <div class="row">
-                <select id="gameTypeSelect"></select>
-                <button id="createRoomBtn">&#21019;&#24314;</button>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h3>&#25151;&#38388;&#21015;&#34920;</h3>
-            <div id="roomList">
-                <div class="empty">&#26242;&#26080;&#25151;&#38388;</div>
-            </div>
-        </div>
-
-        <div id="currentRoom" style="display:none;" class="panel">
-            <h3>&#24403;&#21069;&#25151;&#38388;</h3>
-            <div id="roomInfo"></div>
-            <div id="gameControls">
-                <button id="startGameBtn" style="display:none;">&#24320;&#22987;&#28216;&#25103;</button>
-            </div>
-            <button id="leaveRoomBtn" class="danger">&#31163;&#24320;&#25151;&#38388;</button>
-        </div>
-
-        <div id="gameMount" style="display:none;"></div>
-
-        <div class="panel">
-            <h3>&#28040;&#24687;</h3>
+        <div class="panel message-panel">
+            <h3>消息</h3>
             <div id="log"></div>
             <div class="row">
-                <input type="text" id="chatInput" placeholder="&#36755;&#20837;&#28040;&#24687;..." maxlength="50">
-                <button id="sendChatBtn">&#21457;&#36865;</button>
+                <input type="text" id="chatInput" placeholder="输入消息..." maxlength="50">
+                <button id="sendChatBtn">发送</button>
             </div>
         </div>
 
-        <div id="status">&#36830;&#25509;&#20013;...</div>
+        <div id="status">连接中...</div>
     </div>
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=20260717-fix-black"></script>
 </body>
 </html>

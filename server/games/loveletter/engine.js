@@ -39,6 +39,7 @@ class LoveLetterGame {
         this.winner = null;
         this.round = 0;
         this.lastAction = null;
+        this.endReason = null;
     }
 
     init() {
@@ -62,6 +63,7 @@ class LoveLetterGame {
         this.winner = null;
         this.round++;
         this.lastAction = null;
+        this.endReason = null;
 
         for (const player of this.players) {
             player.hand.push(this.drawCard());
@@ -116,11 +118,13 @@ class LoveLetterGame {
         if (alive.length <= 1) {
             this.status = 'ended';
             this.winner = alive[0] || null;
+            this.endReason = 'elimination';
             return true;
         }
 
         if (this.deck.length === 0) {
             this.status = 'ended';
+            this.endReason = 'showdown';
             this.winner = alive.reduce((best, player) => {
                 const value = player.hand[0]?.value || 0;
                 const bestValue = best?.hand[0]?.value || 0;
@@ -295,9 +299,9 @@ class LoveLetterGame {
         if (targetCard?.value === guess) {
             target.isOut = true;
             target.isAlive = false;
-            return { success: true, message: `${player.name} \u731c\u5bf9\u4e86\uff0c${target.name} \u51fa\u5c40`, eliminated: target.id };
+            return { success: true, message: `${player.name} \u731c\u5bf9\u4e86\uff0c${target.name} \u51fa\u5c40`, eliminated: target.id, revealedCard: targetCard };
         }
-        return { success: true, message: `${player.name} \u731c\u9519\u4e86` };
+        return { success: true, message: `${player.name} \u731c\u9519\u4e86`, guardMiss: true };
     }
 
     resolvePriest(player, targetId) {
@@ -315,19 +319,22 @@ class LoveLetterGame {
         const target = this.findTarget(targetId, false, player.id);
         if (!target) return { success: false, message: '\u65e0\u6548\u76ee\u6807' };
 
-        const playerValue = player.hand.find(Boolean)?.value || 0;
-        const targetValue = target.hand.find(Boolean)?.value || 0;
+        const playerCard = player.hand.find(Boolean) || null;
+        const targetCard = target.hand.find(Boolean) || null;
+        const revealedCards = { [player.id]: playerCard, [target.id]: targetCard };
+        const playerValue = playerCard?.value || 0;
+        const targetValue = targetCard?.value || 0;
         if (playerValue > targetValue) {
             target.isOut = true;
             target.isAlive = false;
-            return { success: true, message: `${target.name} \u51fa\u5c40`, eliminated: target.id };
+            return { success: true, message: `${target.name} \u51fa\u5c40`, eliminated: target.id, revealedCard: targetCard, revealedCards };
         }
         if (targetValue > playerValue) {
             player.isOut = true;
             player.isAlive = false;
-            return { success: true, message: `${player.name} \u51fa\u5c40`, eliminated: player.id };
+            return { success: true, message: `${player.name} \u51fa\u5c40`, eliminated: player.id, revealedCard: playerCard, revealedCards };
         }
-        return { success: true, message: '\u70b9\u6570\u76f8\u540c\uff0c\u65e0\u4eba\u51fa\u5c40' };
+        return { success: true, message: '\u70b9\u6570\u76f8\u540c\uff0c\u65e0\u4eba\u51fa\u5c40', revealedCards };
     }
 
     resolveHandmaid(player) {
@@ -344,7 +351,7 @@ class LoveLetterGame {
         if (discarded?.id === 8) {
             target.isOut = true;
             target.isAlive = false;
-            return { success: true, message: `${target.name} \u5f03\u6389\u516c\u4e3b\uff0c\u51fa\u5c40`, eliminated: target.id };
+            return { success: true, message: `${target.name} \u5f03\u6389\u516c\u4e3b\uff0c\u51fa\u5c40`, eliminated: target.id, revealedCard: discarded };
         }
 
         const newCard = this.drawCardForPrince();
@@ -368,7 +375,7 @@ class LoveLetterGame {
     resolvePrincess(player) {
         player.isOut = true;
         player.isAlive = false;
-        return { success: true, message: `${player.name} \u6253\u51fa\u516c\u4e3b\uff0c\u51fa\u5c40`, eliminated: player.id };
+        return { success: true, message: `${player.name} \u6253\u51fa\u516c\u4e3b\uff0c\u51fa\u5c40`, eliminated: player.id, revealedCard: { ...CARDS.find(card => card.id === 8) } };
     }
 
     nextTurn() {
@@ -405,6 +412,7 @@ class LoveLetterGame {
             publicDiscardCount: this.discardPile.length,
             hiddenDiscardCount: this.hiddenDiscardPile.length,
             winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null,
+            endReason: this.endReason,
             lastAction: this.lastAction,
         };
     }

@@ -1,7 +1,9 @@
 ﻿const loveletter = require('./loveletter');
+const coup = require('./coup');
 
 const games = new Map([
     [loveletter.metadata.type, loveletter],
+    [coup.metadata.type, coup],
 ]);
 
 function getGame(type) {
