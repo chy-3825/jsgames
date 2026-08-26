@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>环城大富翁换肤检查</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        html, body { min-height: 100%; margin: 0; background: #12211e; }
+        #skin-test-mount { min-height: 100vh; }
+    </style>
+</head>
+<body>
+<main id="skin-test-mount"></main>
+<script type="module">
+    import { createGameClient } from '/games/monopoly/client.js';
+
+    const mount = document.querySelector('#skin-test-mount');
+    window.monopolySkinVisualClient = createGameClient({
+        mount,
+        send() {},
+        addLog() {},
+        leaveRoom() {},
+    });
+
+    const query = new URLSearchParams(location.search);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const skinId = query.get('skin');
+        const tokenStyle = query.get('style');
+        if (skinId) mount.querySelector(`[data-skin-id="${CSS.escape(skinId)}"]`)?.click();
+        if (tokenStyle) mount.querySelector(`[data-token-style="${CSS.escape(tokenStyle)}"]`)?.click();
+        if (query.get('open') === '1') mount.querySelector('[data-ui="toggleSkinMenu"]')?.click();
+    }));
+</script>
+</body>
+</html>

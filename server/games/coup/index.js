@@ -17,7 +17,7 @@ const metadata = {
     type: 'coup',
     name: '政变',
     minPlayers: 2,
-    maxPlayers: 8,
+    maxPlayers: 6,
 };
 
 // ==================== 游戏会话类 ====================
@@ -27,10 +27,11 @@ class CoupSession {
      * @param {string} roomId - 房间ID
      * @param {Array} players - 玩家数组 [{ id, name }, ...]
      */
-    constructor(roomId, players) {
+    constructor(roomId, players, options = {}) {
         this.roomId = roomId;
         // 将大厅玩家数据传给 engine
-        this.engine = new CoupEngine(roomId, players);
+        const random = typeof options === 'function' ? options : options?.random;
+        this.engine = new CoupEngine(roomId, players, random);
         this.started = false;
     }
 
@@ -45,10 +46,11 @@ class CoupSession {
         if (this.engine.players.length < 2) {
             return { success: false, message: '至少需要2名玩家' };
         }
-        this.started = true;
         const result = this.engine.start();
+        if (!result.success) return result;
+        this.started = true;
         return {
-            success: result.success,
+            success: true,
             message: result.message,
             state: result.state,
         };
@@ -162,7 +164,11 @@ module.exports = {
      * @param {Array} players - 玩家数组 [{ id, name }, ...]
      * @returns {CoupSession}
      */
-    create(roomId, players) {
-        return new CoupSession(roomId, players);
+    create(roomId, players, _hostId, gameOptions = {}) {
+        // Room passes hostId and optional gameOptions as the third/fourth
+        // adapter arguments.  A direct test may pass a random function as
+        // the third argument, so CoupSession accepts both forms.
+        const options = typeof _hostId === 'function' ? _hostId : gameOptions;
+        return new CoupSession(roomId, players, options);
     },
 };

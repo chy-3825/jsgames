@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>现代艺术前端视觉验收</title>
+    <style>html,body{min-height:100%;margin:0;background:#1d1c1f}#game-board{min-height:100vh}</style>
+</head>
+<body>
+<main id="game-board"></main>
+<script type="module">
+    import { createGameClient } from '/games/modernart/client.js';
+    const cards = [
+        { id:'matisse-2',artistId:'matisse',artistName:'马蒂斯',auctionType:'open' },
+        { id:'cassat-6',artistId:'cassat',artistName:'卡萨特',auctionType:'once' },
+        { id:'yoshida-9',artistId:'yoshida',artistName:'吉田',auctionType:'sealed' },
+        { id:'bruegel-13',artistId:'bruegel',artistName:'勃鲁盖尔',auctionType:'fixed' },
+        { id:'clyfford-4',artistId:'clyfford',artistName:'克里福特',auctionType:'double' },
+        { id:'matisse-7',artistId:'matisse',artistName:'马蒂斯',auctionType:'fixed' },
+        { id:'clyfford-8',artistId:'clyfford',artistName:'克里福特',auctionType:'sealed' },
+    ];
+    const state = {
+        status:'playing',phase:'bidding',round:2,maxRounds:4,currentTurn:'p1',currentTurnName:'沈小姐',myId:'p1',myCash:76,
+        rules:{players:'3–5',rounds:4,marketThreshold:5,moneyHidden:true,mysteryPlayer:false},mysteryCount:0,
+        roundCounts:{matisse:3,cassat:4,yoshida:1,bruegel:2,clyfford:2},
+        artistValues:{matisse:30,cassat:20,yoshida:0,bruegel:10,clyfford:0},
+        auction:{artist:'马蒂斯',artistId:'matisse',artists:['马蒂斯'],sellerId:'p2',sellerName:'顾先生',type:'open',typeName:'公开竞价',fixedPrice:null,highestBid:12,highestBidder:'p3',passed:['p4']},
+        doubleOffer:null,mysteryOffer:null,
+        players:[
+            {id:'p1',name:'沈小姐',color:'#d45f54',cash:76,handCount:7,collectionCount:2,isOnline:true},
+            {id:'p2',name:'顾先生',color:'#4d82a6',cash:null,handCount:5,collectionCount:1,isOnline:true},
+            {id:'p3',name:'陆馆长',color:'#bf8b3e',cash:null,handCount:6,collectionCount:2,isOnline:true},
+            {id:'p4',name:'周收藏',color:'#6d9466',cash:null,handCount:4,collectionCount:1,isOnline:true},
+        ],
+        myHand:cards,
+        myCollection:[cards[1],cards[3]],
+        market:[
+            {artistId:'matisse',artistName:'马蒂斯',price:9},{artistId:'cassat',artistName:'卡萨特',price:14},
+            {artistId:'bruegel',artistName:'勃鲁盖尔',price:7},{artistId:'clyfford',artistName:'克里福特',price:11},
+            {artistId:'cassat',artistName:'卡萨特',price:16},{artistId:'matisse',artistName:'马蒂斯',price:12},
+        ],
+        history:[{round:1,market:[1,2,3,4,5,6],values:{matisse:30,cassat:20,yoshida:0,bruegel:10,clyfford:0},cumulativeValues:{matisse:30,cassat:20,yoshida:0,bruegel:10,clyfford:0}}],
+        availableActions:{startAuction:false,bid:true,offerSecond:false,passSecond:false,revealMystery:false,skipMystery:false},
+        actionLog:['陆馆长出价 12 元','周收藏放弃本次公开竞价','顾先生拍卖马蒂斯（公开竞价）','卡萨特作品以 16 元成交','第 2 季展览开始'],
+    };
+    const client = createGameClient({mount:document.querySelector('#game-board'),send:message=>console.log(message),addLog:console.log,leaveRoom(){}});
+    client.handleMessage({state});
+    const scene = new URLSearchParams(location.search).get('scene');
+    const sceneEvents = {
+        auction: [{
+            sequence:101,kind:'paintingPresented',actorId:'p2',actorName:'顾先生',sellerId:'p2',sellerName:'顾先生',
+            card:{id:'matisse-stage',artistId:'matisse',artistName:'马蒂斯',auctionType:'open'},auctionType:'open',auctionTypeName:'公开竞价',appearance:4,endsSeason:false,endReason:null,
+        }],
+        hammer: [{
+            sequence:102,kind:'auctionResolved',cards:[{id:'matisse-stage',artistId:'matisse',artistName:'马蒂斯',auctionType:'open'}],
+            auctionType:'open',auctionTypeName:'公开竞价',sellerId:'p2',sellerName:'顾先生',buyerId:'p3',buyerName:'陆馆长',price:18,selfPurchase:false,sealedBids:null,
+        }],
+        season: [{
+            sequence:103,kind:'seasonSettlement',round:2,trigger:{kind:'fifthPainting'},
+            ranking:[
+                {rank:1,artistId:'cassat',artistName:'卡萨特',count:5,roundValue:30,cumulativeValue:50},
+                {rank:2,artistId:'matisse',artistName:'马蒂斯',count:4,roundValue:20,cumulativeValue:50},
+                {rank:3,artistId:'bruegel',artistName:'勃鲁盖尔',count:2,roundValue:10,cumulativeValue:20},
+                {rank:4,artistId:'clyfford',artistName:'克里福特',count:2,roundValue:0,cumulativeValue:0},
+                {rank:5,artistId:'yoshida',artistName:'吉田',count:1,roundValue:0,cumulativeValue:0},
+            ],
+            players:[{playerId:'p1',playerName:'沈小姐',collectionCount:2},{playerId:'p2',playerName:'顾先生',collectionCount:1},{playerId:'p3',playerName:'陆馆长',collectionCount:2},{playerId:'p4',playerName:'周收藏',collectionCount:1}],
+            ownResult:{playerId:'p1',playerName:'沈小姐',cashBefore:76,cashAfter:146,payout:70,paintings:[
+                {id:'owned-cassat',artistId:'cassat',artistName:'卡萨特',auctionType:'once',value:50},
+                {id:'owned-bruegel',artistId:'bruegel',artistName:'勃鲁盖尔',auctionType:'fixed',value:20},
+            ]},
+        }],
+        final: [{
+            sequence:104,kind:'finalSettlement',winnerIds:['p3'],artistValues:{matisse:80,cassat:70,yoshida:30,bruegel:50,clyfford:20},
+            standings:[
+                {rank:1,id:'p3',name:'陆馆长',color:'#bf8b3e',fortune:284},
+                {rank:2,id:'p1',name:'沈小姐',color:'#d45f54',fortune:251},
+                {rank:3,id:'p2',name:'顾先生',color:'#4d82a6',fortune:238},
+                {rank:4,id:'p4',name:'周收藏',color:'#6d9466',fortune:194},
+            ],seasons:[],
+        }],
+    };
+    if (sceneEvents[scene]) {
+        client.handleMessage({state:{...state,presentation:{sequence:100 + Object.keys(sceneEvents).indexOf(scene) + 1,actorId:null,action:`visual-${scene}`,resolved:true,events:sceneEvents[scene]}}});
+    }
+    window.__modernArtClient=client;
+    window.__modernArtState=state;
+</script>
+</body>
+</html>

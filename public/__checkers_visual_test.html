@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>跳棋六角星视觉验收</title>
+    <style>html,body,#mount{min-height:100%;margin:0}</style>
+</head>
+<body>
+    <main id="mount"></main>
+    <script type="module">
+        import { createGameClient } from '/games/checkers/client.js';
+
+        const counts = [1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1];
+        const rows = counts.map((count, y) => Array.from({ length: count }, (_, index) => ({ x: 13 - count + index * 2, y })));
+        const top = rows.slice(0, 4).flat();
+        const bottom = rows.slice(13).flat();
+        const players = [
+            { id: 'red', name: '小红', color: 'red', corner: 0, targetCorner: 3, isOnline: true, isCurrentTurn: true, pieceCount: 10 },
+            { id: 'blue', name: '小蓝', color: 'blue', corner: 3, targetCorner: 0, isOnline: true, isCurrentTurn: false, pieceCount: 10 },
+        ];
+        const pieces = [
+            ...top.map((point, index) => ({ ...point, id: `red-piece-${index + 1}`, playerId: 'red', color: 'red', number: index + 1 })),
+            ...bottom.map((point, index) => ({ ...point, id: `blue-piece-${index + 1}`, playerId: 'blue', color: 'blue', number: index + 1 })),
+        ];
+        const state = {
+            roomId: 'visual', status: 'playing', currentTurn: 'red', currentTurnName: '小红', players, pieces,
+            pendingMove: null, selectedPiece: null, legalMoves: { select: top.slice(6).map((_, index) => `red-piece-${index + 7}`), step: [], jump: [] },
+            availableActions: { canSelect: true, canMove: false, canEndMove: false },
+            lastMove: null, lastAction: null, actionLog: ['小红先手，目标是对角的 4 号角'], moveNumber: 0,
+            winner: null, myId: 'red', myColor: 'red', myIsCurrentTurn: true,
+        };
+        const client = createGameClient({
+            mount: document.querySelector('#mount'),
+            send: message => console.log('visual action', message),
+            addLog: message => console.log(message),
+            leaveRoom: () => console.log('leave'),
+        });
+        client.handleMessage({ type: 'gameState', state });
+    </script>
+</body>
+</html>

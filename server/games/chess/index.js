@@ -1,0 +1,4 @@
+const ChessEngine = require('./engine');
+const metadata = { type: 'chess', name: '国际象棋', minPlayers: 2, maxPlayers: 2 };
+class ChessSession { constructor(roomId, players) { this.engine = new ChessEngine(roomId, players); this.started = false; } start() { const result = this.engine.start(); if (result.success) this.started = true; return result; } handleAction(id, action) { return this.started ? this.engine.handleAction(id, action) : { success: false, message: '游戏尚未开始' }; } handlePlayerLeave(id) { return this.engine.handlePlayerLeave(id); } getPlayerState(id) { return this.engine.getPlayerState(id); } getPlayerAction(action) { return action; } getWinner() { return this.engine.getWinner(); } }
+module.exports = { metadata, create(roomId, players) { return new ChessSession(roomId, players); } };

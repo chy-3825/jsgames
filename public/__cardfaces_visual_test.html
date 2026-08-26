@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>七款卡牌视觉验收</title>
+    <link rel="stylesheet" href="/games/scout/style.css">
+    <link rel="stylesheet" href="/games/hanabi/style.css">
+    <link rel="stylesheet" href="/games/modernart/style.css">
+    <link rel="stylesheet" href="/games/monopolydeal/style.css">
+    <link rel="stylesheet" href="/games/citadels/style.css">
+    <link rel="stylesheet" href="/games/magicalathlete/style.css">
+    <link rel="stylesheet" href="/games/witchtown/style.css">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; background: #171918; }
+        body { padding: 18px; font-family: system-ui, "Noto Sans SC", sans-serif; }
+        .review { width: min(1480px, 100%); margin: auto; }
+        .review > section { min-height: 0 !important; margin-bottom: 18px; padding: 18px !important; overflow: hidden; border: 1px solid #ffffff24; }
+        .review h2 { margin: 0 0 14px; color: inherit; font: 800 17px system-ui; }
+        .review-grid { display: flex; align-items: flex-start; gap: 10px; overflow-x: auto; padding: 5px 3px 12px; }
+        .scout-app .review-grid .sc-card { flex: 0 0 72px; }
+        .hb-app .review-grid { min-height: 185px; }
+        .art-app .review-grid .art-card { flex: 0 0 126px; }
+        .deal-game .review-grid .deal-card { flex: 0 0 132px; }
+        .citadels-app .review-grid .citadels-district-card { flex: 0 0 190px; }
+        .ma-app .review-grid .ma-card-face { flex: 0 0 185px; }
+        .witchtown-app .review-grid .witchtown-card { flex: 0 0 160px; }
+        .witchtown-app .review-private { display: grid; grid-template-columns: minmax(280px, 420px) minmax(300px, 1fr); gap: 14px; }
+        body:has(#deal:target) .review > section:not(:has(#deal)) { display: none; }
+        body:has(#deal:target) .deal-cards { flex-wrap: wrap; }
+        @media (max-width: 520px) {
+            body { padding: 8px; }
+            .review > section { padding: 12px !important; }
+            .review h2 { font-size: 15px; }
+            .witchtown-app .review-private { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<main class="review">
+    <section class="scout-app"><h2>马戏星探 · 双向数字</h2><div class="review-grid" id="scout"></div></section>
+    <section class="hb-app"><h2>花火 · 1–5 烟花与牌背</h2><div class="review-grid" id="hanabi"></div></section>
+    <section class="art-app"><h2>现代艺术 · 同画家构图变化</h2><div class="review-grid" id="modernart"></div></section>
+    <section class="deal-game"><h2>大富翁纸牌 · 牌类、行动差异与统一牌背</h2><div class="review-grid deal-cards" id="deal"></div><div class="review-grid" id="deal-backs"></div></section>
+    <section class="citadels-app"><h2>富饶之城 · 五类城区</h2><div class="review-grid" id="citadels"></div></section>
+    <section class="ma-app"><h2>胡闹运动会 · 原创运动员</h2><div class="review-grid" id="athletes"></div></section>
+    <section class="witchtown-app"><h2>猎巫镇 · 审判牌、议会角色与事件牌</h2><div class="review-private"><div><div class="witchtown-trial-grid" id="trials"></div><div id="hall"></div></div><div class="review-grid" id="witchcards"></div></div></section>
+</main>
+<script>
+    const scColors = ['#d95043','#e07b36','#e5b83f','#75a75b','#3b9c91','#3483aa','#596cad','#8b5fa8','#bd5579','#78514e'];
+    document.querySelector('#scout').innerHTML = Array.from({length: 10}, (_, index) => `<button class="sc-card"><b class="sc-card-top">${index + 1}</b><span class="sc-card-star">${['●','◆','▲','✦','■','✺'][index % 6]}</span><b class="sc-card-bottom">${10 - index}</b><small>双向表演牌</small><i class="sc-card-order">${index + 1}</i><span class="sc-circus-stripe" style="--sc-upper:${scColors[index]};--sc-lower:${scColors[9-index]}"></span></button>`).join('');
+
+    const tones = ['red','yellow','green','blue','white'];
+    document.querySelector('#hanabi').innerHTML = tones.map((tone, index) => `<span class="hb-public-card tone-${tone} value-${index + 1}"><span class="hb-card-corner hb-card-corner-top">${index + 1}</span><span class="hb-card-burst"><i></i><i></i><i></i></span><strong>${index + 1}</strong><small>${['红','黄','绿','蓝','白'][index]}色</small><span class="hb-card-corner hb-card-corner-bottom">${index + 1}</span></span>`).join('') + `<article class="hb-hidden-card has-knowledge tone-blue"><div class="hb-card-back"><span class="hb-own-position">01</span><span class="hb-back-pattern">花火</span><strong>3</strong><div class="hb-knowledge"><span>已知蓝色</span><b>已知数字 3</b></div></div></article>`;
+
+    const artists = ['matisse','cassat','yoshida','bruegel','clyfford'];
+    document.querySelector('#modernart').innerHTML = artists.flatMap((artist, artistIndex) => [1,2,3].map(variant => `<button class="art-card" data-artist="${artist}" style="--artist:${['#d95f59','#d69c4d','#6287b3','#6d9872','#8c6a9c'][artistIndex]}"><i class="art-canvas" data-variant="${variant}"></i><span>${['马蒂斯','卡萨特','吉田','勃鲁盖尔','克里福特'][artistIndex]}</span><small>构图 ${variant}</small></button>`)).join('');
+
+    const actionCards = [['dealBreaker','SET','交易破坏者'],['justSayNo','NO!','说不'],['passGo','GO','通过起点'],['doubleRent','×2','双倍租金'],['debtCollector','5M','收取债务'],['birthday','+2','生日收礼'],['slyDeal','1↗','偷偷交易'],['forcedDeal','⇄','强制交换'],['house','⌂','房屋'],['hotel','H','酒店']];
+    const dealCard = ([kind, mark, name]) => `<button class="deal-card card-action action-${kind}"><span class="deal-card-visual is-action"><span class="deal-action-motif"><b></b><b></b><b></b></span><i>${mark}</i><em>${name}</em></span><span class="deal-card-wash"></span><small>行动牌</small><strong>${name}</strong><b>3M</b></button>`;
+    document.querySelector('#deal').innerHTML = `<button class="deal-card card-money"><span class="deal-card-visual is-money"><i>5</i><em>MONOPOLY MONEY</em></span><span class="deal-card-wash"></span><small>现金</small><strong>5M 现金</strong><b>5M</b></button><button class="deal-card card-property"><span class="deal-card-visual is-property" style="--property-color:#c6423b"><em>TITLE DEED</em><span class="deal-rent-ladder"><i><span>1</span><b>2M</b></i><i><span>2</span><b>3M</b></i><i><span>3</span><b>6M</b></i></span></span><span class="deal-card-wash"></span><small>红色地产</small><strong>肯塔基大道</strong><b>3M</b></button><button class="deal-card card-property_wild"><span class="deal-card-visual is-wild"><i>W</i><em>WILD PROPERTY</em></span><span class="deal-card-wash"></span><small>万能地产</small><strong>十色地产万能牌</strong><b>0M</b></button><button class="deal-card card-rent"><span class="deal-card-visual is-rent"><i>R</i><em>COLLECT RENT</em></span><span class="deal-card-wash"></span><small>收租牌</small><strong>红色/黄色收租</strong><b>1M</b></button>${actionCards.map(dealCard).join('')}`;
+    document.querySelector('#deal-backs').innerHTML = `<span class="deal-hidden-hand" aria-label="4 张隐藏手牌"><i style="--deal-card-order:0"></i><i style="--deal-card-order:1"></i><i style="--deal-card-order:2"></i><i style="--deal-card-order:3"></i><b>4</b></span><div class="deal-draw"><small>牌库</small><b>58</b><button data-action="drawCards" type="button">摸牌</button><button class="deal-discard-button" type="button">弃牌堆 <b>7</b></button></div>`;
+
+    const districts = [['noble','宫殿','贵族区'],['religious','大教堂','宗教区'],['trade','港口','商业区'],['military','要塞','军事区'],['unique','天文台','独特区']];
+    document.querySelector('#citadels').innerHTML = districts.map(([tone, name, label], index) => `<article class="citadels-district-card color-${tone}"><div class="citadels-card-top"><span>${label}</span><b>${index + 2}</b></div><div class="citadels-card-main"><span class="citadels-district-art art-v${index % 4 + 1}"><i></i></span><small>${tone === 'unique' ? '独特城区' : '基础城区'}</small><strong>${name}</strong><em>${label} · ${index + 2} 分</em></div><span class="citadels-card-effect"><b>${tone === 'unique' ? '独特能力' : '城区收益'}</b>${tone === 'unique' ? '摸牌时摸 3 保留 1' : '建成后提供固定分数'}</span></article>`).join('');
+
+    const athleteIds = ['alchemist','banana','duelist','gunk','hypnotist','legs','mouth','rocketscientist','sisyphus','twin'];
+    const athleteNames = ['炼金术师','香蕉','决斗家','史莱姆','催眠师','盖伊·博尔斯','大嘴','火箭医生','西西弗斯','双胞胎'];
+    const artOrder = ['alchemist','airship','baba','banana','centaur','cheerleader','coach','copycat','dicemonger','duelist','egg','flopflop','genius','gunk','hare','hugebaby','hyena','hypnotist','inchworm','lackey','leaptoad','legs','lovableloser','mouth','magician','mastermind','partyanimal','rocketscientist','romantic','scoocher','sisyphus','skipper','stickler','suckerfish','thirdwheel','twin'];
+    document.querySelector('#athletes').innerHTML = athleteIds.map((id, cardIndex) => { const index = artOrder.indexOf(id); return `<div class="ma-card-face ma-tone-${['sun','berry','sky','mint','violet','orange'][cardIndex % 6]}"><div class="ma-card-top"><span>运动员牌</span><b>能力牌</b></div><div class="ma-card-art"><span class="ma-athlete-sprite" style="--ma-art-x:${index % 6 * 20}%;--ma-art-y:${Math.floor(index / 6) * 20}%"></span><i></i></div><strong class="ma-card-name">${athleteNames[cardIndex]}</strong><small class="ma-card-tagline">独门绝技</small><p>能力说明在这里保持清楚可读。</p></div>`; }).join('');
+
+    document.querySelector('#trials').innerHTML = [['town','镇','镇民'],['witch','巫','女巫'],['constable','槌','警长']].map(([tone, mark, name], index) => `<article class="witchtown-trial-card is-${tone} is-secret"><span>0${index + 1}</span><i>${mark}</i><strong>${name}</strong><small>未揭示</small></article>`).join('');
+    document.querySelector('#hall').innerHTML = `<div class="witchtown-hall"><span class="witchtown-hall-art" style="--hall-x:0%;--hall-y:50%"></span><div><strong>Tituba</strong><p>每局一次，在摸牌前可以重新排列牌库，并继续本回合摸牌。</p></div></div>`;
+    const witchCards = [['red','accusation','Ⅰ','指控'],['red','evidence','Ⅲ','证据'],['red','witness','Ⅶ','目击者'],['green','alibi','A','不在场证明'],['green','arson','火','纵火'],['green','curse','咒','诅咒'],['green','robbery','取','抢劫'],['blue','scapegoat','替','替罪羊'],['blue','stocks','枷','枷锁'],['blue','asylum','庇','避难所'],['blue','matchmaker','缘','红娘'],['blue','piety','祷','虔诚'],['blue','blackcat','猫','黑猫'],['black','conspiracy','谋','阴谋'],['black','night','夜','夜幕']];
+    document.querySelector('#witchcards').innerHTML = witchCards.map(([tone, kind, mark, name]) => `<article class="witchtown-card is-${tone} is-kind-${kind}"><div class="witchtown-card-top"><span>${tone === 'red' ? '指控牌' : tone === 'green' ? '行动牌' : tone === 'blue' ? '持续牌' : '事件牌'}</span><b>·</b></div><div class="witchtown-card-main"><span class="witchtown-card-scene"><i>${mark}</i></span><strong>${name}</strong><small>规则效果说明保持清楚可读。</small></div></article>`).join('');
+</script>
+</body>
+</html>

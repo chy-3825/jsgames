@@ -1,0 +1,16 @@
+Source: https://metool.online/zh/games/aeroplaneChess/
+
+The project owner reported permission for the source material on 2026-08-17.
+
+`board-sharp.png` is a cleaned, high-resolution derivative of the second
+user-supplied sharpened PNG. It was edited with the built-in image generation
+tool to restore the correct blue/green/red/yellow corner order, remove margins,
+watermark and paper noise, and preserve the 52-space board geometry.
+
+The four `*-plane.svg` files are the current resolution-independent plane
+tokens. They preserve the circular token and top-down aircraft design with
+antialiased vector edges. Superseded bitmap tokens and the low-resolution board
+have been removed from the current-version directory.
+
+The multiplayer state mapping, layout integration, controls, and animations in
+this project are implemented locally in public/games/aeroplane/.

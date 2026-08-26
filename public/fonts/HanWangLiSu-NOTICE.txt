@@ -1,0 +1,9 @@
+HanWang LiSu Medium (王漢宗中隸書繁)
+
+Source:
+https://github.com/JayChou404/chinese-free-font
+
+The upstream collection identifies the Wang Han Zhong font family as
+distributed under the GNU GPL. Keep this notice with the font when
+redistributing the game, and review the upstream license before any
+commercial distribution.

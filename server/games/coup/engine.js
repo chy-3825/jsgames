@@ -46,9 +46,11 @@ class CoupEngine {
     /**
      * @param {string} roomId - 房间ID
      * @param {Array} players - 玩家数组 [{ id, name }, ...]
+     * @param {Function} random - 可注入的随机源（测试/回放用）
      */
-    constructor(roomId, players) {
+    constructor(roomId, players, random = Math.random) {
         this.roomId = roomId;
+        this.random = typeof random === 'function' ? random : Math.random;
         this.players = players.map(p => ({
             id: p.id,
             name: p.name,
@@ -63,8 +65,10 @@ class CoupEngine {
 
         this.deck = [];
         this.currentTurnIndex = 0;
-        this.phase = 'idle'; // idle | challenge | respond | action
+        this.phase = 'idle'; // idle | challenge | respond | block | influence_loss | exchange | ended
         this.pendingAction = null; // { kind, targetId, claimedRole }
+        this.pendingInfluenceLoss = null;
+        this.pendingExchange = null;
         this.challengeQueue = []; // 质疑顺序（玩家ID数组）
         this.challengeIndex = 0;
         this.challengerId = null; // 谁发起了质疑
@@ -74,6 +78,10 @@ class CoupEngine {
         this.gameOver = false;
         this.turnHistory = [];
         this.actionLog = [];
+        this.actionSequence = 0;
+        this.revealSequence = 0;
+        this.interaction = null;
+        this.lastReveal = null;
 
         // 初始化牌堆
         this._initDeck();
@@ -86,28 +94,17 @@ class CoupEngine {
     // ==================== 初始化 ====================
 
     _initDeck() {
-        const count = this.players.length;
-        // 每个角色至少2张，最多4张
-        const baseCount = count <= 4 ? 2 : 3;
-        const extra = count > 6 ? 1 : 0;
-        const totalPerRole = Math.min(baseCount + extra, 4);
-
-        this.deck = [];
-        ROLE_IDS.forEach(id => {
-            for (let i = 0; i < totalPerRole; i++) {
-                this.deck.push(id);
-            }
-        });
-        // 确保总数足够
-        while (this.deck.length < this.players.length * 2 + 10) {
-            this.deck.push(ROLE_IDS[Math.floor(Math.random() * ROLE_IDS.length)]);
-        }
+        // The base game has exactly three copies of each of its five roles.
+        // It is tempting to pad the deck for larger rooms, but doing so makes
+        // claims statistically and mechanically different from Coup.  The
+        // session therefore caps the base rules at six players.
+        this.deck = ROLE_IDS.flatMap(id => [id, id, id]);
         this._shuffleDeck();
     }
 
     _shuffleDeck() {
         for (let i = this.deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
+            const j = Math.floor(this.random() * (i + 1));
             [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
         }
     }
@@ -125,30 +122,17 @@ class CoupEngine {
     _drawCards(count) {
         const drawn = [];
         for (let i = 0; i < count; i++) {
-            if (this.deck.length === 0) {
-                this._reshuffleDeck();
-            }
+            if (this.deck.length === 0) break;
             drawn.push(this.deck.pop());
         }
         return drawn;
     }
 
     _reshuffleDeck() {
-        // 收集所有已揭示的牌（已经失去的）放回牌堆
-        const usedCards = [];
-        this.players.forEach(p => {
-            p.influences.forEach((role, idx) => {
-                if (p.revealed[idx]) {
-                    usedCards.push(role);
-                }
-            });
-        });
-        // 如果收集到的牌太少，补充一些随机牌
-        while (usedCards.length < 10) {
-            usedCards.push(ROLE_IDS[Math.floor(Math.random() * ROLE_IDS.length)]);
-        }
-        this.deck = usedCards;
-        this._shuffleDeck();
+        // Revealed influence is permanently out of the court deck.  Kept as a
+        // no-op for compatibility with older callers; exchange cards are
+        // returned explicitly through _returnToDeck instead.
+        return this.deck;
     }
 
     _returnToDeck(cards) {
@@ -188,14 +172,6 @@ class CoupEngine {
         return player.isAlive && player.isOnline && this._getActiveInfluenceCount(player) > 0;
     }
 
-    _getRandomAliveInfluenceIndex(player) {
-        const alive = player.influences
-            .map((_, idx) => idx)
-            .filter(idx => !player.revealed[idx]);
-        if (alive.length === 0) return -1;
-        return alive[Math.floor(Math.random() * alive.length)];
-    }
-
     _getNextTurnIndex(currentIdx) {
         let next = (currentIdx + 1) % this.players.length;
         let attempts = 0;
@@ -214,14 +190,14 @@ class CoupEngine {
     // ==================== 核心方法：启动 ====================
 
     start() {
-        if (this.players.length < 2) {
-            return { success: false, message: '至少需要2名玩家' };
-        }
+        if (this.players.length < 2 || this.players.length > 6) return { success: false, message: '基础政变支持 2–6 名玩家' };
         // 起始玩家为房主（索引0）
         this.currentTurnIndex = 0;
         this.phase = 'idle';
         this.gameOver = false;
         this.winner = null;
+        this.interaction = null;
+        this.lastReveal = null;
         this.actionLog = ['游戏开始！'];
         return {
             success: true,
@@ -246,6 +222,13 @@ class CoupEngine {
         const player = this._getPlayer(playerId);
         if (!player || !this._isAlive(player)) {
             return { success: false, message: '玩家不存在或已出局' };
+        }
+
+        if (this.phase === 'influence_loss') {
+            return this._handleInfluenceLoss(playerId, action);
+        }
+        if (this.phase === 'exchange') {
+            return this._handleExchangeAction(playerId, action);
         }
 
         // 验证是否为当前回合玩家
@@ -300,9 +283,47 @@ class CoupEngine {
 
     // ----- 基础行动 -----
 
+    _beginInteraction(player, kind, targetId = null, claimedRole = null) {
+        this.interaction = {
+            actionId: ++this.actionSequence,
+            kind,
+            actorId: player.id,
+            targetId: targetId || null,
+            claimedRole: claimedRole || null,
+            stage: 'declared',
+            challengerId: null,
+            blockerId: null,
+            blockRole: null,
+            verdict: null,
+            outcome: null,
+        };
+        return this.interaction;
+    }
+
+    _updateInteraction(fields = {}) {
+        if (this.interaction) Object.assign(this.interaction, fields);
+        return this.interaction;
+    }
+
+    _recordReveal(player, roles, reason) {
+        const revealedRoles = (Array.isArray(roles) ? roles : [roles]).filter(Boolean);
+        this.lastReveal = {
+            revealId: ++this.revealSequence,
+            actionId: this.interaction?.actionId || null,
+            playerId: player.id,
+            roles: revealedRoles,
+            role: revealedRoles[revealedRoles.length - 1] || null,
+            reason: reason || null,
+            eliminated: !this._isAlive(player),
+        };
+        this._updateInteraction({ lastRevealId: this.lastReveal.revealId });
+    }
+
     _actionIncome(player) {
+        this._beginInteraction(player, 'income');
         player.coins += 1;
         this.actionLog.push(`${player.name} 收入 +1💰`);
+        this._updateInteraction({ stage: 'resolved', outcome: 'income' });
         this._endTurn();
         return {
             success: true,
@@ -312,6 +333,7 @@ class CoupEngine {
     }
 
     _actionForeignAid(player) {
+        this._beginInteraction(player, 'foreign_aid');
         this.pendingAction = {
             kind: 'foreign_aid',
             playerId: player.id,
@@ -336,6 +358,7 @@ class CoupEngine {
         }
 
         this.phase = 'block';
+        this._updateInteraction({ stage: 'block_offer', blockRole: 'duke' });
         this.actionLog.push(player.name + ' 申请外援，等待公爵阻挡...');
         return {
             success: true,
@@ -360,6 +383,9 @@ class CoupEngine {
         if (target.id === player.id) {
             return { success: false, message: '不能暗杀自己' };
         }
+        // The 3-coin assassination fee is paid when the action is announced,
+        // before any challenge or block is resolved.
+        player.coins -= 3;
         const claimedRole = 'assassin';
         return this._startChallengePhase(player, 'assassinate', targetId, claimedRole);
     }
@@ -395,23 +421,130 @@ class CoupEngine {
             return { success: false, message: '不能政变自己' };
         }
 
-        // 执行政变
+        // 执行政变。失去哪一张影响力必须由目标玩家自己选择。
+        this._beginInteraction(player, 'coup', target.id);
         player.coins -= 7;
-        const removed = this._removeInfluence(target);
-        this.actionLog.push(`${player.name} 政变 ${target.name}${removed ? '，失去一张影响力' : ''}`);
-
-        this._checkPlayerDeath(target);
-        this._endTurn();
+        this.actionLog.push(`${player.name} 政变 ${target.name}，等待对方选择失去的影响力`);
+        this.pendingInfluenceLoss = { playerId: target.id, reason: 'coup', continuation: 'coup', actorId: player.id };
+        this.phase = 'influence_loss';
+        this._updateInteraction({ stage: 'influence_loss', lossPlayerId: target.id, lossReason: 'coup' });
         return {
             success: true,
-            message: `${player.name} 政变 ${target.name}`,
+            message: `${player.name} 政变 ${target.name}，请目标选择要揭示的影响力`,
             state: this._getPublicState()
+        };
+    }
+
+    _handleInfluenceLoss(playerId, action = {}) {
+        const pending = this.pendingInfluenceLoss;
+        if (!pending || pending.playerId !== playerId) return { success: false, message: '请等待目标玩家选择影响力' };
+        const index = Number(action.influenceIndex);
+        const player = this._getPlayer(playerId);
+        if (action.kind !== 'influence_loss' || !Number.isInteger(index) || index < 0 || index >= player.influences.length || player.revealed[index]) {
+            return { success: false, message: '请选择一张仍在生效的影响力', state: this.getPlayerState(playerId) };
+        }
+        const revealedRole = player.influences[index];
+        player.revealed[index] = true;
+        this.pendingInfluenceLoss = null;
+        this.actionLog.push(`${player.name} 选择揭示第 ${index + 1} 张影响力`);
+        this._checkPlayerDeath(player);
+        this._recordReveal(player, revealedRole, pending.reason);
+
+        if (this.gameOver) {
+            this._updateInteraction({ stage: 'resolved', outcome: 'game_over', lossPlayerId: player.id });
+            return { success: true, message: `${player.name} 已选择失去一张影响力`, state: this._getPublicState(), ended: true, winner: this.getWinner() };
+        }
+
+        if (pending.continuation === 'challenge_failed') {
+            this.phase = 'idle';
+            const challengedAction = this.pendingAction;
+            let result;
+            if (challengedAction?.targetId === player.id && !this._isAlive(player)) {
+                this.pendingAction = null;
+                this._updateInteraction({ stage: 'resolved', outcome: 'target_eliminated', lossPlayerId: player.id });
+                this._endTurn();
+                result = { success: true, message: `${player.name} 已在质疑中出局，原行动无需继续结算`, state: this._getPublicState() };
+            } else {
+                // 质疑失败只证明了原声明；暗杀和偷窃仍应给目标保留阻挡窗口。
+                result = this._afterChallenges();
+            }
+            return {
+                ...result,
+                success: true,
+                message: `${player.name} 已选择失去一张影响力，质疑失败的行动继续`,
+                state: result.state || this._getPublicState(),
+                ended: this.gameOver,
+                winner: this.getWinner(),
+            };
+        }
+
+        if (pending.continuation === 'block_challenge_success') {
+            this.phase = 'idle';
+            const blockedAction = this.pendingAction?.blockedAction;
+            this.pendingAction = blockedAction ? { ...blockedAction } : null;
+            const result = this.pendingAction ? this._executePendingAction() : { success: true, message: '外援被阻挡' };
+            return {
+                ...result,
+                success: true,
+                message: `${player.name} 已选择失去一张影响力，质疑成功`,
+                state: result.state || this._getPublicState(),
+                ended: this.gameOver,
+                winner: this.getWinner(),
+            };
+        }
+
+        if (pending.continuation === 'challenge_success') {
+            this.pendingAction = null;
+            this.phase = 'idle';
+            this.actionLog.push('质疑成功，原行动取消');
+            this._updateInteraction({ stage: 'cancelled', outcome: 'claim_failed', lossPlayerId: player.id });
+            this._endTurn();
+            return { success: true, message: `${player.name} 已选择失去一张影响力，原行动取消`, state: this._getPublicState(), ended: this.gameOver, winner: this.getWinner() };
+        }
+
+        this._updateInteraction({ stage: 'resolved', outcome: pending.reason, lossPlayerId: player.id });
+        this._endTurn();
+        return { success: true, message: `${player.name} 已选择失去一张影响力`, state: this._getPublicState(), ended: this.gameOver, winner: this.getWinner() };
+    }
+
+    _handleExchangeAction(playerId, action = {}) {
+        const pending = this.pendingExchange;
+        if (!pending || pending.playerId !== playerId) return { success: false, message: '请等待大使交换完成' };
+        if (action.kind !== 'exchangeSelect' || !Array.isArray(action.keepIndices)) return { success: false, message: '请选择要保留的影响力', state: this.getPlayerState(playerId) };
+        const player = this._getPlayer(playerId);
+        const activeIndexes = player.influences.map((role, index) => (!player.revealed[index] ? index : -1)).filter(index => index >= 0);
+        const options = [...activeIndexes.map(index => ({ source: 'hand', index, role: player.influences[index] })), ...pending.drawn.map((role, index) => ({ source: 'drawn', index, role }))];
+        const keep = action.keepIndices.map(index => Number(index));
+        if (keep.length !== activeIndexes.length || new Set(keep).size !== keep.length || keep.some(index => !Number.isInteger(index) || !options[index])) return { success: false, message: `请选择恰好 ${activeIndexes.length} 张影响力`, state: this.getPlayerState(playerId) };
+        const keptRoles = keep.map(index => options[index].role);
+        const returned = options.filter((_, index) => !keep.includes(index)).map(item => item.role);
+        activeIndexes.forEach((slot, index) => { player.influences[slot] = keptRoles[index]; player.revealed[slot] = false; });
+        this._returnToDeck(returned);
+        this.pendingExchange = null;
+        this.actionLog.push(`${player.name} 完成大使交换`);
+        this._updateInteraction({ stage: 'resolved', outcome: 'exchange' });
+        this._endTurn();
+        return { success: true, message: `${player.name} 完成交换`, state: this._getPublicState() };
+    }
+
+    _requestInfluenceLoss(player, reason, continuation) {
+        if (!player || !this._isAlive(player)) {
+            return { success: false, message: '该玩家已经没有可失去的影响力' };
+        }
+        this.pendingInfluenceLoss = { playerId: player.id, reason, continuation };
+        this.phase = 'influence_loss';
+        this._updateInteraction({ stage: 'influence_loss', lossPlayerId: player.id, lossReason: reason });
+        return {
+            success: true,
+            message: `${player.name} 请选择要失去的影响力`,
+            state: this._getPublicState(),
         };
     }
 
     // ==================== 质疑阶段 ====================
 
     _startChallengePhase(player, actionKind, targetId, claimedRole) {
+        this._beginInteraction(player, actionKind, targetId, claimedRole);
         // 保存待执行的行动
         this.pendingAction = {
             kind: actionKind,
@@ -434,12 +567,10 @@ class CoupEngine {
         }
         this.challengeIndex = 0;
 
-        if (this.challengeQueue.length === 0) {
-            // 没有其他玩家存活，直接执行
-            return this._executePendingAction();
-        }
+        if (this.challengeQueue.length === 0) return this._afterChallenges();
 
         this.phase = 'challenge';
+        this._updateInteraction({ stage: 'challenge' });
         this.actionLog.push(`${player.name} 声称 ${ROLE_NAMES[claimedRole]}，等待质疑...`);
 
         return {
@@ -456,6 +587,30 @@ class CoupEngine {
         };
     }
 
+    _blockRoleForAction(action) {
+        if (!action) return null;
+        if (action.kind === 'foreign_aid') return 'duke';
+        if (action.kind === 'assassinate') return 'contessa';
+        if (action.kind === 'steal') return 'captain_or_ambassador';
+        return null;
+    }
+
+    _afterChallenges() {
+        const action = this.pendingAction;
+        if (!action) return { success: false, message: '没有待执行的行动' };
+        const blockerRole = this._blockRoleForAction(action);
+        if (blockerRole) {
+            const target = this._getPlayer(action.targetId);
+            if (target && this._isAlive(target)) {
+                this.phase = 'block'; this.claimedRole = blockerRole; this.challengeQueue = [target.id]; this.challengeIndex = 0; this.responderId = target.id;
+                this._updateInteraction({ stage: 'block_offer', blockRole: blockerRole });
+                this.actionLog.push(`${target.name} 可以用${blockerRole === 'contessa' ? '伯爵夫人' : '船长或大使'}阻挡 ${this._getPlayer(action.playerId)?.name || '玩家'} 的${action.kind === 'assassinate' ? '暗杀' : '偷窃'}`);
+                return { success: true, message: '等待目标决定是否阻挡', state: this._getPublicState() };
+            }
+        }
+        return this._executePendingAction();
+    }
+
     _handleBlockResponse(playerId, action) {
         const kind = action.kind;
         const currentBlockerId = this.challengeQueue[this.challengeIndex] || null;
@@ -465,38 +620,35 @@ class CoupEngine {
         }
 
         const blocker = this._getPlayer(playerId);
-        const requester = this._getPlayer(this.pendingAction && this.pendingAction.playerId);
+        const pending = this.pendingAction;
+        const requester = this._getPlayer(pending && pending.playerId);
 
         if (kind === 'pass') {
             this.challengeIndex++;
-            this.actionLog.push(blocker.name + ' 选择不阻挡外援');
+            this.actionLog.push(`${blocker.name} 选择不阻挡`);
 
             if (this.challengeIndex >= this.challengeQueue.length) {
-                this.actionLog.push('无人阻挡，外援成功');
+                this.actionLog.push('无人阻挡，行动继续');
                 return this._executePendingAction();
             }
 
             return {
                 success: true,
-                message: blocker.name + ' 不阻挡外援',
+                message: `${blocker.name} 不阻挡`,
                 state: this._getPublicState()
             };
         }
 
         if (kind === 'block') {
-            this.pendingAction = {
-                kind: 'block_foreign_aid',
-                playerId: blocker.id,
-                claimedRole: 'duke',
-                blockedAction: {
-                    kind: 'foreign_aid',
-                    playerId: requester ? requester.id : null,
-                },
-            };
-            this.claimedRole = 'duke';
+            const blockRole = this._blockRoleForAction(pending);
+            if (!blockRole) return { success: false, message: '当前行动不能被阻挡' };
+            const blockedAction = pending ? { ...pending } : null;
+            this.pendingAction = { kind: `block_${pending?.kind || 'action'}`, playerId: blocker.id, claimedRole: blockRole, blockedAction };
+            this.claimedRole = blockRole;
             this.responderId = blocker.id;
             this.challengerId = null;
             this.phase = 'challenge';
+            this._updateInteraction({ stage: 'block_challenge', blockerId: blocker.id, blockRole });
 
             const blockerIndex = this._getPlayerIndex(blocker.id);
             const startIdx = (blockerIndex + 1) % this.players.length;
@@ -510,7 +662,7 @@ class CoupEngine {
             }
             this.challengeIndex = 0;
 
-            this.actionLog.push(blocker.name + ' 声称公爵，阻挡了 ' + (requester ? requester.name : '玩家') + ' 的外援，等待质疑');
+            this.actionLog.push(`${blocker.name} 声称${blockRole === 'duke' ? '公爵' : blockRole === 'contessa' ? '伯爵夫人' : '船长或大使'}，阻挡了${requester ? requester.name : '玩家'}的行动，等待质疑`);
 
             if (this.challengeQueue.length === 0) {
                 return this._executePendingAction();
@@ -518,7 +670,7 @@ class CoupEngine {
 
             return {
                 success: true,
-                message: blocker.name + ' 声称公爵阻挡外援，请其他玩家决定是否质疑',
+                message: `${blocker.name} 声称${blockRole === 'duke' ? '公爵' : blockRole === 'contessa' ? '伯爵夫人' : '船长或大使'}阻挡，请其他玩家决定是否质疑`,
                 state: this._getPublicState()
             };
         }
@@ -542,7 +694,7 @@ class CoupEngine {
             if (this.challengeIndex >= this.challengeQueue.length) {
                 // 所有人都无视，执行原行动
                 this.actionLog.push('无人质疑，行动继续');
-                return this._executePendingAction();
+                return this._afterChallenges();
             } else {
                 // 继续询问下一个玩家
                 return {
@@ -562,6 +714,7 @@ class CoupEngine {
             // 发起质疑
             this.challengerId = playerId;
             this.phase = 'respond';
+            this._updateInteraction({ stage: 'challenged', challengerId: playerId });
             this.actionLog.push(`${this._getPlayer(playerId).name} 发起质疑！`);
 
             return {
@@ -596,17 +749,19 @@ class CoupEngine {
             const claimedRole = this.claimedRole;
 
             // 检查是否有对应的角色牌（未揭示的）
-            const cardIndex = player.influences.findIndex((role, idx) =>
-                role === claimedRole && !player.revealed[idx]
-            );
+            const claimedRoles = claimedRole === 'captain_or_ambassador' ? ['captain', 'ambassador'] : [claimedRole];
+            const shownRole = claimedRole === 'captain_or_ambassador' ? '船长或大使' : ROLE_NAMES[claimedRole];
+            const cardIndex = player.influences.findIndex((role, idx) => claimedRoles.includes(role) && !player.revealed[idx]);
 
             if (cardIndex === -1) {
                 // 没有对应的牌，不能出示，只能取消
                 return { success: false, message: '你没有对应的角色牌，不能出示，请选择取消', state: this.getPlayerState(playerId) };
             }
 
-            // 出示成功：弃掉该牌，补一张新牌
+            // 出示成功：证明牌回到 Court，再补一张新牌。揭示的影响力
+            // 不应进入牌堆，否则每次质疑都会凭空增加牌张。
             player.revealed[cardIndex] = true;
+            this._returnToDeck([player.influences[cardIndex]]);
             const newCard = this._drawCards(1)[0] || null;
             if (newCard) {
                 player.influences[cardIndex] = newCard;
@@ -620,47 +775,47 @@ class CoupEngine {
                 player.revealed[cardIndex] = true;
             }
 
-            this.actionLog.push(`${player.name} 出示了 ${ROLE_NAMES[claimedRole]}，质疑失败！`);
+            this.actionLog.push(`${player.name} 出示了 ${shownRole}，质疑失败！`);
+            const wasBlockClaim = Boolean(this.pendingAction?.blockedAction);
+            this._updateInteraction({
+                stage: 'verdict',
+                verdict: wasBlockClaim ? 'block_proved' : 'claim_proved',
+                provedById: player.id,
+                challengerId: this.challengerId,
+                provedRole: claimedRole,
+            });
 
-            // 质疑者失去一张影响力
+            // 质疑失败：质疑者自己选择要失去的影响力。
             const challenger = this._getPlayer(this.challengerId);
-            this._removeInfluence(challenger);
-            this._checkPlayerDeath(challenger);
-
-            // 继续执行原行动（质疑失败，原行动继续）
-            this.phase = 'idle';
-            const result = this._executePendingAction();
+            const loss = this._requestInfluenceLoss(challenger, 'challenge_failed', 'challenge_failed');
             return {
-                success: true,
-                message: `${player.name} 出示了 ${ROLE_NAMES[claimedRole]}，质疑失败！${challenger.name} 失去一张影响力`,
-                state: this._getPublicState(),
-                ...result
+                ...loss,
+                message: `${player.name} 出示了 ${shownRole}，质疑失败！请 ${challenger.name} 选择失去的影响力`,
             };
         } else if (kind === 'cancel') {
             const player = this._getPlayer(playerId);
-            const wasBlockClaim = this.pendingAction && this.pendingAction.kind === 'block_foreign_aid';
-            const blockedAction = wasBlockClaim ? this.pendingAction.blockedAction : null;
+            // A successful challenge against any block (Duke, Contessa, or
+            // Captain/Ambassador) makes the original action continue.  The
+            // previous implementation handled only foreign aid, which
+            // silently cancelled challenged assassination and steal blocks.
+            const blockedAction = this.pendingAction?.blockedAction || null;
+            const wasBlockClaim = Boolean(blockedAction);
 
-            this._removeInfluence(player);
-            this._checkPlayerDeath(player);
             this.actionLog.push(player.name + ' 取消，质疑成功');
-            this.phase = 'idle';
-
-            if (wasBlockClaim && blockedAction && blockedAction.kind === 'foreign_aid') {
-                this.pendingAction = {
-                    kind: 'foreign_aid',
-                    playerId: blockedAction.playerId,
-                    claimedRole: null,
-                    targetId: null,
-                };
-                return this._executePendingAction();
-            }
-
-            this._endTurn();
+            this._updateInteraction({
+                stage: 'verdict',
+                verdict: wasBlockClaim ? 'block_failed' : 'claim_failed',
+                failedById: player.id,
+                challengerId: this.challengerId,
+            });
+            const loss = this._requestInfluenceLoss(
+                player,
+                'challenge_success',
+                wasBlockClaim ? 'block_challenge_success' : 'challenge_success'
+            );
             return {
-                success: true,
-                message: player.name + ' 取消，质疑成功，失去一张影响力',
-                state: this._getPublicState()
+                ...loss,
+                message: player.name + ' 取消，质疑成功，请选择要失去的影响力',
             };
         } else {
             return { success: false, message: '无效操作，请选择出示或取消' };
@@ -688,39 +843,48 @@ class CoupEngine {
 
         let result = null;
         switch (kind) {
-            case 'block_foreign_aid': {
+            case 'block_foreign_aid':
+            case 'block_assassinate':
+            case 'block_steal': {
                 const blocked = action.blockedAction || {};
                 const requester = this._getPlayer(blocked.playerId);
-                this.actionLog.push(player.name + ' 的公爵阻挡成立，' + (requester ? requester.name : '玩家') + ' 的外援失败');
-                result = { success: true, message: player.name + ' 阻挡外援成功' };
+                const roleName = action.claimedRole === 'duke' ? '公爵' : action.claimedRole === 'contessa' ? '伯爵夫人' : '船长或大使';
+                const actionName = blocked.kind === 'assassinate' ? '暗杀' : blocked.kind === 'steal' ? '偷窃' : '外援';
+                this.actionLog.push(`${player.name} 的${roleName}阻挡成立，${requester ? requester.name : '玩家'}的${actionName}失败`);
+                this._updateInteraction({ stage: 'resolved', outcome: 'blocked', blockerId: player.id, blockRole: action.claimedRole });
+                result = { success: true, message: `${player.name} 阻挡${actionName}成功` };
                 break;
             }
             case 'foreign_aid':
                 player.coins += 2;
                 this.actionLog.push(player.name + ' 外援 +2');
+                this._updateInteraction({ stage: 'resolved', outcome: 'foreign_aid' });
                 result = { success: true, message: player.name + ' 获得外援 2 硬币' };
                 break;
             case 'tax':
                 player.coins += 3;
                 this.actionLog.push(`${player.name} 征税 +3💰`);
+                this._updateInteraction({ stage: 'resolved', outcome: 'tax' });
                 result = { success: true, message: `${player.name} 征税 3 硬币` };
                 break;
             case 'assassinate':
-                if (player.coins < 3) {
+                if (player.coins < 0) {
                     this.pendingAction = null;
-                    return { success: false, message: '暗杀需要3枚硬币' };
+                    return { success: false, message: '暗杀费用状态无效' };
                 }
                 const assassinTarget = this._getPlayer(targetId);
                 if (!assassinTarget || !this._isAlive(assassinTarget)) {
                     this.pendingAction = null;
                     return { success: false, message: '目标已不存在' };
                 }
-                player.coins -= 3;
-                this._removeInfluence(assassinTarget);
-                this._checkPlayerDeath(assassinTarget);
                 this.actionLog.push(`${player.name} 暗杀 ${assassinTarget.name}`);
-                result = { success: true, message: `${player.name} 暗杀 ${assassinTarget.name}` };
-                break;
+                this.pendingAction = null;
+                this._updateInteraction({ stage: 'influence_loss', outcome: 'assassination', lossPlayerId: assassinTarget.id, lossReason: 'assassination' });
+                const assassinationLoss = this._requestInfluenceLoss(assassinTarget, 'assassination', 'assassination');
+                return {
+                    ...assassinationLoss,
+                    message: `${player.name} 暗杀 ${assassinTarget.name}，请目标选择失去的影响力`,
+                };
             case 'steal':
                 const stealTarget = this._getPlayer(targetId);
                 if (!stealTarget || !this._isAlive(stealTarget)) {
@@ -731,41 +895,17 @@ class CoupEngine {
                 stealTarget.coins -= stealAmount;
                 player.coins += stealAmount;
                 this.actionLog.push(`${player.name} 从 ${stealTarget.name} 偷取 ${stealAmount}💰`);
+                this._updateInteraction({ stage: 'resolved', outcome: 'steal', amount: stealAmount });
                 result = { success: true, message: `${player.name} 从 ${stealTarget.name} 偷取 ${stealAmount} 硬币` };
                 break;
             case 'exchange':
-                // 交换：从牌堆抽2张，然后选2张保留
-                // 这里需要前端交互，我们用两步走：
-                // 第一步：抽2张，发送给玩家选择
-                // 但在这里，我们直接执行一个简化版本：自动换掉所有手牌
-                // 更完整的实现需要等待前端交互
-                const drawn = this._drawCards(2);
-                // 弃掉所有当前手牌（未揭示的）
-                const oldCards = [];
-                for (let i = player.influences.length - 1; i >= 0; i--) {
-                    if (!player.revealed[i]) {
-                        oldCards.push(player.influences[i]);
-                        player.influences.splice(i, 1);
-                        player.revealed.splice(i, 1);
-                    }
-                }
-                // 保留已揭示的牌位置，但替换为新牌
-                // 简化：如果手牌不足2张，补到2张
-                while (player.influences.length < 2) {
-                    const card = drawn.pop() || this._drawCards(1)[0] || 'duke';
-                    player.influences.push(card);
-                    player.revealed.push(false);
-                }
-                // 剩余抽到的牌放回牌堆
-                if (drawn.length > 0) {
-                    this._returnToDeck(drawn);
-                }
-                if (oldCards.length > 0) {
-                    this._returnToDeck(oldCards);
-                }
-                this.actionLog.push(`${player.name} 完成交换`);
-                result = { success: true, message: `${player.name} 完成交换` };
-                break;
+                const exchangeDrawn = this._drawCards(2);
+                const activeCount = player.influences.filter((_, index) => !player.revealed[index]).length;
+                this.pendingExchange = { playerId: player.id, drawn: exchangeDrawn, keepCount: activeCount };
+                this.phase = 'exchange';
+                this._updateInteraction({ stage: 'exchange', outcome: 'exchange_pending' });
+                this.actionLog.push(`${player.name} 抽取了两张影响力，正在选择交换结果`);
+                return { success: true, message: `${player.name} 请从影响力中选择保留的牌`, state: this._getPublicState() };
             default:
                 this.pendingAction = null;
                 return { success: false, message: '未知行动' };
@@ -781,13 +921,6 @@ class CoupEngine {
 
     // ==================== 辅助方法 ====================
 
-    _removeInfluence(player) {
-        const idx = this._getRandomAliveInfluenceIndex(player);
-        if (idx === -1) return false;
-        player.revealed[idx] = true;
-        return true;
-    }
-
     _checkPlayerDeath(player) {
         if (!this._isAlive(player)) {
             player.isAlive = false;
@@ -800,6 +933,15 @@ class CoupEngine {
         const alive = this._getAlivePlayers();
         if (alive.length <= 1) {
             this.gameOver = true;
+            this.phase = 'ended';
+            this.pendingAction = null;
+            this.pendingInfluenceLoss = null;
+            this.pendingExchange = null;
+            this.challengeQueue = [];
+            this.challengeIndex = 0;
+            this.challengerId = null;
+            this.responderId = null;
+            this.claimedRole = null;
             this.winner = alive.length === 1 ? alive[0].id : null;
             if (this.winner) {
                 this.actionLog.push(`${this._getPlayer(this.winner).name} 获胜！`);
@@ -814,6 +956,7 @@ class CoupEngine {
         const nextIdx = this._getNextTurnIndex(this.currentTurnIndex);
         if (nextIdx === -1) {
             this.gameOver = true;
+            this.phase = 'ended';
             this.winner = null;
             this.actionLog.push('游戏结束');
             return;
@@ -821,6 +964,8 @@ class CoupEngine {
         this.currentTurnIndex = nextIdx;
         this.phase = 'idle';
         this.pendingAction = null;
+        this.pendingInfluenceLoss = null;
+        this.pendingExchange = null;
         this.challengeQueue = [];
         this.challengeIndex = 0;
         this.challengerId = null;
@@ -847,12 +992,15 @@ class CoupEngine {
 
         // 玩家退出 => 直接出局
         // 强制揭示所有影响力（失去所有牌）
+        const newlyRevealed = [];
         for (let i = 0; i < player.influences.length; i++) {
+            if (!player.revealed[i]) newlyRevealed.push(player.influences[i]);
             player.revealed[i] = true;
         }
         player.isAlive = false;
         player.isOnline = false;
         this.actionLog.push(`${player.name} 离开了游戏，已出局`);
+        this._recordReveal(player, newlyRevealed, 'left');
 
         // 如果当前是退出玩家的回合，跳到下一位
         const currentPlayer = this.players[this.currentTurnIndex];
@@ -879,12 +1027,13 @@ class CoupEngine {
         const self = this._getPlayer(playerId);
 
         // 添加玩家自己的私有信息
+        const revealAll = this.gameOver;
         if (self) {
             state.self = {
                 id: self.id,
                 coins: self.coins,
                 influences: self.influences.map((role, idx) => ({
-                    role: self.revealed[idx] ? null : role,
+                    role: revealAll || !self.revealed[idx] ? role : null,
                     revealed: self.revealed[idx],
                 })),
             };
@@ -902,7 +1051,7 @@ class CoupEngine {
                 isSelf: isSelf,
                 // 手牌：只有自己能看到，且只显示未揭示的
                 influences: p.influences.map((role, idx) => ({
-                    role: (isSelf && !p.revealed[idx]) ? role : null,
+                    role: (isSelf || revealAll || p.revealed[idx]) ? role : null,
                     revealed: p.revealed[idx],
                 })),
             };
@@ -916,11 +1065,16 @@ class CoupEngine {
         // 质疑信息
         if (this.phase === 'block') {
             const currentBlockerId = this.challengeQueue[this.challengeIndex] || null;
+            const blockRole = this._blockRoleForAction(this.pendingAction);
             state.challenge = {
                 phase: 'block',
                 currentBlockerId: currentBlockerId,
                 responderId: this.responderId,
-                claimedRole: 'duke',
+                // At this point the action itself has not been blocked yet.
+                // The claim shown to the target must be the counteraction
+                // role (Contessa/Captain-or-Ambassador/Duke), not the role
+                // claimed by the original action (Assassin/Captain/Duke).
+                claimedRole: blockRole || this.pendingAction?.claimedRole || 'duke',
                 actionKind: this.pendingAction ? this.pendingAction.kind : null,
                 isMyTurn: playerId === currentBlockerId,
             };
@@ -942,6 +1096,22 @@ class CoupEngine {
                 claimedRole: this.claimedRole,
                 actionKind: this.pendingAction ? this.pendingAction.kind : null,
                 isMyTurn: playerId === this.responderId,
+            };
+        } else if (this.phase === 'influence_loss') {
+            state.influenceLoss = {
+                playerId: this.pendingInfluenceLoss?.playerId || null,
+                isMyTurn: playerId === this.pendingInfluenceLoss?.playerId,
+            };
+        } else if (this.phase === 'exchange') {
+            const exchangeOwner = this.pendingExchange?.playerId === playerId;
+            state.exchange = {
+                playerId: this.pendingExchange?.playerId || null,
+                keepCount: this.pendingExchange?.keepCount || 0,
+                isMyTurn: exchangeOwner,
+                options: exchangeOwner ? [
+                    ...((state.self?.influences || []).filter(card => !card.revealed).map((card, index) => ({ index, role: card.role, source: 'hand' }))),
+                    ...((this.pendingExchange?.drawn || []).map((role, index) => ({ index: index + (state.self?.influences || []).filter(card => !card.revealed).length, role, source: 'drawn' }))),
+                ] : null,
             };
         } else {
             state.challenge = null;
@@ -974,6 +1144,8 @@ class CoupEngine {
             })),
             gameOver: this.gameOver,
             winner: this.winner,
+            interaction: this.interaction ? { ...this.interaction } : null,
+            lastReveal: this.lastReveal ? { ...this.lastReveal, roles: [...this.lastReveal.roles] } : null,
         };
     }
 

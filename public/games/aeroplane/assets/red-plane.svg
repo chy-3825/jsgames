@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" role="img" aria-label="红色飞机">
+  <circle cx="22.5" cy="22.5" r="19.2" fill="#fffef8" stroke="#c91f1f" stroke-width="1.8"/>
+  <circle cx="22.5" cy="22.5" r="17.6" fill="none" stroke="#fb7185" stroke-opacity=".3" stroke-width=".7"/>
+  <path d="M22.5 6.4c1.35 0 2.15 1.55 2.15 3.55v7.35l10.5 7.55v3.35l-10.5-3.65v7.35l4.9 3.9v2.45l-7.05-2.2-7.05 2.2v-2.45l4.9-3.9V24.6l-10.5 3.65V24.9l10.5-7.55V9.95c0-2 .8-3.55 2.15-3.55Z" fill="#e53935" stroke="#a91616" stroke-width=".65" stroke-linejoin="round"/>
+  <path d="M22.5 8.2v24.9" fill="none" stroke="#fee2e2" stroke-linecap="round" stroke-opacity=".72" stroke-width=".75"/>
+</svg>

@@ -1,0 +1,505 @@
+.art-app {
+    --black: #171719;
+    --charcoal: #252427;
+    --wall: #353337;
+    --ivory: #f3efe5;
+    --paper: #fffdf7;
+    --ink: #28262a;
+    --muted: #807a7d;
+    --line: #d8d1c4;
+    --signal: #e34838;
+    min-height: 100%;
+    padding: 16px clamp(11px, 2.4vw, 34px) 38px;
+    color: var(--ivory);
+    background:
+        radial-gradient(ellipse at 18% -12%, rgba(255,255,255,.15), transparent 29%),
+        radial-gradient(ellipse at 77% -18%, rgba(255,255,255,.1), transparent 25%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 1px, transparent 1px 36px),
+        #1d1c1f;
+    font-family: ui-sans-serif, system-ui, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+.art-app * { box-sizing: border-box; }
+.art-app button, .art-app input { font: inherit; }
+.art-app button { cursor: pointer; }
+.art-app button:disabled { cursor: not-allowed; opacity: .38; }
+.art-header, .art-layout { width: min(1390px, 100%); margin: 0 auto; }
+
+.art-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; min-height: 62px; margin-bottom: 14px; }
+.art-brand { display: flex; align-items: center; gap: 12px; }
+.art-brand small, .art-kicker { display: block; color: #ee7568; font-size: 8px; font-weight: 900; letter-spacing: .21em; }
+.art-brand h1 { margin: 2px 0 0; color: #fffaf0; font: 850 27px "Songti SC", SimSun, serif; letter-spacing: .07em; }
+.art-mark { position: relative; display: block; width: 45px; height: 45px; overflow: hidden; border: 4px solid #f0e9db; background: linear-gradient(140deg, #df493d 0 43%, #f3c94d 44% 61%, #355a85 62%); box-shadow: 0 8px 20px rgba(0,0,0,.32); transform: rotate(-3deg); }
+.art-mark i { position: absolute; width: 20px; height: 38px; top: 3px; left: 9px; background: #171719; transform: rotate(19deg); }
+.art-mark b { position: absolute; width: 21px; height: 21px; right: 0; bottom: 0; border-radius: 50%; background: #eee8db; }
+.art-round { padding: 9px 16px; border: 1px solid #656064; color: #ddd5c9; background: #28272a; font-size: 9px; font-weight: 800; letter-spacing: .07em; }
+.art-header-actions { display: flex; justify-content: flex-end; gap: 7px; }
+.art-header-actions button, .art-close { min-height: 34px; padding: 0 13px; border: 1px solid #625e61; color: #e7dfd4; background: #252427; font-size: 9px; }
+.art-header-actions button:hover { border-color: #e05245; color: #fff; }
+
+.art-layout { display: grid; grid-template-columns: minmax(0, 1fr) 284px; gap: 14px; align-items: start; }
+.art-gallery, .art-ledger { display: grid; min-width: 0; align-content: start; gap: 11px; }
+
+.art-status { position: relative; display: flex; min-height: 72px; align-items: center; justify-content: space-between; gap: 16px; overflow: hidden; padding: 13px 18px 13px 22px; border: 1px solid #4a474b; background: linear-gradient(112deg, #29282b, #353338); box-shadow: 0 14px 34px rgba(0,0,0,.23); }
+.art-status::before { position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--signal); content: ""; }
+.art-status h2 { margin: 4px 0 0; color: #fffaf0; font: 850 clamp(17px, 1.7vw, 23px) "Songti SC", SimSun, serif; }
+.art-status p { flex: none; margin: 0; padding: 7px 10px; color: #bdb5ad; background: rgba(0,0,0,.2); font-size: 8px; font-weight: 800; }
+
+.art-artist-board { overflow: hidden; border: 1px solid #d5cec1; color: var(--ink); background: #f2eee5; box-shadow: 0 12px 28px rgba(0,0,0,.22); }
+.art-artist-board > header, .art-hand > header, .art-market > header, .art-history > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.art-artist-board > header { padding: 8px 11px; border-bottom: 1px solid #d7d0c4; }
+.art-artist-board > header span, .art-artist-board > header small { display: block; }
+.art-artist-board > header span { font: 900 12px "Songti SC", SimSun, serif; }
+.art-artist-board > header small { margin-top: 2px; color: #8b8580; font-size: 6px; }
+.art-artist-board > header > b { color: #928b83; font-size: 6px; letter-spacing: .08em; }
+.art-artist-board > div { display: grid; grid-template-columns: repeat(5, 1fr); }
+.art-artist { display: grid; grid-template-columns: 29px 1fr auto; align-items: center; gap: 7px; min-width: 0; padding: 8px 9px; border-right: 1px solid #d8d1c5; }
+.art-artist:last-child { border: 0; }
+.art-artist > i { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid color-mix(in srgb, var(--artist) 72%, #514b48); border-radius: 50%; color: #fff; background: var(--artist); font: 900 12px "Songti SC", SimSun, serif; font-style: normal; }
+.art-artist strong, .art-artist small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.art-artist strong { font-size: 8px; }
+.art-artist small { margin-top: 2px; color: #948d85; font-size: 5px; }
+.art-artist > b { color: var(--artist); font: 900 16px Georgia, serif; }
+.art-artist > span { grid-column: 1 / -1; display: flex; align-items: center; gap: 3px; }
+.art-artist > span em { width: 13px; height: 3px; background: #d6d0c7; }
+.art-artist > span em.is-filled { background: var(--artist); }
+.art-artist > span small { margin: 0 0 0 auto; color: var(--artist); font: 800 6px Georgia, serif; }
+
+.art-showroom { display: grid; grid-template-columns: minmax(470px, 1.55fr) minmax(250px, .75fr); gap: 11px; min-width: 0; }
+.art-auction, .art-market { min-height: 328px; border: 1px solid #504d50; background: #2c2b2e; box-shadow: 0 15px 32px rgba(0,0,0,.24); }
+.art-auction { display: grid; grid-template-columns: minmax(225px, .9fr) minmax(245px, 1fr); align-items: stretch; padding: 15px; }
+.art-stage-work { position: relative; display: grid; place-items: center; min-width: 0; padding: 12px; border-right: 1px solid #4b484b; background: radial-gradient(ellipse at 50% 36%, rgba(255,255,255,.11), transparent 54%); }
+.art-stage-pair { position: relative; display: grid; width: 100%; min-height: 240px; place-items: center; }
+.art-stage-work > .art-frame, .art-stage-pair > .art-frame, .art-stage-work > .art-card-back.is-stage-back { width: min(200px, 75%); height: 245px; }
+.art-stage-pair > .art-frame.is-second { position: absolute; transform: translate(24px, 10px) rotate(4deg) scale(.93); }
+.art-stage-pair > .art-frame:first-child { z-index: 2; transform: translate(-18px, -3px) rotate(-2deg); }
+.art-method { position: absolute; z-index: 4; right: 7px; bottom: 7px; display: flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid #696268; color: #e8dfd3; background: #202023e8; font-size: 7px; font-weight: 900; }
+.art-method i { display: grid; width: 19px; height: 19px; place-items: center; color: #fff; background: var(--artist, #7e747c); font: 900 8px "Songti SC", SimSun, serif; font-style: normal; }
+.art-stage-copy { display: flex; min-width: 0; flex-direction: column; justify-content: center; padding: 17px 7px 17px 19px; }
+.art-stage-copy h3 { margin: 5px 0 6px; color: #fff8ed; font: 900 23px "Songti SC", SimSun, serif; }
+.art-stage-copy > p { margin: 0; color: #aaa3a0; font-size: 8px; line-height: 1.55; }
+.art-stage-copy > small { display: block; margin-top: 8px; color: #8f8987; font-size: 7px; }
+.art-stage-copy > b { display: block; margin-top: 9px; color: #f0c45a; font: 800 13px Georgia, serif; }
+.art-stage-copy > .art-secondary { align-self: flex-start; margin-top: 12px; }
+.art-stage-empty { grid-column: 1 / -1; display: grid; min-height: 296px; place-items: center; align-content: center; gap: 4px; color: #8f8987; text-align: center; }
+.art-stage-empty i { display: block; width: 96px; height: 122px; margin-bottom: 8px; border: 5px solid #4a474b; box-shadow: inset 0 0 0 1px #242326; }
+.art-stage-empty span { color: #e86254; font-size: 7px; font-weight: 900; letter-spacing: .17em; }
+.art-stage-empty strong { color: #e8e0d5; font: 900 15px "Songti SC", SimSun, serif; }
+.art-stage-empty small { font-size: 7px; }
+
+.art-market { min-width: 0; padding: 12px; }
+.art-market > header { padding-bottom: 8px; border-bottom: 1px solid #484549; }
+.art-market > header span, .art-market > header small { display: block; }
+.art-market > header span { color: #eee5da; font: 900 11px "Songti SC", SimSun, serif; }
+.art-market > header small { margin-top: 2px; color: #8d8785; font-size: 6px; }
+.art-market > header > b { color: #d46659; font-size: 7px; }
+.art-market > div:last-child { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; max-height: 270px; margin-top: 9px; overflow: auto; padding: 2px; }
+.art-sale { min-width: 0; padding: 5px; border: 1px solid #4e4b4e; background: #222124; }
+.art-sale .art-frame { height: 82px; padding: 4px; box-shadow: none; }
+.art-sale footer { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; padding: 5px 2px 1px; }
+.art-sale footer span { overflow: hidden; color: #c8c0b8; font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
+.art-sale footer b { flex: none; color: #ecc45d; font: 800 8px Georgia, serif; }
+.art-market-empty { grid-column: 1 / -1; display: grid; min-height: 210px; place-items: center; align-content: center; gap: 6px; color: #827c7b; font-size: 7px; }
+.art-market-empty i { width: 51px; height: 38px; border: 3px solid #474448; }
+
+.art-frame { position: relative; display: block; overflow: hidden; padding: 7px; border: 1px solid #bdb5a7; background: #f3eee3; box-shadow: 0 10px 22px rgba(0,0,0,.32), inset 0 0 0 2px #fff; }
+.art-canvas { position: relative; display: block; width: 100%; height: 100%; min-height: 60px; overflow: hidden; background: #cfc2b7; }
+.art-canvas::before, .art-canvas::after, .art-canvas > b, .art-canvas > em { position: absolute; display: block; content: ""; }
+[data-artist="matisse"] .art-canvas { background: linear-gradient(139deg, #d83e36 0 33%, #f0dfb6 34% 51%, #22547a 52% 72%, #e58a37 73%); }
+[data-artist="matisse"] .art-canvas::before { inset: 12% 13% auto auto; width: 39%; height: 27%; border-radius: 50%; background: #f1cd43; transform: rotate(-13deg); }
+[data-artist="matisse"] .art-canvas::after { left: 11%; bottom: 8%; width: 52%; height: 27%; border-radius: 54% 18% 53% 12%; background: #172f45; transform: rotate(21deg); }
+[data-artist="matisse"] .art-canvas > b { top: 18%; left: 16%; width: 18%; height: 43%; background: #f3eee0; transform: rotate(-19deg); }
+[data-artist="matisse"] .art-canvas > em { right: 14%; bottom: 10%; width: 21%; height: 34%; border-radius: 50% 50% 11% 44%; background: #4b7d53; }
+[data-artist="cassat"] .art-canvas { background: linear-gradient(145deg, #dcc097, #f1e2c8 55%, #81958a); }
+[data-artist="cassat"] .art-canvas::before { top: 18%; left: 21%; width: 32%; height: 47%; border-radius: 48% 48% 22% 22%; background: #a65d50; box-shadow: 29px 24px 0 #596d60; }
+[data-artist="cassat"] .art-canvas::after { top: 12%; left: 28%; width: 15%; height: 15%; border-radius: 50%; background: #e6c8a2; box-shadow: 32px 29px 0 #c99f7b; }
+[data-artist="cassat"] .art-canvas > b { right: -8%; bottom: -5%; width: 68%; height: 38%; border-radius: 50% 0 0; background: #6f7661; transform: rotate(-7deg); }
+[data-artist="cassat"] .art-canvas > em { top: 4%; right: 8%; width: 3px; height: 72%; background: #fff7dfaa; transform: rotate(31deg); }
+[data-artist="yoshida"] .art-canvas { background: repeating-linear-gradient(111deg, #153c59 0 16px, #2c7892 17px 31px, #d3e3d9 32px 43px); }
+[data-artist="yoshida"] .art-canvas::before { right: 0; bottom: 8%; left: 0; height: 34%; background: #e6cf8d; clip-path: polygon(0 71%, 17% 28%, 29% 58%, 48% 0, 69% 63%, 81% 29%, 100% 75%, 100% 100%, 0 100%); }
+[data-artist="yoshida"] .art-canvas::after { top: 10%; right: 14%; width: 32%; height: 32%; border: 4px solid #f3e1a0; border-radius: 50%; }
+[data-artist="yoshida"] .art-canvas > b { left: 10%; bottom: 12%; width: 42%; height: 6%; background: #234353; transform: rotate(-9deg); }
+[data-artist="yoshida"] .art-canvas > em { right: 21%; bottom: 13%; width: 7%; height: 34%; background: #aa4f41; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+[data-artist="bruegel"] .art-canvas { background: linear-gradient(169deg, #a9c7cf 0 39%, #e3d198 40% 52%, #67824d 53% 72%, #334f37 73%); }
+[data-artist="bruegel"] .art-canvas::before { right: 8%; bottom: 17%; width: 28%; height: 23%; border-radius: 50% 50% 8% 8%; background: #754234; box-shadow: -39px 13px 0 #aa7b4a; }
+[data-artist="bruegel"] .art-canvas::after { left: 13%; bottom: 27%; width: 6%; height: 21%; background: #293e2d; box-shadow: 25px -9px 0 #3c5b37, 59px 5px 0 #304b35; }
+[data-artist="bruegel"] .art-canvas > b { top: 11%; left: 9%; width: 17%; height: 7%; border-radius: 50%; background: #f1ece0cc; box-shadow: 23px 7px 0 #f1ece0aa; }
+[data-artist="bruegel"] .art-canvas > em { right: 25%; bottom: 8%; width: 38%; height: 5%; background: #ded1a9; transform: rotate(11deg); }
+[data-artist="clyfford"] .art-canvas { background: #74243e; }
+[data-artist="clyfford"] .art-canvas::before { inset: 0 auto 0 13%; width: 22%; background: #2e2238; transform: skewX(-9deg); }
+[data-artist="clyfford"] .art-canvas::after { top: -8%; right: 9%; width: 21%; height: 81%; background: #e5bc39; transform: rotate(12deg); }
+[data-artist="clyfford"] .art-canvas > b { right: 31%; bottom: -12%; width: 17%; height: 72%; background: #e8d4bc; transform: rotate(-19deg); }
+[data-artist="clyfford"] .art-canvas > em { top: 14%; left: 37%; width: 28%; height: 13%; background: #254e62; transform: rotate(7deg); }
+[data-artist="mystery"] .art-canvas { background: conic-gradient(from 32deg, #1c1a1f, #5e4b64, #22293a, #8a7159, #1c1a1f); }
+[data-artist="mystery"] .art-canvas::before { top: 39%; left: 42%; width: 16%; height: 16%; border: 2px solid #d1a75f; border-radius: 50%; }
+[data-artist="mystery"] .art-canvas::after { inset: 11%; border: 1px solid rgba(226,196,139,.42); transform: rotate(7deg); }
+
+/* Each artist keeps a recognisable visual language while every numbered work
+   uses a genuinely different composition rather than a filtered duplicate. */
+[data-artist="matisse"] .art-canvas[data-variant="2"] { background: linear-gradient(118deg, #f1dfad 0 56%, #e65a3d 57%); filter: none; }
+[data-artist="matisse"] .art-canvas[data-variant="2"]::before { inset: auto; top: 7%; left: 12%; width: 30%; height: 59%; border: 0; border-radius: 80% 12% 75% 18%; background: #236d72; box-shadow: 45px 16px 0 #f1bd3c; clip-path: none; transform: rotate(-24deg); }
+[data-artist="matisse"] .art-canvas[data-variant="2"]::after { inset: auto; right: 7%; bottom: 7%; width: 54%; height: 28%; border: 0; border-radius: 52% 20% 42% 15%; background: #263d69; box-shadow: none; clip-path: none; transform: rotate(-11deg); }
+[data-artist="matisse"] .art-canvas[data-variant="2"] > b { inset: auto; left: 10%; bottom: 11%; width: 17%; height: 31%; border-radius: 45% 45% 12% 12%; background: #f4eee0; box-shadow: none; clip-path: none; transform: rotate(13deg); }
+[data-artist="matisse"] .art-canvas[data-variant="2"] > em { inset: auto; top: 15%; right: 10%; width: 16%; height: 32%; border-radius: 8%; background: #4a874f; box-shadow: none; clip-path: polygon(50% 0, 100% 37%, 72% 100%, 16% 83%, 0 28%); transform: rotate(10deg); }
+[data-artist="matisse"] .art-canvas[data-variant="3"] { background: linear-gradient(90deg, #1e5874 0 24%, #f3dfad 25% 72%, #df4a3d 73%); filter: none; }
+[data-artist="matisse"] .art-canvas[data-variant="3"]::before { inset: 10% 11% 13%; width: auto; height: auto; border: 7px solid #f8f0dd; border-radius: 0; background: transparent; box-shadow: inset 31px 0 #e8bc3f; clip-path: none; transform: rotate(-3deg); }
+[data-artist="matisse"] .art-canvas[data-variant="3"]::after { inset: auto; top: 18%; right: 17%; width: 28%; height: 25%; border: 0; border-radius: 50%; background: #e5523e; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="matisse"] .art-canvas[data-variant="3"] > b { inset: auto; right: 7%; bottom: 8%; width: 69%; height: 23%; border-radius: 60% 0 0; background: #173c59; box-shadow: none; clip-path: none; transform: rotate(-5deg); }
+[data-artist="matisse"] .art-canvas[data-variant="3"] > em { inset: auto; left: 26%; bottom: 16%; width: 19%; height: 38%; border-radius: 48% 48% 13% 13%; background: #4e884d; box-shadow: none; clip-path: none; transform: rotate(7deg); }
+[data-artist="matisse"] .art-canvas[data-variant="4"] { background: #d8493d; filter: none; }
+[data-artist="matisse"] .art-canvas[data-variant="4"]::before { inset: auto; top: 15%; left: 18%; width: 55%; height: 52%; border: 13px solid #f2c73d; border-radius: 50%; background: transparent; box-shadow: none; clip-path: none; transform: rotate(-17deg); }
+[data-artist="matisse"] .art-canvas[data-variant="4"]::after { inset: auto; top: 23%; left: 31%; width: 16%; height: 36%; border: 0; border-radius: 50% 50% 22% 22%; background: #f6eddb; box-shadow: 31px 13px 0 #244b6a; clip-path: none; transform: rotate(22deg); }
+[data-artist="matisse"] .art-canvas[data-variant="4"] > b { inset: auto; right: -8%; bottom: 7%; width: 72%; height: 19%; border-radius: 0; background: #1d516c; box-shadow: none; clip-path: none; transform: rotate(-13deg); }
+[data-artist="matisse"] .art-canvas[data-variant="4"] > em { inset: auto; left: 5%; bottom: 6%; width: 34%; height: 37%; border-radius: 0; background: #4d8751; box-shadow: none; clip-path: polygon(0 100%, 28% 17%, 50% 68%, 74% 0, 100% 100%); transform: none; }
+[data-artist="matisse"] .art-canvas[data-variant="5"] { background: linear-gradient(108deg, #f1e4be 0 61%, #245777 62%); filter: none; }
+[data-artist="matisse"] .art-canvas[data-variant="5"]::before { inset: auto; right: 0; bottom: 0; left: 0; width: auto; height: 32%; border: 0; border-radius: 0; background: #df5b3d; box-shadow: none; clip-path: polygon(0 31%, 100% 0, 100% 100%, 0 100%); transform: none; }
+[data-artist="matisse"] .art-canvas[data-variant="5"]::after { inset: auto; left: 38%; bottom: 19%; width: 24%; height: 43%; border: 0; border-radius: 48% 48% 12% 12%; background: #efc542; box-shadow: none; clip-path: none; transform: rotate(-4deg); }
+[data-artist="matisse"] .art-canvas[data-variant="5"] > b { inset: auto; left: 12%; bottom: 23%; width: 18%; height: 18%; border-radius: 50%; background: #263c68; box-shadow: 20px -6px 0 #e44d3d; clip-path: none; transform: none; }
+[data-artist="matisse"] .art-canvas[data-variant="5"] > em { inset: auto; top: 10%; left: 18%; width: 18%; height: 43%; border-radius: 70% 12% 70% 12%; background: #4b8650; box-shadow: none; clip-path: none; transform: rotate(28deg); }
+
+[data-artist="cassat"] .art-canvas[data-variant="2"] { background: linear-gradient(152deg, #e8d4b5, #b9c6b7 66%, #6f7d72); filter: none; }
+[data-artist="cassat"] .art-canvas[data-variant="2"]::before { inset: auto; top: 19%; right: 17%; width: 37%; height: 55%; border: 0; border-radius: 48% 48% 16% 16%; background: #a8584f; box-shadow: none; clip-path: none; transform: rotate(8deg); }
+[data-artist="cassat"] .art-canvas[data-variant="2"]::after { inset: auto; top: 10%; right: 25%; width: 16%; height: 16%; border: 0; border-radius: 50%; background: #d9af87; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="cassat"] .art-canvas[data-variant="2"] > b { inset: auto; left: 6%; bottom: 3%; width: 71%; height: 36%; border-radius: 50% 50% 0 0; background: #687568; box-shadow: none; clip-path: none; transform: rotate(-7deg); }
+[data-artist="cassat"] .art-canvas[data-variant="2"] > em { inset: auto; top: 7%; left: 17%; width: 23%; height: 63%; border: 0; border-radius: 0; background: #fff3d599; box-shadow: none; clip-path: polygon(0 0, 100% 10%, 74% 100%, 13% 82%); transform: rotate(-6deg); }
+[data-artist="cassat"] .art-canvas[data-variant="3"] { background: linear-gradient(140deg, #dcb890 0 46%, #eee0c5 47% 72%, #809284 73%); filter: none; }
+[data-artist="cassat"] .art-canvas[data-variant="3"]::before { inset: auto; top: 21%; left: 15%; width: 39%; height: 50%; border: 0; border-radius: 48% 48% 18% 18%; background: #a85c50; box-shadow: 31px 21px 0 #647468; clip-path: none; transform: rotate(-5deg); }
+[data-artist="cassat"] .art-canvas[data-variant="3"]::after { inset: auto; top: 12%; left: 25%; width: 15%; height: 15%; border: 0; border-radius: 50%; background: #e1bd95; box-shadow: 30px 26px 0 #c99d78; clip-path: none; transform: none; }
+[data-artist="cassat"] .art-canvas[data-variant="3"] > b { inset: auto; right: -5%; bottom: -4%; width: 82%; height: 33%; border-radius: 55% 0 0; background: #786952; box-shadow: none; clip-path: none; transform: rotate(6deg); }
+[data-artist="cassat"] .art-canvas[data-variant="3"] > em { inset: auto; right: 9%; top: 8%; width: 3px; height: 77%; border-radius: 0; background: #fff7dfb5; box-shadow: none; clip-path: none; transform: rotate(19deg); }
+[data-artist="cassat"] .art-canvas[data-variant="4"] { background: linear-gradient(90deg, #8ba098 0 35%, #efe0c3 36% 78%, #c38268 79%); filter: none; }
+[data-artist="cassat"] .art-canvas[data-variant="4"]::before { inset: auto; top: 9%; left: 11%; width: 37%; height: 66%; border: 5px solid #f8eed7; border-radius: 0; background: #bad0c8; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="cassat"] .art-canvas[data-variant="4"]::after { inset: auto; right: 14%; bottom: 13%; width: 31%; height: 45%; border: 0; border-radius: 48% 48% 20% 20%; background: #9d594f; box-shadow: none; clip-path: none; transform: rotate(-8deg); }
+[data-artist="cassat"] .art-canvas[data-variant="4"] > b { inset: auto; right: 21%; bottom: 49%; width: 13%; height: 13%; border-radius: 50%; background: #d5ab84; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="cassat"] .art-canvas[data-variant="4"] > em { inset: auto; right: 4%; bottom: 0; width: 66%; height: 19%; border-radius: 50% 0 0; background: #657266; box-shadow: none; clip-path: none; transform: rotate(-3deg); }
+[data-artist="cassat"] .art-canvas[data-variant="5"] { background: linear-gradient(153deg, #ead7b9, #c9ae8d 55%, #68776c); filter: none; }
+[data-artist="cassat"] .art-canvas[data-variant="5"]::before { inset: auto; top: 18%; left: 15%; width: 32%; height: 49%; border: 0; border-radius: 48% 48% 17% 17%; background: #a45d51; box-shadow: none; clip-path: none; transform: rotate(11deg); }
+[data-artist="cassat"] .art-canvas[data-variant="5"]::after { inset: auto; top: 9%; left: 24%; width: 14%; height: 14%; border: 0; border-radius: 50%; background: #dfb88f; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="cassat"] .art-canvas[data-variant="5"] > b { inset: auto; right: 6%; bottom: 9%; width: 60%; height: 31%; border-radius: 12%; background: #7b6651; box-shadow: none; clip-path: polygon(0 0, 100% 22%, 87% 100%, 9% 74%); transform: rotate(-9deg); }
+[data-artist="cassat"] .art-canvas[data-variant="5"] > em { inset: auto; right: 20%; bottom: 25%; width: 35%; height: 18%; border: 4px solid #f3e4c5; border-radius: 0; background: #c98569; box-shadow: none; clip-path: none; transform: rotate(8deg); }
+
+[data-artist="yoshida"] .art-canvas[data-variant="2"] { background: linear-gradient(#8fc4d3 0 54%, #275f72 55%); filter: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="2"]::before { inset: auto; right: -8%; bottom: 17%; left: -8%; width: auto; height: 47%; border: 10px solid #d7bf81; border-top: 0; border-radius: 0 0 50% 50%; background: transparent; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="2"]::after { inset: auto; top: 10%; right: 12%; width: 24%; height: 24%; border: 4px solid #f0dd9b; border-radius: 50%; background: transparent; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="2"] > b { inset: auto; left: 0; bottom: 27%; width: 100%; height: 7%; border-radius: 0; background: #244454; box-shadow: none; clip-path: none; transform: rotate(-3deg); }
+[data-artist="yoshida"] .art-canvas[data-variant="2"] > em { inset: auto; left: 24%; bottom: 9%; width: 18%; height: 20%; border-radius: 0; background: #a44e42; box-shadow: none; clip-path: polygon(50% 0, 100% 100%, 0 100%); transform: rotate(-9deg); }
+[data-artist="yoshida"] .art-canvas[data-variant="3"] { background: linear-gradient(#9dcbd6 0 44%, #2b7184 45% 72%, #e3cb8c 73%); filter: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="3"]::before { inset: auto; left: -7%; bottom: 18%; width: 53%; height: 46%; border: 0; border-radius: 0; background: #294d52; box-shadow: none; clip-path: polygon(0 100%, 0 37%, 29% 58%, 48% 0, 100% 100%); transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="3"]::after { inset: auto; top: 11%; right: 16%; width: 17%; height: 17%; border: 0; border-radius: 50%; background: #f0dc9b; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="3"] > b { inset: auto; right: 18%; bottom: 26%; width: 19%; height: 28%; border-radius: 0; background: #f2e4bc; box-shadow: 24px 11px 0 #d69757; clip-path: polygon(50% 0, 100% 100%, 0 100%); transform: rotate(6deg); }
+[data-artist="yoshida"] .art-canvas[data-variant="3"] > em { inset: auto; right: 11%; bottom: 18%; width: 47%; height: 4%; border-radius: 0; background: #e9d39a; box-shadow: none; clip-path: none; transform: rotate(-5deg); }
+[data-artist="yoshida"] .art-canvas[data-variant="4"] { background: repeating-linear-gradient(90deg, #d5e2d9 0 18px, #2d6d83 19px 34px, #173e59 35px 48px); filter: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="4"]::before { inset: auto; bottom: 0; left: 4%; width: 24%; height: 57%; border: 0; border-radius: 0; background: #e2c984; box-shadow: 35px 17px 0 #a95748, 72px -7px 0 #264a5b; clip-path: none; transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="4"]::after { inset: auto; top: 10%; right: 12%; width: 27%; height: 27%; border: 4px solid #f3dfa0; border-radius: 50%; background: transparent; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="4"] > b { inset: auto; left: 7%; bottom: 21%; width: 83%; height: 5%; border-radius: 0; background: #183b50; box-shadow: none; clip-path: none; transform: rotate(-6deg); }
+[data-artist="yoshida"] .art-canvas[data-variant="4"] > em { inset: auto; right: 7%; bottom: 7%; width: 18%; height: 37%; border-radius: 0; background: #d7e4da; box-shadow: none; clip-path: polygon(0 100%, 50% 0, 100% 100%); transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="5"] { background: linear-gradient(#152f4c 0 64%, #2a6474 65% 80%, #d8c486 81%); filter: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="5"]::before { inset: auto; top: 10%; right: 14%; width: 26%; height: 26%; border: 3px solid #f0dda3; border-radius: 50%; background: #dbe2cf; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="5"]::after { inset: auto; left: 5%; bottom: 18%; width: 76%; height: 42%; border: 0; border-radius: 0; background: #203e43; box-shadow: none; clip-path: polygon(0 100%, 9% 25%, 18% 100%, 29% 8%, 42% 100%, 54% 31%, 66% 100%, 80% 0, 100% 100%); transform: none; }
+[data-artist="yoshida"] .art-canvas[data-variant="5"] > b { inset: auto; left: 11%; bottom: 10%; width: 66%; height: 4%; border-radius: 0; background: #e4cf92; box-shadow: none; clip-path: none; transform: rotate(4deg); }
+[data-artist="yoshida"] .art-canvas[data-variant="5"] > em { inset: auto; right: 10%; bottom: 12%; width: 13%; height: 25%; border-radius: 0; background: #a94f43; box-shadow: none; clip-path: polygon(50% 0, 100% 100%, 0 100%); transform: none; }
+
+[data-artist="bruegel"] .art-canvas[data-variant="2"] { background: linear-gradient(#a9c7ce 0 34%, #ddc78f 35% 45%, #77905b 46%); filter: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="2"]::before { inset: auto; right: -8%; bottom: -5%; left: -8%; width: auto; height: 57%; border: 0; border-radius: 0; background: repeating-linear-gradient(157deg, #435f3c 0 11px, #8da161 12px 23px, #c19b59 24px 31px); box-shadow: none; clip-path: polygon(0 28%, 100% 0, 100% 100%, 0 100%); transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="2"]::after { inset: auto; right: 14%; bottom: 34%; width: 24%; height: 19%; border: 0; border-radius: 50% 50% 5% 5%; background: #784737; box-shadow: -43px 13px 0 #a5794a; clip-path: none; transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="2"] > b { inset: auto; left: 10%; top: 9%; width: 18%; height: 7%; border-radius: 50%; background: #f0ece0bb; box-shadow: 28px 6px 0 #f0ece099; clip-path: none; transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="2"] > em { inset: auto; left: 20%; bottom: 10%; width: 55%; height: 4%; border-radius: 0; background: #e4d1a2; box-shadow: none; clip-path: none; transform: rotate(-13deg); }
+[data-artist="bruegel"] .art-canvas[data-variant="3"] { background: linear-gradient(164deg, #abc7cc 0 41%, #dec990 42% 55%, #5f7e4d 56%); filter: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="3"]::before { inset: auto; left: 7%; bottom: 18%; width: 27%; height: 29%; border: 0; border-radius: 4% 4% 0 0; background: #85503c; box-shadow: 41px -10px 0 #a87545, 79px 7px 0 #6d4737; clip-path: polygon(0 31%, 50% 0, 100% 31%, 100% 100%, 0 100%); transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="3"]::after { inset: auto; left: 18%; bottom: 9%; width: 7%; height: 15%; border: 0; border-radius: 50% 50% 30% 30%; background: #263f2d; box-shadow: 18px 3px 0 #8e4939, 42px -2px 0 #334d32, 65px 4px 0 #b38348; clip-path: none; transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="3"] > b { inset: auto; right: 8%; top: 9%; width: 29%; height: 8%; border-radius: 50%; background: #f0ece0c4; box-shadow: none; clip-path: none; transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="3"] > em { inset: auto; left: 6%; bottom: 5%; width: 87%; height: 5%; border-radius: 0; background: #d9c69a; box-shadow: none; clip-path: none; transform: rotate(3deg); }
+[data-artist="bruegel"] .art-canvas[data-variant="4"] { background: linear-gradient(#bacbd0 0 42%, #e9e5d7 43% 79%, #b5c1b4 80%); filter: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="4"]::before { inset: auto; right: 12%; bottom: 23%; width: 31%; height: 30%; border: 0; border-radius: 4% 4% 0 0; background: #75473b; box-shadow: -50px 14px 0 #946447; clip-path: polygon(0 31%, 50% 0, 100% 31%, 100% 100%, 0 100%); transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="4"]::after { inset: auto; left: 14%; bottom: 18%; width: 5%; height: 29%; border: 0; border-radius: 0; background: #2d4634; box-shadow: 22px -8px 0 #38543a, 67px 3px 0 #294333; clip-path: polygon(50% 0, 100% 100%, 0 100%); transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="4"] > b { inset: auto; top: 10%; left: 8%; width: 22%; height: 8%; border-radius: 50%; background: #f7f4eccc; box-shadow: 35px 8px 0 #f7f4ecaa; clip-path: none; transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="4"] > em { inset: auto; right: 0; bottom: 8%; left: 0; width: auto; height: 6%; border-radius: 0; background: #d9d8cf; box-shadow: none; clip-path: none; transform: rotate(-4deg); }
+[data-artist="bruegel"] .art-canvas[data-variant="5"] { background: linear-gradient(#a7c6cf 0 36%, #d8c48c 37% 49%, #577649 50%); filter: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="5"]::before { inset: auto; top: 42%; right: -6%; width: 82%; height: 29%; border: 0; border-radius: 50%; background: #648e91; box-shadow: none; clip-path: none; transform: rotate(-17deg); }
+[data-artist="bruegel"] .art-canvas[data-variant="5"]::after { inset: auto; left: 7%; bottom: 11%; width: 35%; height: 26%; border: 0; border-radius: 0; background: #304d34; box-shadow: 59px -17px 0 #6b844f; clip-path: polygon(0 100%, 24% 18%, 43% 100%, 68% 0, 100% 100%); transform: none; }
+[data-artist="bruegel"] .art-canvas[data-variant="5"] > b { inset: auto; right: 19%; bottom: 28%; width: 22%; height: 17%; border-radius: 0; background: #a56e45; box-shadow: none; clip-path: polygon(0 27%, 100% 0, 76% 100%, 13% 82%); transform: rotate(-8deg); }
+[data-artist="bruegel"] .art-canvas[data-variant="5"] > em { inset: auto; left: 10%; top: 9%; width: 28%; height: 8%; border-radius: 50%; background: #f0ece0bb; box-shadow: none; clip-path: none; transform: none; }
+
+[data-artist="clyfford"] .art-canvas[data-variant="2"] { background: linear-gradient(#30233b 0 23%, #e0b93d 24% 42%, #7b263f 43% 69%, #e4d2b9 70%); filter: none; }
+[data-artist="clyfford"] .art-canvas[data-variant="2"]::before { inset: auto; top: 17%; left: -7%; width: 74%; height: 18%; border: 0; border-radius: 0; background: #224e61; box-shadow: none; clip-path: polygon(0 31%, 100% 0, 86% 100%, 7% 79%); transform: rotate(7deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="2"]::after { inset: auto; right: -9%; bottom: 22%; width: 69%; height: 16%; border: 0; border-radius: 0; background: #291d35; box-shadow: none; clip-path: polygon(0 0, 100% 27%, 88% 100%, 8% 71%); transform: rotate(-8deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="2"] > b { inset: auto; left: 13%; bottom: 8%; width: 21%; height: 39%; border-radius: 0; background: #7f2540; box-shadow: none; clip-path: polygon(19% 0, 100% 13%, 73% 100%, 0 77%); transform: none; }
+[data-artist="clyfford"] .art-canvas[data-variant="2"] > em { inset: auto; top: 5%; right: 14%; width: 15%; height: 43%; border-radius: 0; background: #e8d5bc; box-shadow: none; clip-path: polygon(0 9%, 100% 0, 82% 100%, 18% 83%); transform: none; }
+[data-artist="clyfford"] .art-canvas[data-variant="3"] { background: #70243d; filter: none; }
+[data-artist="clyfford"] .art-canvas[data-variant="3"]::before { inset: auto; top: -19%; left: 2%; width: 32%; height: 131%; border: 0; border-radius: 0; background: #e5bc39; box-shadow: none; clip-path: none; transform: rotate(29deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="3"]::after { inset: auto; top: -17%; right: 1%; width: 29%; height: 128%; border: 0; border-radius: 0; background: #2b2138; box-shadow: none; clip-path: none; transform: rotate(-25deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="3"] > b { inset: auto; left: 38%; bottom: -10%; width: 19%; height: 76%; border-radius: 0; background: #e6d3ba; box-shadow: none; clip-path: polygon(0 0, 100% 14%, 73% 100%, 21% 82%); transform: rotate(8deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="3"] > em { inset: auto; top: 12%; left: 7%; width: 37%; height: 14%; border-radius: 0; background: #245063; box-shadow: none; clip-path: polygon(0 21%, 100% 0, 83% 100%, 8% 74%); transform: rotate(-7deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="4"] { background: #2d2239; filter: none; }
+[data-artist="clyfford"] .art-canvas[data-variant="4"]::before { inset: 13% 16%; width: auto; height: auto; border: 18px solid #7a2640; border-radius: 0; background: #16151b; box-shadow: none; clip-path: polygon(7% 0, 100% 13%, 84% 100%, 0 79%); transform: rotate(6deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="4"]::after { inset: auto; top: 3%; left: 8%; width: 21%; height: 87%; border: 0; border-radius: 0; background: #e2ba3d; box-shadow: none; clip-path: polygon(0 0, 100% 8%, 67% 100%, 19% 83%); transform: rotate(-8deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="4"] > b { inset: auto; right: 7%; bottom: 3%; width: 19%; height: 61%; border-radius: 0; background: #e7d2b8; box-shadow: none; clip-path: polygon(18% 0, 100% 13%, 72% 100%, 0 82%); transform: rotate(12deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="4"] > em { inset: auto; right: 18%; top: 10%; width: 39%; height: 13%; border-radius: 0; background: #235065; box-shadow: none; clip-path: polygon(0 27%, 100% 0, 82% 100%, 13% 75%); transform: rotate(-4deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="5"] { background: linear-gradient(90deg, #76253f 0 47%, #2d2239 48%); filter: none; }
+[data-artist="clyfford"] .art-canvas[data-variant="5"]::before { inset: auto; top: -4%; left: 42%; width: 21%; height: 108%; border: 0; border-radius: 0; background: #e7d4bd; box-shadow: none; clip-path: polygon(0 0, 100% 9%, 64% 100%, 23% 84%); transform: rotate(4deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="5"]::after { inset: auto; top: 8%; left: 10%; width: 31%; height: 76%; border: 0; border-radius: 0; background: #e3b93b; box-shadow: none; clip-path: polygon(0 8%, 100% 0, 66% 100%, 18% 81%); transform: rotate(-5deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="5"] > b { inset: auto; right: 5%; bottom: 9%; width: 38%; height: 19%; border-radius: 0; background: #214e61; box-shadow: none; clip-path: polygon(0 23%, 100% 0, 86% 100%, 11% 77%); transform: rotate(8deg); }
+[data-artist="clyfford"] .art-canvas[data-variant="5"] > em { inset: auto; right: 12%; top: 7%; width: 16%; height: 52%; border-radius: 0; background: #7c2540; box-shadow: none; clip-path: polygon(0 0, 100% 15%, 72% 100%, 11% 82%); transform: rotate(-9deg); }
+
+.art-card-back { position: relative; isolation: isolate; display: block; overflow: hidden; border: 6px solid #eee8dc; background: #222124; box-shadow: 0 10px 22px rgba(0,0,0,.34), inset 0 0 0 2px #504b4d; }
+.art-card-back::before { position: absolute; z-index: -1; top: -9%; left: 10%; width: 74%; height: 118%; background: #d7473d; clip-path: polygon(7% 0, 100% 10%, 71% 38%, 96% 68%, 43% 100%, 28% 73%, 0 56%, 25% 29%); content: ""; transform: rotate(-7deg); }
+.art-card-back::after { position: absolute; z-index: 1; inset: 7%; border: 1px solid rgba(248,239,222,.72); content: ""; box-shadow: inset 0 0 0 5px rgba(31,29,32,.32); }
+.art-card-back > i { position: absolute; z-index: 1; top: 18%; left: 16%; width: 56%; height: 48%; border: 13px solid #f0c34f; background: #252427; clip-path: polygon(9% 0, 100% 13%, 80% 100%, 0 77%); transform: rotate(8deg); }
+.art-card-back > b { position: absolute; z-index: 2; right: 12%; bottom: 13%; display: grid; justify-items: end; color: #fff8e9; font: 900 14px/.84 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.06em; text-shadow: 0 2px 4px rgba(0,0,0,.45); transform: rotate(-4deg); }
+.art-card-back > b span:last-child { color: #f0c34f; font-size: 1.34em; }
+.art-card-back-fan { display: inline-flex; align-items: center; flex: none; padding: 1px 2px 1px 0; }
+.art-card-back.is-mini { flex: 0 0 13px; width: 13px; height: 18px; border-width: 1px; border-radius: 1px; box-shadow: 0 2px 4px rgba(31,27,27,.25), inset 0 0 0 1px #504b4d; transform: rotate(-6deg); }
+.art-card-back.is-mini + .art-card-back.is-mini { margin-left: -5px; transform: rotate(0); }
+.art-card-back.is-mini + .art-card-back.is-mini + .art-card-back.is-mini { transform: rotate(6deg); }
+.art-card-back.is-mini::before { top: -5%; left: 9%; }
+.art-card-back.is-mini::after { inset: 2px; box-shadow: none; }
+.art-card-back.is-mini > i { top: 18%; left: 17%; width: 55%; height: 46%; border-width: 2px; }
+.art-card-back.is-mini > b { display: none; }
+
+.art-bid-line { display: flex; align-items: flex-end; gap: 7px; margin-top: 12px; }
+.art-bid-line label { display: grid; gap: 4px; color: #c4bbb2; font-size: 7px; font-weight: 800; }
+.art-bid-line input { width: 116px; min-height: 34px; padding: 0 8px; border: 1px solid #676166; color: #fff; background: #202023; font: 800 12px Georgia, serif; }
+.art-bid-line > small { margin-bottom: 10px; }
+.art-choice-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.art-stage-copy button, .art-confirm button, .art-hand-decision button { min-height: 33px; padding: 0 10px; border: 1px solid #6c666a; color: #ddd5cc; background: #28272a; font-size: 8px; font-weight: 800; }
+.art-stage-copy button:hover, .art-hand-decision button:hover { border-color: #e05d50; }
+.art-primary { border-color: #dd4b3f !important; color: #fff !important; background: #dd4b3f !important; }
+.art-secondary { border-style: dashed !important; }
+.art-confirm { display: grid; gap: 7px; margin-top: 10px; padding: 8px; border-left: 3px solid #db5045; background: rgba(220,79,68,.09); }
+.art-confirm.is-warning { border-left-color: #d7a446; background: rgba(215,164,70,.08); }
+.art-confirm > div:first-child span, .art-confirm > div:first-child strong { display: block; }
+.art-confirm > div:first-child span { color: #df776d; font-size: 6px; font-weight: 900; letter-spacing: .15em; }
+.art-confirm > div:first-child strong { margin-top: 2px; color: #eee5da; font-size: 8px; }
+.art-confirm > div:last-child { display: flex; gap: 5px; }
+
+.art-hand { overflow: hidden; border: 1px solid #d5cec1; color: var(--ink); background: #f3efe6; box-shadow: 0 13px 30px rgba(0,0,0,.2); }
+.art-hand > header { padding: 9px 12px; border-bottom: 1px solid #d8d1c6; }
+.art-hand > header span, .art-hand > header small { display: block; }
+.art-hand > header span { font: 900 13px "Songti SC", SimSun, serif; }
+.art-hand > header small { margin-top: 2px; color: #8e8781; font-size: 6px; }
+.art-hand > header > b { color: #d94d40; font: 900 10px Georgia, serif; }
+.art-hand > [data-role="hand"] { display: flex; gap: 9px; overflow: auto; padding: 11px 12px 14px; }
+.art-piece { position: relative; display: grid; flex: 0 0 142px; min-width: 0; grid-template-rows: 138px auto; padding: 5px; border: 1px solid #c7bfb2; color: var(--ink); background: #fffdf8; box-shadow: 0 7px 13px rgba(45,39,37,.14); text-align: left; transition: transform .16s ease, box-shadow .16s ease; }
+.art-piece:hover:not(:disabled) { transform: translateY(-5px) rotate(-.5deg); box-shadow: 0 12px 19px rgba(45,39,37,.22); }
+.art-piece > .art-frame { height: 138px; padding: 5px; box-shadow: none; }
+.art-piece > footer { display: flex; align-items: center; justify-content: space-between; gap: 5px; padding: 7px 4px 3px; }
+.art-piece > footer strong, .art-piece > footer small { display: block; }
+.art-piece > footer strong { color: var(--artist); font: 900 10px "Songti SC", SimSun, serif; }
+.art-piece > footer small { margin-top: 2px; color: #9a9289; font-size: 5px; }
+.art-piece > footer > b { display: grid; grid-template-columns: 18px auto; align-items: center; gap: 3px; color: #5c5554; font-size: 7px; }
+.art-piece > footer > b i { display: grid; width: 18px; height: 18px; place-items: center; color: #fff; background: var(--artist); font: 900 7px "Songti SC", SimSun, serif; font-style: normal; }
+.art-piece.is-selected { border-color: #dd4b3f; outline: 3px solid #dd4b3f; outline-offset: -1px; transform: translateY(-4px); }
+.art-piece.is-disabled, .art-app .art-piece:disabled { cursor: default; opacity: 1; }
+.art-hand-decision { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid #d5cec3; background: #e8e1d5; }
+.art-hand-decision > div:first-child span, .art-hand-decision > div:first-child strong, .art-hand-decision > div:first-child small { display: block; }
+.art-hand-decision > div:first-child span { color: #d54c40; font-size: 6px; font-weight: 900; letter-spacing: .15em; }
+.art-hand-decision > div:first-child strong { margin-top: 2px; font-size: 9px; }
+.art-hand-decision > div:first-child small { margin-top: 2px; color: #807973; font-size: 6px; }
+.art-hand-decision > label { display: grid; grid-template-columns: auto 84px; align-items: center; gap: 6px; color: #716a65; font-size: 7px; font-weight: 800; }
+.art-hand-decision input { min-height: 32px; width: 84px; padding: 0 7px; border: 1px solid #b8afa4; background: #fffdf8; font: 800 11px Georgia, serif; }
+.art-hand-decision > div:last-child { display: flex; gap: 5px; }
+.art-hand-decision button { color: #594f4c; background: #f5efe4; }
+.art-hand-hint { padding: 9px 12px; border-top: 1px solid #d6cfc4; color: #827b74; background: #ebe5dc; font-size: 7px; }
+.art-muted { margin: 8px 0; color: #97908a; font-size: 8px; }
+
+.art-history { border: 1px solid #4b484c; background: #29282b; }
+.art-history > header { padding: 8px 11px; border-bottom: 1px solid #48454a; }
+.art-history > header span { color: #eee5da; font: 900 11px "Songti SC", SimSun, serif; }
+.art-history > header small { color: #858080; font-size: 6px; }
+.art-history > div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; }
+.art-season { display: grid; grid-template-columns: 26px 1fr; align-items: center; gap: 6px; min-width: 0; padding: 7px; border: 1px solid #464348; background: #222124; }
+.art-season > i { display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid #b75349; color: #e07165; font: 800 11px Georgia, serif; font-style: normal; }
+.art-season strong, .art-season small { display: block; }
+.art-season strong { color: #d9d0c7; font-size: 7px; }
+.art-season small { color: #7f7a79; font-size: 5px; }
+.art-season > p { grid-column: 1 / -1; display: grid; gap: 3px; margin: 0; }
+.art-season > p span { display: grid; grid-template-columns: 1fr auto auto; gap: 3px; padding-left: 4px; border-left: 2px solid var(--artist); color: #aaa3a0; font-size: 5px; }
+.art-season > p span b { color: #edc15b; }
+.art-season > p em { color: #777273; font-size: 6px; font-style: normal; }
+
+.art-panel { position: relative; padding: 13px; border: 1px solid #d2cabd; color: var(--ink); background:
+    repeating-linear-gradient(0deg, transparent 0 21px, rgba(84,78,70,.04) 21px 22px),
+    #f2eee5; box-shadow: 0 13px 28px rgba(0,0,0,.24); }
+.art-panel-title { position: relative; z-index: 1; display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-bottom: 7px; padding-bottom: 7px; border-bottom: 1px solid #d6cfc4; }
+.art-panel-title span { font: 900 11px "Songti SC", SimSun, serif; }
+.art-panel-title small { color: #918a82; font-size: 5px; }
+.art-wallet { min-height: 111px; overflow: hidden; background: #262528; color: #f4ece1; border-color: #4e4b4e; }
+.art-wallet::after { position: absolute; right: -12px; bottom: -34px; width: 110px; height: 110px; border: 18px solid rgba(227,72,56,.12); border-radius: 50%; content: ""; }
+.art-wallet > div { position: relative; z-index: 1; display: flex; align-items: baseline; margin-top: 7px; }
+.art-wallet > div strong { color: #f2c158; font: 900 32px Georgia, serif; }
+.art-wallet > div small { margin-left: 5px; color: #b9b0a7; font-size: 8px; }
+.art-wallet > p { position: relative; z-index: 1; margin: 5px 0 0; color: #888284; font-size: 6px; }
+.art-player { position: relative; z-index: 1; display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 7px; min-width: 0; padding: 7px 3px; border-bottom: 1px solid #dad3c8; }
+.art-player:last-child { border: 0; }
+.art-player > i { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 50%; color: #fff; background: var(--player); font-size: 8px; font-style: normal; font-weight: 900; box-shadow: inset 0 0 0 2px rgba(255,255,255,.42); }
+.art-player strong, .art-player small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.art-player strong { font-size: 8px; }
+.art-player strong em { margin-left: 4px; padding: 1px 4px; color: #fff; background: #df4d40; font-size: 5px; font-style: normal; }
+.art-player small { margin-top: 2px; color: #928a82; font-size: 5px; }
+.art-player small.has-hidden-hand { display: flex; align-items: center; gap: 2px; overflow: visible; }
+.art-player-hand { display: inline-flex; align-items: center; gap: 3px; flex: none; }
+.art-player-hand > b { color: #746b67; font-size: 5px; white-space: nowrap; }
+.art-player > b { color: #6f6662; font: 800 8px Georgia, serif; }
+.art-player.is-me { margin: 0 -4px; padding-right: 7px; padding-left: 7px; background: rgba(222,77,64,.07); }
+.art-player.is-away { opacity: .46; }
+.art-collection > [data-role="collection"] { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.art-collected { min-width: 0; }
+.art-collected .art-frame { height: 60px; padding: 3px; box-shadow: none; }
+.art-collected > span { display: block; padding-top: 3px; overflow: hidden; color: var(--artist); font-size: 5px; font-weight: 800; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.art-log { position: relative; z-index: 1; display: grid; gap: 6px; max-height: 240px; overflow: auto; }
+.art-log p { display: grid; grid-template-columns: 6px 1fr; gap: 6px; margin: 0; color: #8c8580; font-size: 6px; line-height: 1.5; }
+.art-log p i { width: 5px; height: 5px; margin-top: 2px; border-radius: 50%; background: #b4aca1; }
+.art-log p.is-latest { color: #554e4b; font-weight: 800; }
+.art-log p.is-latest i { background: #df4d40; box-shadow: 0 0 0 3px rgba(223,77,64,.12); }
+
+.art-season-warning { display: grid !important; gap: 2px; margin: 7px 0 0 !important; padding: 6px 7px; border-left: 3px solid #d84235; color: #6f3730; background: rgba(220,67,53,.11); font-size: 7px; line-height: 1.4; }
+.art-season-warning b, .art-season-warning span { display: block; }
+.art-season-warning b { color: #c63d31; font-size: 7px; }
+
+/* 拍卖演出：高频操作仅局部提示，季度与终局结算才使用全屏模糊。 */
+.art-presentation-layer { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; padding: clamp(13px, 3vw, 42px); pointer-events: auto; isolation: isolate; }
+.art-presentation-layer[hidden] { display: none; }
+.art-presentation-shade { position: absolute; z-index: -2; inset: 0; background: rgba(13,12,14,.04); transition: background .2s ease, backdrop-filter .2s ease; }
+.art-presentation-layer.is-medium .art-presentation-shade { background: radial-gradient(circle at 50% 45%, rgba(30,28,31,.06), rgba(15,14,16,.31)); }
+.art-presentation-layer.is-major .art-presentation-shade { background: radial-gradient(circle at 50% 42%, rgba(48,43,44,.42), rgba(12,11,13,.9)); backdrop-filter: blur(9px) saturate(.65); }
+.art-presentation-scene { position: relative; z-index: 2; width: min(410px, calc(100vw - 28px)); padding: 13px 16px; border: 1px solid #706a6e; color: #eee5da; background: linear-gradient(145deg, #2b2a2d, #222124); box-shadow: 0 20px 50px rgba(0,0,0,.46); animation: art-event-in .24s ease-out both; }
+.art-presentation-layer.is-compact .art-presentation-scene { width: min(400px, calc(100vw - 28px)); }
+.art-presentation-layer.is-medium .art-presentation-scene { width: min(650px, calc(100vw - 28px)); padding: 18px 22px; }
+.art-presentation-layer.is-major .art-presentation-scene { width: min(800px, calc(100vw - 28px)); max-height: calc(100vh - 76px); overflow: auto; padding: clamp(19px, 3vw, 31px); border-color: #8d8585; background:
+    linear-gradient(90deg, transparent 0 37px, rgba(222,71,59,.08) 37px 39px, transparent 39px),
+    repeating-linear-gradient(0deg, transparent 0 25px, rgba(71,63,61,.045) 25px 26px),
+    #f2ede3;
+    color: #2c292b; box-shadow: 0 34px 95px rgba(0,0,0,.66); }
+.art-presentation-layer.is-danger .art-presentation-scene { border-color: #df5547; box-shadow: 0 24px 62px rgba(111,26,20,.42); }
+.art-presentation-layer.is-secret .art-presentation-scene { border-color: #7e6a98; }
+.art-presentation-layer.is-hammer .art-presentation-scene::after { position: absolute; top: 15px; right: 17px; color: #e35b4e; content: "落槌"; transform: rotate(7deg); font: 900 13px "Songti SC", SimSun, serif; letter-spacing: .12em; }
+.art-event-heading { margin-bottom: 12px; text-align: center; }
+.art-event-heading > span { display: block; color: #e56b5f; font-size: 7px; font-weight: 900; letter-spacing: .23em; }
+.art-event-heading h2 { margin: 4px 0 0; color: inherit; font: 900 clamp(17px, 2.3vw, 26px) "Songti SC", SimSun, serif; letter-spacing: .04em; }
+.art-presentation-layer.is-major .art-event-heading > span { color: #c64b40; }
+.art-event-note { margin: 9px 0 0; color: #a9a09a; font-size: 8px; font-weight: 700; line-height: 1.55; text-align: center; }
+.art-presentation-layer.is-major .art-event-note { color: #746d68; }
+.art-event-cards { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+.art-event-card { width: 115px; padding: 5px; border: 1px solid #5c585c; background: #1e1d20; box-shadow: 0 12px 26px rgba(0,0,0,.35); transform: rotate(-1deg); }
+.art-event-card:nth-child(even) { transform: rotate(2deg); }
+.art-event-card .art-frame { width: 100%; height: 132px; padding: 5px; box-shadow: none; }
+.art-event-card footer { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; padding: 6px 3px 2px; }
+.art-event-card footer b { color: var(--artist); font: 900 9px "Songti SC", SimSun, serif; }
+.art-event-card footer span { color: #aaa19c; font-size: 6px; }
+.art-event-player { display: inline-grid; grid-template-columns: 32px auto; grid-template-rows: auto auto; align-items: center; gap: 1px 7px; min-width: 112px; padding: 7px 9px; border: 1px solid #5b575b; background: #242326; }
+.art-event-player > i { grid-row: 1 / 3; display: grid; width: 31px; height: 31px; place-items: center; border-radius: 50%; color: #fff; background: var(--player); font-size: 9px; font-style: normal; font-weight: 900; }
+.art-event-player > b { font-size: 9px; }
+.art-event-player > small { color: #96908f; font-size: 6px; }
+.art-event-transaction { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 13px; }
+.art-event-transaction > i { color: #edc35d; font: 900 18px Georgia, serif; font-style: normal; }
+.art-sealed-results { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 11px; }
+.art-sealed-results span { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid #4e4a50; background: #1d1c1f; font-size: 7px; }
+.art-sealed-results em { color: #e5bd59; font-style: normal; font-weight: 900; }
+.art-card-back.art-event-back { width: 110px; height: 145px; margin: 0 auto; }
+.art-season-ranking { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.art-season-ranking > span { display: grid; grid-template-columns: 28px 1fr; gap: 2px 7px; padding: 9px; border: 1px solid rgba(74,68,66,.18); border-top: 4px solid var(--artist); background: rgba(255,252,245,.7); }
+.art-season-ranking > span > i { grid-row: 1 / 3; display: grid; width: 27px; height: 27px; place-items: center; border-radius: 50%; color: #fff; background: var(--artist); font: 900 11px Georgia, serif; font-style: normal; }
+.art-season-ranking b { font-size: 10px; }
+.art-season-ranking small { color: #807873; font-size: 7px; }
+.art-season-ranking em { grid-column: 1 / -1; margin-top: 5px; color: var(--artist); font: 900 12px Georgia, serif; font-style: normal; text-align: right; }
+.art-private-settlement { margin-top: 14px; overflow: hidden; border: 1px solid rgba(75,67,64,.2); background: rgba(255,252,245,.72); }
+.art-private-settlement > header { padding: 7px 10px; border-bottom: 1px solid rgba(75,67,64,.17); color: #9d443b; font-size: 8px; font-weight: 900; letter-spacing: .12em; }
+.art-own-sale { display: flex; flex-wrap: wrap; gap: 5px; padding: 9px; }
+.art-own-sale > span { display: flex; align-items: center; gap: 8px; padding: 5px 7px; border-left: 3px solid var(--artist); background: rgba(64,56,53,.055); font-size: 7px; }
+.art-own-sale em { color: var(--artist); font-style: normal; font-weight: 900; }
+.art-private-settlement > footer { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; padding: 8px 10px; border-top: 1px dashed rgba(75,67,64,.18); }
+.art-private-settlement > footer b { color: #b6453b; font: 900 17px Georgia, serif; }
+.art-private-settlement > footer span { color: #776f69; font-size: 8px; }
+.art-final-ranking { display: grid; gap: 6px; }
+.art-final-ranking > span { display: grid; grid-template-columns: 27px 1fr auto; align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid rgba(74,66,63,.17); background: rgba(255,252,245,.72); }
+.art-final-ranking i { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; color: #746c67; background: #ded7cb; font: 900 10px Georgia, serif; font-style: normal; }
+.art-final-ranking b { font-size: 10px; }
+.art-final-ranking em { color: #4f4946; font: 900 16px Georgia, serif; font-style: normal; }
+.art-final-ranking .is-winner { border-color: #d3a640; box-shadow: inset 4px 0 #d24e40; }
+.art-final-ranking .is-winner i { color: #fff; background: #d24e40; }
+.art-final-winner { margin: 13px 0 0; color: #b64238; font: 900 18px "Songti SC", SimSun, serif; text-align: center; }
+.art-presentation-skip { position: fixed; z-index: 6; right: 16px; bottom: 15px; min-height: 34px; padding: 0 13px; border: 1px solid #837c7c; color: #eee5d9; background: rgba(31,29,32,.9); font-size: 8px; font-weight: 900; box-shadow: 0 7px 20px rgba(0,0,0,.35); }
+.art-action-line { position: fixed; z-index: 1; inset: 0; width: 100vw; height: 100vh; overflow: visible; opacity: 0; pointer-events: none; }
+.art-action-line line { stroke: #e45c4f; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 9 7; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); animation: art-line-flow .62s linear infinite; }
+.art-action-line circle { fill: #ef8b7f; stroke: #332d30; stroke-width: 2; }
+.art-action-line.is-visible { opacity: 1; }
+.art-action-line.is-money line { stroke: #e7bf53; }
+.art-action-line.is-money circle { fill: #f4d67d; }
+.art-action-line.is-secret line { stroke: #a78ac6; }
+.art-action-line.is-secret circle { fill: #cbb7de; }
+.art-action-line.is-danger line { stroke: #eb594b; stroke-width: 4; }
+.is-presentation-source, .is-presentation-target { position: relative; z-index: 3; outline: 3px solid rgba(229,87,74,.78); outline-offset: 3px; box-shadow: 0 0 23px rgba(229,87,74,.44) !important; }
+.art-floating-layer { position: fixed; z-index: 4; inset: 0; overflow: hidden; pointer-events: none; }
+.art-floating-work { position: absolute; width: 92px; height: 118px; transform: translate(-50%, -50%) rotate(3deg); transition: transform .62s cubic-bezier(.2,.76,.22,1); filter: drop-shadow(0 13px 10px rgba(0,0,0,.56)); }
+.art-floating-work .art-frame { width: 100%; height: 100%; padding: 5px; }
+@keyframes art-event-in { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes art-line-flow { to { stroke-dashoffset: -32; } }
+
+.art-overlay { position: fixed; z-index: 90; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(15,14,16,.88); backdrop-filter: blur(8px); }
+.art-overlay.is-hidden { display: none; }
+.art-overlay > article { position: relative; width: min(620px, 100%); max-height: min(820px, calc(100vh - 30px)); overflow: auto; padding: 25px; border: 1px solid #6d6668; color: var(--ink); background: #f3efe6; box-shadow: 0 30px 70px rgba(0,0,0,.5); }
+.art-close { position: absolute; top: 9px; right: 9px; display: grid; width: 31px; min-height: 31px; padding: 0; place-items: center; border-color: #b8afa3; color: #5d5551; background: #fffaf0; font-size: 18px; }
+.art-overlay h2 { margin: 4px 0 13px; font: 900 25px "Songti SC", SimSun, serif; }
+.art-overlay ol { display: grid; gap: 7px; margin: 0; padding-left: 19px; color: #69615c; font-size: 9px; line-height: 1.65; }
+.art-art-reference { display: grid; gap: 6px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #d0c7bb; }
+.art-art-reference img { display: block; width: 100%; max-height: 255px; object-fit: contain; border: 1px solid #c9c0b5; background: #ded8cf; }
+.art-art-reference figcaption { color: #8b837c; font-size: 6px; }
+.art-app button:focus-visible, .art-app input:focus-visible { outline: 3px solid #f0c352; outline-offset: 2px; }
+
+@media (max-width: 1120px) {
+    .art-layout { grid-template-columns: minmax(0, 1fr) 250px; }
+    .art-showroom { grid-template-columns: 1fr; }
+    .art-auction, .art-market { min-height: 0; }
+    .art-market > div:last-child { grid-template-columns: repeat(4, minmax(110px, 1fr)); max-height: none; overflow: auto hidden; }
+    .art-sale .art-frame { height: 95px; }
+}
+
+@media (max-width: 780px) {
+    .art-app { padding: 10px 8px 27px; }
+    .art-header { grid-template-columns: 1fr auto; gap: 9px; }
+    .art-brand h1 { font-size: 22px; }
+    .art-mark { width: 39px; height: 39px; }
+    .art-round { grid-column: 1 / -1; grid-row: 2; text-align: center; }
+    .art-layout { grid-template-columns: 1fr; }
+    .art-ledger { grid-template-columns: repeat(2, 1fr); }
+    .art-collection, .art-ledger > section:last-child { align-self: start; }
+    .art-artist-board > div { grid-template-columns: repeat(2, 1fr); }
+    .art-artist { border-bottom: 1px solid #d8d1c5; }
+    .art-artist:nth-child(2n) { border-right: 0; }
+    .art-artist:last-child { grid-column: 1 / -1; border-bottom: 0; }
+    .art-auction { grid-template-columns: minmax(180px, .8fr) minmax(220px, 1fr); }
+}
+
+@media (max-width: 560px) {
+    .art-status { align-items: flex-start; padding: 12px 12px 12px 17px; }
+    .art-status p { max-width: 103px; white-space: normal; text-align: right; }
+    .art-auction { grid-template-columns: 1fr; padding: 10px; }
+    .art-stage-work { min-height: 265px; border-right: 0; border-bottom: 1px solid #4b484b; }
+    .art-stage-work > .art-frame, .art-stage-pair > .art-frame, .art-stage-work > .art-card-back.is-stage-back { width: min(180px, 64%); height: 225px; }
+    .art-stage-copy { padding: 14px 5px 7px; }
+    .art-market > div:last-child { display: flex; }
+    .art-sale { flex: 0 0 116px; }
+    .art-hand-decision { grid-template-columns: 1fr; }
+    .art-hand-decision > label { justify-self: start; }
+    .art-hand-decision > div:last-child button { flex: 1; }
+    .art-piece { flex-basis: 132px; }
+    .art-history > div { grid-template-columns: 1fr 1fr; }
+    .art-ledger { grid-template-columns: 1fr; }
+    .art-overlay { padding: 8px; }
+    .art-overlay > article { padding: 21px 16px; }
+    .art-presentation-layer { padding: 8px; }
+    .art-presentation-layer.is-major .art-presentation-scene { max-height: calc(100vh - 66px); padding: 17px 13px; }
+    .art-season-ranking { grid-template-columns: 1fr; }
+    .art-season-ranking > span { grid-template-columns: 27px 1fr auto; align-items: center; }
+    .art-season-ranking > span > em { grid-column: auto; margin: 0; }
+    .art-sealed-results { grid-template-columns: 1fr; }
+    .art-event-card { width: 96px; }
+    .art-event-card .art-frame { height: 112px; }
+    .art-presentation-skip { right: 8px; bottom: 8px; min-height: 31px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .art-piece { transition: none; }
+    .art-presentation-scene, .art-action-line line { animation: none; }
+    .art-floating-work { transition-duration: .08s; }
+}

@@ -19,3 +19,5 @@ coverage/
 dist/
 build/
 
+# Local cover-rendering drafts
+tmp/

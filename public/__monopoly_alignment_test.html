@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>环城大富翁棋盘对齐检查</title>
+    <link rel="stylesheet" href="/games/monopoly/style.css">
+    <style>
+        html, body { margin: 0; background: #12211e; }
+        body { padding: 30px; }
+        .mono-game { display: block; width: min(960px, calc(100vw - 60px)); min-height: 0; margin: auto; overflow: visible; background: transparent !important; }
+        .mono-board-frame { padding: 0; }
+        .mono-center { pointer-events: none; }
+        .mono-center > * { display: none !important; }
+        .mono-tile { overflow: hidden; outline: 2px solid rgba(255, 38, 38, .9); outline-offset: -2px; }
+        .mono-tile::after { position: absolute; inset: 3px auto auto 4px; color: #ff1f1f; content: attr(data-index); font: 800 11px monospace; text-shadow: 0 1px white; }
+    </style>
+</head>
+<body>
+<main class="mono-game"><div class="mono-board-frame"><div class="mono-board" id="board">
+    <img class="mono-board-center-art" src="/assets/monopoly/hong-kong-board-center.png" alt="">
+    <img class="mono-board-art-frame" src="/assets/monopoly/hong-kong-board-frame.png" alt="">
+    <div class="mono-center"></div>
+</div></div></main>
+<script>
+    const size = 1254;
+    const rects = [];
+    const set = (index, x1, y1, x2, y2, edge) => rects[index] = { x: x1 + 2, y: y1 + 2, w: x2 - x1 - 4, h: y2 - y1 - 4, edge };
+    const bottomX = [198,308,398,487,575,670,760,849,939,1052];
+    const topX = [198,310,400,487,575,670,760,849,939,1052];
+    const leftY = [201,290,376,465,552,701,788,876,962,1054];
+    const rightY = [201,290,376,466,552,701,788,876,962,1054];
+    set(0,1052,1054,1228,1228,'corner');
+    for (let i=1;i<=9;i++){const c=9-i;set(i,bottomX[c],1078,bottomX[c+1],1228,'bottom');}
+    set(10,26,1054,198,1228,'corner');
+    for (let i=11;i<=19;i++){const c=19-i;set(i,26,leftY[c],176,leftY[c+1],'left');}
+    set(20,26,26,198,198,'corner');
+    for (let i=21;i<=29;i++){const c=i-21;set(i,topX[c],26,topX[c+1],178,'top');}
+    set(30,1052,26,1228,198,'corner');
+    for (let i=31;i<=39;i++){const c=i-31;set(i,1078,rightY[c],1228,rightY[c+1],'right');}
+    const pct = value => `${value / size * 100}%`;
+    const board = document.querySelector('#board');
+    board.insertAdjacentHTML('beforeend', rects.map((r,index) => `<button class="mono-tile" data-index="${index}" data-edge="${r.edge}" style="left:${pct(r.x)};top:${pct(r.y)};width:${pct(r.w)};height:${pct(r.h)}" type="button"></button>`).join(''));
+    const tokenStyle = new URLSearchParams(location.search).get('style') === '2d' ? '2d' : '3d';
+    const tokenNames = ['tram', 'ferry', 'junk', 'taxi', 'lantern', 'bauhinia', 'cable-car', 'dim-sum'];
+    const tokenColors = ['#b85f55', '#4d83a9', '#5d8c65', '#bd8f46', '#8a63a4', '#cb798c', '#4f918c', '#8b6749'];
+    const tokenTiles = [0, 5, 10, 15, 20, 25, 30, 35];
+    tokenNames.forEach((name, index) => {
+        const tile = board.querySelector(`[data-index="${tokenTiles[index]}"]`);
+        tile.insertAdjacentHTML('beforeend', `<span class="mono-tokens"><i class="mono-token-piece${index === 0 ? ' is-current' : ''}" style="--token:${tokenColors[index]}"><img src="/assets/monopoly/tokens/${tokenStyle}-${name}.png" alt=""></i></span>`);
+    });
+</script>
+</body>
+</html>

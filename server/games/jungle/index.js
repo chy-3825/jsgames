@@ -1,0 +1,4 @@
+const JungleEngine = require('./engine');
+const metadata = { type: 'jungle', name: '斗兽棋', minPlayers: 2, maxPlayers: 2 };
+class JungleSession { constructor(roomId, players) { this.engine = new JungleEngine(roomId, players); this.started = false; } start() { const result = this.engine.start(); if (result.success) this.started = true; return result; } handleAction(id, action) { return this.started ? this.engine.handleAction(id, action) : { success: false, message: '游戏尚未开始' }; } handlePlayerLeave(id) { return this.engine.handlePlayerLeave(id); } getPlayerState(id) { return this.engine.getPlayerState(id); } getPlayerAction(action) { return action; } getWinner() { return this.engine.getWinner(); } }
+module.exports = { metadata, create(roomId, players) { return new JungleSession(roomId, players); } };

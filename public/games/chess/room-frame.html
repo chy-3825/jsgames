@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>国际象棋 3D 棋盘</title>
+    <style>
+        html, body { width: 100%; min-height: 100%; margin: 0; overflow-x: hidden; background: #071219; }
+        #chessFrameMount { min-height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="chessFrameMount"></div>
+    <script type="module">
+        import { createGameClient } from './client.js?v=20260819-2d3d-switch-1';
+
+        const FRAME_SOURCE = 'jsgames-chess-frame';
+        const LOBBY_SOURCE = 'jsgames-chess-lobby';
+        const targetOrigin = location.origin;
+        const post = (type, payload) => parent.postMessage({ source: FRAME_SOURCE, type, payload }, targetOrigin);
+
+        const client = createGameClient({
+            mount: document.querySelector('#chessFrameMount'),
+            send(payload) { post('send', payload); },
+            addLog(message, level = 'info') { post('log', { message, level }); },
+            leaveRoom() { post('leave'); },
+        });
+
+        window.addEventListener('message', event => {
+            if (event.origin !== targetOrigin || event.source !== parent) return;
+            const message = event.data;
+            if (message?.source === LOBBY_SOURCE && message.type === 'gameMessage') client.handleMessage(message.payload);
+        });
+        window.addEventListener('beforeunload', () => client.destroy?.(), { once: true });
+        post('ready');
+    </script>
+</body>
+</html>

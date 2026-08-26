@@ -1,0 +1,4637 @@
+{
+  "generatedAt": "2026-08-20T01:31:23.455Z",
+  "rules": {
+    "board": "15x15",
+    "first": "black",
+    "winLength": 5,
+    "forbiddenMoves": false,
+    "overlineWins": true,
+    "fullBoardDraw": true
+  },
+  "completeGames": [
+    {
+      "roomId": "gobang-acceptance-normal",
+      "moves": [
+        {
+          "playerId": "black",
+          "x": 7,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "playerId": "black",
+          "x": 8,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 0,
+          "y": 2
+        },
+        {
+          "playerId": "black",
+          "x": 9,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 0,
+          "y": 4
+        },
+        {
+          "playerId": "black",
+          "x": 10,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 0,
+          "y": 6
+        },
+        {
+          "playerId": "black",
+          "x": 11,
+          "y": 7
+        }
+      ],
+      "winner": {
+        "id": "black",
+        "name": "黑方"
+      },
+      "drawReason": null,
+      "finalState": {
+        "roomId": "gobang-acceptance-normal",
+        "status": "ended",
+        "turn": "black",
+        "currentTurn": "black",
+        "currentTurnName": "黑方",
+        "players": [
+          {
+            "id": "black",
+            "name": "黑方",
+            "color": "black",
+            "isOnline": true,
+            "isCurrentTurn": true
+          },
+          {
+            "id": "white",
+            "name": "白方",
+            "color": "white",
+            "isOnline": true,
+            "isCurrentTurn": false
+          }
+        ],
+        "pieces": [
+          {
+            "id": "black-1",
+            "x": 7,
+            "y": 7,
+            "color": "black",
+            "move": 1
+          },
+          {
+            "id": "white-2",
+            "x": 0,
+            "y": 0,
+            "color": "white",
+            "move": 2
+          },
+          {
+            "id": "black-3",
+            "x": 8,
+            "y": 7,
+            "color": "black",
+            "move": 3
+          },
+          {
+            "id": "white-4",
+            "x": 0,
+            "y": 2,
+            "color": "white",
+            "move": 4
+          },
+          {
+            "id": "black-5",
+            "x": 9,
+            "y": 7,
+            "color": "black",
+            "move": 5
+          },
+          {
+            "id": "white-6",
+            "x": 0,
+            "y": 4,
+            "color": "white",
+            "move": 6
+          },
+          {
+            "id": "black-7",
+            "x": 10,
+            "y": 7,
+            "color": "black",
+            "move": 7
+          },
+          {
+            "id": "white-8",
+            "x": 0,
+            "y": 6,
+            "color": "white",
+            "move": 8
+          },
+          {
+            "id": "black-9",
+            "x": 11,
+            "y": 7,
+            "color": "black",
+            "move": 9
+          }
+        ],
+        "lastMove": {
+          "x": 11,
+          "y": 7,
+          "color": "black",
+          "playerId": "black",
+          "move": 9
+        },
+        "lastAction": {
+          "kind": "place",
+          "playerId": "black",
+          "playerName": "黑方",
+          "x": 11,
+          "y": 7,
+          "color": "black",
+          "message": "黑方 落子于 L8"
+        },
+        "actionLog": [
+          "黑方 执黑，黑方先行",
+          "黑方 落子于 H8",
+          "白方 落子于 A1",
+          "黑方 落子于 I8",
+          "白方 落子于 A3",
+          "黑方 落子于 J8",
+          "白方 落子于 A5",
+          "黑方 落子于 K8",
+          "白方 落子于 A7",
+          "黑方 落子于 L8",
+          "黑方 五子连珠，获胜"
+        ],
+        "winner": {
+          "id": "black",
+          "name": "黑方",
+          "color": "black"
+        },
+        "drawReason": null,
+        "moveNumber": 9,
+        "rules": {
+          "board": {
+            "width": 15,
+            "height": 15
+          },
+          "winLength": 5,
+          "forbiddenMoves": false,
+          "overlineWins": true
+        }
+      }
+    },
+    {
+      "roomId": "gobang-acceptance-rules",
+      "moves": [
+        {
+          "playerId": "black",
+          "x": 6,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 14,
+          "y": 14
+        },
+        {
+          "playerId": "black",
+          "x": 8,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 14,
+          "y": 12
+        },
+        {
+          "playerId": "black",
+          "x": 7,
+          "y": 6
+        },
+        {
+          "playerId": "white",
+          "x": 14,
+          "y": 10
+        },
+        {
+          "playerId": "black",
+          "x": 7,
+          "y": 8
+        },
+        {
+          "playerId": "white",
+          "x": 14,
+          "y": 8
+        },
+        {
+          "playerId": "black",
+          "x": 7,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 14,
+          "y": 6
+        },
+        {
+          "playerId": "black",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "playerId": "white",
+          "x": 13,
+          "y": 13
+        },
+        {
+          "playerId": "black",
+          "x": 1,
+          "y": 0
+        },
+        {
+          "playerId": "white",
+          "x": 12,
+          "y": 11
+        },
+        {
+          "playerId": "black",
+          "x": 2,
+          "y": 0
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 9
+        },
+        {
+          "playerId": "black",
+          "x": 4,
+          "y": 0
+        },
+        {
+          "playerId": "white",
+          "x": 10,
+          "y": 7
+        },
+        {
+          "playerId": "black",
+          "x": 5,
+          "y": 0
+        },
+        {
+          "playerId": "white",
+          "x": 9,
+          "y": 5
+        },
+        {
+          "playerId": "black",
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "winner": {
+        "id": "black",
+        "name": "黑方"
+      },
+      "drawReason": null,
+      "finalState": {
+        "roomId": "gobang-acceptance-rules",
+        "status": "ended",
+        "turn": "black",
+        "currentTurn": "black",
+        "currentTurnName": "黑方",
+        "players": [
+          {
+            "id": "black",
+            "name": "黑方",
+            "color": "black",
+            "isOnline": true,
+            "isCurrentTurn": true
+          },
+          {
+            "id": "white",
+            "name": "白方",
+            "color": "white",
+            "isOnline": true,
+            "isCurrentTurn": false
+          }
+        ],
+        "pieces": [
+          {
+            "id": "black-1",
+            "x": 6,
+            "y": 7,
+            "color": "black",
+            "move": 1
+          },
+          {
+            "id": "white-2",
+            "x": 14,
+            "y": 14,
+            "color": "white",
+            "move": 2
+          },
+          {
+            "id": "black-3",
+            "x": 8,
+            "y": 7,
+            "color": "black",
+            "move": 3
+          },
+          {
+            "id": "white-4",
+            "x": 14,
+            "y": 12,
+            "color": "white",
+            "move": 4
+          },
+          {
+            "id": "black-5",
+            "x": 7,
+            "y": 6,
+            "color": "black",
+            "move": 5
+          },
+          {
+            "id": "white-6",
+            "x": 14,
+            "y": 10,
+            "color": "white",
+            "move": 6
+          },
+          {
+            "id": "black-7",
+            "x": 7,
+            "y": 8,
+            "color": "black",
+            "move": 7
+          },
+          {
+            "id": "white-8",
+            "x": 14,
+            "y": 8,
+            "color": "white",
+            "move": 8
+          },
+          {
+            "id": "black-9",
+            "x": 7,
+            "y": 7,
+            "color": "black",
+            "move": 9
+          },
+          {
+            "id": "white-10",
+            "x": 14,
+            "y": 6,
+            "color": "white",
+            "move": 10
+          },
+          {
+            "id": "black-11",
+            "x": 0,
+            "y": 0,
+            "color": "black",
+            "move": 11
+          },
+          {
+            "id": "white-12",
+            "x": 13,
+            "y": 13,
+            "color": "white",
+            "move": 12
+          },
+          {
+            "id": "black-13",
+            "x": 1,
+            "y": 0,
+            "color": "black",
+            "move": 13
+          },
+          {
+            "id": "white-14",
+            "x": 12,
+            "y": 11,
+            "color": "white",
+            "move": 14
+          },
+          {
+            "id": "black-15",
+            "x": 2,
+            "y": 0,
+            "color": "black",
+            "move": 15
+          },
+          {
+            "id": "white-16",
+            "x": 11,
+            "y": 9,
+            "color": "white",
+            "move": 16
+          },
+          {
+            "id": "black-17",
+            "x": 4,
+            "y": 0,
+            "color": "black",
+            "move": 17
+          },
+          {
+            "id": "white-18",
+            "x": 10,
+            "y": 7,
+            "color": "white",
+            "move": 18
+          },
+          {
+            "id": "black-19",
+            "x": 5,
+            "y": 0,
+            "color": "black",
+            "move": 19
+          },
+          {
+            "id": "white-20",
+            "x": 9,
+            "y": 5,
+            "color": "white",
+            "move": 20
+          },
+          {
+            "id": "black-21",
+            "x": 3,
+            "y": 0,
+            "color": "black",
+            "move": 21
+          }
+        ],
+        "lastMove": {
+          "x": 3,
+          "y": 0,
+          "color": "black",
+          "playerId": "black",
+          "move": 21
+        },
+        "lastAction": {
+          "kind": "place",
+          "playerId": "black",
+          "playerName": "黑方",
+          "x": 3,
+          "y": 0,
+          "color": "black",
+          "message": "黑方 落子于 D1"
+        },
+        "actionLog": [
+          "黑方 落子于 H8",
+          "白方 落子于 O7",
+          "黑方 落子于 A1",
+          "白方 落子于 N14",
+          "黑方 落子于 B1",
+          "白方 落子于 M12",
+          "黑方 落子于 C1",
+          "白方 落子于 L10",
+          "黑方 落子于 E1",
+          "白方 落子于 K8",
+          "黑方 落子于 F1",
+          "白方 落子于 J6",
+          "黑方 落子于 D1",
+          "黑方 五子连珠，获胜"
+        ],
+        "winner": {
+          "id": "black",
+          "name": "黑方",
+          "color": "black"
+        },
+        "drawReason": null,
+        "moveNumber": 21,
+        "rules": {
+          "board": {
+            "width": 15,
+            "height": 15
+          },
+          "winLength": 5,
+          "forbiddenMoves": false,
+          "overlineWins": true
+        }
+      }
+    },
+    {
+      "seed": 1592594996,
+      "roomId": "gobang-acceptance-random",
+      "moves": [
+        {
+          "playerId": "black",
+          "x": 3,
+          "y": 6
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 1
+        },
+        {
+          "playerId": "black",
+          "x": 4,
+          "y": 4
+        },
+        {
+          "playerId": "white",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "playerId": "black",
+          "x": 12,
+          "y": 6
+        },
+        {
+          "playerId": "white",
+          "x": 2,
+          "y": 7
+        },
+        {
+          "playerId": "black",
+          "x": 0,
+          "y": 6
+        },
+        {
+          "playerId": "white",
+          "x": 2,
+          "y": 2
+        },
+        {
+          "playerId": "black",
+          "x": 3,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 0,
+          "y": 7
+        },
+        {
+          "playerId": "black",
+          "x": 13,
+          "y": 6
+        },
+        {
+          "playerId": "white",
+          "x": 9,
+          "y": 2
+        },
+        {
+          "playerId": "black",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 13
+        },
+        {
+          "playerId": "black",
+          "x": 14,
+          "y": 10
+        },
+        {
+          "playerId": "white",
+          "x": 8,
+          "y": 8
+        },
+        {
+          "playerId": "black",
+          "x": 9,
+          "y": 3
+        },
+        {
+          "playerId": "white",
+          "x": 13,
+          "y": 12
+        },
+        {
+          "playerId": "black",
+          "x": 14,
+          "y": 13
+        },
+        {
+          "playerId": "white",
+          "x": 2,
+          "y": 13
+        },
+        {
+          "playerId": "black",
+          "x": 14,
+          "y": 9
+        },
+        {
+          "playerId": "white",
+          "x": 13,
+          "y": 13
+        },
+        {
+          "playerId": "black",
+          "x": 3,
+          "y": 12
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 14
+        },
+        {
+          "playerId": "black",
+          "x": 7,
+          "y": 1
+        },
+        {
+          "playerId": "white",
+          "x": 5,
+          "y": 2
+        },
+        {
+          "playerId": "black",
+          "x": 2,
+          "y": 9
+        },
+        {
+          "playerId": "white",
+          "x": 7,
+          "y": 12
+        },
+        {
+          "playerId": "black",
+          "x": 6,
+          "y": 10
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 11
+        },
+        {
+          "playerId": "black",
+          "x": 5,
+          "y": 11
+        },
+        {
+          "playerId": "white",
+          "x": 7,
+          "y": 7
+        },
+        {
+          "playerId": "black",
+          "x": 12,
+          "y": 13
+        },
+        {
+          "playerId": "white",
+          "x": 2,
+          "y": 5
+        },
+        {
+          "playerId": "black",
+          "x": 10,
+          "y": 3
+        },
+        {
+          "playerId": "white",
+          "x": 8,
+          "y": 4
+        },
+        {
+          "playerId": "black",
+          "x": 0,
+          "y": 2
+        },
+        {
+          "playerId": "white",
+          "x": 0,
+          "y": 1
+        },
+        {
+          "playerId": "black",
+          "x": 14,
+          "y": 1
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 0
+        },
+        {
+          "playerId": "black",
+          "x": 6,
+          "y": 2
+        },
+        {
+          "playerId": "white",
+          "x": 3,
+          "y": 0
+        },
+        {
+          "playerId": "black",
+          "x": 12,
+          "y": 10
+        },
+        {
+          "playerId": "white",
+          "x": 14,
+          "y": 11
+        },
+        {
+          "playerId": "black",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "playerId": "white",
+          "x": 10,
+          "y": 11
+        },
+        {
+          "playerId": "black",
+          "x": 2,
+          "y": 4
+        },
+        {
+          "playerId": "white",
+          "x": 4,
+          "y": 14
+        },
+        {
+          "playerId": "black",
+          "x": 8,
+          "y": 0
+        },
+        {
+          "playerId": "white",
+          "x": 12,
+          "y": 2
+        },
+        {
+          "playerId": "black",
+          "x": 11,
+          "y": 12
+        },
+        {
+          "playerId": "white",
+          "x": 6,
+          "y": 6
+        },
+        {
+          "playerId": "black",
+          "x": 5,
+          "y": 14
+        },
+        {
+          "playerId": "white",
+          "x": 8,
+          "y": 3
+        },
+        {
+          "playerId": "black",
+          "x": 1,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 5,
+          "y": 3
+        },
+        {
+          "playerId": "black",
+          "x": 4,
+          "y": 9
+        },
+        {
+          "playerId": "white",
+          "x": 3,
+          "y": 4
+        },
+        {
+          "playerId": "black",
+          "x": 14,
+          "y": 3
+        },
+        {
+          "playerId": "white",
+          "x": 0,
+          "y": 14
+        },
+        {
+          "playerId": "black",
+          "x": 9,
+          "y": 11
+        },
+        {
+          "playerId": "white",
+          "x": 7,
+          "y": 10
+        },
+        {
+          "playerId": "black",
+          "x": 8,
+          "y": 11
+        },
+        {
+          "playerId": "white",
+          "x": 10,
+          "y": 9
+        },
+        {
+          "playerId": "black",
+          "x": 8,
+          "y": 2
+        },
+        {
+          "playerId": "white",
+          "x": 8,
+          "y": 1
+        },
+        {
+          "playerId": "black",
+          "x": 5,
+          "y": 6
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 3
+        },
+        {
+          "playerId": "black",
+          "x": 9,
+          "y": 4
+        },
+        {
+          "playerId": "white",
+          "x": 9,
+          "y": 9
+        },
+        {
+          "playerId": "black",
+          "x": 0,
+          "y": 10
+        },
+        {
+          "playerId": "white",
+          "x": 5,
+          "y": 4
+        },
+        {
+          "playerId": "black",
+          "x": 3,
+          "y": 13
+        },
+        {
+          "playerId": "white",
+          "x": 7,
+          "y": 13
+        },
+        {
+          "playerId": "black",
+          "x": 14,
+          "y": 14
+        },
+        {
+          "playerId": "white",
+          "x": 3,
+          "y": 5
+        },
+        {
+          "playerId": "black",
+          "x": 1,
+          "y": 5
+        },
+        {
+          "playerId": "white",
+          "x": 2,
+          "y": 11
+        },
+        {
+          "playerId": "black",
+          "x": 7,
+          "y": 3
+        },
+        {
+          "playerId": "white",
+          "x": 9,
+          "y": 0
+        },
+        {
+          "playerId": "black",
+          "x": 9,
+          "y": 14
+        },
+        {
+          "playerId": "white",
+          "x": 5,
+          "y": 10
+        },
+        {
+          "playerId": "black",
+          "x": 13,
+          "y": 9
+        },
+        {
+          "playerId": "white",
+          "x": 6,
+          "y": 7
+        },
+        {
+          "playerId": "black",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 6
+        },
+        {
+          "playerId": "black",
+          "x": 4,
+          "y": 1
+        },
+        {
+          "playerId": "white",
+          "x": 7,
+          "y": 5
+        },
+        {
+          "playerId": "black",
+          "x": 13,
+          "y": 7
+        },
+        {
+          "playerId": "white",
+          "x": 11,
+          "y": 2
+        },
+        {
+          "playerId": "black",
+          "x": 10,
+          "y": 12
+        },
+        {
+          "playerId": "white",
+          "x": 3,
+          "y": 14
+        },
+        {
+          "playerId": "black",
+          "x": 3,
+          "y": 1
+        },
+        {
+          "playerId": "white",
+          "x": 7,
+          "y": 14
+        },
+        {
+          "playerId": "black",
+          "x": 13,
+          "y": 11
+        },
+        {
+          "playerId": "white",
+          "x": 4,
+          "y": 13
+        },
+        {
+          "playerId": "black",
+          "x": 13,
+          "y": 1
+        },
+        {
+          "playerId": "white",
+          "x": 14,
+          "y": 7
+        },
+        {
+          "playerId": "black",
+          "x": 4,
+          "y": 10
+        },
+        {
+          "playerId": "white",
+          "x": 3,
+          "y": 10
+        },
+        {
+          "playerId": "black",
+          "x": 1,
+          "y": 11
+        },
+        {
+          "playerId": "white",
+          "x": 14,
+          "y": 0
+        },
+        {
+          "playerId": "black",
+          "x": 13,
+          "y": 10
+        },
+        {
+          "playerId": "white",
+          "x": 9,
+          "y": 6
+        },
+        {
+          "playerId": "black",
+          "x": 3,
+          "y": 11
+        },
+        {
+          "playerId": "white",
+          "x": 10,
+          "y": 5
+        },
+        {
+          "playerId": "black",
+          "x": 2,
+          "y": 1
+        },
+        {
+          "playerId": "white",
+          "x": 13,
+          "y": 8
+        },
+        {
+          "playerId": "black",
+          "x": 8,
+          "y": 12
+        },
+        {
+          "playerId": "white",
+          "x": 4,
+          "y": 7
+        },
+        {
+          "playerId": "black",
+          "x": 0,
+          "y": 9
+        },
+        {
+          "playerId": "white",
+          "x": 5,
+          "y": 5
+        }
+      ],
+      "winner": {
+        "id": "white",
+        "name": "白方"
+      },
+      "drawReason": null,
+      "finalState": {
+        "roomId": "gobang-acceptance-random",
+        "status": "ended",
+        "turn": "white",
+        "currentTurn": "white",
+        "currentTurnName": "白方",
+        "players": [
+          {
+            "id": "black",
+            "name": "黑方",
+            "color": "black",
+            "isOnline": true,
+            "isCurrentTurn": false
+          },
+          {
+            "id": "white",
+            "name": "白方",
+            "color": "white",
+            "isOnline": true,
+            "isCurrentTurn": true
+          }
+        ],
+        "pieces": [
+          {
+            "id": "black-1",
+            "x": 3,
+            "y": 6,
+            "color": "black",
+            "move": 1
+          },
+          {
+            "id": "white-2",
+            "x": 11,
+            "y": 1,
+            "color": "white",
+            "move": 2
+          },
+          {
+            "id": "black-3",
+            "x": 4,
+            "y": 4,
+            "color": "black",
+            "move": 3
+          },
+          {
+            "id": "white-4",
+            "x": 13,
+            "y": 5,
+            "color": "white",
+            "move": 4
+          },
+          {
+            "id": "black-5",
+            "x": 12,
+            "y": 6,
+            "color": "black",
+            "move": 5
+          },
+          {
+            "id": "white-6",
+            "x": 2,
+            "y": 7,
+            "color": "white",
+            "move": 6
+          },
+          {
+            "id": "black-7",
+            "x": 0,
+            "y": 6,
+            "color": "black",
+            "move": 7
+          },
+          {
+            "id": "white-8",
+            "x": 2,
+            "y": 2,
+            "color": "white",
+            "move": 8
+          },
+          {
+            "id": "black-9",
+            "x": 3,
+            "y": 7,
+            "color": "black",
+            "move": 9
+          },
+          {
+            "id": "white-10",
+            "x": 0,
+            "y": 7,
+            "color": "white",
+            "move": 10
+          },
+          {
+            "id": "black-11",
+            "x": 13,
+            "y": 6,
+            "color": "black",
+            "move": 11
+          },
+          {
+            "id": "white-12",
+            "x": 9,
+            "y": 2,
+            "color": "white",
+            "move": 12
+          },
+          {
+            "id": "black-13",
+            "x": 0,
+            "y": 0,
+            "color": "black",
+            "move": 13
+          },
+          {
+            "id": "white-14",
+            "x": 11,
+            "y": 13,
+            "color": "white",
+            "move": 14
+          },
+          {
+            "id": "black-15",
+            "x": 14,
+            "y": 10,
+            "color": "black",
+            "move": 15
+          },
+          {
+            "id": "white-16",
+            "x": 8,
+            "y": 8,
+            "color": "white",
+            "move": 16
+          },
+          {
+            "id": "black-17",
+            "x": 9,
+            "y": 3,
+            "color": "black",
+            "move": 17
+          },
+          {
+            "id": "white-18",
+            "x": 13,
+            "y": 12,
+            "color": "white",
+            "move": 18
+          },
+          {
+            "id": "black-19",
+            "x": 14,
+            "y": 13,
+            "color": "black",
+            "move": 19
+          },
+          {
+            "id": "white-20",
+            "x": 2,
+            "y": 13,
+            "color": "white",
+            "move": 20
+          },
+          {
+            "id": "black-21",
+            "x": 14,
+            "y": 9,
+            "color": "black",
+            "move": 21
+          },
+          {
+            "id": "white-22",
+            "x": 13,
+            "y": 13,
+            "color": "white",
+            "move": 22
+          },
+          {
+            "id": "black-23",
+            "x": 3,
+            "y": 12,
+            "color": "black",
+            "move": 23
+          },
+          {
+            "id": "white-24",
+            "x": 11,
+            "y": 14,
+            "color": "white",
+            "move": 24
+          },
+          {
+            "id": "black-25",
+            "x": 7,
+            "y": 1,
+            "color": "black",
+            "move": 25
+          },
+          {
+            "id": "white-26",
+            "x": 5,
+            "y": 2,
+            "color": "white",
+            "move": 26
+          },
+          {
+            "id": "black-27",
+            "x": 2,
+            "y": 9,
+            "color": "black",
+            "move": 27
+          },
+          {
+            "id": "white-28",
+            "x": 7,
+            "y": 12,
+            "color": "white",
+            "move": 28
+          },
+          {
+            "id": "black-29",
+            "x": 6,
+            "y": 10,
+            "color": "black",
+            "move": 29
+          },
+          {
+            "id": "white-30",
+            "x": 11,
+            "y": 11,
+            "color": "white",
+            "move": 30
+          },
+          {
+            "id": "black-31",
+            "x": 5,
+            "y": 11,
+            "color": "black",
+            "move": 31
+          },
+          {
+            "id": "white-32",
+            "x": 7,
+            "y": 7,
+            "color": "white",
+            "move": 32
+          },
+          {
+            "id": "black-33",
+            "x": 12,
+            "y": 13,
+            "color": "black",
+            "move": 33
+          },
+          {
+            "id": "white-34",
+            "x": 2,
+            "y": 5,
+            "color": "white",
+            "move": 34
+          },
+          {
+            "id": "black-35",
+            "x": 10,
+            "y": 3,
+            "color": "black",
+            "move": 35
+          },
+          {
+            "id": "white-36",
+            "x": 8,
+            "y": 4,
+            "color": "white",
+            "move": 36
+          },
+          {
+            "id": "black-37",
+            "x": 0,
+            "y": 2,
+            "color": "black",
+            "move": 37
+          },
+          {
+            "id": "white-38",
+            "x": 0,
+            "y": 1,
+            "color": "white",
+            "move": 38
+          },
+          {
+            "id": "black-39",
+            "x": 14,
+            "y": 1,
+            "color": "black",
+            "move": 39
+          },
+          {
+            "id": "white-40",
+            "x": 11,
+            "y": 0,
+            "color": "white",
+            "move": 40
+          },
+          {
+            "id": "black-41",
+            "x": 6,
+            "y": 2,
+            "color": "black",
+            "move": 41
+          },
+          {
+            "id": "white-42",
+            "x": 3,
+            "y": 0,
+            "color": "white",
+            "move": 42
+          },
+          {
+            "id": "black-43",
+            "x": 12,
+            "y": 10,
+            "color": "black",
+            "move": 43
+          },
+          {
+            "id": "white-44",
+            "x": 14,
+            "y": 11,
+            "color": "white",
+            "move": 44
+          },
+          {
+            "id": "black-45",
+            "x": 5,
+            "y": 8,
+            "color": "black",
+            "move": 45
+          },
+          {
+            "id": "white-46",
+            "x": 10,
+            "y": 11,
+            "color": "white",
+            "move": 46
+          },
+          {
+            "id": "black-47",
+            "x": 2,
+            "y": 4,
+            "color": "black",
+            "move": 47
+          },
+          {
+            "id": "white-48",
+            "x": 4,
+            "y": 14,
+            "color": "white",
+            "move": 48
+          },
+          {
+            "id": "black-49",
+            "x": 8,
+            "y": 0,
+            "color": "black",
+            "move": 49
+          },
+          {
+            "id": "white-50",
+            "x": 12,
+            "y": 2,
+            "color": "white",
+            "move": 50
+          },
+          {
+            "id": "black-51",
+            "x": 11,
+            "y": 12,
+            "color": "black",
+            "move": 51
+          },
+          {
+            "id": "white-52",
+            "x": 6,
+            "y": 6,
+            "color": "white",
+            "move": 52
+          },
+          {
+            "id": "black-53",
+            "x": 5,
+            "y": 14,
+            "color": "black",
+            "move": 53
+          },
+          {
+            "id": "white-54",
+            "x": 8,
+            "y": 3,
+            "color": "white",
+            "move": 54
+          },
+          {
+            "id": "black-55",
+            "x": 1,
+            "y": 7,
+            "color": "black",
+            "move": 55
+          },
+          {
+            "id": "white-56",
+            "x": 5,
+            "y": 3,
+            "color": "white",
+            "move": 56
+          },
+          {
+            "id": "black-57",
+            "x": 4,
+            "y": 9,
+            "color": "black",
+            "move": 57
+          },
+          {
+            "id": "white-58",
+            "x": 3,
+            "y": 4,
+            "color": "white",
+            "move": 58
+          },
+          {
+            "id": "black-59",
+            "x": 14,
+            "y": 3,
+            "color": "black",
+            "move": 59
+          },
+          {
+            "id": "white-60",
+            "x": 0,
+            "y": 14,
+            "color": "white",
+            "move": 60
+          },
+          {
+            "id": "black-61",
+            "x": 9,
+            "y": 11,
+            "color": "black",
+            "move": 61
+          },
+          {
+            "id": "white-62",
+            "x": 7,
+            "y": 10,
+            "color": "white",
+            "move": 62
+          },
+          {
+            "id": "black-63",
+            "x": 8,
+            "y": 11,
+            "color": "black",
+            "move": 63
+          },
+          {
+            "id": "white-64",
+            "x": 10,
+            "y": 9,
+            "color": "white",
+            "move": 64
+          },
+          {
+            "id": "black-65",
+            "x": 8,
+            "y": 2,
+            "color": "black",
+            "move": 65
+          },
+          {
+            "id": "white-66",
+            "x": 8,
+            "y": 1,
+            "color": "white",
+            "move": 66
+          },
+          {
+            "id": "black-67",
+            "x": 5,
+            "y": 6,
+            "color": "black",
+            "move": 67
+          },
+          {
+            "id": "white-68",
+            "x": 11,
+            "y": 3,
+            "color": "white",
+            "move": 68
+          },
+          {
+            "id": "black-69",
+            "x": 9,
+            "y": 4,
+            "color": "black",
+            "move": 69
+          },
+          {
+            "id": "white-70",
+            "x": 9,
+            "y": 9,
+            "color": "white",
+            "move": 70
+          },
+          {
+            "id": "black-71",
+            "x": 0,
+            "y": 10,
+            "color": "black",
+            "move": 71
+          },
+          {
+            "id": "white-72",
+            "x": 5,
+            "y": 4,
+            "color": "white",
+            "move": 72
+          },
+          {
+            "id": "black-73",
+            "x": 3,
+            "y": 13,
+            "color": "black",
+            "move": 73
+          },
+          {
+            "id": "white-74",
+            "x": 7,
+            "y": 13,
+            "color": "white",
+            "move": 74
+          },
+          {
+            "id": "black-75",
+            "x": 14,
+            "y": 14,
+            "color": "black",
+            "move": 75
+          },
+          {
+            "id": "white-76",
+            "x": 3,
+            "y": 5,
+            "color": "white",
+            "move": 76
+          },
+          {
+            "id": "black-77",
+            "x": 1,
+            "y": 5,
+            "color": "black",
+            "move": 77
+          },
+          {
+            "id": "white-78",
+            "x": 2,
+            "y": 11,
+            "color": "white",
+            "move": 78
+          },
+          {
+            "id": "black-79",
+            "x": 7,
+            "y": 3,
+            "color": "black",
+            "move": 79
+          },
+          {
+            "id": "white-80",
+            "x": 9,
+            "y": 0,
+            "color": "white",
+            "move": 80
+          },
+          {
+            "id": "black-81",
+            "x": 9,
+            "y": 14,
+            "color": "black",
+            "move": 81
+          },
+          {
+            "id": "white-82",
+            "x": 5,
+            "y": 10,
+            "color": "white",
+            "move": 82
+          },
+          {
+            "id": "black-83",
+            "x": 13,
+            "y": 9,
+            "color": "black",
+            "move": 83
+          },
+          {
+            "id": "white-84",
+            "x": 6,
+            "y": 7,
+            "color": "white",
+            "move": 84
+          },
+          {
+            "id": "black-85",
+            "x": 12,
+            "y": 5,
+            "color": "black",
+            "move": 85
+          },
+          {
+            "id": "white-86",
+            "x": 11,
+            "y": 6,
+            "color": "white",
+            "move": 86
+          },
+          {
+            "id": "black-87",
+            "x": 4,
+            "y": 1,
+            "color": "black",
+            "move": 87
+          },
+          {
+            "id": "white-88",
+            "x": 7,
+            "y": 5,
+            "color": "white",
+            "move": 88
+          },
+          {
+            "id": "black-89",
+            "x": 13,
+            "y": 7,
+            "color": "black",
+            "move": 89
+          },
+          {
+            "id": "white-90",
+            "x": 11,
+            "y": 2,
+            "color": "white",
+            "move": 90
+          },
+          {
+            "id": "black-91",
+            "x": 10,
+            "y": 12,
+            "color": "black",
+            "move": 91
+          },
+          {
+            "id": "white-92",
+            "x": 3,
+            "y": 14,
+            "color": "white",
+            "move": 92
+          },
+          {
+            "id": "black-93",
+            "x": 3,
+            "y": 1,
+            "color": "black",
+            "move": 93
+          },
+          {
+            "id": "white-94",
+            "x": 7,
+            "y": 14,
+            "color": "white",
+            "move": 94
+          },
+          {
+            "id": "black-95",
+            "x": 13,
+            "y": 11,
+            "color": "black",
+            "move": 95
+          },
+          {
+            "id": "white-96",
+            "x": 4,
+            "y": 13,
+            "color": "white",
+            "move": 96
+          },
+          {
+            "id": "black-97",
+            "x": 13,
+            "y": 1,
+            "color": "black",
+            "move": 97
+          },
+          {
+            "id": "white-98",
+            "x": 14,
+            "y": 7,
+            "color": "white",
+            "move": 98
+          },
+          {
+            "id": "black-99",
+            "x": 4,
+            "y": 10,
+            "color": "black",
+            "move": 99
+          },
+          {
+            "id": "white-100",
+            "x": 3,
+            "y": 10,
+            "color": "white",
+            "move": 100
+          },
+          {
+            "id": "black-101",
+            "x": 1,
+            "y": 11,
+            "color": "black",
+            "move": 101
+          },
+          {
+            "id": "white-102",
+            "x": 14,
+            "y": 0,
+            "color": "white",
+            "move": 102
+          },
+          {
+            "id": "black-103",
+            "x": 13,
+            "y": 10,
+            "color": "black",
+            "move": 103
+          },
+          {
+            "id": "white-104",
+            "x": 9,
+            "y": 6,
+            "color": "white",
+            "move": 104
+          },
+          {
+            "id": "black-105",
+            "x": 3,
+            "y": 11,
+            "color": "black",
+            "move": 105
+          },
+          {
+            "id": "white-106",
+            "x": 10,
+            "y": 5,
+            "color": "white",
+            "move": 106
+          },
+          {
+            "id": "black-107",
+            "x": 2,
+            "y": 1,
+            "color": "black",
+            "move": 107
+          },
+          {
+            "id": "white-108",
+            "x": 13,
+            "y": 8,
+            "color": "white",
+            "move": 108
+          },
+          {
+            "id": "black-109",
+            "x": 8,
+            "y": 12,
+            "color": "black",
+            "move": 109
+          },
+          {
+            "id": "white-110",
+            "x": 4,
+            "y": 7,
+            "color": "white",
+            "move": 110
+          },
+          {
+            "id": "black-111",
+            "x": 0,
+            "y": 9,
+            "color": "black",
+            "move": 111
+          },
+          {
+            "id": "white-112",
+            "x": 5,
+            "y": 5,
+            "color": "white",
+            "move": 112
+          }
+        ],
+        "lastMove": {
+          "x": 5,
+          "y": 5,
+          "color": "white",
+          "playerId": "white",
+          "move": 112
+        },
+        "lastAction": {
+          "kind": "place",
+          "playerId": "white",
+          "playerName": "白方",
+          "x": 5,
+          "y": 5,
+          "color": "white",
+          "message": "白方 落子于 F6"
+        },
+        "actionLog": [
+          "白方 落子于 D11",
+          "黑方 落子于 B12",
+          "白方 落子于 O1",
+          "黑方 落子于 N11",
+          "白方 落子于 J7",
+          "黑方 落子于 D12",
+          "白方 落子于 K6",
+          "黑方 落子于 C2",
+          "白方 落子于 N9",
+          "黑方 落子于 I13",
+          "白方 落子于 E8",
+          "黑方 落子于 A10",
+          "白方 落子于 F6",
+          "白方 五子连珠，获胜"
+        ],
+        "winner": {
+          "id": "white",
+          "name": "白方",
+          "color": "white"
+        },
+        "drawReason": null,
+        "moveNumber": 112,
+        "rules": {
+          "board": {
+            "width": 15,
+            "height": 15
+          },
+          "winLength": 5,
+          "forbiddenMoves": false,
+          "overlineWins": true
+        }
+      }
+    }
+  ],
+  "deterministicReplay": {
+    "seed": 1592594996,
+    "sameMoves": true
+  },
+  "random100": {
+    "count": 100,
+    "seeds": [
+      1592590336,
+      1592590337,
+      1592590338,
+      1592590339,
+      1592590340,
+      1592590341,
+      1592590342,
+      1592590343,
+      1592590344,
+      1592590345,
+      1592590346,
+      1592590347,
+      1592590348,
+      1592590349,
+      1592590350,
+      1592590351,
+      1592590352,
+      1592590353,
+      1592590354,
+      1592590355,
+      1592590356,
+      1592590357,
+      1592590358,
+      1592590359,
+      1592590360,
+      1592590361,
+      1592590362,
+      1592590363,
+      1592590364,
+      1592590365,
+      1592590366,
+      1592590367,
+      1592590368,
+      1592590369,
+      1592590370,
+      1592590371,
+      1592590372,
+      1592590373,
+      1592590374,
+      1592590375,
+      1592590376,
+      1592590377,
+      1592590378,
+      1592590379,
+      1592590380,
+      1592590381,
+      1592590382,
+      1592590383,
+      1592590384,
+      1592590385,
+      1592590386,
+      1592590387,
+      1592590388,
+      1592590389,
+      1592590390,
+      1592590391,
+      1592590392,
+      1592590393,
+      1592590394,
+      1592590395,
+      1592590396,
+      1592590397,
+      1592590398,
+      1592590399,
+      1592590400,
+      1592590401,
+      1592590402,
+      1592590403,
+      1592590404,
+      1592590405,
+      1592590406,
+      1592590407,
+      1592590408,
+      1592590409,
+      1592590410,
+      1592590411,
+      1592590412,
+      1592590413,
+      1592590414,
+      1592590415,
+      1592590416,
+      1592590417,
+      1592590418,
+      1592590419,
+      1592590420,
+      1592590421,
+      1592590422,
+      1592590423,
+      1592590424,
+      1592590425,
+      1592590426,
+      1592590427,
+      1592590428,
+      1592590429,
+      1592590430,
+      1592590431,
+      1592590432,
+      1592590433,
+      1592590434,
+      1592590435
+    ],
+    "results": [
+      {
+        "seed": 1592590336,
+        "moves": 134,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590337,
+        "moves": 138,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590338,
+        "moves": 109,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590339,
+        "moves": 91,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590340,
+        "moves": 113,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590341,
+        "moves": 134,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590342,
+        "moves": 80,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590343,
+        "moves": 125,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590344,
+        "moves": 131,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590345,
+        "moves": 156,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590346,
+        "moves": 161,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590347,
+        "moves": 85,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590348,
+        "moves": 90,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590349,
+        "moves": 124,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590350,
+        "moves": 99,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590351,
+        "moves": 110,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590352,
+        "moves": 88,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590353,
+        "moves": 72,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590354,
+        "moves": 84,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590355,
+        "moves": 140,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590356,
+        "moves": 130,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590357,
+        "moves": 120,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590358,
+        "moves": 144,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590359,
+        "moves": 70,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590360,
+        "moves": 111,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590361,
+        "moves": 124,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590362,
+        "moves": 88,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590363,
+        "moves": 131,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590364,
+        "moves": 161,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590365,
+        "moves": 134,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590366,
+        "moves": 119,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590367,
+        "moves": 73,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590368,
+        "moves": 97,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590369,
+        "moves": 119,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590370,
+        "moves": 122,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590371,
+        "moves": 78,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590372,
+        "moves": 103,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590373,
+        "moves": 61,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590374,
+        "moves": 98,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590375,
+        "moves": 142,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590376,
+        "moves": 109,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590377,
+        "moves": 69,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590378,
+        "moves": 57,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590379,
+        "moves": 126,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590380,
+        "moves": 144,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590381,
+        "moves": 137,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590382,
+        "moves": 112,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590383,
+        "moves": 116,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590384,
+        "moves": 116,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590385,
+        "moves": 110,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590386,
+        "moves": 120,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590387,
+        "moves": 134,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590388,
+        "moves": 105,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590389,
+        "moves": 80,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590390,
+        "moves": 126,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590391,
+        "moves": 156,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590392,
+        "moves": 108,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590393,
+        "moves": 142,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590394,
+        "moves": 121,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590395,
+        "moves": 124,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590396,
+        "moves": 113,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590397,
+        "moves": 88,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590398,
+        "moves": 48,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590399,
+        "moves": 127,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590400,
+        "moves": 123,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590401,
+        "moves": 77,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590402,
+        "moves": 124,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590403,
+        "moves": 97,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590404,
+        "moves": 125,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590405,
+        "moves": 90,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590406,
+        "moves": 113,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590407,
+        "moves": 157,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590408,
+        "moves": 119,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590409,
+        "moves": 98,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590410,
+        "moves": 87,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590411,
+        "moves": 111,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590412,
+        "moves": 160,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590413,
+        "moves": 127,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590414,
+        "moves": 107,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590415,
+        "moves": 124,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590416,
+        "moves": 121,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590417,
+        "moves": 133,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590418,
+        "moves": 132,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590419,
+        "moves": 125,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590420,
+        "moves": 63,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590421,
+        "moves": 101,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590422,
+        "moves": 130,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590423,
+        "moves": 103,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590424,
+        "moves": 117,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590425,
+        "moves": 124,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590426,
+        "moves": 113,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590427,
+        "moves": 75,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590428,
+        "moves": 121,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590429,
+        "moves": 75,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590430,
+        "moves": 81,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590431,
+        "moves": 144,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590432,
+        "moves": 88,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590433,
+        "moves": 118,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590434,
+        "moves": 90,
+        "winner": {
+          "id": "white",
+          "name": "白方"
+        },
+        "drawReason": null
+      },
+      {
+        "seed": 1592590435,
+        "moves": 91,
+        "winner": {
+          "id": "black",
+          "name": "黑方"
+        },
+        "drawReason": null
+      }
+    ]
+  },
+  "naturalDraw": {
+    "moves": 225,
+    "drawReason": "棋盘已满，和棋",
+    "finalState": {
+      "roomId": "gobang-acceptance-draw",
+      "status": "ended",
+      "turn": "black",
+      "currentTurn": "black",
+      "currentTurnName": "黑方",
+      "players": [
+        {
+          "id": "black",
+          "name": "黑方",
+          "color": "black",
+          "isOnline": true,
+          "isCurrentTurn": true
+        },
+        {
+          "id": "white",
+          "name": "白方",
+          "color": "white",
+          "isOnline": true,
+          "isCurrentTurn": false
+        }
+      ],
+      "pieces": [
+        {
+          "id": "black-1",
+          "x": 0,
+          "y": 0,
+          "color": "black",
+          "move": 1
+        },
+        {
+          "id": "white-2",
+          "x": 2,
+          "y": 0,
+          "color": "white",
+          "move": 2
+        },
+        {
+          "id": "black-3",
+          "x": 1,
+          "y": 0,
+          "color": "black",
+          "move": 3
+        },
+        {
+          "id": "white-4",
+          "x": 3,
+          "y": 0,
+          "color": "white",
+          "move": 4
+        },
+        {
+          "id": "black-5",
+          "x": 4,
+          "y": 0,
+          "color": "black",
+          "move": 5
+        },
+        {
+          "id": "white-6",
+          "x": 6,
+          "y": 0,
+          "color": "white",
+          "move": 6
+        },
+        {
+          "id": "black-7",
+          "x": 5,
+          "y": 0,
+          "color": "black",
+          "move": 7
+        },
+        {
+          "id": "white-8",
+          "x": 7,
+          "y": 0,
+          "color": "white",
+          "move": 8
+        },
+        {
+          "id": "black-9",
+          "x": 8,
+          "y": 0,
+          "color": "black",
+          "move": 9
+        },
+        {
+          "id": "white-10",
+          "x": 10,
+          "y": 0,
+          "color": "white",
+          "move": 10
+        },
+        {
+          "id": "black-11",
+          "x": 9,
+          "y": 0,
+          "color": "black",
+          "move": 11
+        },
+        {
+          "id": "white-12",
+          "x": 11,
+          "y": 0,
+          "color": "white",
+          "move": 12
+        },
+        {
+          "id": "black-13",
+          "x": 12,
+          "y": 0,
+          "color": "black",
+          "move": 13
+        },
+        {
+          "id": "white-14",
+          "x": 14,
+          "y": 0,
+          "color": "white",
+          "move": 14
+        },
+        {
+          "id": "black-15",
+          "x": 13,
+          "y": 0,
+          "color": "black",
+          "move": 15
+        },
+        {
+          "id": "white-16",
+          "x": 0,
+          "y": 1,
+          "color": "white",
+          "move": 16
+        },
+        {
+          "id": "black-17",
+          "x": 2,
+          "y": 1,
+          "color": "black",
+          "move": 17
+        },
+        {
+          "id": "white-18",
+          "x": 1,
+          "y": 1,
+          "color": "white",
+          "move": 18
+        },
+        {
+          "id": "black-19",
+          "x": 3,
+          "y": 1,
+          "color": "black",
+          "move": 19
+        },
+        {
+          "id": "white-20",
+          "x": 4,
+          "y": 1,
+          "color": "white",
+          "move": 20
+        },
+        {
+          "id": "black-21",
+          "x": 6,
+          "y": 1,
+          "color": "black",
+          "move": 21
+        },
+        {
+          "id": "white-22",
+          "x": 5,
+          "y": 1,
+          "color": "white",
+          "move": 22
+        },
+        {
+          "id": "black-23",
+          "x": 7,
+          "y": 1,
+          "color": "black",
+          "move": 23
+        },
+        {
+          "id": "white-24",
+          "x": 8,
+          "y": 1,
+          "color": "white",
+          "move": 24
+        },
+        {
+          "id": "black-25",
+          "x": 10,
+          "y": 1,
+          "color": "black",
+          "move": 25
+        },
+        {
+          "id": "white-26",
+          "x": 9,
+          "y": 1,
+          "color": "white",
+          "move": 26
+        },
+        {
+          "id": "black-27",
+          "x": 11,
+          "y": 1,
+          "color": "black",
+          "move": 27
+        },
+        {
+          "id": "white-28",
+          "x": 12,
+          "y": 1,
+          "color": "white",
+          "move": 28
+        },
+        {
+          "id": "black-29",
+          "x": 14,
+          "y": 1,
+          "color": "black",
+          "move": 29
+        },
+        {
+          "id": "white-30",
+          "x": 13,
+          "y": 1,
+          "color": "white",
+          "move": 30
+        },
+        {
+          "id": "black-31",
+          "x": 0,
+          "y": 2,
+          "color": "black",
+          "move": 31
+        },
+        {
+          "id": "white-32",
+          "x": 2,
+          "y": 2,
+          "color": "white",
+          "move": 32
+        },
+        {
+          "id": "black-33",
+          "x": 1,
+          "y": 2,
+          "color": "black",
+          "move": 33
+        },
+        {
+          "id": "white-34",
+          "x": 3,
+          "y": 2,
+          "color": "white",
+          "move": 34
+        },
+        {
+          "id": "black-35",
+          "x": 4,
+          "y": 2,
+          "color": "black",
+          "move": 35
+        },
+        {
+          "id": "white-36",
+          "x": 6,
+          "y": 2,
+          "color": "white",
+          "move": 36
+        },
+        {
+          "id": "black-37",
+          "x": 5,
+          "y": 2,
+          "color": "black",
+          "move": 37
+        },
+        {
+          "id": "white-38",
+          "x": 7,
+          "y": 2,
+          "color": "white",
+          "move": 38
+        },
+        {
+          "id": "black-39",
+          "x": 8,
+          "y": 2,
+          "color": "black",
+          "move": 39
+        },
+        {
+          "id": "white-40",
+          "x": 10,
+          "y": 2,
+          "color": "white",
+          "move": 40
+        },
+        {
+          "id": "black-41",
+          "x": 9,
+          "y": 2,
+          "color": "black",
+          "move": 41
+        },
+        {
+          "id": "white-42",
+          "x": 11,
+          "y": 2,
+          "color": "white",
+          "move": 42
+        },
+        {
+          "id": "black-43",
+          "x": 12,
+          "y": 2,
+          "color": "black",
+          "move": 43
+        },
+        {
+          "id": "white-44",
+          "x": 14,
+          "y": 2,
+          "color": "white",
+          "move": 44
+        },
+        {
+          "id": "black-45",
+          "x": 13,
+          "y": 2,
+          "color": "black",
+          "move": 45
+        },
+        {
+          "id": "white-46",
+          "x": 0,
+          "y": 3,
+          "color": "white",
+          "move": 46
+        },
+        {
+          "id": "black-47",
+          "x": 2,
+          "y": 3,
+          "color": "black",
+          "move": 47
+        },
+        {
+          "id": "white-48",
+          "x": 1,
+          "y": 3,
+          "color": "white",
+          "move": 48
+        },
+        {
+          "id": "black-49",
+          "x": 3,
+          "y": 3,
+          "color": "black",
+          "move": 49
+        },
+        {
+          "id": "white-50",
+          "x": 4,
+          "y": 3,
+          "color": "white",
+          "move": 50
+        },
+        {
+          "id": "black-51",
+          "x": 6,
+          "y": 3,
+          "color": "black",
+          "move": 51
+        },
+        {
+          "id": "white-52",
+          "x": 5,
+          "y": 3,
+          "color": "white",
+          "move": 52
+        },
+        {
+          "id": "black-53",
+          "x": 7,
+          "y": 3,
+          "color": "black",
+          "move": 53
+        },
+        {
+          "id": "white-54",
+          "x": 8,
+          "y": 3,
+          "color": "white",
+          "move": 54
+        },
+        {
+          "id": "black-55",
+          "x": 10,
+          "y": 3,
+          "color": "black",
+          "move": 55
+        },
+        {
+          "id": "white-56",
+          "x": 9,
+          "y": 3,
+          "color": "white",
+          "move": 56
+        },
+        {
+          "id": "black-57",
+          "x": 11,
+          "y": 3,
+          "color": "black",
+          "move": 57
+        },
+        {
+          "id": "white-58",
+          "x": 12,
+          "y": 3,
+          "color": "white",
+          "move": 58
+        },
+        {
+          "id": "black-59",
+          "x": 14,
+          "y": 3,
+          "color": "black",
+          "move": 59
+        },
+        {
+          "id": "white-60",
+          "x": 13,
+          "y": 3,
+          "color": "white",
+          "move": 60
+        },
+        {
+          "id": "black-61",
+          "x": 0,
+          "y": 4,
+          "color": "black",
+          "move": 61
+        },
+        {
+          "id": "white-62",
+          "x": 2,
+          "y": 4,
+          "color": "white",
+          "move": 62
+        },
+        {
+          "id": "black-63",
+          "x": 1,
+          "y": 4,
+          "color": "black",
+          "move": 63
+        },
+        {
+          "id": "white-64",
+          "x": 3,
+          "y": 4,
+          "color": "white",
+          "move": 64
+        },
+        {
+          "id": "black-65",
+          "x": 4,
+          "y": 4,
+          "color": "black",
+          "move": 65
+        },
+        {
+          "id": "white-66",
+          "x": 6,
+          "y": 4,
+          "color": "white",
+          "move": 66
+        },
+        {
+          "id": "black-67",
+          "x": 5,
+          "y": 4,
+          "color": "black",
+          "move": 67
+        },
+        {
+          "id": "white-68",
+          "x": 7,
+          "y": 4,
+          "color": "white",
+          "move": 68
+        },
+        {
+          "id": "black-69",
+          "x": 8,
+          "y": 4,
+          "color": "black",
+          "move": 69
+        },
+        {
+          "id": "white-70",
+          "x": 10,
+          "y": 4,
+          "color": "white",
+          "move": 70
+        },
+        {
+          "id": "black-71",
+          "x": 9,
+          "y": 4,
+          "color": "black",
+          "move": 71
+        },
+        {
+          "id": "white-72",
+          "x": 11,
+          "y": 4,
+          "color": "white",
+          "move": 72
+        },
+        {
+          "id": "black-73",
+          "x": 12,
+          "y": 4,
+          "color": "black",
+          "move": 73
+        },
+        {
+          "id": "white-74",
+          "x": 14,
+          "y": 4,
+          "color": "white",
+          "move": 74
+        },
+        {
+          "id": "black-75",
+          "x": 13,
+          "y": 4,
+          "color": "black",
+          "move": 75
+        },
+        {
+          "id": "white-76",
+          "x": 0,
+          "y": 5,
+          "color": "white",
+          "move": 76
+        },
+        {
+          "id": "black-77",
+          "x": 2,
+          "y": 5,
+          "color": "black",
+          "move": 77
+        },
+        {
+          "id": "white-78",
+          "x": 1,
+          "y": 5,
+          "color": "white",
+          "move": 78
+        },
+        {
+          "id": "black-79",
+          "x": 3,
+          "y": 5,
+          "color": "black",
+          "move": 79
+        },
+        {
+          "id": "white-80",
+          "x": 4,
+          "y": 5,
+          "color": "white",
+          "move": 80
+        },
+        {
+          "id": "black-81",
+          "x": 6,
+          "y": 5,
+          "color": "black",
+          "move": 81
+        },
+        {
+          "id": "white-82",
+          "x": 5,
+          "y": 5,
+          "color": "white",
+          "move": 82
+        },
+        {
+          "id": "black-83",
+          "x": 7,
+          "y": 5,
+          "color": "black",
+          "move": 83
+        },
+        {
+          "id": "white-84",
+          "x": 8,
+          "y": 5,
+          "color": "white",
+          "move": 84
+        },
+        {
+          "id": "black-85",
+          "x": 10,
+          "y": 5,
+          "color": "black",
+          "move": 85
+        },
+        {
+          "id": "white-86",
+          "x": 9,
+          "y": 5,
+          "color": "white",
+          "move": 86
+        },
+        {
+          "id": "black-87",
+          "x": 11,
+          "y": 5,
+          "color": "black",
+          "move": 87
+        },
+        {
+          "id": "white-88",
+          "x": 12,
+          "y": 5,
+          "color": "white",
+          "move": 88
+        },
+        {
+          "id": "black-89",
+          "x": 14,
+          "y": 5,
+          "color": "black",
+          "move": 89
+        },
+        {
+          "id": "white-90",
+          "x": 13,
+          "y": 5,
+          "color": "white",
+          "move": 90
+        },
+        {
+          "id": "black-91",
+          "x": 0,
+          "y": 6,
+          "color": "black",
+          "move": 91
+        },
+        {
+          "id": "white-92",
+          "x": 2,
+          "y": 6,
+          "color": "white",
+          "move": 92
+        },
+        {
+          "id": "black-93",
+          "x": 1,
+          "y": 6,
+          "color": "black",
+          "move": 93
+        },
+        {
+          "id": "white-94",
+          "x": 3,
+          "y": 6,
+          "color": "white",
+          "move": 94
+        },
+        {
+          "id": "black-95",
+          "x": 4,
+          "y": 6,
+          "color": "black",
+          "move": 95
+        },
+        {
+          "id": "white-96",
+          "x": 6,
+          "y": 6,
+          "color": "white",
+          "move": 96
+        },
+        {
+          "id": "black-97",
+          "x": 5,
+          "y": 6,
+          "color": "black",
+          "move": 97
+        },
+        {
+          "id": "white-98",
+          "x": 7,
+          "y": 6,
+          "color": "white",
+          "move": 98
+        },
+        {
+          "id": "black-99",
+          "x": 8,
+          "y": 6,
+          "color": "black",
+          "move": 99
+        },
+        {
+          "id": "white-100",
+          "x": 10,
+          "y": 6,
+          "color": "white",
+          "move": 100
+        },
+        {
+          "id": "black-101",
+          "x": 9,
+          "y": 6,
+          "color": "black",
+          "move": 101
+        },
+        {
+          "id": "white-102",
+          "x": 11,
+          "y": 6,
+          "color": "white",
+          "move": 102
+        },
+        {
+          "id": "black-103",
+          "x": 12,
+          "y": 6,
+          "color": "black",
+          "move": 103
+        },
+        {
+          "id": "white-104",
+          "x": 14,
+          "y": 6,
+          "color": "white",
+          "move": 104
+        },
+        {
+          "id": "black-105",
+          "x": 13,
+          "y": 6,
+          "color": "black",
+          "move": 105
+        },
+        {
+          "id": "white-106",
+          "x": 0,
+          "y": 7,
+          "color": "white",
+          "move": 106
+        },
+        {
+          "id": "black-107",
+          "x": 2,
+          "y": 7,
+          "color": "black",
+          "move": 107
+        },
+        {
+          "id": "white-108",
+          "x": 1,
+          "y": 7,
+          "color": "white",
+          "move": 108
+        },
+        {
+          "id": "black-109",
+          "x": 3,
+          "y": 7,
+          "color": "black",
+          "move": 109
+        },
+        {
+          "id": "white-110",
+          "x": 4,
+          "y": 7,
+          "color": "white",
+          "move": 110
+        },
+        {
+          "id": "black-111",
+          "x": 6,
+          "y": 7,
+          "color": "black",
+          "move": 111
+        },
+        {
+          "id": "white-112",
+          "x": 5,
+          "y": 7,
+          "color": "white",
+          "move": 112
+        },
+        {
+          "id": "black-113",
+          "x": 7,
+          "y": 7,
+          "color": "black",
+          "move": 113
+        },
+        {
+          "id": "white-114",
+          "x": 8,
+          "y": 7,
+          "color": "white",
+          "move": 114
+        },
+        {
+          "id": "black-115",
+          "x": 10,
+          "y": 7,
+          "color": "black",
+          "move": 115
+        },
+        {
+          "id": "white-116",
+          "x": 9,
+          "y": 7,
+          "color": "white",
+          "move": 116
+        },
+        {
+          "id": "black-117",
+          "x": 11,
+          "y": 7,
+          "color": "black",
+          "move": 117
+        },
+        {
+          "id": "white-118",
+          "x": 12,
+          "y": 7,
+          "color": "white",
+          "move": 118
+        },
+        {
+          "id": "black-119",
+          "x": 14,
+          "y": 7,
+          "color": "black",
+          "move": 119
+        },
+        {
+          "id": "white-120",
+          "x": 13,
+          "y": 7,
+          "color": "white",
+          "move": 120
+        },
+        {
+          "id": "black-121",
+          "x": 0,
+          "y": 8,
+          "color": "black",
+          "move": 121
+        },
+        {
+          "id": "white-122",
+          "x": 2,
+          "y": 8,
+          "color": "white",
+          "move": 122
+        },
+        {
+          "id": "black-123",
+          "x": 1,
+          "y": 8,
+          "color": "black",
+          "move": 123
+        },
+        {
+          "id": "white-124",
+          "x": 3,
+          "y": 8,
+          "color": "white",
+          "move": 124
+        },
+        {
+          "id": "black-125",
+          "x": 4,
+          "y": 8,
+          "color": "black",
+          "move": 125
+        },
+        {
+          "id": "white-126",
+          "x": 6,
+          "y": 8,
+          "color": "white",
+          "move": 126
+        },
+        {
+          "id": "black-127",
+          "x": 5,
+          "y": 8,
+          "color": "black",
+          "move": 127
+        },
+        {
+          "id": "white-128",
+          "x": 7,
+          "y": 8,
+          "color": "white",
+          "move": 128
+        },
+        {
+          "id": "black-129",
+          "x": 8,
+          "y": 8,
+          "color": "black",
+          "move": 129
+        },
+        {
+          "id": "white-130",
+          "x": 10,
+          "y": 8,
+          "color": "white",
+          "move": 130
+        },
+        {
+          "id": "black-131",
+          "x": 9,
+          "y": 8,
+          "color": "black",
+          "move": 131
+        },
+        {
+          "id": "white-132",
+          "x": 11,
+          "y": 8,
+          "color": "white",
+          "move": 132
+        },
+        {
+          "id": "black-133",
+          "x": 12,
+          "y": 8,
+          "color": "black",
+          "move": 133
+        },
+        {
+          "id": "white-134",
+          "x": 14,
+          "y": 8,
+          "color": "white",
+          "move": 134
+        },
+        {
+          "id": "black-135",
+          "x": 13,
+          "y": 8,
+          "color": "black",
+          "move": 135
+        },
+        {
+          "id": "white-136",
+          "x": 0,
+          "y": 9,
+          "color": "white",
+          "move": 136
+        },
+        {
+          "id": "black-137",
+          "x": 2,
+          "y": 9,
+          "color": "black",
+          "move": 137
+        },
+        {
+          "id": "white-138",
+          "x": 1,
+          "y": 9,
+          "color": "white",
+          "move": 138
+        },
+        {
+          "id": "black-139",
+          "x": 3,
+          "y": 9,
+          "color": "black",
+          "move": 139
+        },
+        {
+          "id": "white-140",
+          "x": 4,
+          "y": 9,
+          "color": "white",
+          "move": 140
+        },
+        {
+          "id": "black-141",
+          "x": 6,
+          "y": 9,
+          "color": "black",
+          "move": 141
+        },
+        {
+          "id": "white-142",
+          "x": 5,
+          "y": 9,
+          "color": "white",
+          "move": 142
+        },
+        {
+          "id": "black-143",
+          "x": 7,
+          "y": 9,
+          "color": "black",
+          "move": 143
+        },
+        {
+          "id": "white-144",
+          "x": 8,
+          "y": 9,
+          "color": "white",
+          "move": 144
+        },
+        {
+          "id": "black-145",
+          "x": 10,
+          "y": 9,
+          "color": "black",
+          "move": 145
+        },
+        {
+          "id": "white-146",
+          "x": 9,
+          "y": 9,
+          "color": "white",
+          "move": 146
+        },
+        {
+          "id": "black-147",
+          "x": 11,
+          "y": 9,
+          "color": "black",
+          "move": 147
+        },
+        {
+          "id": "white-148",
+          "x": 12,
+          "y": 9,
+          "color": "white",
+          "move": 148
+        },
+        {
+          "id": "black-149",
+          "x": 14,
+          "y": 9,
+          "color": "black",
+          "move": 149
+        },
+        {
+          "id": "white-150",
+          "x": 13,
+          "y": 9,
+          "color": "white",
+          "move": 150
+        },
+        {
+          "id": "black-151",
+          "x": 0,
+          "y": 10,
+          "color": "black",
+          "move": 151
+        },
+        {
+          "id": "white-152",
+          "x": 2,
+          "y": 10,
+          "color": "white",
+          "move": 152
+        },
+        {
+          "id": "black-153",
+          "x": 1,
+          "y": 10,
+          "color": "black",
+          "move": 153
+        },
+        {
+          "id": "white-154",
+          "x": 3,
+          "y": 10,
+          "color": "white",
+          "move": 154
+        },
+        {
+          "id": "black-155",
+          "x": 4,
+          "y": 10,
+          "color": "black",
+          "move": 155
+        },
+        {
+          "id": "white-156",
+          "x": 6,
+          "y": 10,
+          "color": "white",
+          "move": 156
+        },
+        {
+          "id": "black-157",
+          "x": 5,
+          "y": 10,
+          "color": "black",
+          "move": 157
+        },
+        {
+          "id": "white-158",
+          "x": 7,
+          "y": 10,
+          "color": "white",
+          "move": 158
+        },
+        {
+          "id": "black-159",
+          "x": 8,
+          "y": 10,
+          "color": "black",
+          "move": 159
+        },
+        {
+          "id": "white-160",
+          "x": 10,
+          "y": 10,
+          "color": "white",
+          "move": 160
+        },
+        {
+          "id": "black-161",
+          "x": 9,
+          "y": 10,
+          "color": "black",
+          "move": 161
+        },
+        {
+          "id": "white-162",
+          "x": 11,
+          "y": 10,
+          "color": "white",
+          "move": 162
+        },
+        {
+          "id": "black-163",
+          "x": 12,
+          "y": 10,
+          "color": "black",
+          "move": 163
+        },
+        {
+          "id": "white-164",
+          "x": 14,
+          "y": 10,
+          "color": "white",
+          "move": 164
+        },
+        {
+          "id": "black-165",
+          "x": 13,
+          "y": 10,
+          "color": "black",
+          "move": 165
+        },
+        {
+          "id": "white-166",
+          "x": 0,
+          "y": 11,
+          "color": "white",
+          "move": 166
+        },
+        {
+          "id": "black-167",
+          "x": 2,
+          "y": 11,
+          "color": "black",
+          "move": 167
+        },
+        {
+          "id": "white-168",
+          "x": 1,
+          "y": 11,
+          "color": "white",
+          "move": 168
+        },
+        {
+          "id": "black-169",
+          "x": 3,
+          "y": 11,
+          "color": "black",
+          "move": 169
+        },
+        {
+          "id": "white-170",
+          "x": 4,
+          "y": 11,
+          "color": "white",
+          "move": 170
+        },
+        {
+          "id": "black-171",
+          "x": 6,
+          "y": 11,
+          "color": "black",
+          "move": 171
+        },
+        {
+          "id": "white-172",
+          "x": 5,
+          "y": 11,
+          "color": "white",
+          "move": 172
+        },
+        {
+          "id": "black-173",
+          "x": 7,
+          "y": 11,
+          "color": "black",
+          "move": 173
+        },
+        {
+          "id": "white-174",
+          "x": 8,
+          "y": 11,
+          "color": "white",
+          "move": 174
+        },
+        {
+          "id": "black-175",
+          "x": 10,
+          "y": 11,
+          "color": "black",
+          "move": 175
+        },
+        {
+          "id": "white-176",
+          "x": 9,
+          "y": 11,
+          "color": "white",
+          "move": 176
+        },
+        {
+          "id": "black-177",
+          "x": 11,
+          "y": 11,
+          "color": "black",
+          "move": 177
+        },
+        {
+          "id": "white-178",
+          "x": 12,
+          "y": 11,
+          "color": "white",
+          "move": 178
+        },
+        {
+          "id": "black-179",
+          "x": 14,
+          "y": 11,
+          "color": "black",
+          "move": 179
+        },
+        {
+          "id": "white-180",
+          "x": 13,
+          "y": 11,
+          "color": "white",
+          "move": 180
+        },
+        {
+          "id": "black-181",
+          "x": 0,
+          "y": 12,
+          "color": "black",
+          "move": 181
+        },
+        {
+          "id": "white-182",
+          "x": 2,
+          "y": 12,
+          "color": "white",
+          "move": 182
+        },
+        {
+          "id": "black-183",
+          "x": 1,
+          "y": 12,
+          "color": "black",
+          "move": 183
+        },
+        {
+          "id": "white-184",
+          "x": 3,
+          "y": 12,
+          "color": "white",
+          "move": 184
+        },
+        {
+          "id": "black-185",
+          "x": 4,
+          "y": 12,
+          "color": "black",
+          "move": 185
+        },
+        {
+          "id": "white-186",
+          "x": 6,
+          "y": 12,
+          "color": "white",
+          "move": 186
+        },
+        {
+          "id": "black-187",
+          "x": 5,
+          "y": 12,
+          "color": "black",
+          "move": 187
+        },
+        {
+          "id": "white-188",
+          "x": 7,
+          "y": 12,
+          "color": "white",
+          "move": 188
+        },
+        {
+          "id": "black-189",
+          "x": 8,
+          "y": 12,
+          "color": "black",
+          "move": 189
+        },
+        {
+          "id": "white-190",
+          "x": 10,
+          "y": 12,
+          "color": "white",
+          "move": 190
+        },
+        {
+          "id": "black-191",
+          "x": 9,
+          "y": 12,
+          "color": "black",
+          "move": 191
+        },
+        {
+          "id": "white-192",
+          "x": 11,
+          "y": 12,
+          "color": "white",
+          "move": 192
+        },
+        {
+          "id": "black-193",
+          "x": 12,
+          "y": 12,
+          "color": "black",
+          "move": 193
+        },
+        {
+          "id": "white-194",
+          "x": 14,
+          "y": 12,
+          "color": "white",
+          "move": 194
+        },
+        {
+          "id": "black-195",
+          "x": 13,
+          "y": 12,
+          "color": "black",
+          "move": 195
+        },
+        {
+          "id": "white-196",
+          "x": 0,
+          "y": 13,
+          "color": "white",
+          "move": 196
+        },
+        {
+          "id": "black-197",
+          "x": 2,
+          "y": 13,
+          "color": "black",
+          "move": 197
+        },
+        {
+          "id": "white-198",
+          "x": 1,
+          "y": 13,
+          "color": "white",
+          "move": 198
+        },
+        {
+          "id": "black-199",
+          "x": 3,
+          "y": 13,
+          "color": "black",
+          "move": 199
+        },
+        {
+          "id": "white-200",
+          "x": 4,
+          "y": 13,
+          "color": "white",
+          "move": 200
+        },
+        {
+          "id": "black-201",
+          "x": 6,
+          "y": 13,
+          "color": "black",
+          "move": 201
+        },
+        {
+          "id": "white-202",
+          "x": 5,
+          "y": 13,
+          "color": "white",
+          "move": 202
+        },
+        {
+          "id": "black-203",
+          "x": 7,
+          "y": 13,
+          "color": "black",
+          "move": 203
+        },
+        {
+          "id": "white-204",
+          "x": 8,
+          "y": 13,
+          "color": "white",
+          "move": 204
+        },
+        {
+          "id": "black-205",
+          "x": 10,
+          "y": 13,
+          "color": "black",
+          "move": 205
+        },
+        {
+          "id": "white-206",
+          "x": 9,
+          "y": 13,
+          "color": "white",
+          "move": 206
+        },
+        {
+          "id": "black-207",
+          "x": 11,
+          "y": 13,
+          "color": "black",
+          "move": 207
+        },
+        {
+          "id": "white-208",
+          "x": 12,
+          "y": 13,
+          "color": "white",
+          "move": 208
+        },
+        {
+          "id": "black-209",
+          "x": 14,
+          "y": 13,
+          "color": "black",
+          "move": 209
+        },
+        {
+          "id": "white-210",
+          "x": 13,
+          "y": 13,
+          "color": "white",
+          "move": 210
+        },
+        {
+          "id": "black-211",
+          "x": 0,
+          "y": 14,
+          "color": "black",
+          "move": 211
+        },
+        {
+          "id": "white-212",
+          "x": 2,
+          "y": 14,
+          "color": "white",
+          "move": 212
+        },
+        {
+          "id": "black-213",
+          "x": 1,
+          "y": 14,
+          "color": "black",
+          "move": 213
+        },
+        {
+          "id": "white-214",
+          "x": 3,
+          "y": 14,
+          "color": "white",
+          "move": 214
+        },
+        {
+          "id": "black-215",
+          "x": 4,
+          "y": 14,
+          "color": "black",
+          "move": 215
+        },
+        {
+          "id": "white-216",
+          "x": 6,
+          "y": 14,
+          "color": "white",
+          "move": 216
+        },
+        {
+          "id": "black-217",
+          "x": 5,
+          "y": 14,
+          "color": "black",
+          "move": 217
+        },
+        {
+          "id": "white-218",
+          "x": 7,
+          "y": 14,
+          "color": "white",
+          "move": 218
+        },
+        {
+          "id": "black-219",
+          "x": 8,
+          "y": 14,
+          "color": "black",
+          "move": 219
+        },
+        {
+          "id": "white-220",
+          "x": 10,
+          "y": 14,
+          "color": "white",
+          "move": 220
+        },
+        {
+          "id": "black-221",
+          "x": 9,
+          "y": 14,
+          "color": "black",
+          "move": 221
+        },
+        {
+          "id": "white-222",
+          "x": 11,
+          "y": 14,
+          "color": "white",
+          "move": 222
+        },
+        {
+          "id": "black-223",
+          "x": 12,
+          "y": 14,
+          "color": "black",
+          "move": 223
+        },
+        {
+          "id": "white-224",
+          "x": 14,
+          "y": 14,
+          "color": "white",
+          "move": 224
+        },
+        {
+          "id": "black-225",
+          "x": 13,
+          "y": 14,
+          "color": "black",
+          "move": 225
+        }
+      ],
+      "lastMove": {
+        "x": 13,
+        "y": 14,
+        "color": "black",
+        "playerId": "black",
+        "move": 225
+      },
+      "lastAction": {
+        "kind": "place",
+        "playerId": "black",
+        "playerName": "黑方",
+        "x": 13,
+        "y": 14,
+        "color": "black",
+        "message": "黑方 落子于 N15"
+      },
+      "actionLog": [
+        "黑方 落子于 B15",
+        "白方 落子于 D15",
+        "黑方 落子于 E15",
+        "白方 落子于 G15",
+        "黑方 落子于 F15",
+        "白方 落子于 H15",
+        "黑方 落子于 I15",
+        "白方 落子于 K15",
+        "黑方 落子于 J15",
+        "白方 落子于 L15",
+        "黑方 落子于 M15",
+        "白方 落子于 O15",
+        "黑方 落子于 N15",
+        "棋盘已满，和棋"
+      ],
+      "winner": null,
+      "drawReason": "棋盘已满，和棋",
+      "moveNumber": 225,
+      "rules": {
+        "board": {
+          "width": 15,
+          "height": 15
+        },
+        "winLength": 5,
+        "forbiddenMoves": false,
+        "overlineWins": true
+      }
+    }
+  },
+  "checks": {
+    "uniquePositions": true,
+    "turnSwitching": true,
+    "noRemovedPieces": true,
+    "legalMovesInBounds": true,
+    "illegalActionsRejected": true,
+    "endedGameRejectsActions": true,
+    "jsonSerialization": true,
+    "replay": true,
+    "explicitRestoreApi": false,
+    "roomCreationAndStart": true,
+    "dualClientProtocol": true,
+    "browserDomAutomation": false
+  }
+}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>国际象棋 3D 独立测试</title>
+    <style>
+        html, body { min-height: 100%; margin: 0; background: #071219; }
+        body { overflow-x: auto; }
+        #standaloneMount { min-height: 100vh; }
+        #standaloneNotice { position: fixed; z-index: 20; left: 18px; bottom: 15px; max-width: 330px; padding: 9px 12px; border: 1px solid rgba(229,189,104,.42); border-radius: 8px; background: rgba(5,15,21,.78); color: #d8c99f; font: 12px/1.5 sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="standaloneMount"></div>
+    <div id="standaloneNotice">独立视觉测试：当前不连接大厅和 WebSocket，只验证 3D 棋盘、模型、镜头和点击。</div>
+    <script type="module">
+        import { createGameClient } from './client.js';
+
+        const mount = document.querySelector('#standaloneMount');
+        const notice = document.querySelector('#standaloneNotice');
+        const back = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+        const pieces = [];
+        const legalMoves = {};
+        for (let x = 0; x < 8; x++) {
+            pieces.push({ id: `b${back[x]}${x}`, type: back[x], color: 'black', x, y: 0, moved: false });
+            pieces.push({ id: `bp${x}`, type: 'p', color: 'black', x, y: 1, moved: false });
+            pieces.push({ id: `wp${x}`, type: 'p', color: 'white', x, y: 6, moved: false });
+            pieces.push({ id: `w${back[x]}${x}`, type: back[x], color: 'white', x, y: 7, moved: false });
+            legalMoves[`wp${x}`] = [{ x, y: 5 }, { x, y: 4 }];
+        }
+        legalMoves.wn1 = [{ x: 0, y: 5 }, { x: 2, y: 5 }];
+        legalMoves.wn6 = [{ x: 5, y: 5 }, { x: 7, y: 5 }];
+
+        const state = {
+            roomId: 'standalone', status: 'playing', turn: 'white', currentTurn: 'white-test', currentTurnName: '白方测试', check: false,
+            myId: 'white-test', myColor: 'white', myIsCurrentTurn: true, legalMoves, pieces,
+            players: [{ id: 'white-test', name: '白方测试', color: 'white', isOnline: true, isCurrentTurn: true }, { id: 'black-test', name: '黑方测试', color: 'black', isOnline: true, isCurrentTurn: false }],
+            actionLog: ['独立测试局面已加载', '白方先行'], lastMove: null, winner: null,
+        };
+
+        const client = createGameClient({
+            mount,
+            send(payload) {
+                notice.textContent = `已捕获前端操作：${payload.action?.from ? `${payload.action.from.x},${payload.action.from.y} → ${payload.action.to.x},${payload.action.to.y}` : '未知操作'}。独立页不提交服务器。`;
+            },
+            addLog(message) { console.log('[chess standalone]', message); },
+            leaveRoom() { window.location.href = '/'; },
+        });
+        client.handleMessage({ type: 'gameState', state });
+    </script>
+</body>
+</html>

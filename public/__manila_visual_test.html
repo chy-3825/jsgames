@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>马尼拉前端视觉验收</title>
+    <style>html,body{min-height:100%;margin:0;background:#092f39}#game-board{min-height:100vh}</style>
+</head>
+<body>
+<main id="game-board"></main>
+<script type="module">
+    import { createGameClient } from '/games/manila/client.js';
+    const players = [
+        { id: 'p1', name: '林掌柜', color: '#cf6556', cash: 23, sharesCount: 3, encumberedShares: 1, accomplices: 2, isOnline: true, fortune: null },
+        { id: 'p2', name: '周船主', color: '#4f8bb0', cash: 31, sharesCount: 2, encumberedShares: 0, accomplices: 1, isOnline: true, fortune: null },
+        { id: 'p3', name: '许经理', color: '#c79442', cash: 18, sharesCount: 2, encumberedShares: 0, accomplices: 2, isOnline: true, fortune: null },
+        { id: 'p4', name: '苏小姐', color: '#778f68', cash: 37, sharesCount: 2, encumberedShares: 0, accomplices: 3, isOnline: true, fortune: null },
+    ];
+    const locations = { ginseng: [{playerId:'p2',playerName:'周船主',fee:1,slot:1}], jade: [{playerId:'p3',playerName:'许经理',fee:3,slot:1},{playerId:'p1',playerName:'林掌柜',fee:4,slot:2}], nutmeg: [{playerId:'p4',playerName:'苏小姐',fee:1,slot:1}], silk: [], 'port-a': [{playerId:'p1',playerName:'林掌柜',fee:4,slot:1}], 'port-b': [], 'port-c': [], 'shipyard-a': [], 'shipyard-b': [{playerId:'p3',playerName:'许经理',fee:3,slot:1}], 'shipyard-c': [], pirate: [{playerId:'p4',playerName:'苏小姐',fee:3,slot:1}], 'pilot-small': [], 'pilot-large': [{playerId:'p2',playerName:'周船主',fee:5,slot:1}], insurance: [] };
+    const state = {
+        status: 'playing', phase: 'sailing', voyage: 3, movementRound: 2,
+        harborMasterId: 'p2', harborMasterName: '周船主', masterStep: null,
+        currentTurn: 'p2', currentTurnName: '周船主', myId: 'p2',
+        market: { 人参: 15, 玉石: 20, 肉豆蔻: 10, 丝绸: 25 },
+        shareMarket: { 人参: 2, 玉石: 3, 肉豆蔻: 1, 丝绸: 2 },
+        boats: [
+            { id: 1, good: '人参', position: 6, arrived: false, fate: 'sailing', accomplices: 1, pirates: 0 },
+            { id: 2, good: '玉石', position: 10, arrived: false, fate: 'sailing', accomplices: 2, pirates: 0 },
+            { id: 3, good: '肉豆蔻', position: 12, arrived: false, fate: 'sailing', accomplices: 1, pirates: 0 },
+        ],
+        movementPlan: { round: 2, rolls: [
+            { boatId: 1, good: '人参', roll: 3, from: 6, projected: 9 },
+            { boatId: 2, good: '玉石', roll: 4, from: 10, projected: 14 },
+            { boatId: 3, good: '肉豆蔻', roll: 1, from: 12, projected: 13 },
+        ] },
+        lastMovement: { round: 1, moves: [{ boatId: 1, good: '人参', roll: 3, from: 3, to: 6, fate: 'sailing' }, { boatId: 2, good: '玉石', roll: 6, from: 4, to: 10, fate: 'sailing' }, { boatId: 3, good: '肉豆蔻', roll: 3, from: 9, to: 12, fate: 'sailing' }] },
+        locations, players, myShares: ['玉石', '丝绸'], myEncumberedShares: [],
+        auction: { highestBid: 11, highestBidder: 'p2', passed: [] },
+        availableActions: { sailBoats: true, takeLoan: true, repayLoan: false },
+        actionLog: ['第二轮行船骰点：人参 3、玉石 4、肉豆蔻 1；等待港务长决定顺序', '林掌柜在一号港口安插帮手', '第一轮行船完成', '苏小姐在海盗船安插帮手', '周船主完成货船装载'],
+    };
+    const sent = [];
+    const client = createGameClient({ mount: document.querySelector('#game-board'), send: message => { sent.push(message); console.log(message); }, addLog: console.log, leaveRoom() {} });
+    client.handleMessage({ state });
+    const scene = new URLSearchParams(location.search).get('scene');
+    if (scene === 'movement') {
+        const moved = structuredClone(state);
+        moved.phase = 'placement';
+        moved.currentTurn = 'p3';
+        moved.currentTurnName = '许经理';
+        moved.movementPlan = null;
+        moved.movementRound = 2;
+        moved.boats = moved.boats.map((boat, index) => ({ ...boat, position: [9, 14, 13][index], fate: index === 1 ? 'port' : 'sailing', arrived: index === 1 }));
+        moved.presentation = { sequence: 1, resolved: true, events: [{ kind: 'boatsSailed', actorId: 'p2', actorName: '周船主', round: 2, order: [3, 1, 2], moves: [
+            { boatId: 3, good: '肉豆蔻', roll: 1, from: 12, to: 13, fate: 'sailing' },
+            { boatId: 1, good: '人参', roll: 3, from: 6, to: 9, fate: 'sailing' },
+            { boatId: 2, good: '玉石', roll: 4, from: 10, to: 14, fate: 'port' },
+        ] }] };
+        client.handleMessage({ state: moved });
+    }
+    if (scene === 'settlement') {
+        const settled = structuredClone(state);
+        settled.phase = 'auction';
+        settled.currentTurn = 'p1';
+        settled.currentTurnName = '林掌柜';
+        settled.movementPlan = null;
+        settled.presentation = { sequence: 2, resolved: true, events: [{ kind: 'voyageSettlement', voyage: 3,
+            boats: [{ id: 1, good: '人参', fate: 'port', portIndex: 1 }, { id: 2, good: '玉石', fate: 'port', portIndex: 2 }, { id: 3, good: '肉豆蔻', fate: 'shipyard', shipyardIndex: 1 }],
+            players: [{ id: 'p1', name: '林掌柜', cashBefore: 23, cashAfter: 41, gained: 18 }, { id: 'p2', name: '周船主', cashBefore: 31, cashAfter: 43, gained: 12 }, { id: 'p3', name: '许经理', cashBefore: 18, cashAfter: 24, gained: 6 }, { id: 'p4', name: '苏小姐', cashBefore: 37, cashAfter: 37, gained: 0 }],
+            marketBefore: { 人参: 15, 玉石: 20, 肉豆蔻: 10, 丝绸: 25 }, marketAfter: { 人参: 20, 玉石: 25, 肉豆蔻: 10, 丝绸: 25 },
+            payoutDetails: [{ kind: 'cargo', sourceId: 'boat-1', boatId: 1, playerId: 'p1', playerName: '林掌柜', amount: 18 }, { kind: 'port', sourceId: 'port-a', boatId: 1, playerId: 'p2', playerName: '周船主', amount: 6 }],
+        }] };
+        client.handleMessage({ state: settled });
+    }
+    window.__manilaClient = client;
+    window.__manilaState = state;
+    window.__manilaSent = sent;
+</script>
+</body>
+</html>

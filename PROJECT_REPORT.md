@@ -40,13 +40,23 @@ server/games/registry.js
 
 ```js
 { type: 'setName', name: '玩家名' }
-{ type: 'createRoom', gameType: 'mygame' }
+{
+  type: 'createRoom',
+  gameType: 'mygame',
+  roomName: '周五桌游局',
+  isPublic: true,
+  seatLimit: 4,
+  gameOptions: {}
+}
 { type: 'joinRoom', roomId: '1234' }
 { type: 'leaveRoom' }
 { type: 'startGame' }
 { type: 'chat', message: '聊天内容' }
 { type: 'gameAction', action: { kind: '动作名' } }
+{ type: 'resumeSession', sessionToken: '浏览器保存的会话令牌' }
 ```
+
+服务器连接时会先发送 `session`。大厅把令牌保存到当前标签页的 `sessionStorage`；连接意外断开后，30 秒内可发送 `resumeSession` 恢复原玩家、房间和游戏状态。若另一个仍在线的窗口提交同一令牌，服务器拒绝接管并保留新窗口的临时身份。主动 `leaveRoom` 会结束席位，不应继续尝试恢复该房间。
 
 新游戏通常只需要发送 `gameAction`：
 
@@ -68,6 +78,8 @@ room.handleGameAction(player.id, action)
 ```
 
 所以服务端游戏一定要相信参数里的 `playerId`，不要相信前端 action 里伪造的身份字段。
+
+正式大厅不会在点击游戏卡片时立即创建房间。它先从 `public/game-details.js` 展示规则摘要，再让房主设置房间名称、人数上限、公开状态和游戏专属选项；只有最后确认时才发送 `createRoom`。`seatLimit` 必须位于游戏 `minPlayers` 与 `maxPlayers` 之间；仅邀请房间不会出现在公开列表，但仍可通过房间号或邀请链接加入。狼人杀的 `playerCount`、`sheriffEnabled`、`winCondition` 和谍报风云的 `encryptorMode` 均放在 `gameOptions` 中，由服务端再次验证。
 
 ## 4. 服务器会发给前端哪些消息
 
@@ -749,3 +761,38 @@ export function createGameClient({ mount, send, addLog }) {}
 - `registry.js` 已注册新游戏。
 - 运行 `node --check server/games/<type>/index.js` 检查语法。
 - 浏览器刷新后能创建房间、加入房间、开始游戏、执行动作、离开房间。
+
+## 14. 本轮工作清单验收
+
+本轮已接入大厅的五款新增桌游：
+
+- **并购（Acquire）**：6 张私有地块、9×12 城市地图、酒店集团创建/合并、股东多数/少数分红、最多三股购买、现金加股票市值结算。
+- **牛头王（Take Five）**：104 张牌、同时选牌、按顺序接入四行、第六张收行、低于所有行尾时选择收取牌行、十轮计分。
+- **璀璨宝石（Splendor）**：三层市场、贵族、五色宝石与黄金、预留/购买、折扣、十枚筹码上限和最终回合。
+- **花火（Hanabi）**：50 张牌、提示令牌、引信、烟花进度、牌库耗尽最后回合；玩家看不到自己的牌，队友视角可见牌面。
+- **多米诺王国（Kingdomino）**：48 块多米诺、按顺序选牌、5×5 王国摆放校验、区域×王冠计分、无法摆放时弃置。
+
+另外完成了狼人杀线下辅助首版：服务端隔离私密身份，记录守卫、狼人、预言家、女巫的夜间行动及白天放逐投票。当房间只有 1 名真实用户时启用 9 座位自由切换的测试导演模式。
+
+大厅侧已统一使用动态 `gameList` 注册、游戏专属主题、响应式布局、键盘焦点和减少动效；游戏状态广播按玩家视角生成，避免花火等隐藏信息在离开或结算广播时泄露。
+
+后续规则化验收已补齐军棋的暗棋布阵、铁路/行营与军旗结算，并核验斗兽棋的官方河流、陷阱、兽穴和鼠象关系。
+
+验证命令：
+
+```bash
+npm test
+for f in server/games/*/*.js; do node --check "$f"; done
+for f in public/games/*/*.js; do node --check "$f"; done
+node --check public/games/werewolf/client.js
+```
+
+当前全量测试共 339 项，23 个测试文件全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置和双页创建浮窗的新增回归。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js` 与 `test/regression.test.js` 持续验证。
+
+## 15. BGG 美术资源接入
+
+项目早期从 BoardGameGeek 图片接口下载并接入了 19 款游戏的本地视觉资源，每款包含 `cover` 和组件/牌面参考图 `detail`，统一存放在 `public/assets/bgg/<game>/`。当前大厅卡片与创建房间规则浮窗已改用 `public/assets/covers/` 下 28 张独立艺术方向的原创横版封面；旧 BGG cover 作为历史参考保留。进入对应游戏后仍可按既有逻辑查看或使用组件参考图，情书仍会把 detail 合照裁切成独立角色牌。不会把组件合照默认铺成大厅封面，也不会在运行时请求 BGG。
+
+具体图片 ID、条目链接、用途和替换约定记录在 [public/assets/bgg/SOURCES.md](public/assets/bgg/SOURCES.md)。大厅底部保留了 BGG 来源链接；逐张牌面应优先使用独立裁切资源或项目自制图标、文字和版式，避免把组件合照直接当作可编辑牌面。
+
+情书已完成美术试点并正式切换默认入口：类型仍为 `loveletter`，客户端加载 BGG cover/detail 素材，并从 detail 合照裁切出 8 张角色牌直接替换手牌、猜牌和弃牌缩略卡面；服务端规则适配层不变。大厅不再展示独立的 BGG 试点卡，用户点击原情书即可使用新版牌面。

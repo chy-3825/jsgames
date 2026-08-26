@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>桌游凭证组件视觉验收</title>
+    <link rel="stylesheet" href="/games/camelup/style.css">
+    <link rel="stylesheet" href="/games/manila/style.css">
+    <link rel="stylesheet" href="/games/acquire/style.css">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; background: #171a19; }
+        body { padding: 18px; font-family: system-ui, "Noto Sans SC", sans-serif; }
+        .review { display: grid; width: min(1320px, 100%); margin: auto; gap: 16px; }
+        .review > section { min-height: 0; padding: 17px; border: 1px solid #ffffff26; border-radius: 12px; }
+        .review-title { margin: 0 0 12px; color: inherit; font: 800 16px system-ui; }
+        .review .cm-command, .review .mn-command { margin: 0; }
+        .review .acquire-command { grid-area: auto; padding: 15px; }
+        .review-acquire-grid { display: grid; grid-template-columns: minmax(230px, .65fr) minmax(420px, 1.35fr); gap: 12px; }
+        .review-portfolio { display: grid; align-content: start; gap: 9px; padding: 13px; border: 1px solid var(--line-soft); background: var(--panel); }
+        @media (max-width: 620px) {
+            body { padding: 8px; }
+            .review > section { padding: 11px; }
+            .review-acquire-grid { grid-template-columns: 1fr; }
+            .review .acquire-buy-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<main class="review">
+    <section class="camel-app">
+        <h2 class="review-title">狂野骆驼 · 终局牌与赛段下注牌</h2>
+        <div class="cm-command">
+            <section class="cm-card-shelf"><header><span>我的未使用终局牌</span><small>每色一张 · 放下后不可收回</small></header><div class="cm-private-cards" id="camel-finish"></div></section>
+            <section class="cm-card-shelf"><header><span>赛段下注牌</span><small>牌面数字为当前顶牌奖励</small></header><div class="cm-leg-stacks" id="camel-leg"></div></section>
+        </div>
+    </section>
+    <section class="manila-app">
+        <h2 class="review-title">马尼拉 · 股份凭证与抵押状态</h2>
+        <section class="mn-paper mn-vault"><header class="mn-paper-title"><span>我的金库</span><b>37 比索</b></header><p>点击可操作的股份，核对后确认抵押或偿还。</p><div class="mn-shares" id="manila-shares"></div></section>
+    </section>
+    <section class="acquire-app">
+        <h2 class="review-title">并购 · 持仓凭证与购股订单</h2>
+        <div class="review-acquire-grid">
+            <aside class="review-portfolio" id="acquire-holdings"></aside>
+            <div class="acquire-command"><div class="acquire-command-body"><div class="acquire-buy-grid" id="acquire-market"></div></div></div>
+        </div>
+    </section>
+</main>
+<script>
+    const camelMeta = [
+        ['red', '赤焰', '#d6574f', 3], ['blue', '海蓝', '#4e82b1', 2], ['green', '绿洲', '#6a9b6b', 1], ['yellow', '金沙', '#d2a13c', 0], ['white', '月白', '#8d9aa2', 3],
+    ];
+    const camelSvg = className => `<svg class="${className}" viewBox="0 0 100 60"><path d="M7 43h13l7-12 10-3 6-15 7 11 10-10 9 12 9-2 8 7-5 7-2 17h-7l1-15H61l-2 15h-7l-2-15H35l-5 15h-7l3-17-7 9H7z"></path><circle cx="82" cy="29" r="1.8"></circle></svg>`;
+    document.querySelector('#camel-finish').innerHTML = camelMeta.map(([, name, color]) => `<article class="cm-finish-card" style="--camel:${color}"><header><span>终局下注</span><b>RACE</b></header><div class="cm-finish-illustration">${camelSvg('cm-card-camel')}</div><strong>${name}</strong><small>冠军 / 垫底</small></article>`).join('');
+    document.querySelector('#camel-leg').innerHTML = camelMeta.map(([, name, color, count]) => `<article class="cm-leg-card ${count ? '' : 'is-empty'}" style="--camel:${color}"><span class="cm-leg-stack-count">${count} 张</span>${camelSvg('cm-leg-camel')}<strong>${({3:5,2:3,1:2})[count] || '—'}</strong><small>${name} · 赛段</small><i>${count ? '顶牌奖励' : '已取完'}</i></article>`).join('');
+
+    const goods = [['参','人参','药材贸易','#c66f4d'],['玉','玉石','矿石贸易','#49a98e'],['蔻','肉豆蔻','香料贸易','#d39a42'],['绸','丝绸','织物贸易','#9a78bb']];
+    document.querySelector('#manila-shares').innerHTML = goods.map(([mark, name, note, color], index) => `<button class="mn-share ${index === 1 ? 'is-encumbered' : ''}" style="--share:${color}" type="button"><header><span>马尼拉商会股份</span><b>0${index + 1}</b></header><div><i>${mark}</i><span><strong>${name}</strong><small>${note}</small></span></div><footer>${index === 1 ? '已抵押 · 偿还 15' : '有效凭证 · 可借 12'}</footer></button>`).join('');
+
+    const chains = [['T','Tower','#c9674f',3,300,11],['S','Sackson','#d3a33e',2,200,8],['A','American','#4e87a7',4,400,7]];
+    const certificate = ([short, name, color, count, price, stock], variant) => `<article class="acquire-stock-certificate is-${variant}" style="--chain-color:${color}"><header><span>ACQUIRE STOCK</span><b>${variant === 'holding' ? `${count} 股` : `$${price}`}</b></header><div class="acquire-stock-face"><i>${short}</i><strong>${name}</strong></div><footer><span>酒店集团股份</span><small>${variant === 'holding' ? `账面 $${count * price}` : `库存 ${stock} 股`}</small></footer></article>`;
+    document.querySelector('#acquire-holdings').innerHTML = `<div class="acquire-cash-line"><span>现金</span><strong>$6,000</strong></div><div class="acquire-ledger-stats"><span><b>9</b> 股</span><span><b>$3,100</b> 账面估值</span></div><div class="acquire-holding-list">${chains.map(chain => certificate(chain, 'holding')).join('')}</div>`;
+    document.querySelector('#acquire-market').innerHTML = chains.map(chain => `<label class="acquire-buy-row" style="--chain-color:${chain[2]}">${certificate(chain, 'market')}<span class="acquire-stock-order"><small>购买股数</small><input value="0" type="number"><em>最多 3</em></span></label>`).join('');
+</script>
+</body>
+</html>

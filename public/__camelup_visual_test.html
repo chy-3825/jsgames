@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>狂野骆驼前端视觉验收</title>
+    <style>html,body{min-height:100%;margin:0;background:#d79a51}#game-board{min-height:100vh}</style>
+</head>
+<body>
+<main id="game-board"></main>
+<script type="module">
+    import { createGameClient } from '/games/camelup/client.js';
+    const camelData = [
+        {id:'red',name:'赤焰',color:'#cf4d3f',position:10,order:1},
+        {id:'blue',name:'海蓝',color:'#347f9d',position:10,order:0},
+        {id:'green',name:'绿洲',color:'#56865b',position:7,order:0},
+        {id:'yellow',name:'金沙',color:'#d89a2e',position:5,order:1},
+        {id:'white',name:'月白',color:'#a5aba8',position:5,order:0},
+    ];
+    const state = {
+        roomId:'camel-visual',status:'playing',phase:'leg',leg:3,currentTurn:'p1',currentTurnName:'阿岚',myId:'p1',
+        rolled:['green','white'],ranking:['red','blue','green','yellow','white'],
+        legTiles:{red:2,blue:3,green:1,yellow:2,white:3},camels:camelData,
+        tiles:{3:{ownerId:'p2',ownerName:'老周',kind:'oasis'},13:{ownerId:'p1',ownerName:'阿岚',kind:'mirage'}},
+        players:[
+            {id:'p1',name:'阿岚',color:'#c75244',cash:17,pyramidTileCount:1,legBetCount:2,overallBetCount:1,finishCardCount:4,isOnline:true},
+            {id:'p2',name:'老周',color:'#467f9c',cash:14,pyramidTileCount:0,legBetCount:1,overallBetCount:2,finishCardCount:3,isOnline:true},
+            {id:'p3',name:'木子',color:'#c09137',cash:20,pyramidTileCount:2,legBetCount:0,overallBetCount:1,finishCardCount:4,isOnline:true},
+            {id:'p4',name:'杜先生',color:'#63865c',cash:9,pyramidTileCount:0,legBetCount:3,overallBetCount:0,finishCardCount:5,isOnline:true},
+            {id:'p5',name:'小禾',color:'#83699a',cash:12,pyramidTileCount:1,legBetCount:1,overallBetCount:2,finishCardCount:3,isOnline:true},
+        ],
+        myRaceCards:[
+            {id:'finish-p1-red',camelId:'red',ownerId:'p1'},
+            {id:'finish-p1-blue',camelId:'blue',ownerId:'p1'},
+            {id:'finish-p1-green',camelId:'green',ownerId:'p1'},
+            {id:'finish-p1-white',camelId:'white',ownerId:'p1'},
+        ],
+        myLegBets:[{camelId:'red',payout:5},{camelId:'yellow',payout:3}],
+        myOverallBets:[{cardId:'finish-p1-yellow',camelId:'yellow',outcome:'winner',order:2}],
+        myPyramidTiles:1,
+        lastLeg:{leg:2,ranking:['blue','red','yellow','green','white'],payouts:[],pyramidRewards:[]},
+        availableActions:{rollDie:true,betLeg:true,betOverall:true,placeTile:true},
+        actionLog:['阿岚押注赤焰（5 金币牌）','月白前进 2 格并叠到金沙下方','老周在 3 号格放置绿洲','绿洲前进 1 格','第 3 赛段开始，轮到阿岚'],
+        winner:null,winners:[],
+    };
+    const sent=[];
+    const client=createGameClient({mount:document.querySelector('#game-board'),send:message=>sent.push(message),addLog:console.log,leaveRoom(){}});
+    client.handleMessage({state});
+    const scene = new URLSearchParams(location.search).get('scene');
+    const sceneEvents = {
+        roll: [{sequence:101,kind:'dieRevealed',actorId:'p1',actorName:'阿岚',camel:{id:'red',name:'赤焰',color:'#d6574f',position:10,order:1},steps:3,remainingBefore:3,pyramidReward:1}],
+        move: [{sequence:102,kind:'camelMoved',actorId:'p1',actorName:'阿岚',camel:{id:'green',name:'绿洲',color:'#6a9b6b',position:10,order:2},steps:3,from:7,to:10,movingCamels:[{id:'green',name:'绿洲',color:'#6a9b6b',position:10,order:2}],destinationStack:[{id:'blue',name:'海蓝',color:'#4e82b1',position:10,order:0},{id:'red',name:'赤焰',color:'#d6574f',position:10,order:1}]}],
+        secret: [{sequence:103,kind:'overallBetPlaced',actorId:'p1',actorName:'阿岚',outcome:'winner',order:3,private:{cardId:'finish-p1-red',camelId:'red',camelName:'赤焰'}}],
+        leg: [{sequence:104,kind:'legSettlement',leg:3,final:false,ranking:camelData.map(camel=>({...camel})),playerResults:[
+            {playerId:'p1',playerName:'阿岚',cashBefore:17,cashAfter:24,change:7,pyramidCount:1,pyramidReward:1,bets:[{camelId:'red',camelName:'赤焰',faceValue:5,rank:1,reward:5},{camelId:'yellow',camelName:'金沙',faceValue:3,rank:4,reward:-1}]},
+            {playerId:'p2',playerName:'老周',cashBefore:14,cashAfter:16,change:2,pyramidCount:0,pyramidReward:0,bets:[{camelId:'blue',camelName:'海蓝',faceValue:3,rank:2,reward:1},{camelId:'red',camelName:'赤焰',faceValue:2,rank:1,reward:2}]},
+            {playerId:'p3',playerName:'木子',cashBefore:20,cashAfter:22,change:2,pyramidCount:2,pyramidReward:2,bets:[]},
+            {playerId:'p4',playerName:'杜先生',cashBefore:9,cashAfter:6,change:-3,pyramidCount:0,pyramidReward:0,bets:[{camelId:'white',camelName:'月白',faceValue:5,rank:5,reward:-1},{camelId:'green',camelName:'绿洲',faceValue:3,rank:3,reward:-1},{camelId:'yellow',camelName:'金沙',faceValue:2,rank:4,reward:-1}]},
+            {playerId:'p5',playerName:'小禾',cashBefore:12,cashAfter:14,change:2,pyramidCount:1,pyramidReward:1,bets:[{camelId:'blue',camelName:'海蓝',faceValue:2,rank:2,reward:1}]},
+        ]}],
+        reveal: [{sequence:105,kind:'overallBetsRevealed',ranking:camelData.map(camel=>({...camel})),winnerBets:[
+            {order:1,playerId:'p3',playerName:'木子',cardId:'a',camelId:'red',camelName:'赤焰',correct:true,reward:8,cashBefore:22,cashAfter:30},
+            {order:2,playerId:'p1',playerName:'阿岚',cardId:'b',camelId:'blue',camelName:'海蓝',correct:false,reward:-1,cashBefore:24,cashAfter:23},
+        ],loserBets:[
+            {order:1,playerId:'p2',playerName:'老周',cardId:'c',camelId:'white',camelName:'月白',correct:true,reward:8,cashBefore:16,cashAfter:24},
+            {order:2,playerId:'p5',playerName:'小禾',cardId:'d',camelId:'yellow',camelName:'金沙',correct:false,reward:-1,cashBefore:14,cashAfter:13},
+        ]}],
+        final: [{sequence:106,kind:'finalSettlement',winnerIds:['p3'],camelRanking:camelData.map(camel=>({...camel})),standings:[
+            {rank:1,id:'p3',name:'木子',color:'#c09137',cash:30},{rank:2,id:'p1',name:'阿岚',color:'#c75244',cash:23},{rank:3,id:'p2',name:'老周',color:'#467f9c',cash:21},{rank:4,id:'p5',name:'小禾',color:'#83699a',cash:13},{rank:5,id:'p4',name:'杜先生',color:'#63865c',cash:6},
+        ]}],
+    };
+    if (sceneEvents[scene]) {
+        const nextState={...state,presentation:{sequence:100+Object.keys(sceneEvents).indexOf(scene)+1,actorId:null,action:`visual-${scene}`,resolved:true,events:sceneEvents[scene]}};
+        client.handleMessage({state:nextState});
+    }
+    window.__camelUpClient=client;
+    window.__camelUpState=state;
+    window.__camelUpSent=sent;
+</script>
+</body>
+</html>

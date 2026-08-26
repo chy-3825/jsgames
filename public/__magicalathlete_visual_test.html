@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>胡闹运动会前端视觉验收</title>
+    <style>html,body{min-height:100%;margin:0;background:#e8e3d1}#game-board{min-height:100vh}</style>
+</head>
+<body>
+<main id="game-board"></main>
+<script type="module">
+    import { createGameClient } from '/games/magicalathlete/client.js';
+    const athlete=(id,name,description)=>({id,name,description,tagline:'不显示英文副标题'});
+    const athletes=[
+        athlete('alchemist','炼金术师','主移动掷出 1 或 2 时，可以改为前进 4 格。'),
+        athlete('airship','飞艇','第二弯道前主移动 +3，弯道上或之后主移动 −1。'),
+        athlete('banana','香蕉','任何超过我的运动员都会摔倒。'),
+        athlete('cheerleader','拉拉队长','回合开始时可让末位前进 2 格，自己前进 1 格。'),
+        athlete('copycat','模仿者','拥有当前领跑运动员的能力，并列时自己选择。'),
+        athlete('dicemonger','掷骰商贩','每名运动员每回合可重掷一次主移动。'),
+        athlete('genius','天才','预测主移动点数，猜中则本回合结束后再行动一次。'),
+        athlete('hare','快兔','主移动 +2；独自领跑时获得铜星并跳过主移动。'),
+        athlete('hugebaby','大宝宝','除起点外，任何人不能与我同格。'),
+        athlete('magician','魔法师','主移动最多可以重掷两次。'),
+        athlete('mouth','大嘴','停在恰有一名其他运动员的格子时，对方被淘汰出本场。'),
+        athlete('rocketscientist','火箭医生','可将主移动翻倍，移动结束后摔倒。'),
+        athlete('sisyphus','西西弗斯','赛前获得 4 枚铜星；掷出 6 时返回起点。'),
+    ];
+    const state={
+        roomId:'ma-visual',status:'playing',phase:'race',match:2,maxMatches:4,teamSize:4,racersPerPlayer:1,
+        trackSide:'wild',trackLength:30,draftRound:3,draftPool:[],currentTurn:'p1',currentTurnName:'阿岚',myId:'p1',athletes,
+        players:[
+            {id:'p1',name:'阿岚',color:'#dc6256',score:3,bronze:1,isOnline:true},
+            {id:'p2',name:'老周',color:'#4c83ad',score:2,bronze:0,isOnline:true},
+            {id:'p3',name:'木子',color:'#c18c3a',score:1,bronze:1,isOnline:true},
+            {id:'p4',name:'杜先生',color:'#6d966a',score:0,bronze:0,isOnline:true},
+            {id:'p5',name:'小禾',color:'#80699b',score:0,bronze:0,isOnline:true},
+        ],
+        racers:[
+            {id:'r1',playerId:'p1',athleteId:'genius',position:13,tripped:false,eliminated:false,finishOrder:null,bronze:1,copiedAthlete:null,athlete:athletes[6]},
+            {id:'r2',playerId:'p2',athleteId:'banana',position:16,tripped:true,eliminated:false,finishOrder:null,bronze:0,copiedAthlete:null,athlete:athletes[2]},
+            {id:'r3',playerId:'p3',athleteId:'hare',position:13,tripped:false,eliminated:false,finishOrder:null,bronze:1,copiedAthlete:null,athlete:athletes[7]},
+            {id:'r4',playerId:'p4',athleteId:'airship',position:7,tripped:false,eliminated:false,finishOrder:null,bronze:0,copiedAthlete:null,athlete:athletes[1]},
+            {id:'r5',playerId:'p5',athleteId:'hugebaby',position:5,tripped:false,eliminated:false,finishOrder:null,bronze:0,copiedAthlete:null,athlete:athletes[8]},
+        ],
+        trackSpecials:{1:'star',5:'trip',7:'arrow+3',11:'arrow+1',13:'star',15:'arrow-4',16:'trip',22:'arrow+2',23:'arrow-2',25:'trip'},
+        history:[{match:1,trackSide:'mild',ranking:[{place:1,playerId:'p1',athleteId:'alchemist',gold:2,silver:0},{place:2,playerId:'p2',athleteId:'dicemonger',gold:0,silver:1}]}],
+        prompt:null,actionLog:['第 2 场开始，使用狂野赛道','大宝宝停在摔倒格','飞艇触发箭头，前进 3 格','天才获得 1 枚铜星','轮到阿岚行动'],
+        myTeam:[{...athletes[0],used:true},{...athletes[6],used:false},{...athletes[10],used:false},{...athletes[11],used:false}],
+        myRaceSelections:[],myBronze:1,myAthlete:athletes[6],myRacer:{id:'r1',athleteId:'genius',position:13,tripped:false,roll:null,extraTurn:false},
+        availableActions:{chooseAthlete:false,selectRaceAthlete:false,roll:true},winner:null,winners:[],
+    };
+    const sent=[];
+    const client=createGameClient({mount:document.querySelector('#game-board'),send:message=>sent.push(message),addLog:console.log,leaveRoom(){}});
+    const scene=new URLSearchParams(location.search).get('scene');
+    if(scene==='elimination'){
+        state.racers[0].athleteId='mouth';state.racers[0].athlete=athletes.find(item=>item.id==='mouth');state.racers[0].position=16;
+        state.racers[1].position=16;state.racers[1].tripped=false;
+    }
+    client.handleMessage({state});
+    if(scene==='elimination'){
+        const next=structuredClone(state);
+        next.racers[1].eliminated=true;
+        next.acknowledgement={id:'visual-elimination',playerId:'p2',playerName:'老周',racerId:'r2',athleteId:'banana',athleteName:'香蕉',sourceRacerId:'r1',sourceAthleteName:'大嘴',position:16};
+        next.presentation={sequence:1,actorId:'p1',action:'roll',resolved:true,events:[{sequence:1,kind:'eliminationThreatened',source:{id:'r1',playerId:'p1',playerName:'阿岚',athleteId:'mouth',athleteName:'大嘴',position:16},victim:{id:'r2',playerId:'p2',playerName:'老周',athleteId:'banana',athleteName:'香蕉',position:16,eliminated:true},position:16,targetPlayerId:'p2'}]};
+        client.handleMessage({state:next});
+        document.querySelector('.ma-presentation-stage')?.style.setProperty('animation','none');
+        document.querySelectorAll('.ma-action-lines *').forEach(element=>element.style.setProperty('animation','none'));
+    }
+    window.__magicalAthleteClient=client;
+    window.__magicalAthleteState=state;
+    window.__magicalAthleteSent=sent;
+</script>
+</body>
+</html>
