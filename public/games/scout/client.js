@@ -39,10 +39,10 @@ function comboName(combo) {
     return `${combo.length} 张顺子 · ${combo.values.join('–')}`;
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/scout/style.css?v=${Date.now()}`;
+    style.href = '/games/scout/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
     document.body.classList.add('is-scout-view');
 
@@ -51,7 +51,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             <header class="sc-header">
                 <div class="sc-brand"><span class="sc-mark" aria-hidden="true"><i></i><b>星</b></span><div><small>巡回马戏团</small><h1>马戏星探</h1><p>节目顺序一旦排定，就不能悄悄换位</p></div></div>
                 <div class="sc-round" data-role="round">等待开场</div>
-                <div class="sc-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div>
+                <div class="sc-actions"><button type="button" data-ui="rules">规则</button></div>
             </header>
             <main class="sc-layout">
                 <section class="sc-stage">
@@ -468,7 +468,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const uiButton = event.target.closest('[data-ui]');
         if (uiButton?.dataset.ui === 'skipPresentation') { skipPresentations(); return; }
         if (presentationPlaying) return;
-        if (uiButton) { if (uiButton.dataset.ui === 'leave') leaveRoom?.(); if (uiButton.dataset.ui === 'rules') openRules(uiButton); if (uiButton.dataset.ui === 'closeRules') closeRules(); return; }
+        if (uiButton) { if (uiButton.dataset.ui === 'rules') openRules(uiButton); if (uiButton.dataset.ui === 'closeRules') closeRules(); return; }
         if (event.target === overlay) { closeRules(); return; }
         const card = event.target.closest('[data-card-index]');
         if (card) { updateSelection(Number(card.dataset.cardIndex)); return; }

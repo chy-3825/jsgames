@@ -249,9 +249,10 @@
 
 @media (max-width: 760px) {
     .deal-choice-overlay,
-    .deal-ledger-overlay { padding: 10px; }
+    .deal-ledger-overlay { inset: var(--game-shell-offset, 48px) 0 0; padding: 10px; }
     .deal-choice-dialog,
-    .deal-ledger-dialog { width: 100%; max-height: calc(100dvh - 20px); padding: 24px 13px 15px; }
+    .deal-ledger-dialog { width: 100%; max-height: calc(100dvh - var(--game-shell-offset, 48px) - 20px); padding: 24px 13px 15px; }
+    .deal-choice-close { width: 44px; height: 44px; }
     .deal-choice-dialog > h2,
     .deal-ledger-dialog > h2 { font-size: 20px; }
     .deal-choice-targets > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -260,6 +261,27 @@
     .deal-choice-actions { grid-template-columns: 1fr 1.6fr; }
     .deal-bank-account > div,
     .deal-discard-ledger > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .deal-choice-overlay,
+    .deal-ledger-overlay { inset: var(--game-shell-offset, 48px) 0 0; padding: 6px; }
+    .deal-choice-dialog,
+    .deal-ledger-dialog {
+        width: min(820px, 100%);
+        max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px);
+        padding: 14px 12px 9px;
+    }
+    .deal-choice-dialog > h2,
+    .deal-ledger-dialog > h2 { margin-block: 2px 4px; font-size: 17px; }
+    .deal-choice-targets { margin-top: 8px; }
+    .deal-choice-targets > div { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .deal-choice-target { min-height: 43px; padding: 5px; }
+    .deal-choice-target > i { width: 28px; height: 28px; }
+    .deal-choice-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 9px 0 7px; }
+    .deal-choice-card { min-height: 82px; padding-top: 16px; }
+    .deal-choice-actions { padding-top: 7px; }
+    .deal-choice-actions button { min-height: 38px; }
 }
 
 @media (max-width: 420px) {

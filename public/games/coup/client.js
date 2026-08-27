@@ -61,7 +61,7 @@ const ACTION_GROUPS = [
 
 const DECISION_REACTION_MS = 850;
 
-export function createGameClient({ mount, send: lobbySend, addLog: lobbyAddLog, leaveRoom }) {
+export function createGameClient({ mount, send: lobbySend, addLog: lobbyAddLog }) {
     [...Object.values(ROLE_ART), CARD_BACK_ART].forEach(file => {
         const image = new Image();
         image.src = `/assets/bgg/coup/${file}.jpg`;
@@ -69,7 +69,7 @@ export function createGameClient({ mount, send: lobbySend, addLog: lobbyAddLog, 
 
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/coup/style.css?v=${Date.now()}`;
+    style.href = '/games/coup/style.css?v=20260826-mobile-games-4';
     document.head.appendChild(style);
     document.body.classList.add('is-coup-view');
 
@@ -372,6 +372,9 @@ export function createGameClient({ mount, send: lobbySend, addLog: lobbyAddLog, 
 
         root.classList.toggle('is-my-turn', myTurn);
         root.classList.toggle('is-decision', Boolean(state.challenge?.isMyTurn || state.influenceLoss?.isMyTurn || state.exchange?.isMyTurn));
+        root.classList.toggle('is-challenge-decision', Boolean(state.challenge?.isMyTurn));
+        root.classList.toggle('is-influence-decision', Boolean(state.influenceLoss?.isMyTurn));
+        root.classList.toggle('is-exchange-decision', Boolean(state.exchange?.isMyTurn));
         $('turn').textContent = getTurnStatus(myTurn, turnName);
         $('phase').textContent = phase.long;
         $('phaseShort').textContent = phase.short;
@@ -761,7 +764,7 @@ export function createGameClient({ mount, send: lobbySend, addLog: lobbyAddLog, 
 
         const winner = getPlayer(state.winner)?.name || '无人';
         const recent = (state.actionLog || []).slice(-5).reverse().map(entry => `<li>${esc(entry)}</li>`).join('');
-        dialog.innerHTML = `<span class="cp-dialog-label">最终裁决</span><h2 id="cp-end-title">${esc(winner)} 掌控了城邦</h2><p>本局已经结束，所有角色与最后几项行动会留在当前房间供玩家复盘。</p><ol class="cp-end-log">${recent || '<li>没有额外终局记录</li>'}</ol><div class="cp-dialog-actions"><button class="cp-primary" data-action="leave-room" type="button">返回大厅</button></div>`;
+        dialog.innerHTML = `<span class="cp-dialog-label">最终裁决</span><h2 id="cp-end-title">${esc(winner)} 掌控了城邦</h2><p>本局已经结束，所有角色与最后几项行动会留在当前房间供玩家复盘。</p><ol class="cp-end-log">${recent || '<li>没有额外终局记录</li>'}</ol><p class="cp-dialog-note">可使用顶部统一导航返回大厅</p>`;
         setOverlay(overlay, true);
     }
 
@@ -945,9 +948,6 @@ export function createGameClient({ mount, send: lobbySend, addLog: lobbyAddLog, 
                 setOverlay($('exchangeOverlay'), false);
                 exchangeOpen = false;
                 exchangeMode = null;
-                break;
-            case 'leave-room':
-                leaveRoom?.();
                 break;
             default:
                 break;

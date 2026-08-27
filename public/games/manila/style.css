@@ -287,7 +287,7 @@
 .mn-presentation-layer.is-compact { place-items: center; }
 .mn-presentation-layer.is-compact .mn-presentation-scene { width: min(390px, calc(100vw - 28px)); padding: 11px 15px; }
 .mn-presentation-layer.is-medium .mn-presentation-scene { width: min(600px, calc(100vw - 28px)); }
-.mn-presentation-layer.is-major .mn-presentation-scene { width: min(780px, calc(100vw - 28px)); max-height: calc(100vh - 84px); overflow: auto; padding: clamp(18px, 3vw, 31px); border-color: #d9ac57; box-shadow: 0 32px 90px rgba(0,0,0,.58), inset 0 0 0 5px rgba(132,84,38,.06); }
+.mn-presentation-layer.is-major .mn-presentation-scene { width: min(780px, calc(100vw - 28px)); max-height: calc(100dvh - 84px); overflow: auto; padding: clamp(18px, 3vw, 31px); border-color: #d9ac57; box-shadow: 0 32px 90px rgba(0,0,0,.58), inset 0 0 0 5px rgba(132,84,38,.06); }
 .mn-presentation-layer.is-danger .mn-presentation-scene { border-color: #c56852; box-shadow: 0 22px 55px rgba(86,21,18,.38); }
 .mn-presentation-layer.is-appointed .mn-presentation-scene::after { position: absolute; right: 25px; bottom: 18px; display: grid; width: 58px; height: 58px; place-items: center; border: 3px double rgba(158,63,45,.62); border-radius: 50%; color: rgba(158,63,45,.68); content: "港务"; transform: rotate(-12deg); font: 900 14px "Songti SC", SimSun, serif; letter-spacing: .1em; }
 .mn-scene-heading { margin-bottom: 10px; text-align: center; }
@@ -331,7 +331,7 @@
 .mn-final-ledger > span.is-winner > i { color: #fff5d9; background: #a75037; }
 .mn-final-winner { color: #8d4e34; font: 900 17px "Songti SC", SimSun, serif; }
 .mn-presentation-skip { position: fixed; z-index: 5; right: 17px; bottom: 16px; min-height: 34px; padding: 0 13px; border: 1px solid rgba(238,211,156,.6); border-radius: 999px; color: #f5e5c0; background: rgba(4,36,43,.86); font-size: 10px; font-weight: 800; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
-.mn-action-line { position: fixed; z-index: 1; inset: 0; width: 100vw; height: 100vh; overflow: visible; opacity: 0; pointer-events: none; }
+.mn-action-line { position: fixed; z-index: 1; inset: 0; width: 100vw; height: 100dvh; overflow: visible; opacity: 0; pointer-events: none; }
 .mn-action-line line { stroke: #e1b64e; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 9 7; filter: drop-shadow(0 2px 4px rgba(0,0,0,.55)); animation: mn-line-flow .6s linear infinite; }
 .mn-action-line circle { fill: #f7dc89; stroke: #704a2d; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
 .mn-action-line.is-visible { opacity: 1; }
@@ -351,7 +351,7 @@
 
 .mn-overlay { position: fixed; z-index: 90; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(3,27,33,.84); backdrop-filter: blur(7px); }
 .mn-overlay.is-hidden { display: none; }
-.mn-overlay > article { position: relative; width: min(620px, 100%); max-height: min(820px, calc(100vh - 34px)); overflow: auto; padding: 25px; border: 1px solid #ba9255; border-radius: 14px; color: var(--ink); background:
+.mn-overlay > article { position: relative; width: min(620px, 100%); max-height: min(820px, calc(100dvh - 34px)); overflow: auto; padding: 25px; border: 1px solid #ba9255; border-radius: 14px; color: var(--ink); background:
     repeating-linear-gradient(0deg, transparent 0 24px, rgba(98,73,43,.04) 24px 25px),
     #f4e7c8; box-shadow: 0 28px 70px rgba(0,0,0,.45); }
 .mn-close { position: absolute; top: 10px; right: 10px; display: grid; width: 31px; min-height: 31px; padding: 0; place-items: center; border-color: rgba(102,70,35,.3); color: #71583b; background: rgba(255,250,232,.6); font-size: 18px; }
@@ -450,7 +450,7 @@
     .mn-overlay { padding: 9px; }
     .mn-overlay > article { padding: 21px 17px; }
     .mn-presentation-layer { padding: 8px; }
-    .mn-presentation-layer.is-major .mn-presentation-scene { max-height: calc(100vh - 70px); padding: 17px 13px; }
+    .mn-presentation-layer.is-major .mn-presentation-scene { max-height: calc(100dvh - var(--game-shell-offset, 48px)); padding: 17px 13px; }
     .mn-scene-moves { grid-template-columns: 1fr; }
     .mn-scene-moves > span { grid-template-columns: 1fr auto auto; align-items: center; justify-items: stretch; }
     .mn-settlement-columns { grid-template-columns: 1fr; }

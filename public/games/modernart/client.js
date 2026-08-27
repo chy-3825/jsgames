@@ -34,10 +34,10 @@ function cardBackFan(count) {
 }
 function auctionMeta(type) { return AUCTION_TYPES[type] || { mark: '拍', label: type || '拍卖', note: '' }; }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/modernart/style.css?v=${Date.now()}`;
+    style.href = '/games/modernart/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
 
     let state = null;
@@ -60,7 +60,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         <header class="art-header">
             <div class="art-brand"><span class="art-mark" aria-hidden="true"><i></i><b></b></span><div><small>当代拍卖展厅</small><h1>现代艺术</h1></div></div>
             <div class="art-round" data-role="round">等待开幕</div>
-            <div class="art-header-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div>
+            <div class="art-header-actions"><button type="button" data-ui="rules">规则</button></div>
         </header>
         <main class="art-layout">
             <section class="art-gallery">
@@ -536,7 +536,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             const ui = uiButton.dataset.ui;
             if (ui === 'skipPresentation') { skipPresentation(); return; }
             if (presentationPlaying) return;
-            if (ui === 'leave') leaveRoom?.();
+
             else if (ui === 'rules') openRules();
             else if (ui === 'closeRules') closeRules();
             else if (ui === 'cancelChoice') { pendingChoice = null; renderAuction(); }

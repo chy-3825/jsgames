@@ -108,6 +108,58 @@ test('Witch Town keeps Trial cards private but lets each owner inspect them and 
     assert.equal(session.handleAction(second, { kind: 'endTurn' }).success, true, '打出至少一张牌后可以结束白天回合');
 });
 
+test('Witch Town keeps public table cards visible without exposing sealed Trial identities', () => {
+    const session = WitchTown.create('public-table-fields', players(['a', 'b', 'c', 'd']), { random: seededRandom(45) });
+    session.start();
+    const game = session.engine;
+    const target = game.playerMap.b;
+    target.redCards = [{ id: 'public-red', kind: 'evidence', name: '证据', color: 'red', value: 3 }];
+    target.redAccusations = 3;
+    target.blueCards = [{ id: 'public-blue', kind: 'piety', name: '虔诚', color: 'blue', value: 0 }];
+    const observer = session.getPlayerState('a');
+    const publicTarget = observer.players.find(player => player.id === 'b');
+    assert.equal(publicTarget.townHall.id, target.townHall.id, 'Town Hall 角色始终属于公开信息');
+    assert.deepEqual(publicTarget.redCards.map(card => card.id), ['public-red']);
+    assert.deepEqual(publicTarget.blueCards.map(card => card.id), ['public-blue']);
+    assert.equal(publicTarget.identity, null, '存活玩家的私密阵营不能公开');
+    assert.equal(publicTarget.revealedTrialCards.length, 0);
+    assert.ok(observer.myTrialCards.every(card => !/^tryal-\d+-\d+$/.test(card.id)), '审判牌 ID 不应暴露原始座位和牌序');
+});
+
+test('Witch Town rejects a Curse card aimed at another player blue card', () => {
+    const session = WitchTown.create('curse-owner-check', players(['a', 'b', 'c', 'd']), { random: seededRandom(46) });
+    session.start();
+    const game = session.engine;
+    game.phase = 'day'; game.currentTurnId = 'a'; game.currentTurnIndex = 0; game.dayTurn = { playerId: 'a', played: false, drew: false };
+    game.playerMap.a.hand = [{ id: 'curse-a', kind: 'curse', name: '诅咒', color: 'green', value: 0 }];
+    game.playerMap.b.blueCards = [{ id: 'blue-b', kind: 'piety', name: '虔诚', color: 'blue', value: 0 }];
+    game.playerMap.c.blueCards = [{ id: 'blue-c', kind: 'stocks', name: '枷锁', color: 'blue', value: 0 }];
+    const rejected = session.handleAction('a', { kind: 'playCard', cardId: 'curse-a', targetId: 'b', blueCardId: 'blue-c' });
+    assert.equal(rejected.success, false);
+    assert.deepEqual(game.playerMap.a.hand.map(card => card.id), ['curse-a'], '非法目标不能消耗手牌');
+    assert.deepEqual(game.playerMap.b.blueCards.map(card => card.id), ['blue-b']);
+    const accepted = session.handleAction('a', { kind: 'playCard', cardId: 'curse-a', targetId: 'b', blueCardId: 'blue-b' });
+    assert.equal(accepted.success, true);
+    assert.equal(game.playerMap.b.blueCards.length, 0);
+});
+
+test('Witch Town only sends secret progress and Conspiracy choices to the acting player', () => {
+    const session = WitchTown.create('sealed-action-state', players(['a', 'b', 'c', 'd', 'e', 'f']), { random: seededRandom(47) });
+    session.start();
+    const game = session.engine;
+    game._startNight();
+    const witch = game._alive().find(player => game._isWitch(player));
+    const observer = game._alive().find(player => !game._isWitch(player));
+    assert.equal(session.getPlayerState(observer.id).nightProgress.sealed, true);
+    assert.equal(session.getPlayerState(witch.id).nightProgress.sealed, false);
+    game.blackCatOwnerId = game.players[0].id;
+    game.players[0].townHall = { id: 'sarah-good', name: 'Sarah Good', description: '' };
+    const trigger = game.players[1];
+    game._startConspiracy(trigger.id);
+    assert.ok(session.getPlayerState(trigger.id).conspiracyRevealOptions.length);
+    assert.equal(session.getPlayerState(game.players[2].id).conspiracyRevealOptions, undefined);
+});
+
 test('Witch Town automatically advances through every Witch, the Constable, and the confession window', () => {
     const session = WitchTown.create('night-gate', players(['a', 'b', 'c', 'd', 'e', 'f']), { random: seededRandom(63) });
     assert.equal(session.start().success, true);

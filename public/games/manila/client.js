@@ -30,10 +30,10 @@ function shareBackFan(count) {
     return `<span class="mn-share-back-fan" aria-hidden="true">${Array.from({ length: visible }, () => '<i class="mn-share-back"><b>港</b></i>').join('')}</span>`;
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/manila/style.css?v=${Date.now()}`;
+    style.href = '/games/manila/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
 
     let state = null;
@@ -58,7 +58,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         <header class="mn-header">
             <div class="mn-brand"><span class="mn-seal" aria-hidden="true">港</span><div><small>南洋商路</small><h1>马尼拉</h1></div></div>
             <div class="mn-voyage" data-role="round">等待开航</div>
-            <div class="mn-header-actions"><button data-ui="rules" type="button">规则</button><button data-ui="leave" type="button">离开</button></div>
+            <div class="mn-header-actions"><button data-ui="rules" type="button">规则</button></div>
         </header>
         <main class="mn-layout">
             <section class="mn-chart">
@@ -634,7 +634,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             const ui = uiButton.dataset.ui;
             if (ui === 'skipPresentation') { skipPresentation(); return; }
             if (presentationPlaying) return;
-            if (ui === 'leave') leaveRoom?.();
+
             else if (ui === 'rules') openRules();
             else if (ui === 'closeRules') closeRules();
             else if (ui === 'cancelChoice') { if (pendingChoice?.kind === 'sailBoats') sailOrder = []; pendingChoice = null; renderCommand(); }

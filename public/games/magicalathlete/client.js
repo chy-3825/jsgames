@@ -3,11 +3,11 @@ const ATHLETE_ART_ORDER = ['alchemist', 'airship', 'baba', 'banana', 'centaur', 
 const ATHLETE_ART_INDEX = Object.fromEntries(ATHLETE_ART_ORDER.map((id, index) => [id, index]));
 const BEFORE_RACE_ATHLETES = new Set(['egg', 'twin', 'sisyphus']);
 const DECISION_ATHLETES = new Set(['alchemist', 'cheerleader', 'copycat', 'duelist', 'flopflop', 'genius', 'hypnotist', 'legs', 'magician', 'mastermind', 'rocketscientist', 'suckerfish', 'thirdwheel']);
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     const controller = new AbortController();
     style.rel = 'stylesheet';
-    style.href = `/games/magicalathlete/style.css?v=${Date.now()}`;
+    style.href = '/games/magicalathlete/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
     document.body.classList.add('is-magicalathlete-view');
     let state = null;
@@ -35,7 +35,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             <div class="ma-round" data-role="round">等待开幕</div>
             <div class="ma-actions">
                 <button data-ui="rules" type="button" title="查看规则">规则</button>
-                <button data-ui="leave" type="button" title="离开房间">离开</button>
+
             </div>
         </header>
 
@@ -581,7 +581,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     }
     mount.addEventListener('click', event => {
         const ui = event.target.closest('[data-ui]')?.dataset.ui;
-        if (ui === 'leave') { leaveRoom?.(); return; }
+
         if (ui === 'skipPresentation') { skipPresentation(); return; }
         if (ui === 'rules') { setRulesOpen(true); return; }
         if (ui === 'closeRules' || event.target === $('rulesOverlay')) { setRulesOpen(false); return; }

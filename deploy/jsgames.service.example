@@ -1,0 +1,23 @@
+[Unit]
+Description=JSGames online tabletop lobby
+After=network.target
+
+[Service]
+Type=simple
+# Replace these three values for the target server before installation.
+User=jsgames
+Group=jsgames
+WorkingDirectory=/opt/jsgames
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/node ./bin/www
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/jsgames
+
+[Install]
+WantedBy=multi-user.target

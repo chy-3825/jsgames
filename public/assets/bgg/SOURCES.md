@@ -26,7 +26,7 @@
 | 并购 | [5](https://boardgamegeek.com/boardgame/5/acquire) | 8483227 | — | 当前 60 周年视觉不混用旧版组件照 |
 | 富饶之城 | [478](https://boardgamegeek.com/boardgame/478/citadels) | 636868 | 98564 | Character fronts and abilities; classic role back references image 451100 |
 | 拉斯维加斯 | [117959](https://boardgamegeek.com/boardgame/117959/las-vegas) | 1261796 | 1405556 | All components |
-| 阿瓦隆 | [128882](https://boardgamegeek.com/boardgame/128882/the-resistance-avalon) | 1398895 | 1435197 | Components and promos |
+| 阿瓦隆 | [128882](https://boardgamegeek.com/boardgame/128882/the-resistance-avalon) | 1398895 | 1435197 / 1453098 / 1453075 | 组件合照，以及基础版善良/邪恶角色牌合集 |
 | 马戏星探 | [291453](https://boardgamegeek.com/boardgame/291453/scout) | 6398727 | 6513802 | 2021 Oink components |
 | 谍报风云 | [225694](https://boardgamegeek.com/boardgame/225694/decrypto) | 3759421 | 4082078 | Box and components |
 | 马尼拉 | [15817](https://boardgamegeek.com/boardgame/15817/manila) | 902372 | 262639 | Boat / game component photo |
@@ -77,6 +77,13 @@ card）中的白灰色现代卡背。大厅继续使用 BGG 图片
 地块边界和原图自带王冠，并按多米诺编号稳定选择变体。旧的单张地形裁图和来源原图
 不保留在现行目录。城堡、未揭示地块背面、王冠和规则示例
 由 HTML/CSS 按实时状态绘制，地形名称、王冠数量、编号、剩余牌数和合法摆放均来自游戏状态。
+
+阿瓦隆游戏内角色美术来自 BGG 图片 [1453098](https://boardgamegeek.com/image/1453098/the-resistance-avalon)
+（Good，原图 4161×3069）和 [1453075](https://boardgamegeek.com/image/1453075/the-resistance-avalon)
+（Evil，原图 4023×3050）。项目从实体牌合照中裁出八张 `720×900` WebP 人物牌面，覆盖忠臣、
+梅林、派西维尔、爪牙、刺客、莫甘娜、莫德雷德和奥伯伦。英文印刷文字不作为规则数据使用；
+中文名称、阵营、能力和私密线索继续由客户端状态实时渲染。两个阵营的全部角色图会同时预载，
+避免按当前身份单独请求资源形成额外的身份侧信道。
 
 其余清单内游戏的 `detail.*` 资源通过大厅的 BGG inline-art 层进入对应的卡牌、地块、角色、
 船只、赌场或运动员组件：使用真实 `<img>` 视觉层和轻微遮罩，牌名、费用、颜色、位置、

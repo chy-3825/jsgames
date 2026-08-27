@@ -35,10 +35,10 @@ function createLines() {
     return lines.join('');
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = '/games/checkers/style.css?v=' + Date.now();
+    style.href = '/games/checkers/style.css?v=20260826-mobile-games-3';
     document.head.appendChild(style);
 
     let state = null;
@@ -49,7 +49,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     let displayedPositions = new Map();
     let destroyed = false;
     mount.innerHTML = '<section class="checkers-game">' +
-        '<header class="checkers-header"><div class="checkers-brand"><span class="checkers-mark">跳</span><div><small>CLASSIC HEXAGON BOARD</small><h1>跳棋</h1></div></div><div class="checkers-turn" data-role="turn" aria-live="polite">等待棋局状态</div><div class="checkers-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div></header>' +
+        '<header class="checkers-header"><div class="checkers-brand"><span class="checkers-mark">跳</span><div><small>CLASSIC HEXAGON BOARD</small><h1>跳棋</h1></div></div><div class="checkers-turn" data-role="turn" aria-live="polite">等待棋局状态</div><div class="checkers-actions"><button type="button" data-ui="rules">规则</button></div></header>' +
         '<main class="checkers-layout"><aside class="checkers-panel checkers-players"><div class="checkers-panel-title"><span>对局玩家</span><small data-role="status">等待中</small></div><div data-role="players"></div><div class="checkers-key"><strong>本局设置</strong><span>121 个棋位 · 2–6 人</span><span>每方 10 枚棋子</span><span>可连续跳跃，跳过任意颜色</span></div></aside>' +
         '<section class="checkers-stage"><div class="checkers-board-wrap"><div class="checkers-board" data-role="board" role="grid" aria-label="六角星跳棋棋盘"><svg class="checkers-lines" viewBox="0 0 24 16" preserveAspectRatio="none" aria-hidden="true">' + createLines() + '</svg><div class="checkers-holes" data-role="holes"></div></div></div><div class="checkers-hint" data-role="hint" aria-live="polite">等待棋局开始</div><button class="checkers-end-move" data-ui="endMove" type="button" hidden>结束连续跳跃</button></section>' +
         '<aside class="checkers-panel checkers-info"><div class="checkers-info-card"><span class="checkers-seal">棋</span><small>CHINESE CHECKERS</small><h2>六角星上的远征</h2><p>把自己的十枚棋子全部送进对角目标角，先完成者获胜。</p><button type="button" data-ui="rules">查看规则</button></div><div class="checkers-log-title">行棋记录</div><div class="checkers-log" data-role="log"></div></aside></main>' +
@@ -259,7 +259,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const ui = uiTarget && uiTarget.dataset.ui;
         if (ui === 'rules') overlay.classList.remove('is-hidden');
         if (ui === 'closeRules' || event.target === overlay) overlay.classList.add('is-hidden');
-        if (ui === 'leave') leaveRoom && leaveRoom();
+
         if (ui === 'endMove' && state && state.availableActions && state.availableActions.canEndMove && !interactionLocked()) {
             submitAction({ kind: 'endMove' });
             return;

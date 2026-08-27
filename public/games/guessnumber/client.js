@@ -1,10 +1,10 @@
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 const CODE_LENGTH = 4;
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = `/games/guessnumber/style.css?v=${Date.now()}`;
+    link.href = '/games/guessnumber/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(link);
     document.body.classList.add('is-guessnumber-view');
 
@@ -18,7 +18,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         <header class="gn-statusbar">
             <div class="gn-brand"><span class="gn-brand-mark" aria-hidden="true"><b>A</b><i>B</i></span><div><small>BULLS &amp; COWS · SOLO CASE</small><strong>猜数字</strong></div></div>
             <div class="gn-turn-status"><span class="gn-turn-dot" aria-hidden="true"></span><div><small data-role="phase">等待开局</small><strong data-role="turn">等待游戏状态</strong></div></div>
-            <div class="gn-status-actions"><span class="gn-session-tag">单人档案</span><button class="gn-icon-button" data-ui="rules" type="button" aria-label="查看判读规则" title="判读规则">?</button><button class="gn-leave" data-ui="leave" type="button">退出</button></div>
+            <div class="gn-status-actions"><span class="gn-session-tag">单人档案</span><button class="gn-icon-button" data-ui="rules" type="button" aria-label="查看判读规则" title="判读规则">?</button></div>
         </header>
 
         <main class="gn-main">
@@ -222,8 +222,6 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             render();
         } else if (ui === 'submit') {
             submit();
-        } else if (ui === 'leave') {
-            leaveRoom?.();
         } else if (ui === 'rules') {
             setRules(true);
         } else if (ui === 'close-rules' || event.target === $('rulesOverlay')) {

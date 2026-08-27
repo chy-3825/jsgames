@@ -11,8 +11,8 @@
     --blue: #35a7bb;
     --blue-dark: #216575;
     --amber: #e1b75c;
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
     padding: 20px clamp(12px, 2.8vw, 40px) 38px;
     overflow: hidden;
     color: #e8e5d7;
@@ -82,7 +82,7 @@
 .dc-transmission > header { padding: 10px 12px; border-bottom: 1px solid #3e6268; background: #102c32; }.dc-transmission h2 { color: #d5dfda; }.dc-transmission .dc-kicker { color: #65a8b3; }.dc-transmission .dc-private-seal { border-color: #b08a4d; color: #dfc878; }
 .dc-scrambled { color: #6d9298; font-size: 8px; letter-spacing: .1em; }
 .dc-code-display { position: relative; display: grid; justify-items: end; gap: 3px; }.dc-code-display > small { color: #78969a; font-size: 6px; }.dc-code-display > div { display: flex; gap: 4px; }.dc-code-display b { display: grid; width: 25px; height: 28px; place-items: center; border: 1px solid #577479; border-radius: 3px; background: #09191d; color: #a9c3c1; font: 900 14px Georgia, serif; }.dc-code-display.is-private b { border-color: #9e7a3f; color: #f0d175; text-shadow: 0 0 8px #edc96577; transition: filter .25s ease, opacity .25s ease; }.dc-code-display.is-private:not(.is-revealed) b { filter: blur(8px); opacity: .2; }
-.dc-code-cover { position: absolute; z-index: 2; inset: 0; display: flex; align-items: center; justify-content: center; gap: 5px; border: 1px dashed #8f7542; border-radius: 3px; background: #10262beb; color: #dfc775; cursor: pointer; touch-action: none; user-select: none; transition: opacity .2s ease, visibility .2s ease; }.dc-code-cover span { display: grid; width: 20px; height: 20px; place-items: center; border: 1px solid #9e824a; border-radius: 50%; font: 900 8px "Songti SC", SimSun, serif; }.dc-code-cover strong { font-size: 6px; letter-spacing: .08em; }.dc-code-display.is-revealed .dc-code-cover { opacity: 0; visibility: hidden; pointer-events: none; }
+.dc-code-cover { position: absolute; z-index: 2; inset: 0; display: flex; align-items: center; justify-content: center; gap: 5px; border: 1px dashed #8f7542; border-radius: 3px; background: #10262beb; color: #dfc775; cursor: pointer; touch-action: pan-y; user-select: none; transition: opacity .2s ease, visibility .2s ease; }.dc-code-cover span { display: grid; width: 20px; height: 20px; place-items: center; border: 1px solid #9e824a; border-radius: 50%; font: 900 8px "Songti SC", SimSun, serif; }.dc-code-cover strong { font-size: 6px; letter-spacing: .08em; }.dc-code-display.is-revealed .dc-code-cover { opacity: 0; visibility: hidden; pointer-events: none; }
 .dc-clue-tapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; padding: 13px; }.dc-clue-tapes article { position: relative; display: grid; grid-template-columns: 25px minmax(0, 1fr); align-items: center; gap: 7px; min-height: 74px; padding: 9px; border: 1px solid #7f8780; border-radius: 3px; background: repeating-linear-gradient(0deg, #e8e6d1 0 2px, #d9d8c6 3px 5px); color: #172b2e; }.dc-clue-tapes article::after { position: absolute; right: 6px; bottom: 4px; color: #8a8f83; content: "公开"; font-size: 6px; }.dc-clue-tapes span { display: grid; width: 24px; height: 30px; place-items: center; background: #1c3b42; color: #ddd183; font: 900 13px Georgia, serif; }.dc-clue-tapes strong { overflow-wrap: anywhere; font-size: 11px; }
 .dc-private-code { display: grid; min-height: 134px; place-items: center; padding: 12px; text-align: center; }.dc-private-code .dc-code-display { justify-items: center; }.dc-private-code .dc-code-display b { width: 54px; height: 66px; font-size: 33px; }.dc-private-code p { margin: 9px 0 0; color: #789397; font-size: 8px; line-height: 1.5; }
 .dc-empty-signal { display: flex; min-height: 186px; align-items: center; justify-content: center; gap: 14px; color: #88a0a3; }.dc-empty-signal > span { position: relative; width: 48px; height: 48px; border: 1px solid #4b6c72; border-radius: 50%; }.dc-empty-signal > span::before, .dc-empty-signal > span::after, .dc-empty-signal > span i { position: absolute; inset: 8px; border: 1px solid #35545a; border-radius: 50%; content: ""; }.dc-empty-signal > span::after { inset: 16px; }.dc-empty-signal > span i { inset: 22px; background: var(--blue); box-shadow: 0 0 10px var(--blue); }.dc-empty-signal strong, .dc-empty-signal small { display: block; }.dc-empty-signal strong { color: #b9c5c2; font-size: 10px; }.dc-empty-signal small { margin-top: 4px; color: #647b7f; font-size: 7px; }
@@ -133,7 +133,7 @@
 @keyframes dcSceneScan { from { transform: translateY(-18%); } to { transform: translateY(18%); } }
 @keyframes dcScenePulse { 0%, 100% { opacity: .35; transform: scale(.9); } 50% { opacity: .8; transform: scale(1.08); } }
 
-.dc-overlay { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 18px; background: #071014e8; backdrop-filter: blur(6px); }.dc-overlay.is-hidden { display: none; }.dc-overlay article { position: relative; width: min(570px, 100%); max-height: min(760px, calc(100vh - 36px)); overflow: auto; padding: 27px; border: 1px solid #7d8b88; border-radius: 8px; background: linear-gradient(145deg, #ece8d7, #c4c6bc); box-shadow: inset 0 0 0 4px #f8f5e855, 0 28px 70px #000b; color: var(--ink); }.dc-overlay article > button { position: absolute; top: 10px; right: 10px; width: 31px; height: 31px; padding: 0; border-radius: 50%; background: #183035; color: #e7d27d; font-size: 18px; }.dc-overlay .dc-kicker { color: #4d6d70; }.dc-overlay h2 { margin: 5px 0 14px; font: 800 26px "Songti SC", SimSun, serif; }.dc-overlay ol { display: grid; gap: 7px; padding-left: 20px; color: #526463; font-size: 10px; line-height: 1.65; }.dc-art-reference { display: grid; gap: 6px; margin: 15px 0 0; padding-top: 13px; border-top: 1px solid #6f7d7955; }.dc-art-reference img { display: block; width: 100%; max-height: 225px; object-fit: contain; border: 1px solid #75837f; border-radius: 5px; background: #10191d; }.dc-art-reference figcaption { color: #75817d; font-size: 7px; }
+.dc-overlay { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 18px; background: #071014e8; backdrop-filter: blur(6px); }.dc-overlay.is-hidden { display: none; }.dc-overlay article { position: relative; width: min(570px, 100%); max-height: min(760px, calc(100dvh - 36px)); overflow: auto; padding: 27px; border: 1px solid #7d8b88; border-radius: 8px; background: linear-gradient(145deg, #ece8d7, #c4c6bc); box-shadow: inset 0 0 0 4px #f8f5e855, 0 28px 70px #000b; color: var(--ink); }.dc-overlay article > button { position: absolute; top: 10px; right: 10px; width: 31px; height: 31px; padding: 0; border-radius: 50%; background: #183035; color: #e7d27d; font-size: 18px; }.dc-overlay .dc-kicker { color: #4d6d70; }.dc-overlay h2 { margin: 5px 0 14px; font: 800 26px "Songti SC", SimSun, serif; }.dc-overlay ol { display: grid; gap: 7px; padding-left: 20px; color: #526463; font-size: 10px; line-height: 1.65; }.dc-art-reference { display: grid; gap: 6px; margin: 15px 0 0; padding-top: 13px; border-top: 1px solid #6f7d7955; }.dc-art-reference img { display: block; width: 100%; max-height: 225px; object-fit: contain; border: 1px solid #75837f; border-radius: 5px; background: #10191d; }.dc-art-reference figcaption { color: #75817d; font-size: 7px; }
 .decrypto-app button:focus-visible, .decrypto-app input:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
 
 @media (max-width: 1050px) {
@@ -150,6 +150,104 @@
     .dc-history-list { grid-template-columns: 1fr; max-height: 300px; }.dc-history-item > footer { align-items: flex-start; flex-direction: column; }.dc-side { grid-template-columns: 1fr; }.dc-identity { grid-row: auto; }.dc-log { max-height: 180px; }.dc-overlay article { padding: 23px 17px; }.dc-overlay h2 { font-size: 22px; }
 }
 @media (max-width: 390px) { .dc-key-card > i { display: none; }.dc-private-seal { padding-inline: 4px; }.dc-clue-tapes strong { font-size: 9px; } }
+/* Batch 5: the workbench is the primary mobile surface.  The team ledger and
+   history stay secondary so the private code and current decision remain visible. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    body.is-game-view { overflow: hidden; }
+    .decrypto-app {
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        overflow: hidden;
+        padding: 8px;
+    }
+    .dc-header { grid-template-columns: minmax(0, 1fr) auto auto; height: 40px; margin-bottom: 6px; gap: 7px; }
+    .dc-mark { flex-basis: 34px; width: 34px; height: 34px; }
+    .dc-brand h1 { font-size: 16px; }
+    .dc-brand small, .dc-brand p { display: none; }
+    .dc-round { min-width: 0; padding: 5px 7px; font-size: 7px; }
+    .dc-actions { gap: 4px; }
+    .dc-actions button { min-width: 42px; padding: 5px 7px; font-size: 8px; }
+    .dc-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 188px;
+        grid-template-rows: minmax(0, 1fr);
+        height: calc(100% - 46px);
+        min-height: 0;
+        gap: 8px;
+    }
+    .dc-workbench { display: flex; height: 100%; min-height: 0; flex-direction: column; overflow: hidden; padding: 8px; }
+    .dc-status { min-height: 43px; padding: 7px 9px; }
+    .dc-status h2 { margin-top: 2px; font-size: 14px; }
+    .dc-status p { margin-top: 2px; font-size: 6px; }
+    .dc-status-dial { flex-basis: 29px; width: 29px; height: 29px; font-size: 9px; }
+    .dc-phase-track { flex: 0 0 auto; margin: 5px 0; }
+    .dc-phase-track > div { min-height: 28px; grid-template-columns: 18px minmax(0, 1fr); gap: 4px; padding: 4px 5px; }
+    .dc-phase-track span { width: 17px; height: 17px; font-size: 6px; }
+    .dc-phase-track strong { font-size: 7px; }
+    .dc-phase-track small { display: none; }
+    .dc-signal-grid { grid-template-columns: minmax(170px, .9fr) minmax(215px, 1.1fr); min-height: 0; flex: 1 1 auto; gap: 6px; }
+    .dc-key-vault, .dc-transmission { min-height: 0; }
+    .dc-key-vault > header, .dc-transmission > header { min-height: 31px; padding: 5px 7px; }
+    .dc-key-vault h2, .dc-transmission h2 { font-size: 10px; }
+    .dc-private-seal { padding: 3px 4px; font-size: 5px; }
+    .dc-keywords { grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 0; height: calc(100% - 31px); gap: 4px; padding: 5px; }
+    .dc-key-card { grid-template-columns: 21px minmax(0, 1fr); min-height: 0; padding: 4px; gap: 4px; }
+    .dc-key-card > span { width: 20px; height: 25px; font-size: 11px; }
+    .dc-key-card strong { margin-top: 1px; font-size: 9px; }
+    .dc-key-card small, .dc-key-card > i { font-size: 5px; }
+    .dc-keywords-cover { inset: 5px; }
+    .dc-keywords-cover > span { width: 28px; height: 28px; font-size: 10px; }
+    .dc-keywords-cover strong { font-size: 8px; }
+    .dc-keywords-cover small { font-size: 6px; }
+    .dc-transmission { min-height: 0; }
+    .dc-clue-tapes { gap: 4px; padding: 6px; }
+    .dc-clue-tapes article { min-height: 42px; padding: 5px; }
+    .dc-clue-tapes span { width: 18px; height: 23px; font-size: 10px; }
+    .dc-clue-tapes strong { font-size: 8px; }
+    .dc-private-code { min-height: 0; height: calc(100% - 31px); padding: 6px; }
+    .dc-private-code .dc-code-display b { width: 32px; height: 38px; font-size: 18px; }
+    .dc-private-code p { margin-top: 4px; font-size: 6px; }
+    .dc-empty-signal { min-height: 0; height: 100%; gap: 7px; }
+    .dc-empty-signal > span { width: 30px; height: 30px; }
+    .dc-empty-signal strong { font-size: 8px; }
+    .dc-empty-signal small { font-size: 6px; }
+    .dc-command { flex: 0 0 74px; max-height: 74px; min-height: 0; overflow: auto; margin-top: 5px; padding: 7px; }
+    .dc-command-heading h2 { font-size: 11px; }
+    .dc-command-copy { margin: 4px 0 5px; font-size: 6px; }
+    .dc-text-fields { gap: 4px; }
+    .dc-text-fields input { min-height: 29px; padding-inline: 5px; font-size: 8px; }
+    .dc-text-fields label > span { font-size: 6px; }
+    .dc-code-builder { gap: 5px; }
+    .dc-code-slots { gap: 4px; }
+    .dc-code-slots > span { min-height: 38px; }
+    .dc-code-slots b { font-size: 16px; }
+    .dc-number-pad { gap: 4px; }
+    .dc-number-pad button { min-height: 32px; }
+    .dc-number-pad button b { font-size: 12px; }
+    .dc-number-pad button small { display: none; }
+    .dc-confirm { gap: 5px; margin-top: 5px; padding: 4px; }
+    .dc-confirm > span { width: 22px; height: 22px; }
+    .dc-confirm strong { font-size: 7px; }
+    .dc-confirm small { font-size: 5px; }
+    .dc-primary { min-height: 29px; padding-inline: 7px; font-size: 7px; }
+    .dc-history { display: none; }
+    .dc-side { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .dc-identity { flex: 0 0 auto; padding: 7px; }
+    .dc-access-mark { width: 30px; height: 34px; font-size: 12px; }
+    .dc-identity h2 { font-size: 12px; }
+    .dc-identity strong, .dc-identity small { font-size: 6px; }
+    .dc-teams { min-height: 0; overflow: auto; padding: 4px; }
+    .dc-team { padding: 5px; }
+    .dc-team > header strong { font-size: 7px; }
+    .dc-members span, .dc-team > footer span { font-size: 5px; }
+    .dc-marker-track i { width: 12px; height: 12px; }
+    .dc-log { min-height: 0; max-height: 72px; overflow: auto; padding: 4px 7px; }
+    .dc-log p { padding: 4px 0; font-size: 6px; }
+    .dc-overlay { inset: var(--game-shell-offset, 48px) 0 0; padding: 10px; }
+    .dc-overlay article { max-height: calc(100svh - var(--game-shell-offset, 48px) - 20px); padding: 15px; }
+    .dc-scene-transition { inset: var(--game-shell-offset, 48px) 0 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .decrypto-app, .dc-key-card, .dc-keywords-cover, .dc-code-display.is-private b, .dc-code-cover { transition: none; }
     .dc-scene-transition, .dc-scene-transition > div { animation: none; }

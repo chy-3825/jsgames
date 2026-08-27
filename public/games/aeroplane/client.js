@@ -55,10 +55,10 @@ const STACK_LAYOUTS = {
     4: [[-10, -10], [10, -10], [-10, 10], [10, 10]],
 };
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/aeroplane/style.css?v=${Date.now()}`;
+    style.href = '/games/aeroplane/style.css?v=20260826-mobile-games-3';
     document.head.appendChild(style);
 
     const controller = new AbortController();
@@ -84,7 +84,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         <header class="flight-header">
             <div class="flight-brand"><span class="flight-brand-mark">✈</span><div><small>CLASSIC 52-SPACE BOARD</small><h1>飞行棋</h1></div></div>
             <div class="flight-turn" data-role="turn">等待游戏状态</div>
-            <div class="flight-header-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div>
+            <div class="flight-header-actions"><button type="button" data-ui="rules">规则</button></div>
         </header>
         <main class="flight-layout">
             <aside class="flight-panel flight-players" data-role="players"></aside>
@@ -517,7 +517,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         }
         if (ui === 'rules') overlay.classList.remove('is-hidden');
         if (ui === 'closeRules' || event.target === overlay) overlay.classList.add('is-hidden');
-        if (ui === 'leave') leaveRoom?.();
+
         const confirmTarget = event.target.closest('[data-move-confirm]');
         if (confirmTarget) {
             const plane = state?.planes?.find(item => item.id === confirmTarget.dataset.moveConfirm);

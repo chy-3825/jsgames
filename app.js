@@ -22,6 +22,14 @@ function generateRoomId() {
     return String(roomIdCounter++).padStart(6, '0');
 }
 
+function generatePlayerId() {
+    let id;
+    do {
+        id = `P${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    } while ([...players.values(), ...[...sessions.values()].map(session => session.player)].some(player => player?.id === id));
+    return id;
+}
+
 function startWebSocketServer(server) {
     if (wss) return wss;
     wss = new WebSocket.Server({ server });
@@ -33,7 +41,7 @@ function startWebSocketServer(server) {
     }, 1000);
     systemTick.unref?.();
     wss.on('connection', (ws) => {
-    const playerId = 'p' + Date.now() + Math.random().toString(36).substr(2, 4);
+    const playerId = generatePlayerId();
     const sessionToken = crypto.randomBytes(24).toString('hex');
     const player = { id: playerId, name: 'Player' + playerId.substr(1, 4), sessionToken, roomId: null, reconnectTimer: null };
     players.set(ws, player);
@@ -72,9 +80,27 @@ function startWebSocketServer(server) {
                 session.ws = null;
                 session.roomId = ws.roomId || session.roomId;
                 session.player.reconnectTimer = setTimeout(() => finalizeDisconnectedSession(player.sessionToken), RECONNECT_GRACE_MS);
+                session.player.reconnectTimer.unref?.();
                 const room = session.roomId ? rooms.get(session.roomId) : null;
-                const disconnectResult = room?.game?.handlePlayerDisconnect?.(player.id);
-                if (room && disconnectResult?.state) sendGameStateToRoom(room, 'gameState', disconnectResult);
+                const connectionResult = room?.markPlayerDisconnected(player.id);
+                if (room && connectionResult?.success) {
+                    const message = `${player.name} 已断线，游戏暂时暂停，等待重连`;
+                    if (room.status === 'playing') {
+                        broadcastToRoom(room.id, {
+                            type: 'roomPaused',
+                            player: { id: player.id, name: player.name },
+                            room: room.getInfo(),
+                            connectionState: room.getConnectionState(),
+                            message,
+                        });
+                    } else {
+                        broadcastToRoom(room.id, {
+                            type: 'playerDisconnected',
+                            player: { id: player.id, name: player.name },
+                            room: room.getInfo(),
+                        });
+                    }
+                }
             } else removePlayerFromCurrentRoom(ws);
         }
         broadcastPlayerCount();
@@ -96,11 +122,23 @@ function handleMessage(ws, data) {
         case 'joinRoom':
             handleJoinRoom(ws, data);
             break;
+        case 'reconnectRoom':
+            handleReconnectRoom(ws, data);
+            break;
         case 'leaveRoom':
             handleLeaveRoom(ws);
             break;
         case 'configureRoom':
             handleConfigureRoom(ws, data);
+            break;
+        case 'kickPlayer':
+            handleKickPlayer(ws, data);
+            break;
+        case 'setReady':
+            handleSetReady(ws, data);
+            break;
+        case 'updateRoomSettings':
+            handleUpdateRoomSettings(ws, data);
             break;
         case 'chat':
             handleChat(ws, data);
@@ -161,15 +199,17 @@ function handleCreateRoom(ws, data) {
             roomName: data.roomName,
             isPublic: data.isPublic,
             seatLimit: data.seatLimit,
+            readyCheckEnabled: true,
         });
     } catch (error) {
         ws.send(JSON.stringify({ type: 'error', message: error.message }));
         return;
     }
 
-    room.addPlayer({ id: player.id, name: player.name, ws });
+    room.addPlayer({ id: player.id, name: player.name, ws, connected: true });
     rooms.set(roomId, room);
     ws.roomId = roomId;
+    player.roomId = roomId;
     const session = sessions.get(player.sessionToken); if (session) session.roomId = roomId;
 
     ws.send(JSON.stringify({
@@ -193,24 +233,39 @@ function handleJoinRoom(ws, data) {
 
     const room = rooms.get(String(data.roomId || '').trim());
     if (!room) {
-        ws.send(JSON.stringify({ type: 'error', message: 'Room does not exist' }));
+        ws.send(JSON.stringify({ type: 'error', message: '房间不存在，请核对房间号' }));
         return;
     }
 
-    const result = room.addPlayer({ id: player.id, name: player.name, ws });
+    if (room.status === 'playing') {
+        ws.send(JSON.stringify({
+            type: 'reconnectRequired',
+            roomId: room.id,
+            room: room.getInfo(),
+            message: '游戏已开始，请输入断线玩家 ID 进行重连',
+        }));
+        return;
+    }
+    if (room.status !== 'waiting') {
+        ws.send(JSON.stringify({ type: 'error', message: '该房间已结束，无法进入' }));
+        return;
+    }
+
+    const result = room.addPlayer({ id: player.id, name: player.name, ws, connected: true });
     if (!result.success) {
         ws.send(JSON.stringify({ type: 'error', message: result.message }));
         return;
     }
 
     ws.roomId = room.id;
+    player.roomId = room.id;
     ws.intentionalLeave = false;
     if (!sessions.has(player.sessionToken)) sessions.set(player.sessionToken, { player, ws, roomId: room.id });
     const session = sessions.get(player.sessionToken); if (session) session.roomId = room.id;
 
     broadcastToRoom(room.id, {
         type: 'playerJoined',
-        player: { id: player.id, name: player.name },
+        player: { id: player.id, name: player.name, seatIndex: result.seatIndex },
         room: room.getInfo(),
         players: room.getPlayerInfo(),
     });
@@ -226,6 +281,84 @@ function handleJoinRoom(ws, data) {
     console.log(`Player ${player.name} joined room ${room.id}`);
 }
 
+function findSessionByPlayerId(playerId) {
+    for (const session of sessions.values()) {
+        if (session.player?.id === playerId) return session;
+    }
+    return null;
+}
+
+function handleReconnectRoom(ws, data) {
+    const provisionalPlayer = players.get(ws);
+    const roomId = String(data.roomId || '').trim();
+    const playerId = String(data.playerId || '').trim();
+    if (!provisionalPlayer) return;
+    if (ws.roomId) {
+        ws.send(JSON.stringify({ type: 'reconnectFailed', message: '请先离开当前房间' }));
+        return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+        ws.send(JSON.stringify({ type: 'reconnectFailed', message: '房间不存在，请核对房间号' }));
+        return;
+    }
+    if (room.status !== 'playing') {
+        ws.send(JSON.stringify({ type: 'reconnectFailed', message: '该房间尚未开始游戏，请使用普通加入' }));
+        return;
+    }
+
+    const roomPlayer = room.players.find(player => player.id === playerId);
+    if (!roomPlayer) {
+        ws.send(JSON.stringify({ type: 'reconnectFailed', message: '房间内没有找到这个玩家 ID' }));
+        return;
+    }
+    const session = findSessionByPlayerId(playerId);
+    const activeSocket = session?.ws;
+    if (roomPlayer.connected !== false || activeSocket?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'reconnectFailed', message: `玩家 ID ${playerId} 已在房间中使用，${roomPlayer.name} 正在进行游戏，无法重复进入` }));
+        return;
+    }
+    if (!session || !session.player) {
+        ws.send(JSON.stringify({ type: 'reconnectFailed', message: '该玩家的重连凭证已失效' }));
+        return;
+    }
+
+    if (session.player.reconnectTimer) clearTimeout(session.player.reconnectTimer);
+    session.player.reconnectTimer = null;
+    const player = session.player;
+    if (provisionalPlayer.sessionToken && provisionalPlayer.sessionToken !== player.sessionToken) sessions.delete(provisionalPlayer.sessionToken);
+    players.delete(ws);
+    players.set(ws, player);
+    session.ws = ws;
+    session.roomId = room.id;
+    player.roomId = room.id;
+    ws.roomId = room.id;
+    ws.intentionalLeave = false;
+    roomPlayer.ws = ws;
+    room.markPlayerReconnected(player.id);
+    room.game?.handlePlayerReconnect?.(player.id);
+
+    const connectionState = room.getConnectionState();
+    ws.send(JSON.stringify({
+        type: 'reconnectSuccess',
+        playerId: player.id,
+        playerName: player.name,
+        sessionToken: player.sessionToken,
+        roomId: room.id,
+        room: room.getInfo(),
+    }));
+    broadcastToRoom(room.id, {
+        type: connectionState.paused ? 'playerReconnected' : 'roomResumed',
+        player: { id: player.id, name: player.name },
+        room: room.getInfo(),
+        connectionState,
+        message: connectionState.paused ? `${player.name} 已重连` : `${player.name} 已重连，游戏恢复`,
+    });
+    if (room.game) sendGameStateToPlayer(room, player.id, ws, 'gameState', { success: true, message: '已恢复对局' });
+    broadcastPlayerCount();
+}
+
 function handleConfigureRoom(ws, data) {
     const player = players.get(ws);
     const room = ws.roomId ? rooms.get(ws.roomId) : null;
@@ -233,7 +366,11 @@ function handleConfigureRoom(ws, data) {
         ws.send(JSON.stringify({ type: 'error', message: '你尚未进入房间' }));
         return;
     }
-    const result = room.configure(player.id, { playerCount: data.playerCount, encryptorMode: data.encryptorMode });
+    const result = room.configure(player.id, {
+        playerCount: data.playerCount,
+        encryptorMode: data.encryptorMode,
+        settings: data.settings,
+    });
     if (!result.success) {
         ws.send(JSON.stringify({ type: 'error', message: result.message }));
         return;
@@ -247,6 +384,99 @@ function handleConfigureRoom(ws, data) {
     });
     broadcastRoomList();
     console.log(`Room ${room.id} configuration confirmed`);
+}
+
+function handleSetReady(ws, data) {
+    const player = players.get(ws);
+    const room = ws.roomId ? rooms.get(ws.roomId) : null;
+    if (!player || !room) {
+        ws.send(JSON.stringify({ type: 'error', message: '你尚未进入房间' }));
+        return;
+    }
+    const result = room.setPlayerReady(player.id, data.ready !== false);
+    if (!result.success) {
+        ws.send(JSON.stringify({ type: 'error', message: result.message }));
+        return;
+    }
+    broadcastToRoom(room.id, {
+        type: 'playerReady',
+        player: { id: result.player.id, name: result.player.name, ready: result.player.ready },
+        room: room.getInfo(),
+        players: room.getPlayerInfo(),
+        message: `${result.player.name}${result.player.ready ? ' 已准备' : ' 取消了准备'}`,
+    });
+}
+
+function handleUpdateRoomSettings(ws, data) {
+    const player = players.get(ws);
+    const room = ws.roomId ? rooms.get(ws.roomId) : null;
+    if (!player || !room) {
+        ws.send(JSON.stringify({ type: 'error', message: '你尚未进入房间' }));
+        return;
+    }
+    const result = room.updateSettings(player.id, data.settings || {});
+    if (!result.success) {
+        ws.send(JSON.stringify({ type: 'error', message: result.message }));
+        return;
+    }
+    broadcastToRoom(room.id, {
+        type: 'roomSettingsUpdated',
+        roomId: room.id,
+        room: room.getInfo(),
+        players: room.getPlayerInfo(),
+        message: result.message,
+    });
+    broadcastRoomList();
+}
+
+function handleKickPlayer(ws, data) {
+    const player = players.get(ws);
+    const room = ws.roomId ? rooms.get(ws.roomId) : null;
+    if (!player || !room) {
+        ws.send(JSON.stringify({ type: 'error', message: '你尚未进入房间' }));
+        return;
+    }
+    if (room.status !== 'waiting') {
+        ws.send(JSON.stringify({ type: 'error', message: '游戏开始后不能移出玩家' }));
+        return;
+    }
+    if (room.hostId !== player.id) {
+        ws.send(JSON.stringify({ type: 'error', message: '只有房主可以移出玩家' }));
+        return;
+    }
+    const targetId = String(data.playerId || '').trim();
+    const target = room.players.find(item => item.id === targetId);
+    if (!target) {
+        ws.send(JSON.stringify({ type: 'error', message: '没有找到要移出的玩家' }));
+        return;
+    }
+    if (target.id === room.hostId) {
+        ws.send(JSON.stringify({ type: 'error', message: '房主不能移出自己' }));
+        return;
+    }
+
+    const targetSession = findSessionByPlayerId(target.id);
+    if (targetSession?.player?.reconnectTimer) clearTimeout(targetSession.player.reconnectTimer);
+    if (targetSession) sessions.delete(targetSession.player.sessionToken);
+    target.ws && (target.ws.intentionalLeave = true);
+    if (target.ws) target.ws.roomId = null;
+    if (targetSession?.player) targetSession.player.roomId = null;
+    target.ws?.readyState === WebSocket.OPEN && target.ws.send(JSON.stringify({
+        type: 'playerKicked',
+        roomId: room.id,
+        message: '你已被房主移出房间',
+    }));
+
+    room.removePlayer(target.id);
+    broadcastToRoom(room.id, {
+        type: 'playerLeft',
+        playerId: target.id,
+        kicked: true,
+        room: room.getInfo(),
+        players: room.getPlayerInfo(),
+        message: `${target.name} 已被房主移出房间`,
+    });
+    broadcastRoomList();
 }
 
 function handleLeaveRoom(ws) {
@@ -319,9 +549,11 @@ function handleResumeSession(ws, data) {
     if (room) {
         const roomPlayer = room.players.find(item => item.id === player.id);
         if (roomPlayer) roomPlayer.ws = ws;
+        room.markPlayerReconnected(player.id);
         const reconnectResult = room.game?.handlePlayerReconnect?.(player.id);
         ws.send(JSON.stringify({ type: 'resumeSuccess', playerId: player.id, roomId: room.id, room: room.getInfo() }));
-        broadcastToRoom(room.id, { type: 'playerReconnected', player: { id: player.id, name: player.name }, room: room.getInfo(), players: room.getPlayerInfo() });
+        const connectionState = room.getConnectionState();
+        broadcastToRoom(room.id, { type: connectionState.paused ? 'playerReconnected' : 'roomResumed', player: { id: player.id, name: player.name }, room: room.getInfo(), players: room.getPlayerInfo(), connectionState });
         if (reconnectResult?.state) sendGameStateToRoom(room, 'gameState', reconnectResult);
         else if (room.game) sendGameStateToPlayer(room, player.id, ws, 'gameState', { success: true, message: '已恢复对局' });
     } else {

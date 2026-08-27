@@ -16,7 +16,7 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     width: 100%;
-    min-height: calc(100dvh - 70px);
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
     overflow: clip;
     background: #10171b;
     color: var(--gn-ink);

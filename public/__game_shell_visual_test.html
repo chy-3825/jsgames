@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>游戏统一外壳移动端验收</title>
+    <link rel="stylesheet" href="/style.css?v=20260827-seat-ring-v15">
+    <!-- Load the four batch-5 game styles before the module so Firefox's
+         command-line screenshot mode measures the final mobile layout. -->
+    <link rel="stylesheet" href="/games/werewolf/style.css?v=20260827-hidden-role-focus-1">
+    <link rel="stylesheet" href="/games/avalon/style.css?v=20260827-hidden-role-focus-1">
+    <link rel="stylesheet" href="/games/decrypto/style.css?v=20260826-mobile-games-5">
+    <link rel="stylesheet" href="/games/witchtown/style.css?v=20260827-hidden-role-focus-1">
+    <link rel="stylesheet" href="/games/common/hidden-role-focus.css?v=20260827-hidden-role-focus-1">
+    <style>
+        .shell-test-metrics {
+            position: fixed;
+            z-index: 20000;
+            right: max(8px, env(safe-area-inset-right));
+            bottom: max(8px, env(safe-area-inset-bottom));
+            max-width: calc(100vw - 16px);
+            padding: 7px 9px;
+            border: 1px solid rgba(255,255,255,.3);
+            border-radius: 8px;
+            background: rgba(3, 12, 16, .9);
+            color: #d8e4df;
+            font: 10px/1.45 ui-monospace, monospace;
+            pointer-events: none;
+        }
+        .shell-test-metrics.is-failed { border-color: #e7796c; color: #ffc2b8; }
+    </style>
+</head>
+<body class="is-game-view">
+    <div id="app">
+        <section id="roomView" class="room-view" style="display:block">
+            <header class="room-page-header" aria-label="游戏房间导航">
+                <button id="leaveRoomBtn" class="back-button" type="button" aria-label="离开本局并回到大厅"><span aria-hidden="true">←</span><span>回到大厅</span></button>
+                <div class="room-page-title"><span id="roomPageGame">移动端外壳验收</span><small id="roomPageCode">房间 123456</small></div>
+                <button id="startGameBtn" class="primary-button" style="display:none" type="button">开始游戏</button>
+            </header>
+            <div id="gameMount" style="display:block"></div>
+        </section>
+    </div>
+    <output id="shellTestMetrics" class="shell-test-metrics">正在加载…</output>
+    <script type="module">
+        const params = new URLSearchParams(location.search);
+        const type = params.get('game') || 'loveletter';
+        const title = type.replace(/(^|[-_])(\w)/g, (_, prefix, letter) => letter.toUpperCase());
+        const mount = document.getElementById('gameMount');
+        const metrics = document.getElementById('shellTestMetrics');
+        const runtimeErrors = [];
+        window.__shellTestRuntimeErrors = runtimeErrors;
+        window.addEventListener('error', event => runtimeErrors.push(event.message || 'JavaScript error'));
+        window.addEventListener('unhandledrejection', event => runtimeErrors.push(String(event.reason?.message || event.reason || 'Unhandled rejection')));
+        mount.dataset.gameType = type;
+        document.getElementById('roomPageGame').textContent = `${title} · 手机端验收`;
+
+        function fixturePlayers(definitions) {
+            return definitions.map(([id, name, color, colorName], index) => ({
+                id, name, color, colorName, corner: index === 0 ? 0 : 3,
+                targetCorner: index === 0 ? 3 : 0, isOnline: true, isCurrentTurn: index === 0,
+            }));
+        }
+
+        function fixtureState(gameType) {
+            if (gameType === 'jungle') {
+                const players = fixturePlayers([['p1', '山林红方', 'red'], ['p2', '河岸蓝方', 'blue']]);
+                const pieces = [
+                    [0, 0, 'j', 'blue', 'bj0'], [6, 0, 't', 'blue', 'bt0'], [1, 1, 'd', 'blue', 'bd1'], [5, 1, 'c', 'blue', 'bc5'],
+                    [0, 2, 'r', 'blue', 'br0'], [2, 2, 'l', 'blue', 'bl2'], [4, 2, 'w', 'blue', 'bw4'], [6, 2, 'e', 'blue', 'be6'],
+                    [0, 8, 't', 'red', 'rt0'], [6, 8, 'j', 'red', 'rj6'], [1, 7, 'c', 'red', 'rc1'], [5, 7, 'd', 'red', 'rd5'],
+                    [0, 6, 'e', 'red', 're0'], [2, 6, 'w', 'red', 'rw2'], [4, 6, 'l', 'red', 'rl4'], [6, 6, 'r', 'red', 'rr6'],
+                ].map(([x, y, pieceType, color, id]) => ({ x, y, type: pieceType, color, id }));
+                return { status: 'playing', turn: 'red', currentTurn: 'p1', currentTurnName: '山林红方', players, pieces, myId: 'p1', myColor: 'red', myIsCurrentTurn: true, legalMoves: { rt0: [{ x: 0, y: 7 }], rc1: [{ x: 1, y: 6 }, { x: 2, y: 7 }] }, availableActions: { canMove: true }, actionLog: ['山林红方执红，请开始走棋'], winner: null };
+            }
+            if (gameType === 'gobang') {
+                const players = fixturePlayers([['p1', '执黑玩家', 'black'], ['p2', '执白玩家', 'white']]);
+                const placements = [[7, 7, 'black'], [7, 8, 'white'], [8, 7, 'black'], [6, 7, 'white'], [8, 8, 'black'], [6, 8, 'white'], [9, 9, 'black'], [5, 6, 'white'], [9, 7, 'black'], [5, 8, 'white'], [10, 7, 'black'], [4, 9, 'white']];
+                const pieces = placements.map(([x, y, color], index) => ({ id: `${color}-${index + 1}`, x, y, color, move: index + 1 }));
+                return { status: 'playing', turn: 'black', currentTurn: 'p1', currentTurnName: '执黑玩家', players, pieces, myId: 'p1', myColor: 'black', myIsCurrentTurn: true, legalMoves: { place: [] }, availableActions: { canPlace: true }, lastMove: { x: 4, y: 9, color: 'white' }, actionLog: ['执白玩家落子于 E10', '执黑玩家落子于 K8'], winner: null, drawReason: null };
+            }
+            if (gameType === 'aeroplane') {
+                const definitions = [['p1', '蓝翼队长', 'blue', '蓝方'], ['p2', '绿洲飞手', 'green', '绿方'], ['p3', '红云飞手', 'red', '红方'], ['p4', '金色飞手', 'yellow', '黄方']];
+                const players = fixturePlayers(definitions);
+                const starts = { blue: 0, green: 13, red: 26, yellow: 39 };
+                const planes = players.flatMap((player, playerIndex) => Array.from({ length: 4 }, (_, index) => {
+                    const progress = index === 0 ? 7 + playerIndex * 2 : index === 1 && playerIndex === 0 ? -1 : -2;
+                    const status = progress === -1 ? 'ready' : progress >= 0 ? 'flying' : 'base';
+                    return { id: `${player.id}-plane-${index + 1}`, playerId: player.id, color: player.color, number: index + 1, progress, status, globalPosition: status === 'flying' ? (starts[player.color] + progress) % 52 : null };
+                }));
+                return { status: 'playing', phase: 'choose_plane', currentTurn: 'p1', currentTurnName: '蓝翼队长', dice: 4, players, planes, movablePlaneIds: ['p1-plane-1', 'p1-plane-2'], myId: 'p1', myColor: 'blue', myIsCurrentTurn: true, availableActions: { canRoll: false, canChoosePlane: true, movablePlaneIds: ['p1-plane-1', 'p1-plane-2'] }, lastMove: null, lastAction: null, actionLog: ['蓝翼队长掷出 4 点', '请选择一架飞机'], winner: null };
+            }
+            if (gameType === 'checkers') {
+                const players = fixturePlayers([['p1', '红方远征队', 'red'], ['p2', '蓝方远征队', 'blue']]);
+                const rowCounts = [1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1];
+                const cells = rowCounts.flatMap((count, y) => Array.from({ length: count }, (_, index) => ({ x: 13 - count + index * 2, y })));
+                const pieces = [...cells.filter(cell => cell.y <= 3).map((cell, index) => ({ ...cell, id: `p1-piece-${index + 1}`, playerId: 'p1', color: 'red', number: index + 1 })), ...cells.filter(cell => cell.y >= 13).map((cell, index) => ({ ...cell, id: `p2-piece-${index + 1}`, playerId: 'p2', color: 'blue', number: index + 1 }))];
+                const pendingMove = { playerId: 'p1', pieceId: 'p1-piece-7', current: { x: 9, y: 3 }, path: [{ x: 9, y: 3 }], jumpCount: 1, mode: 'jump' };
+                return { status: 'playing', currentTurn: 'p1', currentTurnName: '红方远征队', players: players.map(player => ({ ...player, pieceCount: 10 })), pieces, pendingMove, myId: 'p1', myColor: 'red', myIsCurrentTurn: true, selectedPiece: { pieceId: 'p1-piece-7', current: { x: 9, y: 3 }, path: [{ x: 9, y: 3 }], jumpCount: 1, mode: 'jump' }, legalMoves: { select: [], step: [], jump: [{ x: 7, y: 5 }] }, availableActions: { canSelect: false, canMove: true, canEndMove: true }, lastMove: null, actionLog: ['红方连续跳跃 1 次，可继续或结束移动'], winner: null };
+            }
+            if (gameType === 'loveletter') {
+                const players = fixturePlayers([
+                    ['p1', '甲方玩家'], ['p2', '乙方玩家'], ['p3', '丙方玩家'], ['p4', '丁方玩家'],
+                ]).map((player, index) => ({ ...player, handCount: index ? 1 : 2, isAlive: true, isOut: false, isProtected: false }));
+                return {
+                    status: 'playing', phase: 'turn', hostId: 'p1', round: 1, currentTurn: 'p1', currentTurnName: '甲方玩家',
+                    players, deckCount: 10, reservedCount: 1, setAsideCount: 0, publicDiscard: [], pendingAction: null, lastAction: null,
+                    targetFavor: 4, favorTokens: players.map(player => ({ id: player.id, count: 0 })), winner: null, winners: [], roundWinner: null, roundWinners: [],
+                    myHand: [
+                        { id: 4, value: 4, name: '侍女', description: '保护自己到下一回合。', cardId: '4_0' },
+                        { id: 1, value: 1, name: '侍卫', description: '猜一名玩家的手牌。', cardId: '1_0' },
+                    ],
+                    myId: 'p1', myIsCurrentTurn: true,
+                };
+            }
+            if (gameType === 'coup') {
+                const names = ['甲方玩家', '乙方玩家', '丙方玩家', '丁方玩家', '戊方玩家', '己方玩家'];
+                const players = names.map((name, index) => ({
+                    id: `p${index + 1}`, name, coins: 2, isAlive: true, isOnline: true, isSelf: index === 0,
+                    influences: index === 0
+                        ? [{ role: 'captain', revealed: false }, { role: 'assassin', revealed: false }]
+                        : [{ role: null, revealed: false }, { role: null, revealed: false }],
+                }));
+                return {
+                    roomId: 'visual', phase: 'idle', currentTurn: 'p1', players, gameOver: false, winner: null, interaction: null,
+                    lastReveal: null, challenge: null, actionLog: ['游戏开始！'], myId: 'p1',
+                    self: { id: 'p1', coins: 2, influences: players[0].influences },
+                };
+            }
+            if (gameType === 'monopolydeal') {
+                const colors = ['brown', 'lightblue', 'pink', 'orange', 'red', 'yellow', 'green', 'blue', 'railroad', 'utility'];
+                const emptyMap = () => Object.fromEntries(colors.map(color => [color, color === 'brown' || color === 'blue' || color === 'utility' ? 0 : 0]));
+                const players = ['甲方玩家', '乙方玩家', '丙方玩家', '丁方玩家', '戊方玩家'].map((name, index) => ({
+                    id: `p${index + 1}`, name, handCount: index ? 5 : 7, bankValue: index ? index + 1 : 0, bank: [],
+                    properties: Object.fromEntries(colors.map(color => [color, []])), propertyGroups: [], houses: emptyMap(), hotels: emptyMap(),
+                    isOnline: true, isCurrentTurn: index === 0, completedSets: 0,
+                }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'play', turnNumber: 1, currentTurn: 'p1', currentTurnName: '甲方玩家', cardsPlayed: 0,
+                    deckCount: 79, discard: [], discardCount: 0, pendingAction: null, pendingDebt: null, interaction: null,
+                    lastAction: { kind: 'drawCards', playerId: 'p1', playerName: '甲方玩家', message: '甲方玩家摸了 2 张牌' },
+                    actionLog: ['游戏开始，甲方玩家先行动', '甲方玩家摸了 2 张牌'], players, winner: null,
+                    myId: 'p1', myIsCurrentTurn: true, myBank: [], myPendingDoubleRent: false, myRentMultiplier: 1, myPaymentOptions: [],
+                    myHand: [
+                        { id: 'a-debt', kind: 'action', action: 'debtCollector', value: 3, name: '收取债务' },
+                        { id: 'm-1', kind: 'money', value: 1, name: '1M 现金' },
+                        { id: 'p-brown', kind: 'property', color: 'brown', value: 1, name: '棕色地产' },
+                        { id: 'a-pass', kind: 'action', action: 'passGo', value: 1, name: '通行证' },
+                        { id: 'w-red-yellow', kind: 'property_wild', colors: ['red', 'yellow'], value: 3, name: '红色/黄色万能地产' },
+                        { id: 'a-no', kind: 'action', action: 'justSayNo', value: 4, name: '做出反对' },
+                        { id: 'm-5', kind: 'money', value: 5, name: '5M 现金' },
+                    ],
+                    availableActions: { canDraw: false, canPlay: true, canMoveProperty: true, canEndTurn: true, canDiscard: false, canRespond: false, canPayDebt: false },
+                    rules: { colorSize: Object.fromEntries(colors.map(color => [color, ['brown', 'blue', 'utility'].includes(color) ? 2 : color === 'railroad' ? 4 : 3])) },
+                };
+            }
+            if (gameType === 'hanabi') {
+                const colors = ['red', 'yellow', 'green', 'blue', 'white'];
+                const names = ['甲方玩家', '乙方玩家', '丙方玩家', '丁方玩家', '戊方玩家'];
+                const visibleHands = [
+                    [['red', 1], ['blue', 3], ['white', 2], ['yellow', 4]],
+                    [['green', 1], ['red', 3], ['blue', 2], ['white', 5]],
+                    [['yellow', 1], ['green', 4], ['red', 2], ['blue', 1]],
+                    [['white', 1], ['yellow', 3], ['green', 2], ['red', 5]],
+                ];
+                const myHand = Array.from({ length: 4 }, (_, index) => ({
+                    id: `mine-${index + 1}`, color: null, value: null,
+                    hints: { colors: index === 0 ? ['red'] : [], values: index === 1 ? [2] : [], notColors: [], notValues: [] }, hidden: true,
+                }));
+                const players = names.map((name, index) => ({
+                    id: `p${index + 1}`, name, handCount: 4, isOnline: true, isCurrentTurn: index === 0,
+                    hand: index === 0 ? myHand : visibleHands[index - 1].map(([color, value], cardIndex) => ({ id: `p${index + 1}-${cardIndex + 1}`, color, value, hints: null, hidden: false })),
+                }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'action', currentTurn: 'p1', currentTurnName: '甲方玩家', startingPlayerId: 'p1',
+                    clues: 7, strikes: 1, maxStrikes: 3, deckCount: 30, finalTurnsRemaining: null, endReason: null,
+                    fireworks: Object.fromEntries(colors.map((color, index) => [color, index % 3])), discard: [], players,
+                    actionLog: ['甲方玩家先行动。记住：你看不到自己的牌。'], lastAction: null, winner: null, score: 4, scoreRating: '刚刚起步',
+                    myId: 'p1', myHand, availableActions: { canAct: true, canGiveClue: true, canPlay: true, canDiscard: true },
+                };
+            }
+            if (gameType === 'werewolf') {
+                const roles = ['seer', 'werewolf', 'witch', 'hunter', 'guard', 'villager', 'villager', 'werewolf', 'villager'];
+                const seats = roles.map((role, index) => ({
+                    number: index + 1, role, controllerName: `${['甲','乙','丙','丁','戊','己','庚','辛','壬'][index]}方玩家`,
+                    alive: true, canControl: index === 0, roleConfirmed: true, dayReady: false, isSheriff: index === 0,
+                }));
+                return {
+                    status: 'playing', phase: 'nightSeer', phaseName: '预言家查验', nextPhaseName: '女巫行动',
+                    phaseInstruction: '选择一名玩家查看阵营', phaseProgress: { completed: 0, total: 1, label: '预言家待行动' },
+                    playerCount: 9, day: 1, activeSeat: 1, myRole: 'seer', myRoleConfirmed: true, seats,
+                    skillState: { available: true, submitted: false }, legalTargetSeats: [2, 3, 4, 5, 6, 7, 8, 9],
+                    myId: 'p1', voteProgress: { completed: 0, total: 9 }, actionLog: ['第 1 夜开始', '预言家请睁眼'],
+                    sheriff: { enabled: true, currentCandidate: null }, sheriffAction: null, announcement: null,
+                    lastVoteResult: null, winner: null,
+                };
+            }
+            if (gameType === 'avalon') {
+                const names = ['圆桌甲', '圆桌乙', '圆桌丙', '圆桌丁', '圆桌戊', '圆桌己', '圆桌庚', '圆桌辛', '圆桌壬', '圆桌癸'];
+                const players = names.map((name, index) => ({
+                    id: `p${index + 1}`, name, seat: index + 1, role: null, roleConfirmed: true, isOnline: true,
+                    isLeader: index === 0,
+                }));
+                const team = players.slice(0, 4);
+                return {
+                    status: 'playing', phase: 'vote', round: 1, leaderId: 'p1', leaderName: '圆桌甲', missionSize: 4,
+                    roleConfirmCount: 10, players, team, myId: 'p1', myRole: 'merlin', myRoleConfirmed: true,
+                    knownPlayers: [{ id: 'p2', name: '圆桌乙', seat: 2 }], availableActions: { castVote: true },
+                    voteCount: 6, missionVoteCount: 0, myVote: null, myMissionVote: null, rejectedTeams: 1,
+                    successfulMissions: 1, failedMissions: 0, missionHistory: [{ round: 1, success: true, team, fails: 0 }],
+                    lastVote: { p2: true, p3: false, p4: true, p5: true, p6: true, p7: true }, actionLog: ['第 2 项任务提案已经公布', '圆桌正在秘密表决'],
+                    winner: null, assassinationTargets: [],
+                };
+            }
+            if (gameType === 'decrypto') {
+                const names = ['红队甲', '蓝队甲', '红队乙', '蓝队乙', '红队丙', '蓝队丙', '红队丁', '蓝队丁'];
+                const players = names.map((name, index) => ({ id: `p${index + 1}`, name, seat: index + 1, team: index % 2, isOnline: true, keyConfirmed: true }));
+                const teams = [0, 1].map(id => ({
+                    id, name: id === 0 ? '红队' : '蓝队', members: players.filter(player => player.team === id).map(player => ({ id: player.id, name: player.name })),
+                    miscommunications: id === 0 ? 1 : 0, interceptions: id === 1 ? 1 : 0,
+                }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'guessing', round: 3, activeTeam: 0, currentTeam: 0,
+                    currentTeamName: '红队', currentClues: ['森林', '钟声', '剧院'], currentCode: null, encryptorId: 'p3', encryptorName: '红队乙',
+                    keyConfirmCount: 8, encryptorVoteCount: 0, interceptSubmitted: false, ownGuessSubmitted: false,
+                    teams, players, myId: 'p1', myTeam: 0, myKeywords: ['灯塔', '森林', '剧院', '地图'],
+                    availableActions: { submitOwnGuess: true }, history: [{ round: 2, team: 1, teamName: '蓝队', clues: ['雪山', '罗盘', '火车'], code: [2, 4, 1], ownGuess: { code: [2, 4, 1], correct: true }, intercept: { correct: false } }],
+                    actionLog: ['第 3 轮通信已经接入', '蓝队上一轮未能截获密码'], winner: null, lastResult: null,
+                };
+            }
+            if (gameType === 'witchtown') {
+                const halls = ['mary-warren', 'ann-putnam', 'giles-corey', 'abigail-williams', 'will-griggs', 'sarah-good', 'john-proctor', 'samuel-parris', 'rebecca-nurse', 'martha-corey', 'thomas-danforth', 'william-phips'];
+                const players = halls.map((id, index) => ({
+                    id: `p${index + 1}`, name: `塞勒姆${index + 1}`, seat: index + 1,
+                    townHall: { id, name: ['Mary Warren','Ann Putnam','Giles Corey','Abigail Williams','Will Griggs','Sarah Good','John Proctor','Samuel Parris','Rebecca Nurse','Martha Corey','Thomas Danforth','William Phips'][index], description: '镇议会角色能力' },
+                    health: index === 0 ? 2 : 3, eliminated: false, isOnline: true, identity: null, trialCount: 3,
+                    revealedTrialCount: index % 3, revealedTrialCards: index % 3 ? [{ id: `revealed-${index}`, type: 'town' }] : [],
+                    redAccusations: index % 4, redCards: index % 4 ? [{ id: `red-${index}`, kind: 'accusation', name: '指控', value: 1 }] : [],
+                    blueCards: index % 2 ? [{ id: `blue-${index}`, kind: 'piety', name: '虔诚' }] : [], exposedHandCards: [],
+                }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'night', day: 2, night: 1, currentTurnId: 'p1', currentTurnName: '塞勒姆1',
+                    judgeMessage: '晨钟前，请完成认罪或保持沉默', deckCount: 24, blackCatOwnerId: 'p1', lastNightDeaths: [], lastTrialReveal: null,
+                    dossierReviewReason: null, dossierProgress: { confirmed: 12, required: 12 }, nightStep: 'confession', nightProgress: { completed: 4, required: 12 },
+                    players, myId: 'p1', myIdentity: { faction: 'town', name: '镇民', description: '从未持有女巫审判牌的玩家。' },
+                    myTownHall: players[0].townHall, myTrialCards: [{ id: 'trial-1', type: 'town', revealed: false }, { id: 'trial-2', type: 'witch', revealed: false }, { id: 'trial-3', type: 'town', revealed: true }],
+                    myHand: [{ id: 'card-1', kind: 'evidence', name: '证据', color: 'red', value: 3 }, { id: 'card-2', kind: 'piety', name: '虔诚', color: 'blue', value: 0 }],
+                    availableActions: { confess: true, passConfession: true }, knownWitches: [], myInfo: null, winner: null, actionLog: ['第 1 夜开始', '警长已经完成法槌决定'],
+                };
+            }
+            return null;
+        }
+
+        async function waitForVisualAssets() {
+            const pendingStyles = [...document.querySelectorAll('link[rel="stylesheet"]')].filter(link => !link.sheet);
+            await Promise.all(pendingStyles.map(link => new Promise(resolve => {
+                let settled = false;
+                const done = () => { if (!settled) { settled = true; resolve(); } };
+                link.addEventListener('load', done, { once: true });
+                link.addEventListener('error', done, { once: true });
+                if (link.sheet) done();
+                else setTimeout(done, 500);
+            })));
+            await document.fonts.ready;
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }
+
+        try {
+            const clientPath = type === 'chess' ? '/games/chess/lobby-client.js' : `/games/${type}/client.js`;
+            const module = await import(`${clientPath}?v=20260827-hidden-role-focus-1`);
+            window.shellTestClient = module.createGameClient({ mount, send() {}, addLog() {} });
+            const state = fixtureState(type);
+            window.__shellTestState = state ? JSON.parse(JSON.stringify(state)) : null;
+            if (state) window.shellTestClient.handleMessage({ type: 'gameState', state });
+            if (type === 'loveletter') mount.querySelector('[data-card-index="0"]')?.click();
+            if (type === 'monopolydeal') mount.querySelector('[data-card-index="0"]')?.click();
+            if (type === 'hanabi') mount.querySelector('[data-hand-card-id]')?.click();
+            if (params.get('rules') === '1') {
+                mount.querySelector('[data-ui="rules"], [data-action="rules"], [data-action="roles"]')?.click();
+            }
+            if (params.get('revealRole') === '1') {
+                const roleCover = mount.querySelector('[data-role-hold]');
+                roleCover?.focus({ preventScroll: true });
+                roleCover?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+                // Keep the visual-fixture frame open after the synthetic hold;
+                // real clients still use press-and-hold and hide on keyup.
+                roleCover?.style.setProperty('display', 'none');
+                roleCover?.closest('.social-role-focus')?.classList.add('is-revealed');
+                roleCover?.parentElement.querySelector('[data-role-secret]')?.setAttribute('aria-hidden', 'false');
+            }
+            // Firefox's command-line screenshot mode captures after the
+            // module has rendered but does not wait for an arbitrary Promise
+            // continuation. Keep the regular font/layout settle for manual
+            // inspection, while allowing the screenshot runner to reach the
+            // metrics in the same task as the fixture render.
+            if (params.get('screenshot') !== '1') await waitForVisualAssets();
+            const viewportWidth = document.documentElement.clientWidth;
+            const viewportHeight = document.documentElement.clientHeight;
+            const scrollWidth = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth);
+            const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+            const visibleLeaves = [...document.querySelectorAll('#leaveRoomBtn, [data-ui="leave"], [data-action="leave-room"]')]
+                .filter(element => getComputedStyle(element).display !== 'none').length;
+            const headerHeight = Math.round(document.querySelector('.room-page-header').getBoundingClientRect().height);
+            const board = mount.querySelector('.jungle-board-wrap, .flight-board-wrap, .gobang-board-wrap, .checkers-board-wrap');
+            const coreAction = mount.querySelector('.jungle-hint, .flight-command, .gobang-hint, .checkers-hint');
+            const optionalAction = mount.querySelector('.checkers-end-move:not([hidden])');
+            const boardRect = board?.getBoundingClientRect();
+            const actionRect = coreAction?.getBoundingClientRect();
+            const optionalActionRect = optionalAction?.getBoundingClientRect();
+            const shortLandscape = viewportWidth > viewportHeight && viewportHeight <= 520;
+            const cardCoreSelectors = {
+                loveletter: ['.ll-opponents', '.ll-hand', '.ll-action-panel'],
+                coup: ['.cp-council', '.cp-private', '.cp-action-console'],
+                monopolydeal: ['.deal-hand', '.deal-command'],
+                hanabi: ['.hb-command-panel', '.hb-teammates-section', '.hb-my-hand', '.hb-hand-action-bar'],
+                werewolf: ['.ww-role', '.ww-action'],
+                avalon: ['.av-status', '.av-mission-board', '.av-private-action'],
+                decrypto: ['.dc-status', '.dc-signal-grid', '.dc-command'],
+                witchtown: ['.witchtown-command', '.witchtown-table-panel', '.witchtown-role-panel', '.witchtown-private-panel'],
+            };
+            const cardCore = (cardCoreSelectors[type] || []).map(selector => mount.querySelector(selector)).filter(Boolean);
+            const cardCoreFits = cardCore.length === (cardCoreSelectors[type] || []).length && cardCore.every(element => {
+                const rect = element.getBoundingClientRect();
+                return rect.left >= -1 && rect.right <= viewportWidth + 1 && rect.top >= headerHeight - 1 && rect.bottom <= viewportHeight + 1;
+            });
+            const boardCoreFits = Boolean(boardRect && actionRect && boardRect.left >= -1 && boardRect.right <= viewportWidth + 1 && boardRect.top >= headerHeight - 1 && boardRect.bottom <= viewportHeight + 1 && actionRect.bottom <= viewportHeight + 1 && (!optionalActionRect || optionalActionRect.bottom <= viewportHeight + 1));
+            const coreFits = board ? boardCoreFits : cardCoreFits;
+            const landscapeHeightFits = !shortLandscape || scrollHeight <= viewportHeight + 1;
+            const witchPortraits = type === 'witchtown' ? [...mount.querySelectorAll('.witchtown-seat-portrait, .witchtown-hall-art')] : [];
+            const witchImageRatiosValid = witchPortraits.every(element => { const rect = element.getBoundingClientRect(); return Math.abs(rect.width - rect.height) <= 1; });
+            const witchPublicFieldsVisible = type !== 'witchtown' || !shortLandscape || ['.witchtown-public-trials', '.witchtown-accusation-line', '.witchtown-public-cards'].every(selector => [...mount.querySelectorAll(selector)].every(element => getComputedStyle(element).display !== 'none'));
+            const roleFocus = ['werewolf', 'avalon', 'witchtown'].includes(type) ? mount.querySelector('.social-role-focus') : null;
+            const roleArt = type === 'avalon' ? mount.querySelector('.av-role-art img') : type === 'werewolf' ? mount.querySelector('.ww-role-art img') : type === 'witchtown' ? mount.querySelector('.witchtown-hall-art') : null;
+            const roleFocusVisible = !roleFocus || getComputedStyle(roleFocus).display !== 'none' && roleFocus.getBoundingClientRect().width >= (shortLandscape ? 90 : 1) && roleFocus.getBoundingClientRect().height >= (shortLandscape ? 70 : 1);
+            const roleArtDeferred = params.get('screenshot') === '1' && roleArt?.tagName === 'IMG' && !roleArt.complete;
+            const roleArtReady = !roleArt || roleArt.tagName !== 'IMG' || roleArt.complete && roleArt.naturalWidth > 0 || roleArtDeferred;
+            const passed = scrollWidth <= viewportWidth && landscapeHeightFits && visibleLeaves === 1 && headerHeight >= 44 && headerHeight <= 64 && (!shortLandscape || coreFits) && witchImageRatiosValid && witchPublicFieldsVisible && roleFocusVisible && roleArtReady && runtimeErrors.length === 0;
+            const boardSize = boardRect ? `${Math.round(boardRect.width)}×${Math.round(boardRect.height)}` : 'missing';
+            const coreLabel = shortLandscape ? (coreFits ? 'fit' : 'clipped') : 'portrait-only';
+            const diagnostic = params.get('debug') === '1'
+                ? ` · ${[mount.firstElementChild, ...cardCore, ...mount.querySelectorAll('.witchtown-shell,.witchtown-workspace')].filter(Boolean).map(element => { const rect = element.getBoundingClientRect(); return `${element.className.split(' ')[0]}:${Math.round(rect.left)}-${Math.round(rect.right)}×${Math.round(rect.top)}-${Math.round(rect.bottom)}`; }).join(',')}`
+                : '';
+            metrics.textContent = `${passed ? 'PASS' : 'FAIL'} · ${type} · ${viewportWidth}×${viewportHeight} · scroll ${scrollWidth}×${scrollHeight}px · board ${boardSize} · core ${coreLabel} · art ${roleArtDeferred ? 'deferred' : witchImageRatiosValid && roleArtReady ? 'ready' : 'invalid'} · role ${roleFocusVisible ? 'visible' : 'hidden'} · public ${witchPublicFieldsVisible ? 'visible' : 'hidden'} · exits ${visibleLeaves}${diagnostic}`;
+            metrics.classList.toggle('is-failed', !passed);
+            document.documentElement.dataset.shellTest = passed ? 'passed' : 'failed';
+        } catch (error) {
+            metrics.textContent = `FAIL · ${type} · ${error.message}`;
+            metrics.classList.add('is-failed');
+            document.documentElement.dataset.shellTest = 'failed';
+        }
+    </script>
+</body>
+</html>

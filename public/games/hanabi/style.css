@@ -14,7 +14,7 @@
     position: relative;
     isolation: isolate;
     width: 100%;
-    min-height: calc(100dvh - 70px);
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
     overflow: clip;
     background:
         radial-gradient(circle at 18% 14%, rgba(87, 76, 151, .18), transparent 28%),
@@ -1366,6 +1366,297 @@ button.hb-teammate:hover { border-color: rgba(99, 185, 197, .62); background: #2
     .hb-finale-fireworks > span { width: 54px; height: 54px; }
     .hb-finale-fireworks b { width: 24px; height: 24px; font-size: 13px; }
     .hb-presentation-skip { right: 12px; bottom: 12px; }
+}
+
+/* 第四批移动端：把提示对象、自己的牌背与本回合决策收进同一操作场景。 */
+@media (max-width: 680px) {
+    .hb-header {
+        top: var(--game-shell-offset, 48px);
+        grid-template-columns: minmax(0, 1fr) 38px;
+        grid-template-rows: 48px;
+        min-height: 48px;
+        height: 48px;
+        gap: 6px;
+        padding: 4px 8px;
+    }
+    .hb-brand { display: none; }
+    .hb-turn {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: stretch;
+        width: auto;
+        min-width: 0;
+        padding: 6px 8px;
+        overflow: hidden;
+        font-size: 10px;
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .hb-header-actions { grid-column: 2; grid-row: 1; }
+    .hb-icon-button { width: 36px; height: 36px; }
+
+    .hb-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "sky"
+            "command"
+            "team"
+            "hand";
+        gap: 6px;
+        width: calc(100% - 12px);
+        padding: 6px 0 max(8px, env(safe-area-inset-bottom));
+    }
+    .hb-table-rail { display: none; }
+    .hb-sky,
+    .hb-teammates-section,
+    .hb-my-hand,
+    .hb-command-panel { padding: 6px 7px; border-radius: 6px; }
+    .hb-sky,
+    .hb-command-panel,
+    .hb-teammates-section,
+    .hb-my-hand { border-top-width: 2px; }
+
+    .hb-section-header,
+    .hb-command-panel > header,
+    .hb-command-heading {
+        min-height: 27px;
+        margin-bottom: 4px;
+        padding-bottom: 4px;
+    }
+    .hb-section-header h2,
+    .hb-command-panel h2 { margin-top: 0; font-size: 10px; }
+    .hb-section-header small,
+    .hb-command-panel header small { font-size: 6px; }
+    .hb-section-header > span { max-width: 48%; font-size: 6px; }
+
+    .hb-sky { overflow: hidden; }
+    .hb-score-copy strong { font-size: 18px; }
+    .hb-fireworks { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; overflow: hidden; }
+    .hb-firework { min-height: 46px; padding: 3px 2px; }
+    .hb-firework > header { justify-content: center; }
+    .hb-firework > header .hb-color-mark { width: 5px; height: 5px; flex-basis: 5px; }
+    .hb-firework > header strong { font-size: 6px; }
+    .hb-firework > header small,
+    .hb-firework > footer { display: none; }
+    .hb-firework-burst { width: 27px; height: 27px; margin: 1px auto 0; }
+    .hb-firework-burst::before { inset: 1px; }
+    .hb-firework-burst::after { inset: 6px; }
+    .hb-firework-burst > i { inset: 9px; }
+    .hb-firework-burst > b { width: 19px; height: 19px; font-size: 11px; }
+    .hb-resources { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin-top: 4px; }
+    .hb-resource {
+        grid-template-columns: minmax(0, 1fr) auto;
+        min-height: 27px;
+        gap: 3px;
+        padding: 3px 5px;
+    }
+    .hb-resource > div { display: none; }
+    .hb-resource > span small { display: none; }
+    .hb-resource > span strong { font-size: 6px; }
+    .hb-resource > b { font-size: 13px; }
+    .hb-deck-resource { grid-column: auto; }
+
+    .hb-command-panel { position: static; min-height: 0; }
+    .hb-action-options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
+    .hb-action-options > div {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        min-height: 55px;
+        gap: 2px;
+        padding: 4px 2px;
+    }
+    .hb-action-options > div > span { grid-row: auto; width: 24px; height: 24px; font-size: 8px; }
+    .hb-action-options strong { font-size: 8px; }
+    .hb-action-options small { display: none; }
+    .hb-clue-modes { margin: 5px 0; }
+    .hb-clue-modes button { min-height: 30px; }
+    .hb-clue-choice { min-height: 38px; }
+    .hb-clue-preview { margin: 5px 0; padding: 5px; }
+    .hb-clue-preview > span { width: 27px; height: 27px; }
+    .hb-primary { min-height: 36px; }
+
+    .hb-teammates { display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; }
+    .hb-teammate {
+        flex: 0 0 min(250px, 82vw);
+        min-height: 92px;
+        padding: 5px 6px;
+        scroll-snap-align: start;
+    }
+    .hb-teammate-header { grid-template-columns: 24px minmax(0, 1fr) auto; gap: 5px; margin-bottom: 4px; }
+    .hb-teammate-header .hb-avatar { width: 23px; height: 23px; font-size: 8px; }
+    .hb-visible-cards { gap: 4px; padding: 1px 1px 3px; }
+    .hb-teammate-card-wrap { flex-basis: 43px; }
+    .hb-public-card { width: 43px; height: 63px; }
+    .hb-card-burst { top: 9px; left: 4px; width: 35px; height: 35px; }
+    .hb-public-card > strong { font-size: 21px; }
+    .hb-public-card > small { font-size: 5px; }
+
+    .hb-hand { min-height: 95px; gap: 6px; padding: 2px 2px 4px; }
+    .hb-hidden-card { width: 65px; flex-basis: 65px; gap: 3px; }
+    .hb-card-back { min-height: 91px; }
+    .hb-back-pattern { inset: 4px; }
+    .hb-back-pattern::before { top: 11px; width: 43px; height: 43px; }
+    .hb-back-pattern::after { top: 27px; }
+    .hb-card-back > strong { font-size: 22px; }
+    .hb-knowledge { right: 4px; bottom: 4px; left: 4px; gap: 1px; padding: 4px 2px; }
+    .hb-knowledge span,
+    .hb-knowledge b { font-size: 6px; }
+    .hb-knowledge small { display: none; }
+    .hb-card-select-copy { font-size: 6px; }
+    .hb-hand-action-bar { min-height: 38px; flex-wrap: nowrap; gap: 5px; margin-top: 2px; padding-top: 5px; }
+    .hb-action-step { width: 25px; height: 25px; flex-basis: 25px; font-size: 10px; }
+    .hb-hand-action-bar > div > strong { font-size: 8px; }
+    .hb-hand-action-bar > div > small { display: none; }
+    .hb-selected-actions { width: auto; margin-left: auto; gap: 4px; }
+    .hb-selected-actions button { min-width: 76px; min-height: 34px; }
+
+    .hb-app.is-clue-targeting .hb-my-hand { display: none; }
+    .hb-overlay,
+    .hb-presentation-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .hb-rules { max-height: calc(100dvh - var(--game-shell-offset, 48px) - 20px); }
+    .hb-close-button { width: 44px; height: 44px; }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .hb-app {
+        width: 100%;
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        overflow: hidden;
+    }
+    .hb-header {
+        position: relative;
+        top: auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-rows: 38px;
+        min-height: 38px;
+        height: 38px;
+        gap: 7px;
+        padding: 2px 7px;
+    }
+    .hb-brand { display: none; }
+    .hb-turn {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: stretch;
+        width: auto;
+        min-width: 0;
+        padding: 4px 7px;
+        overflow: hidden;
+        font-size: 9px;
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .hb-header-score {
+        display: grid;
+        grid-column: 2;
+        grid-row: 1;
+        padding-left: 8px;
+    }
+    .hb-header-score small { display: none; }
+    .hb-header-score strong { font-size: 16px; }
+    .hb-header-actions { grid-column: 3; grid-row: 1; }
+    .hb-icon-button { width: 34px; height: 34px; }
+
+    .hb-layout {
+        grid-template-columns: minmax(230px, 1.05fr) minmax(150px, .72fr) minmax(210px, .95fr);
+        grid-template-areas: "team command hand";
+        align-items: stretch;
+        gap: 6px;
+        width: calc(100% - 12px);
+        height: calc(100% - 38px);
+        margin: 0 auto;
+        padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+        overflow: hidden;
+    }
+    .hb-sky,
+    .hb-table-rail { display: none; }
+    .hb-teammates-section,
+    .hb-command-panel,
+    .hb-my-hand {
+        width: auto;
+        height: 100%;
+        min-height: 0;
+        padding: 6px;
+        overflow: hidden;
+        border-radius: 6px;
+        border-top-width: 2px;
+    }
+    .hb-section-header,
+    .hb-command-panel > header,
+    .hb-command-heading { min-height: 27px; margin-bottom: 4px; padding-bottom: 4px; }
+    .hb-section-header h2,
+    .hb-command-panel h2 { margin: 0; font-size: 10px; }
+    .hb-section-header small,
+    .hb-command-panel header small,
+    .hb-section-header > span { font-size: 6px; }
+
+    .hb-command-panel { position: static; overflow: auto; }
+    .hb-action-options { grid-template-columns: 1fr; gap: 4px; margin-top: 4px; }
+    .hb-action-options > div {
+        grid-template-columns: 24px minmax(0, 1fr);
+        grid-template-rows: auto;
+        justify-items: stretch;
+        min-height: 42px;
+        gap: 5px;
+        padding: 4px;
+        text-align: left;
+    }
+    .hb-action-options > div > span { grid-row: auto; width: 23px; height: 23px; }
+    .hb-action-options strong { align-self: center; font-size: 8px; }
+    .hb-action-options small { display: none; }
+    .hb-clue-modes { margin: 4px 0; }
+    .hb-clue-modes button { min-height: 28px; }
+    .hb-clue-choice { min-height: 34px; }
+    .hb-clue-preview { margin: 4px 0; padding: 4px; }
+    .hb-primary { min-height: 34px; }
+
+    .hb-teammates { display: flex; height: calc(100% - 45px); gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; }
+    .hb-teammate { flex: 0 0 min(225px, 88%); height: 100%; min-height: 0; padding: 5px; overflow: hidden; scroll-snap-align: start; }
+    .hb-teammate-header { grid-template-columns: 23px minmax(0, 1fr) auto; gap: 4px; margin-bottom: 4px; }
+    .hb-teammate-header .hb-avatar { width: 22px; height: 22px; }
+    .hb-visible-cards { gap: 3px; padding: 1px; }
+    .hb-teammate-card-wrap { flex-basis: 43px; }
+    .hb-public-card { width: 43px; height: 64px; }
+    .hb-card-burst { top: 9px; left: 4px; width: 35px; height: 35px; }
+    .hb-public-card > strong { font-size: 21px; }
+
+    .hb-hand { height: calc(100% - 86px); min-height: 0; gap: 5px; padding: 2px; }
+    .hb-hidden-card { width: 52px; flex-basis: 52px; gap: 2px; }
+    .hb-card-back { min-height: 80px; height: min(100%, 105px); }
+    .hb-back-pattern { inset: 4px; }
+    .hb-back-pattern::before { top: 9px; width: 38px; height: 38px; }
+    .hb-back-pattern::after { top: 23px; }
+    .hb-card-back > strong { font-size: 20px; }
+    .hb-knowledge { right: 3px; bottom: 3px; left: 3px; padding: 3px 1px; }
+    .hb-knowledge span,
+    .hb-knowledge b { font-size: 5px; }
+    .hb-knowledge small { display: none; }
+    .hb-card-select-copy { font-size: 5px; }
+    .hb-hand-action-bar { min-height: 38px; gap: 4px; margin-top: 2px; padding-top: 4px; }
+    .hb-hand-action-bar > div:not(.hb-selected-actions) { display: none; }
+    .hb-action-step { width: 24px; height: 24px; flex-basis: 24px; }
+    .hb-selected-actions { width: 100%; margin-left: 0; gap: 4px; }
+    .hb-selected-actions button { min-width: 0; min-height: 32px; }
+
+    .hb-app.is-clue-targeting .hb-layout {
+        grid-template-columns: minmax(280px, 1fr) minmax(270px, 1fr);
+        grid-template-areas: "team command";
+    }
+    .hb-app.is-clue-targeting .hb-my-hand { display: none; }
+
+    .hb-overlay,
+    .hb-presentation-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .hb-overlay { padding: 6px; }
+    .hb-rules { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); }
+    .hb-close-button { width: 44px; height: 44px; }
+    .hb-rules-art { min-height: 0; max-height: none; }
+    .hb-rules-copy { padding: 15px 14px 10px; }
+    .hb-rules-copy h2 { margin-bottom: 8px; font-size: 18px; }
+    .hb-rules-copy ol { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; }
+    .hb-rules-copy li { grid-template-columns: 64px minmax(0, 1fr); padding-bottom: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

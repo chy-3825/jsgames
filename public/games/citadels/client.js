@@ -70,10 +70,10 @@ function districtVariant(card) {
 
 // Keep the role-art-${state.currentRoleRank} marker readable for component-art checks.
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/citadels/style.css?v=${Date.now()}`;
+    style.href = '/games/citadels/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
     document.body.classList.add('is-citadels-view');
 
@@ -110,7 +110,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             </div>
             <div class="citadels-header-actions">
                 <button class="citadels-quiet-button" data-ui="rules" type="button">规则</button>
-                <button class="citadels-leave-button" data-ui="leave" type="button">离开</button>
+
             </div>
         </header>
 
@@ -900,7 +900,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         }
         const uiButton = event.target.closest('[data-ui]');
         if (uiButton) {
-            if (uiButton.dataset.ui === 'leave') leaveRoom?.();
+
             if (uiButton.dataset.ui === 'rules') openRules(uiButton);
             if (uiButton.dataset.ui === 'closeRules') closeRules();
             return;

@@ -1,5 +1,22 @@
 const DecryptoEngine = require('./engine');
-const metadata = { type: 'decrypto', name: '谍报风云', minPlayers: 3, maxPlayers: 8, encryptorModes: ['fixed_vote', 'rotation', 'random'] };
+const metadata = {
+    type: 'decrypto',
+    name: '谍报风云',
+    minPlayers: 3,
+    maxPlayers: 8,
+    encryptorModes: ['fixed_vote', 'rotation', 'random'],
+    roomSettings: [{
+        key: 'encryptorMode',
+        label: '加密员产生方式',
+        kind: 'choice',
+        defaultValue: 'rotation',
+        options: [
+            { value: 'fixed_vote', title: '固定投票', copy: '各队开局秘密投票，选出整局固定加密员。' },
+            { value: 'rotation', title: '轮流担任', copy: '队员按照座位顺序依次担任加密员。' },
+            { value: 'random', title: '每轮随机', copy: '每轮重新抽选，避免同一人连续担任。' },
+        ],
+    }],
+};
 
 class DecryptoSession {
     constructor(roomId, players, options = {}) {

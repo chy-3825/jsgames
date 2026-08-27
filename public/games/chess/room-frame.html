@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>国际象棋 3D 棋盘</title>
     <style>
+        :root { --game-shell-offset: 0px; }
         html, body { width: 100%; min-height: 100%; margin: 0; overflow-x: hidden; background: #071219; }
-        #chessFrameMount { min-height: 100vh; }
+        #chessFrameMount { min-height: 100dvh; }
     </style>
 </head>
 <body>
     <div id="chessFrameMount"></div>
     <script type="module">
-        import { createGameClient } from './client.js?v=20260819-2d3d-switch-1';
+        import { createGameClient } from './client.js?v=20260826-mobile-games-2';
 
         const FRAME_SOURCE = 'jsgames-chess-frame';
         const LOBBY_SOURCE = 'jsgames-chess-lobby';
@@ -29,7 +30,9 @@
         window.addEventListener('message', event => {
             if (event.origin !== targetOrigin || event.source !== parent) return;
             const message = event.data;
-            if (message?.source === LOBBY_SOURCE && message.type === 'gameMessage') client.handleMessage(message.payload);
+            if (message?.source !== LOBBY_SOURCE) return;
+            if (message.type === 'gameMessage') client.handleMessage(message.payload);
+            if (message.type === 'studyPlacement') client.setStudyPlacement?.(message.payload);
         });
         window.addEventListener('beforeunload', () => client.destroy?.(), { once: true });
         post('ready');

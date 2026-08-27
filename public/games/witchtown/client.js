@@ -45,17 +45,21 @@ function townHallArtStyle(hall) {
 
 const factionLabel = faction => faction === 'witch' ? '女巫阵营' : '镇民阵营';
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/witchtown/style.css?v=${Date.now()}`;
+    style.href = '/games/witchtown/style.css?v=20260827-hidden-role-focus-1';
     document.head.appendChild(style);
+    const focusStyle = document.createElement('link');
+    focusStyle.rel = 'stylesheet';
+    focusStyle.href = '/games/common/hidden-role-focus.css?v=20260827-hidden-role-focus-1';
+    document.head.appendChild(focusStyle);
     document.body.classList.add('is-witchtown-view');
 
     mount.innerHTML = `
         <section class="witchtown-app">
             <header class="witchtown-topbar">
-                <button class="witchtown-leave" data-ui="leave" type="button" aria-label="回到游戏大厅"><span aria-hidden="true">←</span><span>回到大厅</span></button>
+
                 <div class="witchtown-brand">
                     <span class="witchtown-brand-mark" aria-hidden="true"><i></i><b></b></span>
                     <div><span class="witchtown-eyebrow">塞勒姆审判</span><h1>猎巫镇</h1><p>传言会死，证词会说谎</p></div>
@@ -90,8 +94,13 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
                     </section>
 
                     <aside class="witchtown-panel witchtown-private-panel">
-                        <div class="witchtown-section-heading"><div><span class="witchtown-kicker">密封档案</span><h2>我的身份</h2></div><span class="witchtown-private-mark">仅你可见</span></div>
+                        <div class="witchtown-section-heading"><div><span class="witchtown-kicker">密封档案</span><h2>我的审判牌</h2></div><span class="witchtown-private-mark">本人私密</span></div>
                         <div data-role="private"></div>
+                    </aside>
+
+                    <aside class="witchtown-panel witchtown-role-panel social-role-focus">
+                        <div class="witchtown-section-heading"><div><span class="witchtown-kicker">公开身份牌</span><h2>我的镇议会角色</h2></div><span class="witchtown-public-mark">全员可见</span></div>
+                        <div data-role="public-role"></div>
                     </aside>
 
                     <section class="witchtown-panel witchtown-hand-panel">
@@ -151,6 +160,8 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     let pendingCardId = null;
     let deckOrderDraft = null;
     let dossierOpen = false;
+    let dossierSealTimer = null;
+    const selectDraft = new Map();
     let sceneTimer = null;
     let scenePlaying = false;
     const sceneQueue = [];
@@ -164,16 +175,18 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         return (state?.players || []).filter(player => !player.eliminated && (includeSelf || player.id !== state.myId));
     }
 
-    function targetOptions(includeSelf = false) {
-        return alivePlayers(includeSelf).map(player => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}${player.id === state.myId ? ' · 我' : ''}</option>`).join('');
+    function targetOptions(includeSelf = false, excludedIds = []) {
+        const excluded = new Set(excludedIds.filter(Boolean));
+        return alivePlayers(includeSelf).filter(player => !excluded.has(player.id)).map(player => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)}${player.id === state.myId ? ' · 我' : ''}</option>`).join('');
     }
 
     function trialOptions(cards = []) {
         return cards.map((card, index) => `<option value="${escapeHtml(card.id)}">${escapeHtml(card.label || `审判牌 ${index + 1}`)}</option>`).join('');
     }
 
-    function blueCardOptions() {
-        return (state?.players || []).flatMap(player => (player.blueCards || []).map(card => `<option value="${escapeHtml(card.id)}">${escapeHtml(player.name)} · ${escapeHtml(card.name)}</option>`)).join('');
+    function blueCardOptions(targetId) {
+        const target = playerById(targetId);
+        return (target?.blueCards || []).map(card => `<option value="${escapeHtml(card.id)}">${escapeHtml(card.name)}</option>`).join('');
     }
 
     function phaseMeta() {
@@ -207,6 +220,8 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         app.classList.toggle('is-night-phase', state.phase === 'night' || state.phase === 'dawn');
         app.classList.toggle('is-day-phase', state.phase === 'day');
         app.classList.toggle('is-conspiracy-phase', ['conspiracy_reveal', 'conspiracy', 'dossier_review'].includes(state.phase) && state.dossierReviewReason !== 'opening');
+        app.classList.toggle('is-my-action', hasMyAction(actions));
+        app.dataset.phase = state.phase || 'waiting';
         $('room').textContent = state.roomId ? `房间 ${state.roomId}` : '猎巫镇';
         $('footer-room').textContent = state.roomId || '—';
         $('cycle').textContent = state.status === 'ended' ? '终局' : state.phase === 'night' ? `第${state.night || 1}夜` : `第${state.day || 1}天`;
@@ -219,10 +234,11 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         $('command-status').textContent = state.status === 'ended' ? '已结算' : state.phase === 'dossier_review' && state.dossierConfirmed ? '已确认' : hasMyAction(actions) ? '轮到我' : '等待中';
         $('command-status').className = `witchtown-status-badge ${state.status === 'ended' ? 'is-ended' : hasMyAction(actions) ? 'is-mine' : ''}`;
         $('judge-footer').textContent = state.status === 'ended' ? '最终判决已记录' : state.judgeMessage || '';
-        $('command-footer').textContent = state.status === 'ended' ? '审判牌已公开' : state.phase === 'dossier_review' ? `${state.dossierProgress?.confirmed || 0} / ${state.dossierProgress?.required || 0} 人已确认` : state.phase === 'night' ? `${state.nightProgress?.completed || 0} / ${state.nightProgress?.required || 0} 项决定已完成` : `${state.deckCount ?? 0} 张牌留在牌库`;
+        $('command-footer').textContent = state.status === 'ended' ? '最终阵营已公开' : state.phase === 'dossier_review' ? `${state.dossierProgress?.confirmed || 0} / ${state.dossierProgress?.required || 0} 人已确认` : state.phase === 'night' ? state.nightProgress?.sealed ? '秘密决定正在封存' : `${state.nightProgress?.completed || 0} / ${state.nightProgress?.required || 0} 项决定已完成` : `${state.deckCount ?? 0} 张牌留在牌库`;
         renderCommand();
         renderTable();
         renderPrivate();
+        renderPublicRole();
         renderHand();
         renderPlayers();
         renderLog();
@@ -233,41 +249,73 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         return Object.values(actions).some(Boolean);
     }
 
+    function captureSelectDraft() {
+        $('command-body')?.querySelectorAll('select[data-select-for]').forEach(select => selectDraft.set(select.dataset.selectFor, select.value));
+    }
+
+    function setCommandMarkup(body, markup) {
+        body.innerHTML = markup;
+        body.querySelectorAll('select[data-select-for]').forEach(select => {
+            const draft = selectDraft.get(select.dataset.selectFor);
+            if (draft && [...select.options].some(option => option.value === draft)) select.value = draft;
+            selectDraft.set(select.dataset.selectFor, select.value);
+        });
+        updatePlayConfirmText();
+    }
+
+    function selectedHandCard() {
+        return (state?.myHand || []).find(card => card.id === pendingCardId) || null;
+    }
+
+    function renderDayTargetSelectors() {
+        const selected = selectedHandCard();
+        if (!selected) return '<div class="witchtown-target-prompt"><b>先从手牌中预选一张牌</b><small>选择牌后，这里只显示该牌真正需要的目标。</small></div>';
+        const primaryId = selectDraft.get('playCard') || alivePlayers(false)[0]?.id || '';
+        const fields = [`<label class="witchtown-select"><span>目标</span><select data-select-for="playCard">${targetOptions(false)}</select></label>`];
+        if (['robbery', 'scapegoat'].includes(selected.kind)) fields.push(`<label class="witchtown-select"><span>接收者</span><select data-select-for="playCard2">${targetOptions(false, [primaryId])}</select></label>`);
+        if (selected.kind === 'curse') {
+            const blueOptions = blueCardOptions(primaryId);
+            fields.push(`<label class="witchtown-select witchtown-blue-target"><span>移除目标的持续牌</span><select data-select-for="curseBlue"${blueOptions ? '' : ' disabled'}>${blueOptions || '<option value="">目标没有持续牌</option>'}</select></label>`);
+        }
+        return `<div class="witchtown-targets" data-card-kind="${escapeHtml(selected.kind)}">${fields.join('')}</div>`;
+    }
+
     function renderCommand() {
         const body = $('command-body');
         const actions = state.availableActions || {};
+        captureSelectDraft();
         if (state.status === 'ended') {
             const winner = state.winner?.name || '本局';
-            body.innerHTML = `<div class="witchtown-verdict"><span class="witchtown-verdict-mark">裁</span><div><strong>${escapeHtml(winner)}获胜</strong><small>${escapeHtml(state.judgeMessage || '最终阵营已经公开。')}</small></div></div><div class="witchtown-final-list">${(state.players || []).map(player => `<span><b>${escapeHtml(player.name)}</b><em>${escapeHtml(player.identity?.name || '身份已公开')}</em></span>`).join('')}</div>`;
+            setCommandMarkup(body, `<div class="witchtown-verdict"><span class="witchtown-verdict-mark">裁</span><div><strong>${escapeHtml(winner)}获胜</strong><small>${escapeHtml(state.judgeMessage || '最终阵营已经公开。')}</small></div></div><div class="witchtown-final-list">${(state.players || []).map(player => `<span><b>${escapeHtml(player.name)}</b><em>${escapeHtml(player.identity?.name || '身份已公开')}</em></span>`).join('')}</div>`);
             return;
         }
 
         if (state.phase === 'dossier_review') {
             const progress = state.dossierProgress || { confirmed: 0, required: 0 };
-            body.innerHTML = state.dossierConfirmed
+            setCommandMarkup(body, state.dossierConfirmed
                 ? waitingMarkup('你的档案已经重新封存', `已有 ${progress.confirmed}/${progress.required} 名玩家完成核对。`)
-                : `<div class="witchtown-action-card is-conspiracy"><div class="witchtown-action-head"><span class="witchtown-action-icon is-paper">档</span><div><b>${state.dossierReviewReason === 'opening' ? '打开密封档案' : '审判牌已经易手'}</b><small>先在“我的身份”区域查看完整审判牌，再确认你已记住当前阵营与职责。</small></div></div><div class="witchtown-day-buttons">${actionButton(dossierOpen ? '档案已打开' : '打开我的档案', 'openDossier', '', 'is-paper')}</div></div>`;
+                : `<div class="witchtown-action-card is-conspiracy"><div class="witchtown-action-head"><span class="witchtown-action-icon is-paper">档</span><div><b>${state.dossierReviewReason === 'opening' ? '打开密封档案' : '审判牌已经易手'}</b><small>先在“我的审判牌”区域核对完整档案，再确认你已记住当前阵营与职责。</small></div></div><div class="witchtown-day-buttons">${actionButton(dossierOpen ? '档案已打开' : '打开我的档案', 'openDossier', '', 'is-paper')}</div></div>`);
             return;
         }
 
         if (state.phase === 'dawn') {
-            body.innerHTML = actions.chooseBlackCat
+            setCommandMarkup(body, actions.chooseBlackCat
                 ? `<div class="witchtown-action-card is-dawn"><div class="witchtown-action-head"><span class="witchtown-action-icon">巫</span><div><b>选择黑猫持有者</b><small>女巫阵营的选择完成后，黑猫持有者先手。</small></div></div><div class="witchtown-action-row"><label class="witchtown-select"><span>黑猫交给</span><select data-select-for="chooseBlackCat">${targetOptions(true)}</select></label>${actionButton('确认选择', 'chooseBlackCat', '', 'is-primary')}</div></div>`
-                : waitingMarkup('女巫阵营正在秘密投票', '等待所有女巫完成黑猫选择。');
+                : waitingMarkup('女巫阵营正在秘密投票', '等待所有女巫完成黑猫选择。'));
             return;
         }
 
         if (state.phase === 'conspiracy_reveal') {
-            body.innerHTML = actions.revealConspiracyTrial
+            setCommandMarkup(body, actions.revealConspiracyTrial
                 ? `<div class="witchtown-action-card is-conspiracy"><div class="witchtown-action-head"><span class="witchtown-action-icon">谋</span><div><b>揭示黑猫的一张审判牌</b><small>确认后，揭晓的审判牌会出现在所有人的公开审判席。</small></div></div><div class="witchtown-action-row"><label class="witchtown-select"><span>选择牌</span><select data-select-for="revealConspiracyTrial">${trialOptions((state.conspiracyRevealOptions || []).map((card, index) => ({ ...card, label: `黑猫审判牌 ${index + 1}` })))}</select></label>${actionButton('揭示', 'revealConspiracyTrial', '', 'is-primary')}</div></div>`
-                : waitingMarkup('阴谋正在揭示黑猫审判牌', '等待抽到阴谋牌的玩家完成选择。');
+                : waitingMarkup('阴谋正在揭示黑猫审判牌', '等待抽到阴谋牌的玩家完成选择。'));
             return;
         }
 
         if (state.phase === 'conspiracy') {
-            body.innerHTML = actions.passTrial
+            setCommandMarkup(body, actions.passTrial
                 ? `<div class="witchtown-action-card is-conspiracy"><div class="witchtown-action-head"><span class="witchtown-action-icon">换</span><div><b>从左手玩家处取一张牌</b><small>只显示牌的数量，不会公开左手玩家的身份类型。</small></div></div><div class="witchtown-action-row"><label class="witchtown-select"><span>取走哪张</span><select data-select-for="passTrial">${trialOptions((state.conspiracyOptions || []).map((card, index) => ({ ...card, label: `左手审判牌 ${index + 1}` })))}</select></label>${actionButton('确认取牌', 'passTrial', '', 'is-primary')}</div></div>`
-                : waitingMarkup('阴谋交换进行中', '所有存活玩家按座位顺序秘密取牌。');
+                : waitingMarkup('阴谋交换进行中', '所有存活玩家按座位顺序秘密取牌。'));
             return;
         }
 
@@ -279,19 +327,19 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             if (actions.confessFree) parts.push(`<div class="witchtown-special-choice"><span><b>William Phips</b><small>你本局可以有一次不公开审判牌的认罪。</small></span>${actionButton('使用能力认罪', 'confessFree', '', 'is-violet')}</div>`);
             if (actions.passConfession) parts.push(`<div class="witchtown-special-choice"><span><b>保持沉默</b><small>不会公开审判牌，也不会获得本夜免疫。</small></span>${actionButton('确认保持沉默', 'passConfession')}</div>`);
             const waitCopy = state.nightStep === 'witches' ? '女巫正在黑暗中作出决定。' : state.nightStep === 'constable' ? '警长正在放置法槌。' : '等待其他存活玩家完成认罪决定。';
-            body.innerHTML = parts.length ? `<div class="witchtown-action-card is-night">${parts.join('<hr>')}</div>` : waitingMarkup('夜幕中的秘密行动', waitCopy);
+            setCommandMarkup(body, parts.length ? `<div class="witchtown-action-card is-night">${parts.join('<hr>')}</div>` : waitingMarkup('夜幕中的秘密行动', waitCopy));
             return;
         }
 
-        const selectors = actions.playCard ? `<div class="witchtown-targets"><label class="witchtown-select"><span>目标 A</span><select data-select-for="playCard">${targetOptions(false)}</select></label><label class="witchtown-select"><span>目标 B · 抢劫 / 替罪羊</span><select data-select-for="playCard2">${targetOptions(false)}</select></label><label class="witchtown-select witchtown-blue-target"><span>诅咒移除的蓝牌</span><select data-select-for="curseBlue"><option value="">自动选择第一张</option>${blueCardOptions()}</select></label></div>` : '';
+        const selectors = actions.playCard ? renderDayTargetSelectors() : '';
         const dayButtons = [];
         if (actions.drawCards) dayButtons.push(actionButton('摸两张并结束', 'drawCards', '', 'is-primary'));
         if (actions.drawDiscard) dayButtons.push(actionButton('从弃牌堆摸两张', 'drawDiscard', '', 'is-blue'));
         if (actions.reorderDeck) dayButtons.push(actionButton('打开牌库顺序', 'toggleDeckOrder', '', 'is-violet'));
         if (actions.endTurn) dayButtons.push(actionButton('结束行动', 'endTurn', '', 'is-primary'));
-        body.innerHTML = actions.playCard || dayButtons.length
+        setCommandMarkup(body, actions.playCard || dayButtons.length
             ? `<div class="witchtown-action-card is-day">${actions.playCard ? `<div class="witchtown-action-head"><span class="witchtown-action-icon is-red">牌</span><div><b>白天行动</b><small>先选定下方手牌，再核对目标并确认打出。一回合可以连续打出多张牌。</small></div></div>${selectors}` : ''}${dayButtons.length ? `<div class="witchtown-day-buttons">${dayButtons.join('')}</div>` : ''}${actions.reorderDeck ? renderDeckOrder() : ''}</div>`
-            : waitingMarkup(`${escapeHtml(state.currentTurnName || '其他玩家')} 正在行动`, '你可以查看自己的档案与手牌，轮到你时操作台会更新。');
+            : waitingMarkup(`${escapeHtml(state.currentTurnName || '其他玩家')} 正在行动`, '你可以查看自己的档案与手牌，轮到你时操作台会更新。'));
     }
 
     function waitingMarkup(title, copy) {
@@ -315,17 +363,18 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             const isMe = player.id === state.myId;
             const identity = player.identity ? `<span class="witchtown-identity-chip ${player.identity.faction === 'witch' ? 'is-witch' : 'is-town'}">${escapeHtml(player.identity.name)}</span>` : player.eliminated ? '<span class="witchtown-identity-chip is-dead">已出局</span>' : '<span class="witchtown-identity-chip is-hidden">身份隐藏</span>';
             const blue = (player.blueCards || []).map(card => `<span class="witchtown-blue-chip">${escapeHtml(card.name)}</span>`).join('');
+            const red = (player.redCards || []).map(card => `<span class="witchtown-red-chip">${escapeHtml(card.name)}${card.value ? ` ${escapeHtml(card.value)}` : ''}</span>`).join('');
+            const exposed = (player.exposedHandCards || []).map(card => `<span class="witchtown-exposed-chip">公开手牌 · ${escapeHtml(card.name)}</span>`).join('');
             const revealedTrials = (player.revealedTrialCards || []).map(card => `<span class="witchtown-revealed-trial is-${escapeHtml(TRIAL_META[card.type]?.tone || 'town')}">${escapeHtml(TRIAL_META[card.type]?.chinese || '审判')}</span>`).join('');
             const health = Array.from({ length: 3 }, (_, index) => `<i class="${index < (player.health || 0) ? 'is-full' : ''}"></i>`).join('');
             const threshold = player.townHall?.id === 'george-burroughs' ? 8 : 7;
             const accusation = Math.min(threshold, player.redAccusations || 0);
-            return `<article class="witchtown-seat ${isCurrent ? 'is-current' : ''} ${isMe ? 'is-me' : ''} ${player.eliminated ? 'is-dead' : ''}"><div class="witchtown-seat-portrait"><span class="witchtown-seat-art" style="${townHallArtStyle(player.townHall)}" aria-hidden="true"></span><i>${String(player.seat || 0).padStart(2, '0')}</i>${player.id === state.blackCatOwnerId ? '<b class="witchtown-cat-mark" title="黑猫持有者">猫</b>' : ''}</div><div class="witchtown-seat-file"><header><div class="witchtown-seat-name"><strong>${escapeHtml(player.name)}${isMe ? '<em>我</em>' : ''}</strong><small>${isCurrent ? '正在受审' : player.eliminated ? '已离席' : player.isOnline === false ? '离线' : '等待证词'}</small></div>${identity}</header><div class="witchtown-seat-role"><span>${escapeHtml(player.townHall?.name || '镇议会角色')}</span><b>${player.revealedTrialCount || 0} / ${player.trialCount || 0} 已揭示</b></div><div class="witchtown-public-trials">${revealedTrials || '<span>尚无公开审判牌</span>'}</div><div class="witchtown-accusation-line" style="--progress:${(accusation / threshold) * 100}%"><span><i></i></span><b>${player.redAccusations || 0}<small> / ${threshold} 指控</small></b></div><div class="witchtown-seat-metrics"><span><span class="witchtown-health">${health}</span><small>生命</small></span><span><b>${player.trialCount || 0}</b><small>审判牌</small></span></div><div class="witchtown-seat-assets">${blue || '<span class="witchtown-empty-chip">暂无持续牌</span>'}</div></div></article>`;
+            return `<article class="witchtown-seat ${isCurrent ? 'is-current' : ''} ${isMe ? 'is-me' : ''} ${player.eliminated ? 'is-dead' : ''}"><div class="witchtown-seat-portrait"><span class="witchtown-seat-art" style="${townHallArtStyle(player.townHall)}" aria-hidden="true"></span><i>${String(player.seat || 0).padStart(2, '0')}</i>${player.id === state.blackCatOwnerId ? '<b class="witchtown-cat-mark" title="黑猫持有者">猫</b>' : ''}</div><div class="witchtown-seat-file"><header><div class="witchtown-seat-name"><strong>${escapeHtml(player.name)}${isMe ? '<em>我</em>' : ''}</strong><small>${isCurrent ? '正在受审' : player.eliminated ? '已离席' : player.isOnline === false ? '离线' : '等待证词'}</small></div>${identity}</header><div class="witchtown-seat-role" title="${escapeHtml(player.townHall?.description || '')}"><span>${escapeHtml(player.townHall?.name || '镇议会角色')}</span><b>${player.revealedTrialCount || 0} / ${player.trialCount || 0} 已揭示</b></div><div class="witchtown-public-trials">${revealedTrials || '<span>尚无公开审判牌</span>'}</div><div class="witchtown-accusation-line" style="--progress:${(accusation / threshold) * 100}%"><span><i></i></span><b>${player.redAccusations || 0}<small> / ${threshold} 指控</small></b></div><div class="witchtown-public-cards">${red}${blue}${exposed || ''}${!red && !blue && !exposed ? '<span class="witchtown-empty-chip">暂无公开附牌</span>' : ''}</div><div class="witchtown-seat-metrics"><span><span class="witchtown-health">${health}</span><small>生命</small></span><span><b>${player.trialCount || 0}</b><small>审判牌</small></span></div></div></article>`;
         }).join('');
     }
 
     function renderPrivate() {
         const me = state.myIdentity;
-        const hall = state.myTownHall;
         const trialCards = (state.myTrialCards || []).map((card, index) => {
             const meta = TRIAL_META[card.type] || { label: '审判', chinese: '审判', tone: 'town' };
             const seal = card.type === 'witch' ? '巫' : card.type === 'constable' ? '槌' : '镇';
@@ -337,12 +386,36 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const reviewCopy = state.phase === 'dossier_review'
             ? state.dossierConfirmed ? '你已完成本轮核对，可随时再次打开查看。' : '核对全部审判牌后，请在档案内确认。'
             : '审判期间可以随时秘密查看，查看后请重新封存。';
-        const controls = `<div class="witchtown-dossier-actions">${actionButton('重新封存', 'closeDossier')}${state.availableActions?.confirmDossier ? actionButton('我已核对档案', 'confirmDossier', '', 'is-primary') : ''}</div>`;
+        const controls = `<div class="witchtown-dossier-actions">${state.status === 'ended' ? '' : actionButton('重新封存', 'closeDossier')}${state.availableActions?.confirmDossier ? actionButton('我已核对档案', 'confirmDossier', '', 'is-primary') : ''}</div>`;
         const dossier = showDossier
             ? `<section class="witchtown-dossier is-open"><div class="witchtown-dossier-ribbon"><span>私密审判档案</span><small>${escapeHtml(reviewCopy)}</small></div><div class="witchtown-faction ${me?.faction === 'witch' ? 'is-witch' : 'is-town'}"><span>当前阵营</span><strong>${escapeHtml(factionLabel(me?.faction))}</strong><small>${escapeHtml(me?.description || '你的身份信息会随牌局进程更新。')}</small></div><div class="witchtown-private-block"><div class="witchtown-private-heading"><span>审判牌</span><small>仅本人可见</small></div><div class="witchtown-trial-grid">${trialCards || '<span class="witchtown-muted">尚未发牌</span>'}</div></div>${witches}${info}${controls}</section>`
             : `<button class="witchtown-dossier-cover" data-action="openDossier" type="button"><span>SALEM · 1692</span><i aria-hidden="true">审</i><strong>密封审判档案</strong><small>${escapeHtml(reviewCopy)}</small><b>${state.dossierConfirmed ? '本轮已核对' : '点击秘密查看'}</b></button>`;
-        const publicHall = `<div class="witchtown-private-block witchtown-public-hall"><div class="witchtown-private-heading"><span>镇议会角色</span><small>公开信息</small></div>${hall ? `<div class="witchtown-hall"><span class="witchtown-hall-art" style="${townHallArtStyle(hall)}" aria-hidden="true"></span><div><strong>${escapeHtml(hall.name)}</strong><p>${escapeHtml(hall.description)}</p></div></div>` : '<span class="witchtown-muted">尚未发牌</span>'}</div>`;
-        $('private').innerHTML = `${dossier}${publicHall}`;
+        $('private').innerHTML = dossier;
+    }
+
+    function renderPublicRole() {
+        const hall = state.myTownHall;
+        $('public-role').innerHTML = hall
+            ? `<div class="witchtown-hall"><span class="witchtown-hall-art social-role-focus-art" style="${townHallArtStyle(hall)}" aria-hidden="true"></span><div><strong>${escapeHtml(hall.name)}</strong><p>${escapeHtml(hall.description)}</p><small>镇议会角色从开局起始终公开，不属于密封档案。</small></div></div>`
+            : '<span class="witchtown-muted">尚未发放镇议会角色。</span>';
+    }
+
+    function clearDossierSealTimer() {
+        clearTimeout(dossierSealTimer);
+        dossierSealTimer = null;
+    }
+
+    function scheduleDossierSeal() {
+        clearDossierSealTimer();
+        if (state?.status !== 'ended') dossierSealTimer = window.setTimeout(() => sealDossier(), 45000);
+    }
+
+    function sealDossier() {
+        if (!dossierOpen || state?.status === 'ended') return;
+        dossierOpen = false;
+        clearDossierSealTimer();
+        renderPrivate();
+        if (state.phase === 'dossier_review') renderCommand();
     }
 
     function cardMarkup(card, canPlay) {
@@ -360,17 +433,33 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         $('hand-summary').textContent = `${state.myHand?.length || 0} 张 · ${canPlay ? '可行动' : '等待行动'}`;
         const selected = (state.myHand || []).find(card => card.id === pendingCardId);
         const selectedMeta = selected ? CARD_META[selected.kind] || { label: selected.name || '游戏牌' } : null;
-        const confirm = selected ? `<div class="witchtown-card-confirm"><span class="witchtown-confirm-seal">审</span><div><small>待提交证词</small><strong>${escapeHtml(selectedMeta.label)}</strong><p data-role="play-confirm-target">正在核对目标……</p></div>${actionButton('确认打出', 'confirmPlay', selected.id, 'is-danger')}</div>` : '';
+        const draftReady = selected ? isPlayDraftValid(selected) : false;
+        const confirm = selected ? `<div class="witchtown-card-confirm"><span class="witchtown-confirm-seal">审</span><div><small>待提交证词</small><strong>${escapeHtml(selectedMeta.label)}</strong><p data-role="play-confirm-target">正在核对目标……</p></div>${actionButton(draftReady ? '确认打出' : '请补全目标', 'confirmPlay', selected.id, 'is-danger', !draftReady)}</div>` : '';
         $('hand').innerHTML = `<div class="witchtown-hand-note"><span class="witchtown-hand-lock">${canPlay ? '行动中' : '私密手牌'}</span><small>${canPlay ? '点选手牌后，在确认条核对目标' : '手牌内容不会公开给其他玩家'}</small></div><div class="witchtown-card-grid">${cards || '<div class="witchtown-empty-hand">手牌暂为空</div>'}</div>${confirm}`;
         updatePlayConfirmText();
+    }
+
+    function isPlayDraftValid(card = selectedHandCard()) {
+        if (!card || !playerById(readSelect('playCard'))) return false;
+        if (['robbery', 'scapegoat'].includes(card.kind)) {
+            const second = readSelect('playCard2');
+            if (!playerById(second) || second === readSelect('playCard')) return false;
+        }
+        if (card.kind === 'curse') {
+            const target = playerById(readSelect('playCard'));
+            if (!(target?.blueCards || []).some(item => item.id === readSelect('curseBlue'))) return false;
+        }
+        return true;
     }
 
     function updatePlayConfirmText() {
         const target = mount.querySelector('[data-role="play-confirm-target"]');
         if (!target || !state) return;
+        const card = selectedHandCard();
         const primary = playerById(readSelect('playCard'))?.name || '未选择';
         const secondary = playerById(readSelect('playCard2'))?.name;
-        target.textContent = `主要目标：${primary}${secondary ? ` · 备用目标：${secondary}` : ''}`;
+        const blue = playerById(readSelect('playCard'))?.blueCards?.find(item => item.id === readSelect('curseBlue'))?.name;
+        target.textContent = `目标：${primary}${card && ['robbery', 'scapegoat'].includes(card.kind) ? ` · 接收者：${secondary || '未选择'}` : ''}${card?.kind === 'curse' ? ` · 持续牌：${blue || '未选择'}` : ''}`;
     }
 
     function renderPlayers() {
@@ -490,7 +579,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     function onClick(event) {
         const uiButton = event.target.closest('[data-ui]');
         if (uiButton) {
-            if (uiButton.dataset.ui === 'leave') leaveRoom?.();
+
             if (uiButton.dataset.ui === 'rules') openRules(uiButton);
             if (uiButton.dataset.ui === 'closeRules') closeRules();
             if (uiButton.dataset.ui === 'sceneContinue') dismissScene(true);
@@ -504,18 +593,18 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         if (!actionElement || actionElement.disabled) return;
         if (actionElement.dataset.action === 'openDossier') {
             dossierOpen = true;
+            scheduleDossierSeal();
             renderPrivate();
             if (state.phase === 'dossier_review') renderCommand();
             return;
         }
         if (actionElement.dataset.action === 'closeDossier') {
-            dossierOpen = false;
-            renderPrivate();
-            if (state.phase === 'dossier_review') renderCommand();
+            sealDossier();
             return;
         }
         if (actionElement.dataset.action === 'confirmDossier') {
             dossierOpen = false;
+            clearDossierSealTimer();
             renderPrivate();
             renderCommand();
             sendAction('confirmDossier');
@@ -523,12 +612,15 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         }
         if (actionElement.dataset.action === 'selectCard') {
             pendingCardId = pendingCardId === actionElement.dataset.value ? null : actionElement.dataset.value;
+            renderCommand();
             renderHand();
             return;
         }
         if (actionElement.dataset.action === 'confirmPlay') {
+            if (!isPlayDraftValid()) return;
             const cardId = pendingCardId;
             pendingCardId = null;
+            renderCommand();
             renderHand();
             sendAction('playCard', cardId);
             return;
@@ -561,16 +653,36 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     }
 
     function onChange(event) {
-        if (event.target.matches('[data-select-for="playCard"], [data-select-for="playCard2"]')) updatePlayConfirmText();
+        if (!event.target.matches('select[data-select-for]')) return;
+        selectDraft.set(event.target.dataset.selectFor, event.target.value);
+        const selected = selectedHandCard();
+        if (event.target.dataset.selectFor === 'playCard' && selected && ['curse', 'robbery', 'scapegoat'].includes(selected.kind)) {
+            if (selected.kind === 'curse') selectDraft.delete('curseBlue');
+            renderCommand();
+            renderHand();
+            return;
+        }
+        updatePlayConfirmText();
+        renderHand();
     }
 
     function onKeydown(event) {
         if (event.key === 'Escape' && !overlay.classList.contains('is-hidden')) closeRules();
     }
 
+    function onVisibilityChange() {
+        if (document.visibilityState === 'hidden') sealDossier();
+    }
+
+    function onWindowBlur() {
+        sealDossier();
+    }
+
     mount.addEventListener('click', onClick);
     mount.addEventListener('change', onChange);
     document.addEventListener('keydown', onKeydown);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onWindowBlur);
 
     return {
         gameType: 'witchtown',
@@ -578,7 +690,10 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             if (message.state) {
                 const previous = state;
                 state = message.state;
-                if (previous?.phase !== state.phase) dossierOpen = false;
+                if (previous?.phase !== state.phase) {
+                    dossierOpen = false;
+                    clearDossierSealTimer();
+                }
                 render();
                 queueStateScenes(previous, state);
             }
@@ -588,10 +703,14 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             mount.removeEventListener('click', onClick);
             mount.removeEventListener('change', onChange);
             document.removeEventListener('keydown', onKeydown);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+            window.removeEventListener('blur', onWindowBlur);
+            clearDossierSealTimer();
             clearTimeout(sceneTimer);
             sceneQueue.length = 0;
             closeRules();
             document.body.classList.remove('is-witchtown-view');
+            focusStyle.remove();
             style.remove();
             mount.innerHTML = '';
         },

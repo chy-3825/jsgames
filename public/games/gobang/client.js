@@ -1,10 +1,10 @@
 const BOARD_SIZE = 15;
 const STAR_POINTS = new Set(['3,3', '11,3', '7,7', '3,11', '11,11']);
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = `/games/gobang/style.css?v=${Date.now()}`;
+    link.href = '/games/gobang/style.css?v=20260826-mobile-games-3';
     document.head.appendChild(link);
 
     let state = null;
@@ -14,7 +14,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         <header class="gobang-header">
             <div class="gobang-brand"><span class="gobang-mark">五</span><div><small>CLASSIC BOARD GAME</small><h1>五子棋</h1></div></div>
             <div class="gobang-turn" data-role="turn">等待棋局状态</div>
-            <div class="gobang-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div>
+            <div class="gobang-actions"><button type="button" data-ui="rules">规则</button></div>
         </header>
         <main class="gobang-layout">
             <aside class="gobang-panel gobang-players"><div class="gobang-panel-title"><span>对局双方</span><small data-role="status">等待中</small></div><div data-role="players"></div><div class="gobang-key"><strong>本局设置</strong><span>15 × 15 棋盘</span><span>连成五子即胜</span><span>不设禁手，长连也算胜利</span></div></aside>
@@ -112,7 +112,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const ui = event.target.closest('[data-ui]')?.dataset.ui;
         if (ui === 'rules') overlay.classList.remove('is-hidden');
         if (ui === 'closeRules' || event.target === overlay) overlay.classList.add('is-hidden');
-        if (ui === 'leave') leaveRoom?.();
+
         const cell = event.target.closest('.gobang-cell');
         if (!cell || !state || state.status === 'ended' || movePending || !state.myIsCurrentTurn || cell.disabled || pieceAt(Number(cell.dataset.x), Number(cell.dataset.y))) return;
         movePending = true;

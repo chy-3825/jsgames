@@ -1,3 +1,5 @@
+const { randomUUID } = require('node:crypto');
+
 const IDENTITIES = {
     villager: { id: 'villager', name: '镇民', faction: 'town', description: '从未持有女巫审判牌的玩家。' },
     sheriff: { id: 'sheriff', name: '警长', faction: 'town', description: '当前持有警长审判牌，夜晚可以放置法槌保护一名玩家。' },
@@ -88,7 +90,7 @@ class WitchTownEngine {
         const halls = shuffle(TOWN_HALLS, this.random).slice(0, this.players.length);
         const shuffledTrialCards = shuffle(trialCards, this.random);
         this.players.forEach((player, index) => {
-            player.trialCards = shuffledTrialCards.slice(index * setup.cards, (index + 1) * setup.cards).map((card, cardIndex) => ({ id: `tryal-${index + 1}-${cardIndex + 1}`, type: card.type, revealed: false }));
+            player.trialCards = shuffledTrialCards.slice(index * setup.cards, (index + 1) * setup.cards).map(card => ({ id: `tryal-${randomUUID()}`, type: card.type, revealed: false }));
             player.townHall = halls[index]; player.townHallUsed = {}; player.everWitch = player.trialCards.some(card => card.type === 'witch');
             player.everConstable = player.trialCards.some(card => card.type === 'constable'); player.identity = this._identityFor(player);
             player.health = 3; player.redAccusations = 0; player.redCards = []; player.blueCards = []; player.eliminated = false; player.revealed = false; player.confessed = false; player.hand = []; player.exposedHandCards = []; player.lastInfo = null;
@@ -286,6 +288,7 @@ class WitchTownEngine {
         const target = this._validTarget(action.targetId, false, player.id);
         if (['robbery', 'scapegoat'].includes(card.kind) && (!target || !this._validTarget(action.targetId2, false, player.id) || action.targetId2 === action.targetId)) return { success: false, message: '这张牌需要两名不同的其他玩家', state: this.getPlayerState(player.id) };
         if (!['robbery', 'scapegoat'].includes(card.kind) && !target) return { success: false, message: '请选择一名其他玩家', state: this.getPlayerState(player.id) };
+        if (card.kind === 'curse' && (!target.blueCards.length || (action.blueCardId && !target.blueCards.some(item => item.id === action.blueCardId)))) return { success: false, message: '请选择目标面前真实存在的蓝色持续牌', state: this.getPlayerState(player.id) };
         player.hand.splice(index, 1); player.exposedHandCards = player.exposedHandCards.filter(item => item.id !== card.id);
         const discardImmediately = ['alibi', 'arson', 'curse', 'robbery'].includes(card.kind);
         if (discardImmediately) this.discard.push(card);
@@ -548,12 +551,12 @@ class WitchTownEngine {
             const witches = this._alive().filter(player => this._isWitch(player));
             const required = this.nightStep === 'witches' ? witches.length : this.nightStep === 'constable' ? 1 : this._alive().length;
             const completed = this.nightStep === 'witches' ? witches.filter(player => this.nightActions.kills[player.id]).length : this.nightStep === 'constable' ? Number(Boolean(this.nightActions.protect)) : this._alive().filter(player => this.nightActions.confessions[player.id]).length;
-            nightProgress = { completed, required };
+            nightProgress = this.nightStep === 'confession' ? { completed, required, sealed: false } : { completed: 0, required: 0, sealed: true };
         }
         return { roomId: this.roomId, status: this.status, phase: this.phase, day: this.day, night: this.night, hostId: this.hostId, currentTurnId: this.currentTurnId,
             judgeMessage: this.judgeMessage, deckCount: this.deck.length, blackCatOwnerId: this.blackCatOwnerId, lastNightDeaths: this.lastNightDeaths.slice(), lastTrialReveal: this.lastTrialReveal ? { ...this.lastTrialReveal } : null,
             dossierReviewReason: this.dossierReview?.reason || null, dossierProgress: { confirmed: dossierConfirmed, required: dossierRequired }, nightStep: this.nightStep, nightProgress,
-            players: this.players.map(player => ({ id: player.id, name: player.name, seat: player.seat, townHall: player.townHall ? { ...player.townHall } : null, health: player.health, eliminated: player.eliminated, trialCount: player.trialCards.length, revealedTrialCount: player.trialCards.filter(card => card.revealed).length, revealedTrialCards: player.trialCards.filter(card => card.revealed).map(card => ({ id: card.id, type: card.type })), accusations: player.redAccusations, redAccusations: player.redAccusations, blueCards: player.blueCards.map(cardSummary), exposedHandCards: player.exposedHandCards.map(cardSummary), isOnline: player.isOnline, identity: reveal || player.eliminated ? IDENTITIES[player.identity] : null })),
+            players: this.players.map(player => ({ id: player.id, name: player.name, seat: player.seat, townHall: player.townHall ? { ...player.townHall } : null, health: player.health, eliminated: player.eliminated, trialCount: player.trialCards.length, revealedTrialCount: player.trialCards.filter(card => card.revealed).length, revealedTrialCards: player.trialCards.filter(card => card.revealed).map(card => ({ id: card.id, type: card.type })), accusations: player.redAccusations, redAccusations: player.redAccusations, redCards: player.redCards.map(cardSummary), blueCards: player.blueCards.map(cardSummary), exposedHandCards: player.exposedHandCards.map(cardSummary), isOnline: player.isOnline, identity: reveal || player.eliminated ? IDENTITIES[player.identity] : null })),
             actionLog: this.actionLog.slice(-20), winner: this.winner, currentTurnName: current?.name || null };
     }
     getPlayerState(playerId) {
@@ -566,8 +569,8 @@ class WitchTownEngine {
         const actions = {}; if (!player || this.status !== 'playing') return Object.assign(state, { availableActions: actions });
         if (this.phase === 'dossier_review') actions.confirmDossier = !player.eliminated && !state.dossierConfirmed;
         else if (this.phase === 'dawn') actions.chooseBlackCat = this._isWitch(player) && !this.dawnVotes[player.id];
-        else if (this.phase === 'conspiracy_reveal') { actions.revealConspiracyTrial = this.currentConspiracy?.triggerId === playerId; state.conspiracyRevealOptions = this.playerMap[this.blackCatOwnerId]?.trialCards.filter(card => !card.revealed).map(card => ({ id: card.id })) || []; }
-        else if (this.phase === 'conspiracy') { actions.passTrial = this.currentConspiracy?.order[this.currentConspiracy.index] === playerId; const order = this.currentConspiracy?.order || []; const leftId = order[(order.indexOf(playerId) - 1 + order.length) % order.length]; state.conspiracyOptions = (this.currentConspiracy?.snapshot?.[leftId] || []).map(id => ({ id })); }
+        else if (this.phase === 'conspiracy_reveal') { actions.revealConspiracyTrial = this.currentConspiracy?.triggerId === playerId; if (actions.revealConspiracyTrial) state.conspiracyRevealOptions = this.playerMap[this.blackCatOwnerId]?.trialCards.filter(card => !card.revealed).map(card => ({ id: card.id })) || []; }
+        else if (this.phase === 'conspiracy') { actions.passTrial = this.currentConspiracy?.order[this.currentConspiracy.index] === playerId; if (actions.passTrial) { const order = this.currentConspiracy?.order || []; const leftId = order[(order.indexOf(playerId) - 1 + order.length) % order.length]; state.conspiracyOptions = (this.currentConspiracy?.snapshot?.[leftId] || []).map(id => ({ id })); } }
         else if (this.phase === 'night') {
             const undecided = !this.nightActions.confessions[player.id];
             actions.nightKill = this.nightStep === 'witches' && this._isWitch(player) && !player.eliminated && !this.nightActions.kills[player.id];
@@ -575,6 +578,10 @@ class WitchTownEngine {
             actions.confess = this.nightStep === 'confession' && !player.eliminated && undecided && player.trialCards.some(card => !card.revealed && ['town', 'witch'].includes(card.type));
             actions.confessFree = this.nightStep === 'confession' && !player.eliminated && undecided && this._hasHall(player, 'william-phips') && !player.townHallUsed.freeConfess;
             actions.passConfession = this.nightStep === 'confession' && !player.eliminated && undecided;
+            if (this.nightStep === 'witches' && this._isWitch(player)) {
+                const witches = this._alive().filter(item => this._isWitch(item));
+                state.nightProgress = { completed: witches.filter(item => this.nightActions.kills[item.id]).length, required: witches.length, sealed: false };
+            } else if (this.nightStep === 'constable' && this._isConstable(player)) state.nightProgress = { completed: Number(Boolean(this.nightActions.protect)), required: 1, sealed: false };
         }
         else if (this.phase === 'day') { const turn = player.id === this.currentTurnId && !player.eliminated; actions.drawCards = turn && !this.dayTurn?.played && !this.dayTurn?.drew; actions.playCard = turn && !this.dayTurn?.drew; actions.endTurn = turn && Boolean(this.dayTurn?.played); actions.drawDiscard = turn && !this.dayTurn?.played && !this.dayTurn?.drew && this._hasHall(player, 'samuel-parris') && (player.townHallUsed.drawDiscard || 0) < 2; actions.reorderDeck = turn && !this.dayTurn?.drew && this._hasHall(player, 'tituba') && !player.townHallUsed.reorder; }
         if (actions.reorderDeck) state.deckOrder = this.deck.map(card => card.id);

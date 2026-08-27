@@ -18,7 +18,7 @@
     position: relative;
     isolation: isolate;
     width: 100%;
-    min-height: calc(100dvh - 70px);
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
     overflow: clip;
     background-color: var(--deal-deep) !important;
     background-image: radial-gradient(circle at 72% 8%, rgba(79, 196, 203, .2), transparent 31%), repeating-linear-gradient(135deg, rgba(241, 236, 216, .025) 0 1px, transparent 1px 12px), linear-gradient(145deg, #081c28 0%, #10394b 48%, #0a2735 72%, #071821 100%) !important;
@@ -1299,6 +1299,158 @@ html:has(body.is-monopolydeal-view) { background: #0b2431; scrollbar-color: rgba
     .deal-victory-groups { grid-template-columns: repeat(3, minmax(82px, 1fr)); }
     .deal-victory-groups strong { font-size: 11px; }
     .deal-victory-skip { right: 10px; bottom: 10px; }
+}
+
+/* 第四批移动端：手牌和行动决策提前；短横屏收束为双栏操作台。 */
+@media (max-width: 780px) {
+    .deal-header { top: var(--game-shell-offset, 48px); }
+    .deal-hand { order: 1; }
+    .deal-command { order: 2; }
+    .deal-opponents { order: 3; }
+    .deal-table { order: 4; }
+
+    .deal-hand { padding: 10px 8px 8px; }
+    .deal-hand-title { min-height: 27px; margin-bottom: 0; }
+    .deal-cards { min-height: 145px; padding: 10px 3px 5px; }
+    .deal-card { width: 94px; height: 132px; flex-basis: 94px; }
+    .deal-card > strong { bottom: 21px; font-size: 8px; }
+    .deal-card > small { max-width: 56px; font-size: 5px; }
+    .deal-card > b { width: 23px; height: 23px; font-size: 7px; }
+
+    .deal-command { position: relative; top: auto; padding: 10px; }
+    .deal-command::before { margin-bottom: 6px; }
+    .deal-command h2 { margin: 3px 0 4px; font-size: 16px; }
+    .deal-command > p { min-height: 0; line-height: 1.4; }
+    .deal-command-body {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        margin-top: 7px;
+        padding-top: 7px;
+    }
+    .deal-command-body > .deal-command-note,
+    .deal-command-body > .deal-debt-card,
+    .deal-command-body > .deal-response-card,
+    .deal-command-body > .deal-payment-list { grid-column: 1 / -1; }
+    .deal-command button { min-height: 38px; padding: 7px 8px; }
+    .deal-field { min-width: 0; }
+
+    .deal-overlay,
+    .deal-victory-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .deal-rules { max-height: calc(100dvh - var(--game-shell-offset, 48px) - 20px); }
+    .deal-rules > button { width: 44px; height: 44px; }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .deal-game {
+        width: 100%;
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        overflow: hidden;
+    }
+    .deal-header {
+        position: relative;
+        top: auto;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        min-height: 42px;
+        height: 42px;
+        gap: 8px;
+        padding: 3px 8px;
+    }
+    .deal-brand-mark,
+    .deal-brand small { display: none; }
+    .deal-brand h1 { font-size: 14px; }
+    .deal-turn {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        width: auto;
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+    .deal-turn small { display: inline; margin: 0 0 0 6px; }
+    .deal-header-actions { grid-column: 3; grid-row: 1; }
+
+    .deal-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) clamp(270px, 40vw, 340px);
+        grid-template-rows: minmax(0, 1fr);
+        align-items: stretch;
+        gap: 7px;
+        width: calc(100% - 12px);
+        height: calc(100% - 42px);
+        margin: 0 auto;
+        padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+        overflow: hidden;
+    }
+    .deal-opponents,
+    .deal-table { display: none; }
+    .deal-hand {
+        grid-column: 1;
+        grid-row: 1;
+        width: auto;
+        height: 100%;
+        min-height: 0;
+        padding: 6px 7px;
+        overflow: hidden;
+    }
+    .deal-hand-title { min-height: 28px; }
+    .deal-hand-title span { font-size: 11px; }
+    .deal-hand-title span::before { display: none; }
+    .deal-cards {
+        height: calc(100% - 28px);
+        min-height: 0;
+        align-items: center;
+        padding: 3px 2px 1px;
+    }
+    .deal-card { width: 78px; height: 110px; flex-basis: 78px; }
+    .deal-card-art { height: 64%; }
+    .deal-card > strong { right: 5px; bottom: 18px; left: 5px; font-size: 7px; }
+    .deal-card > small { top: 5px; left: 5px; max-width: 44px; font-size: 4px; }
+    .deal-card > b { top: 4px; right: 4px; width: 20px; height: 20px; font-size: 6px; }
+    .deal-card-swatches { right: 25px; bottom: 5px; left: 5px; }
+
+    .deal-command {
+        position: relative;
+        top: auto;
+        grid-column: 2;
+        grid-row: 1;
+        width: auto;
+        height: 100%;
+        min-height: 0;
+        padding: 7px 8px;
+        overflow: hidden;
+    }
+    .deal-command::before { width: 25px; height: 2px; margin-bottom: 3px; }
+    .deal-command-kicker { font-size: 6px; }
+    .deal-command h2 { margin: 2px 0; font-size: 14px; }
+    .deal-command > p { min-height: 0; max-height: 30px; overflow: hidden; font-size: 7px; line-height: 1.35; }
+    .deal-command-body {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: calc(100% - 62px);
+        gap: 5px;
+        margin-top: 5px;
+        padding-top: 5px;
+        overflow: auto;
+    }
+    .deal-command-body > .deal-command-note,
+    .deal-command-body > .deal-debt-card,
+    .deal-command-body > .deal-response-card,
+    .deal-command-body > .deal-payment-list { grid-column: 1 / -1; }
+    .deal-command button { min-height: 34px; padding: 5px 6px; font-size: 8px; }
+    .deal-field { gap: 2px; font-size: 6px; }
+    .deal-field select { min-height: 32px; background-position: calc(100% - 13px) 13px, calc(100% - 9px) 13px; font-size: 8px; }
+    .deal-payment-list { max-height: 104px; }
+
+    .deal-overlay,
+    .deal-victory-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .deal-overlay { padding: 6px; }
+    .deal-rules { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); padding: 15px 12px 10px; }
+    .deal-rules > button { width: 44px; height: 44px; }
+    .deal-rules > h2 { margin-bottom: 8px; font-size: 18px; }
+    .deal-rules-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .deal-rules-sections section { padding: 7px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

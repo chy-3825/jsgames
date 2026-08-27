@@ -11,14 +11,14 @@ const ACTION_MARKS = {
 const RESPONSE_REACTION_MS = 800;
 const COUNTER_REACTION_MS = 650;
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = `/games/monopolydeal/style.css?v=${Date.now()}`;
+    link.href = '/games/monopolydeal/style.css?v=20260826-mobile-games-4';
     document.head.appendChild(link);
     const choiceLink = document.createElement('link');
     choiceLink.rel = 'stylesheet';
-    choiceLink.href = `/games/monopolydeal/choice.css?v=${Date.now()}`;
+    choiceLink.href = '/games/monopolydeal/choice.css?v=20260826-mobile-games-4';
     document.head.appendChild(choiceLink);
     document.body.classList.add('is-monopolydeal-view');
 
@@ -55,7 +55,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     link.addEventListener('load', scheduleActionPresentation, { signal: controller.signal });
     choiceLink.addEventListener('load', scheduleActionPresentation, { signal: controller.signal });
 
-    mount.innerHTML = `<section class="deal-game"><header class="deal-header"><div class="deal-brand"><span class="deal-brand-mark">交</span><div><small>快速交易 · 集齐三组获胜</small><h1>大富翁纸牌</h1></div></div><div data-role="turn" class="deal-turn">等待游戏状态</div><div class="deal-header-actions"><button data-ui="rules" type="button">规则</button><button data-ui="leave" type="button">离开</button></div></header><main class="deal-layout"><section class="deal-opponents" data-role="opponents"></section><section class="deal-table"><div class="deal-center"><div class="deal-stat"><span>我的银行</span><strong data-role="bank">0M</strong></div><div class="deal-draw"><small>牌库</small><b data-role="deck">0</b><button data-action="drawCards" type="button">摸牌</button></div><div class="deal-stat"><span>完成地产</span><strong data-role="sets">0 / 3</strong></div></div><div class="deal-event" data-role="event">选择一张手牌开始行动</div><section class="deal-my-properties"><div class="deal-section-title"><span>我的地产桌</span><small>回合内点击多色地产即可切换颜色</small></div><div class="deal-property-groups" data-role="properties"></div></section></section><aside class="deal-command"><div class="deal-command-kicker">行动决策</div><h2 data-role="commandTitle">选择一张牌</h2><p data-role="commandHint">选中手牌后，这里会显示合法动作、目标和费用。</p><div class="deal-command-body" data-role="command"></div></aside><section class="deal-hand"><div class="deal-hand-title"><div><span>我的手牌</span><small data-role="phase">等待中</small></div><small>本回合 <b data-role="played">0</b> / 3 张</small></div><div class="deal-cards" data-role="hand"></div></section></main><div class="deal-overlay is-hidden" data-role="rulesOverlay"><article class="deal-rules"><button data-ui="closeRules" type="button">×</button><small>标准规则</small><h2>标准版规则</h2><ol><li>106 张可玩牌洗牌，起手 5 张；每回合摸 2 张，没手牌时摸 5 张。</li><li>每回合最多打出 3 张；回合末最多保留 7 张手牌。</li><li>双色租金向所有对手收取；任何租金只向一名玩家收取。</li><li>“做出反对”可以被另一张“做出反对”反制，且不计入本回合 3 张出牌。</li><li>三个不同颜色的完整地产组获胜；纯万能牌不能单独构成完整组。</li></ol></article></div><div class="deal-choice-overlay is-hidden" data-role="choiceOverlay"><section class="deal-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="dealChoiceTitle"><button class="deal-choice-close" data-action="closeChoice" type="button" aria-label="关闭颜色选择">×</button><small>选择地产颜色</small><h2 id="dealChoiceTitle" data-role="choiceTitle">选择颜色</h2><p data-role="choiceHint"></p><div class="deal-choice-targets" data-role="choiceTargets"></div><div class="deal-choice-grid" data-role="choiceGrid"></div><div class="deal-choice-actions" data-role="choiceActions"></div></section></div></section>`;
+    mount.innerHTML = `<section class="deal-game"><header class="deal-header"><div class="deal-brand"><span class="deal-brand-mark">交</span><div><small>快速交易 · 集齐三组获胜</small><h1>大富翁纸牌</h1></div></div><div data-role="turn" class="deal-turn">等待游戏状态</div><div class="deal-header-actions"><button data-ui="rules" type="button">规则</button></div></header><main class="deal-layout"><section class="deal-opponents" data-role="opponents"></section><section class="deal-table"><div class="deal-center"><div class="deal-stat"><span>我的银行</span><strong data-role="bank">0M</strong></div><div class="deal-draw"><small>牌库</small><b data-role="deck">0</b><button data-action="drawCards" type="button">摸牌</button></div><div class="deal-stat"><span>完成地产</span><strong data-role="sets">0 / 3</strong></div></div><div class="deal-event" data-role="event">选择一张手牌开始行动</div><section class="deal-my-properties"><div class="deal-section-title"><span>我的地产桌</span><small>回合内点击多色地产即可切换颜色</small></div><div class="deal-property-groups" data-role="properties"></div></section></section><aside class="deal-command"><div class="deal-command-kicker">行动决策</div><h2 data-role="commandTitle">选择一张牌</h2><p data-role="commandHint">选中手牌后，这里会显示合法动作、目标和费用。</p><div class="deal-command-body" data-role="command"></div></aside><section class="deal-hand"><div class="deal-hand-title"><div><span>我的手牌</span><small data-role="phase">等待中</small></div><small>本回合 <b data-role="played">0</b> / 3 张</small></div><div class="deal-cards" data-role="hand"></div></section></main><div class="deal-overlay is-hidden" data-role="rulesOverlay"><article class="deal-rules"><button data-ui="closeRules" type="button">×</button><small>标准规则</small><h2>标准版规则</h2><ol><li>106 张可玩牌洗牌，起手 5 张；每回合摸 2 张，没手牌时摸 5 张。</li><li>每回合最多打出 3 张；回合末最多保留 7 张手牌。</li><li>双色租金向所有对手收取；任何租金只向一名玩家收取。</li><li>“做出反对”可以被另一张“做出反对”反制，且不计入本回合 3 张出牌。</li><li>三个不同颜色的完整地产组获胜；纯万能牌不能单独构成完整组。</li></ol></article></div><div class="deal-choice-overlay is-hidden" data-role="choiceOverlay"><section class="deal-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="dealChoiceTitle"><button class="deal-choice-close" data-action="closeChoice" type="button" aria-label="关闭颜色选择">×</button><small>选择地产颜色</small><h2 id="dealChoiceTitle" data-role="choiceTitle">选择颜色</h2><p data-role="choiceHint"></p><div class="deal-choice-targets" data-role="choiceTargets"></div><div class="deal-choice-grid" data-role="choiceGrid"></div><div class="deal-choice-actions" data-role="choiceActions"></div></section></div></section>`;
 
     const $ = role => mount.querySelector(`[data-role="${role}"]`);
     const opponentsEl = $('opponents');
@@ -686,7 +686,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             if (event.target.closest('[data-ui="bank"]') || event.target.closest('[data-ui="discard"]')) ledgerOverlay.classList.remove('is-hidden');
             if (event.target === ledgerOverlay) ledgerOverlay.classList.add('is-hidden');
             if (event.target === choiceOverlay) { choiceMode = null; render(); }
-            if (event.target.closest('[data-ui="leave"]')) leaveRoom?.();
+
             return;
         }
         const index = selected;

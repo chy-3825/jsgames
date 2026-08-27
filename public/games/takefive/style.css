@@ -15,7 +15,7 @@
     position: relative;
     isolation: isolate;
     width: 100%;
-    min-height: calc(100dvh - 70px);
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
     overflow: clip;
     background:
         radial-gradient(circle at 52% 18%, rgba(132, 100, 50, .16), transparent 38%),
@@ -1035,7 +1035,7 @@ button.tf-row { cursor: pointer; }
     z-index: 58;
     inset: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     overflow: visible;
     opacity: 0;
     pointer-events: none;
@@ -1212,7 +1212,7 @@ button.tf-row { cursor: pointer; }
 }
 
 @media (max-width: 560px) {
-    .takefive-app { min-height: calc(100dvh - 70px); }
+    .takefive-app { min-height: calc(100dvh - var(--game-shell-offset, 48px)); }
     .tf-layout { width: calc(100% - 16px); }
     .tf-board { padding: 10px 7px; }
     .tf-board-header { margin-inline: 3px; }

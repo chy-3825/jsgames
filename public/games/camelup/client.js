@@ -38,10 +38,10 @@ function finishBackFan(count, className = '') {
     return `<span class="cm-finish-back-fan ${className}" aria-hidden="true">${Array.from({ length: visible }, (_, index) => finishCardBack(`is-${index + 1}`)).join('')}</span>`;
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/camelup/style.css?v=${Date.now()}`;
+    style.href = '/games/camelup/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
 
     let state = null;
@@ -66,7 +66,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         <header class="cm-header">
             <div class="cm-brand"><span class="cm-brand-mark" aria-hidden="true">${camelGlyph('cm-brand-camel')}</span><div><small>沙漠驼队竞速</small><h1>狂野骆驼</h1></div></div>
             <div class="cm-round" data-role="round">等待发令</div>
-            <div class="cm-header-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div>
+            <div class="cm-header-actions"><button type="button" data-ui="rules">规则</button></div>
         </header>
         <main class="cm-layout">
             <section class="cm-race-table">
@@ -523,7 +523,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const ui = event.target.closest('[data-ui]')?.dataset.ui;
         if (ui === 'skipPresentation') { skipPresentation(); return; }
         if (presentationPlaying) return;
-        if (ui === 'leave') { leaveRoom?.(); return; }
+
         if (ui === 'rules') { openRules(); return; }
         if (ui === 'closeRules' || event.target === $('rulesOverlay')) { closeRules(); return; }
         if (ui === 'cancelSelection') { resetInteraction(); renderTrack(); renderCommand(); return; }

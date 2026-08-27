@@ -32,10 +32,10 @@ function publicCardMarkup(card, options = {}) {
     </span>`;
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/hanabi/style.css?v=${Date.now()}`;
+    style.href = '/games/hanabi/style.css?v=20260826-mobile-games-4';
     document.head.appendChild(style);
     document.body.classList.add('is-hanabi-view');
 
@@ -63,7 +63,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             <div class="hb-header-score"><small>协作得分</small><strong data-role="headerScore">0</strong><span>/ 25</span></div>
             <div class="hb-header-actions">
                 <button class="hb-icon-button" data-ui="rules" type="button" title="查看游戏规则" aria-label="查看游戏规则">?</button>
-                <button class="hb-leave-button" data-ui="leave" type="button">离开牌桌</button>
+
             </div>
         </header>
 
@@ -237,6 +237,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     }
 
     function renderTeammates() {
+        mount.querySelector('.hb-app')?.classList.toggle('is-clue-targeting', Boolean(currentTarget() && state.availableActions?.canGiveClue));
         const teammates = (state.players || []).filter(player => player.id !== state.myId);
         const canTarget = Boolean(state.availableActions?.canGiveClue && state.status === 'playing');
         $('teammateHint').textContent = canTarget ? '点击一位队友准备提示' : '队友牌面始终公开';
@@ -733,7 +734,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
 
         const uiButton = event.target.closest('[data-ui]');
         const ui = uiButton?.dataset.ui;
-        if (ui === 'leave') leaveRoom?.();
+
         if (ui === 'rules') openRules(uiButton);
         if (ui === 'closeRules' || event.target === $('rules')) closeRules();
     }

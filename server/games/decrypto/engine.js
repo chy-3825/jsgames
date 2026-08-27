@@ -31,18 +31,33 @@ class DecryptoEngine {
     // 24-card permutation deck rather than consuming a one-shot 24-card list.
     _drawCode() { const deck = buildCodeDeck(); const roll = Number(this.random()); const index = Math.min(deck.length - 1, Math.max(0, Math.floor((Number.isFinite(roll) ? roll : 0) * deck.length))); return deck[index].slice(); }
     _encryptingTeamIds() { return this.isThreePlayer ? [0] : [0, 1]; }
+    _onlineTeamMembers(teamId) {
+        return this.teams[teamId]?.members.filter(id => this.playerMap[id]?.isOnline) || [];
+    }
+    _teamRepresentative(teamId) {
+        return this._onlineTeamMembers(teamId)[0] || this.teams[teamId]?.members[0] || null;
+    }
     _selectEncryptor(team, teamId) {
-        if (this.encryptorMode === 'fixed_vote') return this.fixedEncryptors[teamId] || team.members[0];
+        const members = this._onlineTeamMembers(teamId);
+        if (!members.length) return team.members[0] || null;
+        if (this.encryptorMode === 'fixed_vote') return (this.fixedEncryptors[teamId] && members.includes(this.fixedEncryptors[teamId])) ? this.fixedEncryptors[teamId] : members[0];
         if (this.encryptorMode === 'random') {
-            const pool = team.members.length > 1 ? team.members.filter(id => id !== this.previousEncryptors[teamId]) : team.members;
+            const pool = members.length > 1 ? members.filter(id => id !== this.previousEncryptors[teamId]) : members;
             const roll = Number(this.random());
             const chosen = pool[Math.min(pool.length - 1, Math.max(0, Math.floor((Number.isFinite(roll) ? roll : 0) * pool.length)))];
             this.previousEncryptors[teamId] = chosen;
             return chosen;
         }
-        return team.members[team.encryptorIndex % team.members.length];
+        return members[team.encryptorIndex % members.length];
     }
-    _beginEncryptorVote() { this.phase = 'encryptor_vote'; this.encryptorVotes = {}; this._log('各队开始投票选出本局固定加密员'); }
+    _beginEncryptorVote() {
+        this.phase = 'encryptor_vote'; this.encryptorVotes = {};
+        this._encryptingTeamIds().forEach(teamId => {
+            const replacement = this._teamRepresentative(teamId);
+            this.teams[teamId].members.filter(id => !this.playerMap[id]?.isOnline).forEach(id => { this.encryptorVotes[id] = replacement || id; });
+        });
+        this._log('各队开始投票选出本局固定加密员');
+    }
     _voteEncryptor(player, action) {
         if (action.kind !== 'voteEncryptor') return { success: false, message: '请选择本队的固定加密员', state: this.getPlayerState(player.id) };
         if (!this._encryptingTeamIds().includes(player.team)) return { success: false, message: '你无需参与加密员投票', state: this.getPlayerState(player.id) };
@@ -50,14 +65,18 @@ class DecryptoEngine {
         const candidateId = String(action.playerId || '');
         if (!this.teams[player.team].members.includes(candidateId)) return { success: false, message: '只能投给本队成员', state: this.getPlayerState(player.id) };
         this.encryptorVotes[player.id] = candidateId;
+        return this._resolveEncryptorVote(player.id);
+    }
+    _resolveEncryptorVote(playerId = null) {
         const voters = this._encryptingTeamIds().flatMap(teamId => this.teams[teamId].members);
-        if (voters.some(id => !this.encryptorVotes[id])) return this._privateSuccess(player.id, '选票已封存，等待其他成员');
+        if (voters.some(id => !this.encryptorVotes[id])) return playerId && this.playerMap[playerId]?.isOnline ? this._privateSuccess(playerId, '选票已封存，等待其他成员') : this._success('选票继续等待在线成员');
         for (const teamId of this._encryptingTeamIds()) {
             const team = this.teams[teamId];
+            const candidates = this._onlineTeamMembers(teamId);
             const counts = Object.fromEntries(team.members.map(id => [id, 0]));
             team.members.forEach(id => { counts[this.encryptorVotes[id]] += 1; });
-            this.fixedEncryptors[teamId] = team.members.slice().sort((a, b) => counts[b] - counts[a] || this.playerMap[a].seat - this.playerMap[b].seat)[0];
-            this._log(`${team.name}选出 ${this.playerMap[this.fixedEncryptors[teamId]].name} 担任本局固定加密员`);
+            this.fixedEncryptors[teamId] = candidates.slice().sort((a, b) => counts[b] - counts[a] || this.playerMap[a].seat - this.playerMap[b].seat)[0] || team.members[0];
+            this._log(`${team.name}选出 ${this.playerMap[this.fixedEncryptors[teamId]]?.name || '在线代表'} 担任本局固定加密员`);
         }
         this._beginClue();
         return this._success('固定加密员已确定，第一轮通信开始');
@@ -69,13 +88,15 @@ class DecryptoEngine {
         this.currentTurn = { team: 0, encryptorId: this._selectEncryptor(team, 0), code: this._drawCode(), clues: null, ownGuess: null, interceptGuess: null };
         this.roundTurns = [this.currentTurn, null];
         this.activeTeam = 0;
-        this._log(`${team.name} 的加密员 ${this.playerMap[this.currentTurn.encryptorId].name} 准备密码`);
+        if (!this.playerMap[this.currentTurn.encryptorId]?.isOnline) return this._fallbackClues(0);
+        this._log(`${team.name} 的加密员 ${this.playerMap[this.currentTurn.encryptorId]?.name || '在线代表'} 准备密码`);
     }
     _beginRound() {
         this.roundTurns = this.teams.map((team, teamId) => ({ team: teamId, encryptorId: this._selectEncryptor(team, teamId), code: this._drawCode(), clues: null, ownGuess: null, interceptGuess: null }));
         this.activeTeam = 0;
         this.currentTurn = this.roundTurns[0];
         this.phase = 'clue';
+        if (!this.playerMap[this.currentTurn.encryptorId]?.isOnline) return this._fallbackClues(0);
         this._log(`第${this.round}轮两队加密员已抽取密码，等待双方提交线索`);
     }
 
@@ -99,8 +120,14 @@ class DecryptoEngine {
         if (action.kind !== 'confirmKey') return { success: false, message: '请先查看并核对本队密钥', state: this.getPlayerState(player.id) };
         if (this.keyConfirmed[player.id]) return { success: false, message: '你已经完成密钥核对', state: this.getPlayerState(player.id) };
         this.keyConfirmed[player.id] = true;
+        return this._resolveKeycheck(player.id);
+    }
+    _resolveKeycheck(playerId = null) {
         const confirmed = Object.keys(this.keyConfirmed).length;
-        if (confirmed < this.players.length) return this._privateSuccess(player.id, `密钥已核对，还有 ${this.players.length - confirmed} 名成员未确认`);
+        if (confirmed < this.players.length) {
+            const remaining = this.players.length - confirmed;
+            return playerId && this.playerMap[playerId]?.isOnline ? this._privateSuccess(playerId, `密钥已核对，还有 ${remaining} 名成员未确认`) : this._success(`密钥核对继续等待，还有 ${remaining} 名成员`);
+        }
         if (this.encryptorMode === 'fixed_vote') {
             this._beginEncryptorVote();
             return this._success('密钥核对完成，请各队选出本局固定加密员');
@@ -122,16 +149,22 @@ class DecryptoEngine {
         if (normalised.some(clue => keywords.includes(clue))) return { success: false, message: '线索不能直接使用关键词', state: this.getPlayerState(player.id) };
         normalised.forEach(clue => this.usedClues.add(clue)); this.currentTurn.clues = clues;
         this._log(`${this.teams[player.team].name} 提交了三条新线索`);
+        return this._advanceAfterClue();
+    }
+    _advanceAfterClue() {
         if (this.isThreePlayer) {
             // The official 3-player variant has no second encryptor: the
             // lone interceptor never draws a code or gives clues.
             this.phase = 'guessing';
+            const automatic = this._autoResolveUnavailableGuess();
+            if (automatic) return automatic;
             return this._success('线索已公开，请在线下讨论并封存答案');
         }
         const otherTeam = 1 - this.currentTurn.team;
         if (!this.roundTurns[otherTeam].clues) {
             this.currentTurn = this.roundTurns[otherTeam];
             this.phase = 'clue';
+            if (!this.playerMap[this.currentTurn.encryptorId]?.isOnline) return this._fallbackClues(otherTeam);
             return this._success('本队线索已记录，等待另一队加密员提交线索');
         }
         // Both encryptors must have committed their clues before either
@@ -139,6 +172,8 @@ class DecryptoEngine {
         this.currentTurn = this.roundTurns[0];
         this.activeTeam = 0;
         this.phase = 'guessing';
+        const automatic = this._autoResolveUnavailableGuess();
+        if (automatic) return automatic;
         return this._success('双方电报已封存，红队公开频道接入');
     }
 
@@ -190,7 +225,12 @@ class DecryptoEngine {
             this._beginClue();
             return this._success('第 ' + this.round + ' 轮开始');
         }
-        if (this.activeTeam === 0) { this.activeTeam = 1; this.currentTurn = this.roundTurns[1]; this.phase = 'guessing'; return this._success('红队电报已归档，蓝队公开频道接入'); }
+        if (this.activeTeam === 0) {
+            this.activeTeam = 1; this.currentTurn = this.roundTurns[1]; this.phase = 'guessing';
+            const automatic = this._autoResolveUnavailableGuess();
+            if (automatic) return automatic;
+            return this._success('红队电报已归档，蓝队公开频道接入');
+        }
         const roundResult = this._checkRoundEnd();
         if (roundResult) return roundResult;
         if (this.encryptorMode === 'rotation') {
@@ -218,14 +258,39 @@ class DecryptoEngine {
         return null;
     }
 
-    _beginTiebreak() { this.phase = 'tiebreak'; this.tiebreakGuesses = {}; this._log('进入终局平局判定：双方猜测对方四张关键词'); return this._success('进入终局平局判定'); }
+    _beginTiebreak() {
+        this.phase = 'tiebreak'; this.tiebreakGuesses = {};
+        this.teams.forEach((team, teamId) => { if (!this._onlineTeamMembers(teamId).length) this.tiebreakGuesses[team.id] = []; });
+        this._log('进入终局平局判定：双方猜测对方四张关键词');
+        if (this.tiebreakGuesses[0] && this.tiebreakGuesses[1]) return this._resolveTiebreak();
+        return this._success('进入终局平局判定');
+    }
+
+    _autoResolveUnavailableGuess() {
+        if (this.phase !== 'guessing' || !this.currentTurn) return null;
+        const activeMembers = this._onlineTeamMembers(this.activeTeam).filter(id => id !== this.currentTurn.encryptorId);
+        const opposingMembers = this._onlineTeamMembers(1 - this.activeTeam).filter(id => id !== this.currentTurn.encryptorId);
+        let changed = false;
+        if (!this.currentTurn.ownGuess && !activeMembers.length) {
+            this.currentTurn.ownGuess = { by: this.currentTurn.encryptorId || 'system', code: this._fallbackCode(this.currentTurn.code) };
+            changed = true;
+        }
+        if (this.round > 1 && !this.currentTurn.interceptGuess && !opposingMembers.length) {
+            this.currentTurn.interceptGuess = { by: this.currentTurn.encryptorId || 'system', code: this._fallbackCode(this.currentTurn.code) };
+            changed = true;
+        }
+        return changed ? this._resolveGuessingIfReady() : null;
+    }
 
     _submitTiebreak(player, action) {
         const team = this.teams[player.team];
-        if (player.id !== team.members[0]) return { success: false, message: '由本队指定代表提交终局猜词', state: this.getPlayerState(player.id) };
+        if (player.id !== this._teamRepresentative(player.team)) return { success: false, message: '由本队在线代表提交终局猜词', state: this.getPlayerState(player.id) };
         if (this.tiebreakGuesses[player.team]) return { success: false, message: '本队已经提交终局猜词', state: this.getPlayerState(player.id) };
         if (!Array.isArray(action.keywords) || action.keywords.length !== 4 || action.keywords.some(word => typeof word !== 'string' || !word.trim())) return { success: false, message: '请提交对方四张关键词的猜测', state: this.getPlayerState(player.id) };
         this.tiebreakGuesses[player.team] = action.keywords.map(word => word.trim());
+        return this._resolveTiebreak();
+    }
+    _resolveTiebreak() {
         if (!this.tiebreakGuesses[0] || !this.tiebreakGuesses[1]) return this._success('本队终局猜词已记录');
         const scores = this.teams.map((team, index) => {
             const target = this.teams[1 - index].keywords;
@@ -274,7 +339,7 @@ class DecryptoEngine {
         state.myKeyConfirmed = Boolean(this.keyConfirmed[playerId]);
         state.currentCode = this.currentTurn?.encryptorId === playerId ? this.currentTurn.code?.slice() || null : null;
         state.encryptorCandidates = this.phase === 'encryptor_vote' && player && this._encryptingTeamIds().includes(player.team)
-            ? this.teams[player.team].members.map(id => ({ id, name: this.playerMap[id]?.name })) : [];
+            ? this._onlineTeamMembers(player.team).map(id => ({ id, name: this.playerMap[id]?.name })) : [];
         state.myEncryptorVoteSubmitted = Boolean(this.encryptorVotes[playerId]);
         state.availableActions = {
             confirmKey: this.phase === 'keycheck' && !state.myKeyConfirmed,
@@ -282,11 +347,62 @@ class DecryptoEngine {
             submitClue: this.phase === 'clue' && this.currentTurn?.encryptorId === playerId,
             submitOwnGuess: this.phase === 'guessing' && !this.currentTurn?.ownGuess && player?.team === this.activeTeam && playerId !== this.currentTurn?.encryptorId,
             submitIntercept: this.phase === 'guessing' && this.round > 1 && !this.currentTurn?.interceptGuess && player?.team !== this.activeTeam,
-            tiebreakGuess: this.phase === 'tiebreak' && player && this.teams[player.team].members[0] === playerId,
+            tiebreakGuess: this.phase === 'tiebreak' && player && this._teamRepresentative(player.team) === playerId,
         };
         return state;
     }
-    handlePlayerLeave(playerId) { const player = this.playerMap[playerId]; if (!player || !player.isOnline) return { success: false, message: '玩家不存在' }; player.isOnline = false; this._log(`${player.name} 离开了通信站`); return this._success(`${player.name} 已离开`); }
+    _fallbackCode(code) {
+        return buildCodeDeck().find(candidate => !candidate.every((value, index) => value === code?.[index])) || [1, 2, 3];
+    }
+    _fallbackClues(teamId) {
+        const words = ['空席', '缺席', '静默', '余波', '断联', '回声'];
+        for (let index = 1; words.length < 3; index += 1) words.push(`离场线索${this.round}-${teamId}-${index}`);
+        const keywords = this.teams.flatMap(team => team.keywords);
+        const available = words.filter(clue => !this.usedClues.has(clue) && !keywords.includes(clue));
+        while (available.length < 3) available.push(`离场线索${this.round}-${teamId}-${available.length + 1}-${this.usedClues.size}`);
+        const clues = available.slice(0, 3);
+        clues.forEach(clue => this.usedClues.add(clue));
+        this.currentTurn.clues = clues;
+        this._log(`${this.teams[teamId].name} 的加密员离开，系统封存了离场线索`);
+        return this._advanceAfterClue();
+    }
+    handlePlayerLeave(playerId) {
+        const player = this.playerMap[playerId];
+        if (!player || !player.isOnline) return { success: false, message: '玩家不存在或已离线' };
+        const leavingEncryptor = this.phase === 'clue' && this.currentTurn?.encryptorId === playerId;
+        const leavingTiebreakRepresentative = this.phase === 'tiebreak' && this._teamRepresentative(player.team) === playerId;
+        player.isOnline = false;
+        this._log(`${player.name} 离开了通信站`);
+        if (this.phase === 'keycheck') {
+            this.keyConfirmed[playerId] = true;
+            return this._resolveKeycheck();
+        }
+        if (this.phase === 'encryptor_vote' && this._encryptingTeamIds().includes(player.team)) {
+            this.encryptorVotes[playerId] = this._teamRepresentative(player.team) || playerId;
+            return this._resolveEncryptorVote();
+        }
+        if (leavingEncryptor) {
+            const replacement = this._onlineTeamMembers(player.team)[0];
+            if (replacement) {
+                this.currentTurn.encryptorId = replacement;
+                this._log(`${this.teams[player.team].name} 已改由在线成员继续出题`);
+                return this._success(`${player.name} 离开，加密员已自动转交`);
+            }
+            return this._fallbackClues(player.team);
+        }
+        if (this.phase === 'guessing' && this.currentTurn) {
+            const activeMembers = this._onlineTeamMembers(this.activeTeam).filter(id => id !== this.currentTurn.encryptorId);
+            const opposingMembers = this._onlineTeamMembers(1 - this.activeTeam).filter(id => id !== this.currentTurn.encryptorId);
+            if (!this.currentTurn.ownGuess && !activeMembers.length) this.currentTurn.ownGuess = { by: playerId, code: this._fallbackCode(this.currentTurn.code) };
+            if (this.round > 1 && !this.currentTurn.interceptGuess && !opposingMembers.length) this.currentTurn.interceptGuess = { by: playerId, code: this._fallbackCode(this.currentTurn.code) };
+            return this._resolveGuessingIfReady(playerId);
+        }
+        if (leavingTiebreakRepresentative) {
+            this.tiebreakGuesses[player.team] = [];
+            return this._resolveTiebreak();
+        }
+        return this._success(`${player.name} 已离开`);
+    }
     _log(message) { this.actionLog.push(message); }
     _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner }; }
     _privateSuccess(playerId, message) { return { ...this._success(message), privateFor: playerId, publicMessage: '' }; }

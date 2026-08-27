@@ -1,1 +1,141 @@
-.gobang-game{--ink:#3d3025;--muted:#8c7862;--wood:#c99a5b;--wood-deep:#8c5b31;--red:#b94f47;min-height:100%;padding:clamp(16px,3vw,36px);color:var(--ink);background:radial-gradient(circle at 50% -10%,#f1dfbb 0,#ceb083 42%,#9a6b40 100%);font-family:ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.gobang-game *{box-sizing:border-box}.gobang-header{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;align-items:center;gap:20px;max-width:1440px;margin:0 auto 22px}.gobang-brand{display:flex;align-items:center;gap:13px}.gobang-mark{display:grid;place-items:center;width:50px;height:50px;border:1px solid #80552f;border-radius:14px;background:#f6e2b7;color:#6e4525;font:700 24px Georgia,"Songti SC",serif;box-shadow:0 8px 24px #61381544;transform:rotate(-5deg)}.gobang-brand small,.gobang-info-card>small,.gobang-rules>small{display:block;color:#85572d;letter-spacing:.2em;font-size:10px}.gobang-brand h1{margin:4px 0 0;font:700 clamp(22px,2.5vw,31px)/1.05 Georgia,"Songti SC",serif;letter-spacing:.12em}.gobang-turn{padding:11px 17px;border:1px solid #74472355;border-radius:999px;background:#fff4d9c9;box-shadow:0 7px 18px #61381525;font-size:14px;font-weight:800;white-space:nowrap}.gobang-turn small{display:block;margin-top:3px;color:#987b59;font-size:10px;font-weight:500}.gobang-live-dot{display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#529a67;box-shadow:0 0 0 4px #529a6722}.gobang-live-dot.ended{background:#ae6a3e;box-shadow:0 0 0 4px #ae6a3e22}.gobang-actions{display:flex;gap:8px}.gobang-actions button,.gobang-info-card button{border:1px solid #80552f66;border-radius:10px;background:#fff1d2d9;color:#654528;padding:10px 14px;font-size:12px;font-weight:800;cursor:pointer}.gobang-actions button:hover,.gobang-info-card button:hover{border-color:#9b632d;color:#321d0f}.gobang-layout{display:grid;grid-template-columns:minmax(190px,235px) minmax(430px,760px) minmax(220px,285px);gap:22px;max-width:1440px;margin:0 auto}.gobang-panel{min-width:0;border:1px solid #835a3266;border-radius:18px;background:#fff5dfed;box-shadow:0 16px 36px #633a1f32}.gobang-panel-title{display:flex;align-items:center;justify-content:space-between;padding:16px 15px;border-bottom:1px solid #76502b22;color:#76502d;font-size:13px;font-weight:900}.gobang-panel-title small{color:#a18563;font-size:10px}.gobang-players>[data-role=players]{display:grid;gap:9px;padding:12px}.gobang-player{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:9px;min-height:62px;padding:10px;border:1px solid #76502b1d;border-radius:12px;background:#fffaf0b9}.gobang-player.is-current{border-color:#b27b3d;background:#fffdf8;box-shadow:0 5px 14px #78603924}.gobang-player-stone{display:block;width:30px;height:30px;border-radius:50%;background:#292724;box-shadow:inset -4px -5px 6px #0008,2px 3px 5px #5d3c2388}.gobang-player.white .gobang-player-stone{background:#f8f0dd;box-shadow:inset -3px -4px 5px #b8a990,2px 3px 5px #5d3c2388}.gobang-player>span:last-child{display:grid;gap:4px;min-width:0}.gobang-player strong{overflow:hidden;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.gobang-player small{color:#998269;font-size:9px}.gobang-key{display:grid;gap:5px;margin:4px 12px 13px;padding:12px;border-top:1px solid #76502b24;color:#957c61;font-size:10px;line-height:1.45}.gobang-key strong{color:#76502d;font-size:11px}.gobang-stage{display:grid;align-content:center;justify-items:center;gap:11px;min-width:0}.gobang-board-wrap{width:min(100%,680px);padding:16px;border:1px solid #f5e0ae;border-radius:22px;background:#e3c48d;box-shadow:0 22px 48px #633a1f52,0 2px 0 #fff9e8;aspect-ratio:1}.gobang-board{display:grid;grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(15,1fr);width:100%;height:100%;padding:3.2%;border:8px solid #89582e;border-radius:13px;background:linear-gradient(135deg,#dcb579,#bf884b);box-shadow:inset 0 0 0 2px #f4d9a5,inset 0 0 28px #68452440}.gobang-cell{position:relative;display:grid;min-width:0;min-height:0;place-items:center;border:0;background:transparent;color:var(--ink);cursor:pointer}.gobang-cell::before,.gobang-cell::after{position:absolute;content:"";background:#6b492a99}.gobang-cell::before{width:100%;height:1px;top:50%;left:0}.gobang-cell::after{width:1px;height:100%;top:0;left:50%}.gobang-cell:first-child::before,.gobang-cell:nth-child(-n+15)::before{top:50%}.gobang-cell[disabled]{cursor:default}.gobang-board.is-pending .gobang-cell{cursor:wait}.gobang-cell.is-star::before{background:#52351f}.gobang-cell.is-star::after{background:#52351f}.gobang-cell.is-star{background:radial-gradient(circle at 50% 50%,#52351f 0 5%,transparent 6%)}.gobang-stone{position:relative;z-index:2;width:82%;height:82%;border-radius:50%;background:#272522;box-shadow:inset -5px -6px 8px #0009,inset 3px 3px 5px #7775,2px 3px 5px #4d2e1677;animation:gobang-place .18s ease-out}.gobang-stone.white{background:#f8f0df;box-shadow:inset -4px -5px 7px #aa977c,inset 3px 3px 5px #fff,2px 3px 5px #4d2e1677}.gobang-stone.preview{opacity:.42}.gobang-cell.is-preview::before,.gobang-cell.is-preview::after{background:#5b3a21}.gobang-hint{color:#694626;font-size:12px;letter-spacing:.03em}.gobang-info{padding:13px}.gobang-info-card{padding:16px;border-radius:13px;background:#fff9ec}.gobang-seal{display:grid;place-items:center;width:40px;height:40px;border:1px solid #a96c30;border-radius:12px;color:#8d5526;font:700 22px Georgia,"Songti SC",serif;transform:rotate(-4deg)}.gobang-info-card h2{margin:8px 0 0;font:700 22px Georgia,"Songti SC",serif}.gobang-info-card p{margin:9px 0 12px;color:#8a765e;font-size:11px;line-height:1.7}.gobang-info-card button{border-color:#986b3d55;background:transparent;color:#76502d;font-size:10px}.gobang-log-title{margin-top:18px;padding:0 3px 8px;border-bottom:1px solid #c59b6d66;color:#9a7a59;font-size:10px;letter-spacing:.13em}.gobang-log{max-height:360px;overflow:auto}.gobang-log-entry{display:flex;gap:8px;padding:8px 3px;color:#93785d;font-size:10px;line-height:1.5}.gobang-log-entry i{flex:none;width:6px;height:6px;margin-top:4px;border-radius:50%;background:#a9855d}.gobang-log-entry.is-latest{color:#684322;font-weight:800}.gobang-log-entry.is-latest i{background:#b87231;box-shadow:0 0 0 3px #b872312e}.gobang-footer{display:flex;justify-content:space-between;max-width:1440px;margin:18px auto 0;padding:12px 4px;color:#795b3e;font-size:10px;letter-spacing:.05em}.gobang-footer strong{color:#8c4c27}.gobang-overlay{position:fixed;z-index:100;inset:0;display:grid;place-items:center;padding:20px;background:#3e251bd1;backdrop-filter:blur(8px)}.gobang-overlay.is-hidden{display:none}.gobang-rules{position:relative;width:min(560px,100%);padding:30px;border:1px solid #b77d43;border-radius:19px;background:#f4ead3;color:#5d422a;box-shadow:0 24px 60px #0008}.gobang-rules h2{margin:7px 0 18px;font:700 28px Georgia,"Songti SC",serif}.gobang-rules ol{display:grid;gap:12px;margin:0;padding-left:21px;color:#7a6349;font-size:12px;line-height:1.7}.gobang-close{position:absolute;right:13px;top:13px;width:32px;height:32px;border:1px solid #85624355;border-radius:50%;background:transparent;color:#704c2f;font-size:20px;cursor:pointer}@keyframes gobang-place{from{transform:scale(.45);opacity:.25}to{transform:scale(1);opacity:1}}@media (max-width:1120px){.gobang-layout{grid-template-columns:190px minmax(430px,1fr)}.gobang-info{grid-column:1/-1}.gobang-info-card{display:flex;align-items:center;gap:12px}.gobang-info-card p{flex:1;margin:0}.gobang-log{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:110px}.gobang-log-title{display:none}}@media (max-width:720px){.gobang-game{padding:12px}.gobang-header{grid-template-columns:1fr auto;gap:11px;margin-bottom:14px}.gobang-mark{width:42px;height:42px}.gobang-brand h1{font-size:21px}.gobang-brand small{font-size:8px}.gobang-turn{grid-column:1/-1;grid-row:2;justify-self:stretch;text-align:center}.gobang-layout{display:flex;flex-direction:column;gap:12px}.gobang-stage{order:1}.gobang-players{order:2}.gobang-info{order:3}.gobang-board-wrap{width:min(100%,calc(100vw - 24px));padding:8px;border-radius:16px}.gobang-board{border-width:5px;padding:3.2%}.gobang-stone{width:85%;height:85%}.gobang-players>[data-role=players]{display:flex;overflow:auto}.gobang-player{flex:0 0 190px}.gobang-info-card{display:block}.gobang-info-card p{margin:9px 0 12px}.gobang-log{display:flex;max-height:150px}}@media (prefers-reduced-motion:reduce){.gobang-stone{animation:none}}
+.gobang-game{--ink:#3d3025;--muted:#8c7862;--wood:#c99a5b;--wood-deep:#8c5b31;--red:#b94f47;min-height:100%;padding:clamp(16px,3vw,36px);color:var(--ink);background:radial-gradient(circle at 50% -10%,#f1dfbb 0,#ceb083 42%,#9a6b40 100%);font-family:ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.gobang-game *{box-sizing:border-box}
+.gobang-header{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;align-items:center;gap:20px;max-width:1440px;margin:0 auto 22px}
+.gobang-brand{display:flex;align-items:center;gap:13px}
+.gobang-mark{display:grid;place-items:center;width:50px;height:50px;border:1px solid #80552f;border-radius:14px;background:#f6e2b7;color:#6e4525;font:700 24px Georgia,"Songti SC",serif;box-shadow:0 8px 24px #61381544;transform:rotate(-5deg)}
+.gobang-brand small,.gobang-info-card>small,.gobang-rules>small{display:block;color:#85572d;letter-spacing:.2em;font-size:10px}
+.gobang-brand h1{margin:4px 0 0;font:700 clamp(22px,2.5vw,31px)/1.05 Georgia,"Songti SC",serif;letter-spacing:.12em}
+.gobang-turn{padding:11px 17px;border:1px solid #74472355;border-radius:999px;background:#fff4d9c9;box-shadow:0 7px 18px #61381525;font-size:14px;font-weight:800;white-space:nowrap}
+.gobang-turn small{display:block;margin-top:3px;color:#987b59;font-size:10px;font-weight:500}
+.gobang-live-dot{display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#529a67;box-shadow:0 0 0 4px #529a6722}
+.gobang-live-dot.ended{background:#ae6a3e;box-shadow:0 0 0 4px #ae6a3e22}
+.gobang-actions{display:flex;gap:8px}
+.gobang-actions button,.gobang-info-card button{border:1px solid #80552f66;border-radius:10px;background:#fff1d2d9;color:#654528;padding:10px 14px;font-size:12px;font-weight:800;cursor:pointer}
+.gobang-actions button:hover,.gobang-info-card button:hover{border-color:#9b632d;color:#321d0f}
+.gobang-layout{display:grid;grid-template-columns:minmax(190px,235px) minmax(430px,760px) minmax(220px,285px);gap:22px;max-width:1440px;margin:0 auto}
+.gobang-panel{min-width:0;border:1px solid #835a3266;border-radius:18px;background:#fff5dfed;box-shadow:0 16px 36px #633a1f32}
+.gobang-panel-title{display:flex;align-items:center;justify-content:space-between;padding:16px 15px;border-bottom:1px solid #76502b22;color:#76502d;font-size:13px;font-weight:900}
+.gobang-panel-title small{color:#a18563;font-size:10px}
+.gobang-players>[data-role=players]{display:grid;gap:9px;padding:12px}
+.gobang-player{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:9px;min-height:62px;padding:10px;border:1px solid #76502b1d;border-radius:12px;background:#fffaf0b9}
+.gobang-player.is-current{border-color:#b27b3d;background:#fffdf8;box-shadow:0 5px 14px #78603924}
+.gobang-player-stone{display:block;width:30px;height:30px;border-radius:50%;background:#292724;box-shadow:inset -4px -5px 6px #0008,2px 3px 5px #5d3c2388}
+.gobang-player.white .gobang-player-stone{background:#f8f0dd;box-shadow:inset -3px -4px 5px #b8a990,2px 3px 5px #5d3c2388}
+.gobang-player>span:last-child{display:grid;gap:4px;min-width:0}
+.gobang-player strong{overflow:hidden;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.gobang-player small{color:#998269;font-size:9px}
+.gobang-key{display:grid;gap:5px;margin:4px 12px 13px;padding:12px;border-top:1px solid #76502b24;color:#957c61;font-size:10px;line-height:1.45}
+.gobang-key strong{color:#76502d;font-size:11px}
+.gobang-stage{display:grid;align-content:center;justify-items:center;gap:11px;min-width:0}
+.gobang-board-wrap{width:min(100%,680px);padding:16px;border:1px solid #f5e0ae;border-radius:22px;background:#e3c48d;box-shadow:0 22px 48px #633a1f52,0 2px 0 #fff9e8;aspect-ratio:1}
+.gobang-board{display:grid;grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(15,1fr);width:100%;height:100%;padding:3.2%;border:8px solid #89582e;border-radius:13px;background:linear-gradient(135deg,#dcb579,#bf884b);box-shadow:inset 0 0 0 2px #f4d9a5,inset 0 0 28px #68452440}
+.gobang-cell{position:relative;display:grid;min-width:0;min-height:0;place-items:center;border:0;background:transparent;color:var(--ink);cursor:pointer}
+.gobang-cell::before,.gobang-cell::after{position:absolute;content:"";background:#6b492a99}
+.gobang-cell::before{width:100%;height:1px;top:50%;left:0}
+.gobang-cell::after{width:1px;height:100%;top:0;left:50%}
+.gobang-cell:first-child::before,.gobang-cell:nth-child(-n+15)::before{top:50%}
+.gobang-cell[disabled]{cursor:default}
+.gobang-board.is-pending .gobang-cell{cursor:wait}
+.gobang-cell.is-star::before{background:#52351f}
+.gobang-cell.is-star::after{background:#52351f}
+.gobang-cell.is-star{background:radial-gradient(circle at 50% 50%,#52351f 0 5%,transparent 6%)}
+.gobang-stone{position:relative;z-index:2;width:82%;height:82%;border-radius:50%;background:#272522;box-shadow:inset -5px -6px 8px #0009,inset 3px 3px 5px #7775,2px 3px 5px #4d2e1677;animation:gobang-place .18s ease-out}
+.gobang-stone.white{background:#f8f0df;box-shadow:inset -4px -5px 7px #aa977c,inset 3px 3px 5px #fff,2px 3px 5px #4d2e1677}
+.gobang-stone.preview{opacity:.42}
+.gobang-cell.is-preview::before,.gobang-cell.is-preview::after{background:#5b3a21}
+.gobang-hint{color:#694626;font-size:12px;letter-spacing:.03em}
+.gobang-info{padding:13px}
+.gobang-info-card{padding:16px;border-radius:13px;background:#fff9ec}
+.gobang-seal{display:grid;place-items:center;width:40px;height:40px;border:1px solid #a96c30;border-radius:12px;color:#8d5526;font:700 22px Georgia,"Songti SC",serif;transform:rotate(-4deg)}
+.gobang-info-card h2{margin:8px 0 0;font:700 22px Georgia,"Songti SC",serif}
+.gobang-info-card p{margin:9px 0 12px;color:#8a765e;font-size:11px;line-height:1.7}
+.gobang-info-card button{border-color:#986b3d55;background:transparent;color:#76502d;font-size:10px}
+.gobang-log-title{margin-top:18px;padding:0 3px 8px;border-bottom:1px solid #c59b6d66;color:#9a7a59;font-size:10px;letter-spacing:.13em}
+.gobang-log{max-height:360px;overflow:auto}
+.gobang-log-entry{display:flex;gap:8px;padding:8px 3px;color:#93785d;font-size:10px;line-height:1.5}
+.gobang-log-entry i{flex:none;width:6px;height:6px;margin-top:4px;border-radius:50%;background:#a9855d}
+.gobang-log-entry.is-latest{color:#684322;font-weight:800}
+.gobang-log-entry.is-latest i{background:#b87231;box-shadow:0 0 0 3px #b872312e}
+.gobang-footer{display:flex;justify-content:space-between;max-width:1440px;margin:18px auto 0;padding:12px 4px;color:#795b3e;font-size:10px;letter-spacing:.05em}
+.gobang-footer strong{color:#8c4c27}
+.gobang-overlay{position:fixed;z-index:100;inset:0;display:grid;place-items:center;padding:20px;background:#3e251bd1;backdrop-filter:blur(8px)}
+.gobang-overlay.is-hidden{display:none}
+.gobang-rules{position:relative;width:min(560px,100%);padding:30px;border:1px solid #b77d43;border-radius:19px;background:#f4ead3;color:#5d422a;box-shadow:0 24px 60px #0008}
+.gobang-rules h2{margin:7px 0 18px;font:700 28px Georgia,"Songti SC",serif}
+.gobang-rules ol{display:grid;gap:12px;margin:0;padding-left:21px;color:#7a6349;font-size:12px;line-height:1.7}
+.gobang-close{position:absolute;right:13px;top:13px;width:32px;height:32px;border:1px solid #85624355;border-radius:50%;background:transparent;color:#704c2f;font-size:20px;cursor:pointer}
+@keyframes gobang-place{from{transform:scale(.45);opacity:.25}
+to{transform:scale(1);opacity:1}
+}
+@media (max-width:1120px){.gobang-layout{grid-template-columns:190px minmax(430px,1fr)}
+.gobang-info{grid-column:1/-1}
+.gobang-info-card{display:flex;align-items:center;gap:12px}
+.gobang-info-card p{flex:1;margin:0}
+.gobang-log{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:110px}
+.gobang-log-title{display:none}
+}
+@media (max-width:720px){.gobang-game{padding:12px}
+.gobang-header{grid-template-columns:1fr auto;gap:11px;margin-bottom:14px}
+.gobang-mark{width:42px;height:42px}
+.gobang-brand h1{font-size:21px}
+.gobang-brand small{font-size:8px}
+.gobang-actions button{min-height:44px}
+.gobang-close{width:44px;height:44px}
+.gobang-turn{grid-column:1/-1;grid-row:2;justify-self:stretch;text-align:center}
+.gobang-layout{display:flex;flex-direction:column;gap:12px}
+.gobang-stage{order:1}
+.gobang-players{order:2}
+.gobang-info{order:3}
+.gobang-board-wrap{width:min(100%,calc(100vw - 24px));padding:8px;border-radius:16px}
+.gobang-board{border-width:5px;padding:3.2%}
+.gobang-stone{width:85%;height:85%}
+.gobang-players>[data-role=players]{display:flex;overflow:auto}
+.gobang-player{flex:0 0 190px}
+.gobang-info-card{display:block}
+.gobang-info-card p{margin:9px 0 12px}
+.gobang-log{display:flex;max-height:150px}
+}
+@media (prefers-reduced-motion:reduce){.gobang-stone{animation:none}
+}
+
+/* 第三批移动端：短边横屏保留完整 15×15 棋盘与当前回合。 */
+@media (orientation:landscape) and (max-height:520px){
+.gobang-game{height:calc(100svh - var(--game-shell-offset,48px));min-height:0;padding:7px 9px;overflow:hidden;display:grid;grid-template-columns:clamp(118px,18vw,154px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:9px}
+.gobang-header{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;width:auto;margin:0}
+.gobang-brand{gap:7px;min-width:0}
+.gobang-mark{flex:none;width:36px;height:36px;border-radius:10px;font-size:18px;box-shadow:none}
+.gobang-brand small{display:none}
+.gobang-brand h1{margin:0;font-size:18px;letter-spacing:.08em}
+.gobang-turn{padding:8px 9px;border-radius:10px;font-size:12px;line-height:1.2;white-space:normal}
+.gobang-turn small{font-size:8px}
+.gobang-actions{margin-top:auto}
+.gobang-actions button{width:100%;min-height:44px;padding:8px 10px}
+.gobang-layout{display:grid;grid-template-columns:clamp(108px,17vw,145px) minmax(0,1fr);align-items:center;gap:9px;min-width:0;width:100%;height:100%;margin:0}
+.gobang-players{max-height:100%;overflow:auto;border-radius:12px}
+.gobang-panel-title{padding:8px 9px;font-size:11px}
+.gobang-panel-title small{font-size:8px}
+.gobang-players>[data-role=players]{display:grid;gap:4px;padding:6px;overflow:visible}
+.gobang-player{grid-template-columns:23px minmax(0,1fr);gap:5px;min-height:43px;padding:5px}
+.gobang-player-stone{width:22px;height:22px}
+.gobang-player strong{font-size:10px}
+.gobang-player small{font-size:8px}
+.gobang-key{gap:3px;margin:2px 7px 7px;padding:7px 2px;font-size:8px;line-height:1.3}
+.gobang-key strong{font-size:9px}
+.gobang-stage{height:100%;min-height:0;align-content:center;gap:5px}
+.gobang-board-wrap{width:min(100%,calc(100svh - var(--game-shell-offset,48px) - 35px),310px);padding:5px;border-radius:12px;box-shadow:0 10px 22px #633a1f42}
+.gobang-board{padding:3.2%;border-width:3px;border-radius:8px}
+.gobang-stone{width:88%;height:88%;box-shadow:inset -2px -3px 4px #0009,inset 2px 2px 3px #7775,1px 2px 3px #4d2e1677}
+.gobang-hint{font-size:10px;line-height:1.2;white-space:nowrap}
+.gobang-info,.gobang-footer{display:none}
+.gobang-overlay{inset:var(--game-shell-offset,48px) 0 0;padding:8px}
+.gobang-rules{max-height:100%;padding:16px;overflow:auto}
+.gobang-rules h2{margin:4px 0 10px;font-size:22px}
+.gobang-rules ol{gap:6px;font-size:10px;line-height:1.5}
+.gobang-close{width:44px;height:44px}
+}
+
+@media (orientation:landscape) and (max-height:520px) and (max-width:680px){
+.gobang-game{grid-template-columns:106px minmax(0,1fr)}
+.gobang-layout{grid-template-columns:minmax(0,1fr)}
+.gobang-players{display:none}
+}

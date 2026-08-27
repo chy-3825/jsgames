@@ -56,10 +56,10 @@ function presentationCardMarkup(card, extraClass = '') {
     </article>`;
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/splendor/style.css?v=${Date.now()}`;
+    style.href = '/games/splendor/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
     document.body.classList.add('is-splendor-view');
 
@@ -85,7 +85,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             <div class="sp-header-score"><small>声望</small><strong data-role="headerPoints">0</strong><span>/ 15</span></div>
             <div class="sp-header-actions">
                 <button class="sp-icon-button" data-ui="rules" type="button" title="查看游戏规则" aria-label="查看游戏规则">?</button>
-                <button class="sp-leave-button" data-ui="leave" type="button">离开商会</button>
+
             </div>
         </header>
 
@@ -860,7 +860,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
 
         const uiButton = event.target.closest('[data-ui]');
         const ui = uiButton?.dataset.ui;
-        if (ui === 'leave') leaveRoom?.();
+
         if (ui === 'rules') openRules(uiButton);
         if (ui === 'closeRules' || event.target === $('rules')) closeRules();
     }

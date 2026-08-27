@@ -29,7 +29,7 @@ body.is-citadels-view {
     --rose: #c27d72;
     --violet: #9a7ab0;
     --danger: #d48473;
-    min-height: 100vh;
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
     padding: 22px clamp(12px, 3.2vw, 56px) 42px;
     color: var(--paper);
     background-color: var(--ink);
@@ -2629,7 +2629,7 @@ body.is-citadels-view {
     z-index: 1;
     inset: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     overflow: visible;
     pointer-events: none;
 }

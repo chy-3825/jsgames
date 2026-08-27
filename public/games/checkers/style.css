@@ -6,8 +6,8 @@
     --yellow: #e2b62c;
     --purple: #8b5cc1;
     --orange: #eb7837;
-    min-height: calc(100vh - 70px);
-    min-height: calc(100svh - 70px);
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
+    min-height: calc(100svh - var(--game-shell-offset, 48px));
     padding: clamp(14px, 2.4vw, 30px);
     overflow: hidden;
     color: var(--ink);
@@ -601,7 +601,8 @@
     .checkers-brand { gap: 9px; }
     .checkers-brand h1 { font-size: 20px; }
     .checkers-brand small { font-size: 10px; }
-    .checkers-actions button { min-height: 34px; padding: 6px 10px; font-size: 11px; }
+    .checkers-actions button { min-height: 44px; padding: 6px 10px; font-size: 11px; }
+    .checkers-close { width: 44px; height: 44px; }
     .checkers-turn {
         grid-column: 1 / -1;
         grid-row: 2;
@@ -615,6 +616,7 @@
     .checkers-players { order: 2; width: 100%; }
     .checkers-info { display: block; order: 3; width: 100%; padding: 11px; }
     .checkers-board-wrap { width: min(calc(100% - 10px), calc(100vw - 34px)); }
+    .checkers-end-move { min-height: 44px; }
     .checkers-lines line { stroke-width: 1.2px; }
     .checkers-hole.is-selectable {
         box-shadow: 0 0 0 2px rgba(255,238,174,.76), 0 0 0 3px rgba(72,144,111,.56), 0 0 10px rgba(101,211,160,.2);
@@ -650,6 +652,73 @@
         white-space: nowrap;
     }
     .checkers-footer > span { max-width: 48%; }
+}
+
+/* 第三批移动端：短边横屏扩大六角星棋盘，并把连续跳跃操作留在首屏。 */
+@media (orientation: landscape) and (max-height: 520px) {
+    .checkers-game {
+        display: grid;
+        grid-template-columns: clamp(118px, 18vw, 154px) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        gap: 9px;
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        padding: 7px 9px;
+        overflow: hidden;
+    }
+    .checkers-header {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 7px;
+        min-width: 0;
+        width: auto;
+        margin: 0;
+    }
+    .checkers-brand { gap: 7px; min-width: 0; }
+    .checkers-mark { flex: none; width: 36px; height: 36px; font-size: 18px; box-shadow: none; }
+    .checkers-brand small { display: none; }
+    .checkers-brand h1 { margin: 0; font-size: 18px; letter-spacing: .06em; }
+    .checkers-turn { min-width: 0; padding: 8px 9px; border-radius: 6px; font-size: 12px; line-height: 1.2; white-space: normal; }
+    .checkers-turn small { font-size: 8px; }
+    .checkers-actions { margin-top: auto; }
+    .checkers-actions button { width: 100%; min-height: 44px; padding: 8px 10px; }
+    .checkers-layout {
+        display: grid;
+        grid-template-columns: clamp(108px, 17vw, 145px) minmax(0, 1fr);
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+    .checkers-players { order: initial; width: auto; max-height: 100%; overflow-y: auto; border-radius: 7px; }
+    .checkers-panel-title { min-height: 34px; padding: 7px 8px; font-size: 10px; }
+    .checkers-panel-title small { font-size: 8px; }
+    .checkers-players > [data-role="players"] { display: grid; gap: 3px; padding: 5px; overflow: visible; }
+    .checkers-player { grid-template-columns: 22px minmax(0, 1fr) 15px; gap: 4px; min-height: 37px; padding: 4px 5px; }
+    .checkers-player-stone { width: 20px; height: 20px; }
+    .checkers-player strong { font-size: 9px; }
+    .checkers-player small { font-size: 7px; }
+    .checkers-player > i { width: 14px; height: 14px; font-size: 8px; }
+    .checkers-key { display: none; }
+    .checkers-stage { position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; order: initial; width: 100%; height: 100%; min-height: 0; align-content: stretch; gap: 4px; }
+    .checkers-board-wrap { width: min(100%, calc((100svh - var(--game-shell-offset, 48px) - 42px) * .8660254), 275px); }
+    .checkers-hint { min-height: 17px; padding: 0 108px 0 4px; overflow: hidden; font-size: 10px; line-height: 17px; text-overflow: ellipsis; white-space: nowrap; }
+    .checkers-end-move { position: absolute; right: 0; bottom: 0; min-height: 44px; padding: 6px 10px; font-size: 10px; }
+    .checkers-info, .checkers-footer { display: none; }
+    .checkers-overlay { inset: var(--game-shell-offset, 48px) 0 0; padding: 8px; }
+    .checkers-rules { max-height: 100%; padding: 16px; }
+    .checkers-rules h2 { margin: 4px 0 10px; font-size: 22px; }
+    .checkers-rules ol { gap: 6px; font-size: 10px; line-height: 1.5; }
+    .checkers-close { width: 44px; height: 44px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 680px) {
+    .checkers-game { grid-template-columns: 106px minmax(0, 1fr); }
+    .checkers-layout { grid-template-columns: minmax(0, 1fr); }
+    .checkers-players { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

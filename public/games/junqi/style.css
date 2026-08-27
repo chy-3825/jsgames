@@ -8,7 +8,7 @@
     --gold: #d0a650;
     display: grid;
     grid-template-rows: 62px minmax(0, 1fr) 52px;
-    height: calc(100vh - 70px);
+    height: calc(100dvh - var(--game-shell-offset, 48px));
     min-height: 680px;
     overflow: hidden;
     color: var(--ink);
@@ -21,7 +21,7 @@
 .junqi3d-app button { font: inherit; }
 .junqi3d-header {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     min-height: 62px;
     padding: 8px 24px;
@@ -31,7 +31,7 @@
 }
 .junqi3d-back, .junqi3d-actions button { border: 0; background: transparent; color: #c9d4ce; cursor: pointer; font-size: 12px; }
 .junqi3d-back:hover, .junqi3d-actions button:hover { color: #ffe0a0; }
-.junqi3d-title { display: flex; align-items: center; gap: 11px; justify-self: center; }
+.junqi3d-title { display: flex; align-items: center; gap: 11px; justify-self: start; }
 .junqi3d-title-mark { display: grid; width: 39px; height: 39px; place-items: center; border: 1px solid rgba(222, 181, 91, .78); border-radius: 5px; background: linear-gradient(145deg, #314c42, #1b302a); box-shadow: inset 0 0 0 3px rgba(7, 18, 14, .36), 0 8px 20px rgba(0, 0, 0, .18); color: #f0cd80; font-family: "Songti SC", SimSun, serif; font-size: 19px; }
 .junqi3d-title div { display: grid; gap: 2px; }
 .junqi3d-title strong { color: #f5ecdd; font-family: "Songti SC", SimSun, serif; font-size: 18px; letter-spacing: .13em; }
@@ -88,7 +88,7 @@
 .junqi3d-brief-pieces span.blue { color: var(--blue); }
 .junqi3d-brief-pieces i { color: #81958b; font-size: 9px; font-style: normal; }
 .junqi3d-stage { display: grid; grid-template-rows: minmax(0, 1fr) 28px; min-width: 0; min-height: 0; }
-.junqi3d-viewport { position: relative; width: min(100%, 900px); height: 100%; min-height: 0; margin: 0 auto; overflow: hidden; border-radius: 12px; isolation: isolate; cursor: grab; touch-action: none; }
+.junqi3d-viewport { position: relative; width: min(100%, 900px); height: 100%; min-height: 0; margin: 0 auto; overflow: hidden; border-radius: 12px; isolation: isolate; cursor: grab; touch-action: pan-x pan-y pinch-zoom; }
 .junqi3d-viewport::after { position: absolute; inset: 0; border: 1px solid rgba(231, 218, 185, .08); border-radius: inherit; box-shadow: inset 0 0 70px rgba(0, 0, 0, .22); content: ""; pointer-events: none; }
 .junqi3d-viewport.is-dragging { cursor: grabbing; }
 .junqi3d-viewport canvas { display: block; width: 100%; height: 100%; }
@@ -147,7 +147,7 @@
 
 .junqi3d-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: rgba(3, 12, 10, .8); backdrop-filter: blur(10px); }
 .junqi3d-overlay.is-hidden { display: none; }
-.junqi3d-overlay article { position: relative; width: min(760px, 100%); max-height: min(760px, calc(100vh - 48px)); overflow: auto; padding: 34px; border: 1px solid rgba(168, 119, 58, .48); border-radius: 16px; background: linear-gradient(145deg, #f2ebdd, #d4c9b6); color: #263934; box-shadow: 0 34px 100px rgba(0, 0, 0, .58); }
+.junqi3d-overlay article { position: relative; width: min(760px, 100%); max-height: min(760px, calc(100dvh - 48px)); overflow: auto; padding: 34px; border: 1px solid rgba(168, 119, 58, .48); border-radius: 16px; background: linear-gradient(145deg, #f2ebdd, #d4c9b6); color: #263934; box-shadow: 0 34px 100px rgba(0, 0, 0, .58); }
 .junqi3d-overlay article > span { color: #817767; font-size: 10px; letter-spacing: .16em; }
 .junqi3d-overlay h2 { margin: 7px 0 10px; font-family: "Songti SC", SimSun, serif; font-size: 28px; }
 .junqi3d-overlay article > p { margin: 0 0 22px; color: #566a62; font-size: 12px; line-height: 1.75; }
@@ -194,18 +194,116 @@
     .junqi3d-setup-tray { grid-template-columns: 1fr; }
     .junqi3d-app.is-2d .junqi3d-hint, .junqi3d-app.is-2d .junqi3d-battle, .junqi3d-app.is-2d .junqi3d-stage-status { display: none; }
 }
-@media (max-width: 760px) {
-    .junqi3d-app { min-width: 660px; min-height: 780px; overflow: auto; }
-    .junqi3d-header { grid-template-columns: 1fr auto; padding-inline: 14px; }
-    .junqi3d-title { grid-row: 1; grid-column: 1 / -1; }
-    .junqi3d-back { position: absolute; left: 14px; }
+@media (max-width: 760px), (max-width: 1024px) and (pointer: coarse), (max-width: 900px) and (max-height: 500px) {
+    .junqi3d-app {
+        grid-template-rows: 58px minmax(0, 1fr) 44px;
+        width: 100%;
+        height: calc(100dvh - var(--game-shell-offset, 48px));
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .junqi3d-header { grid-template-columns: minmax(0, 1fr) auto; min-height: 58px; padding: 7px 10px; }
+    .junqi3d-title { min-width: 0; justify-self: start; }
+    .junqi3d-title-mark { width: 34px; height: 34px; font-size: 17px; }
+    .junqi3d-title strong { font-size: 16px; }
+    .junqi3d-title small { font-size: 8px; }
+    .junqi3d-actions { min-width: 0; gap: 6px; }
     .junqi3d-actions > span { display: none; }
-    .junqi3d-main { grid-template-columns: 1fr; min-height: 690px; }
-    .junqi3d-side { position: absolute; z-index: 10; width: 150px; }
-    .junqi3d-side.blue { top: 76px; left: 10px; }
-    .junqi3d-side.red { right: 10px; bottom: 58px; }
-    .junqi3d-player-card { min-height: 120px; }
+    .junqi3d-actions button { min-height: 40px; padding: 5px 7px; font-size: 10px; }
+    .junqi3d-actions button[data-role="viewModeButton"] { min-width: 64px; padding-inline: 8px; }
+    .junqi3d-main {
+        position: relative;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: 58px minmax(0, 1fr);
+        gap: 6px;
+        width: 100%;
+        min-height: 0;
+        padding: 6px;
+    }
+    .junqi3d-side { position: static; z-index: auto; display: block; width: auto; min-width: 0; }
+    .junqi3d-side.blue { grid-row: 1; grid-column: 1; }
+    .junqi3d-side.red { grid-row: 1; grid-column: 2; }
+    .junqi3d-player-card { align-content: center; gap: 3px; height: 58px; min-height: 0; padding: 6px 8px; border-radius: 8px; }
+    .junqi3d-player-heading { justify-content: center; }
+    .junqi3d-player-heading small, .junqi3d-avatar, .junqi3d-strength { display: none; }
+    .junqi3d-player-color { font-size: 9px; }
+    .junqi3d-player-main { justify-content: center; gap: 0; text-align: center; }
+    .junqi3d-player-main > div:last-child { gap: 1px; }
+    .junqi3d-player-main strong { font-size: 10px; }
+    .junqi3d-player-main small { font-size: 8px; }
     .junqi3d-chronicle, .junqi3d-brief { display: none; }
-    .junqi3d-stage { min-height: 680px; }
-    .junqi3d-footer { min-width: 660px; }
+    .junqi3d-stage { grid-row: 2; grid-column: 1 / -1; min-width: 0; min-height: 0; }
+    .junqi3d-viewport { width: 100%; height: 100%; min-width: 0; min-height: 0; border-radius: 8px; }
+    .junqi2d-board {
+        width: min(calc(100% - 8px), calc((100dvh - var(--game-shell-offset, 48px) - 190px) * .7));
+        height: auto;
+        max-height: calc(100% - 8px);
+        border-width: 3px;
+    }
+    .junqi2d-node.has-piece span { font-size: clamp(10px, 3vw, 14px); }
+    .junqi3d-captured { min-height: 24px; gap: 8px; font-size: 8px; }
+    .junqi3d-captured > div { font-size: 9px; }
+    .junqi3d-footer { grid-template-columns: minmax(0, 1fr) auto; min-width: 0; min-height: 44px; padding: 7px 10px; }
+    .junqi3d-footer > div:last-child { display: none; }
+    .junqi3d-footer-guide { overflow: hidden; max-width: 48vw; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+    .junqi3d-turn { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+
+    .junqi3d-app.is-setup { grid-template-rows: 58px minmax(0, 1fr); }
+    .junqi3d-app.is-setup .junqi3d-main { grid-template-rows: minmax(0, 1fr); padding-bottom: 166px; }
+    .junqi3d-app.is-setup .junqi3d-side { display: contents; }
+    .junqi3d-app.is-setup .junqi3d-player-card, .junqi3d-app.is-setup .junqi3d-footer { display: none; }
+    .junqi3d-app.is-setup .junqi3d-stage { grid-row: 1; }
+    .junqi3d-setup {
+        position: fixed;
+        z-index: 9000;
+        right: max(0px, env(safe-area-inset-right));
+        bottom: 0;
+        left: max(0px, env(safe-area-inset-left));
+        width: auto;
+        max-height: 166px;
+        gap: 6px;
+        overflow: hidden;
+        padding: 9px 10px max(9px, env(safe-area-inset-bottom));
+        border-radius: 14px 14px 0 0;
+        background: rgba(7, 20, 17, .97);
+        box-shadow: 0 -16px 38px rgba(0, 0, 0, .42);
+    }
+    .junqi3d-setup-head { align-items: center; }
+    .junqi3d-setup-head small, .junqi3d-setup-rules { display: none; }
+    .junqi3d-setup-head strong { font-size: 11px; }
+    .junqi3d-setup-tray {
+        display: flex;
+        gap: 6px;
+        max-width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: x proximity;
+        touch-action: pan-x;
+        -webkit-overflow-scrolling: touch;
+    }
+    .junqi3d-setup-piece { min-height: 47px; flex: 0 0 76px; scroll-snap-align: start; padding: 4px 5px; }
+    .junqi3d-setup-piece > b { width: 25px; height: 30px; }
+    .junqi3d-setup-piece > span { display: grid; grid-template-columns: 1fr; gap: 1px; }
+    .junqi3d-setup-piece strong { font-size: 9px; }
+    .junqi3d-setup-piece small { font-size: 8px; }
+    .junqi3d-setup-actions { gap: 7px; }
+    .junqi3d-setup-actions button { min-height: 38px; flex: 1; padding: 6px 9px; }
+}
+
+@media (max-width: 430px) {
+    .junqi3d-title small { display: none; }
+    .junqi3d-actions button { padding-inline: 5px; }
+    .junqi3d-actions button[data-role="viewModeButton"] { min-width: 58px; }
+}
+
+@media (max-width: 900px) and (max-height: 500px) {
+    .junqi3d-app { grid-template-rows: minmax(0, 1fr); }
+    .junqi3d-header, .junqi3d-side, .junqi3d-footer { display: none; }
+    .junqi3d-main { grid-template-rows: minmax(0, 1fr); }
+    .junqi3d-stage { grid-row: 1; }
+    .junqi2d-board { width: min(calc(100% - 8px), calc((100dvh - var(--game-shell-offset, 48px) - 12px) * .7)); }
+    .junqi3d-app.is-setup { grid-template-rows: minmax(0, 1fr); }
+    .junqi3d-app.is-setup .junqi3d-main { padding-bottom: 0; padding-right: min(46vw, 360px); }
+    .junqi3d-setup { top: var(--game-shell-offset, 48px); right: 0; bottom: 0; left: auto; width: min(46vw, 360px); max-height: none; border-radius: 14px 0 0; }
 }

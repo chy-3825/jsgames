@@ -112,10 +112,10 @@ function analyzeGrid(grid = {}) {
     return { terrains, score, occupied, crowns };
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/kingdomino/style.css?v=${Date.now()}`;
+    style.href = '/games/kingdomino/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
     document.body.classList.add('is-kingdomino-view');
 
@@ -145,7 +145,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             </div>
             <div class="kd-header-actions">
                 <button class="kd-icon-button" data-ui="rules" type="button" title="查看游戏规则" aria-label="查看游戏规则">?</button>
-                <button class="kd-leave-button" data-ui="leave" type="button">离开王国</button>
+
             </div>
             <div class="kd-round-track" aria-hidden="true"><i data-role="roundProgress"></i></div>
         </header>
@@ -901,7 +901,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
 
         const uiButton = event.target.closest('[data-ui]');
         const ui = uiButton?.dataset.ui;
-        if (ui === 'leave') leaveRoom?.();
+
         if (ui === 'rules') openRules(uiButton);
         if (ui === 'closeRules' || event.target === $('rules')) closeRules();
     }

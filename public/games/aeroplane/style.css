@@ -366,6 +366,8 @@
     .flight-brand-mark { width: 41px; height: 41px; }
     .flight-brand h1 { font-size: 21px; }
     .flight-brand small { font-size: 7px; }
+    .flight-header-actions button { min-height: 44px; }
+    .flight-close { width: 44px; height: 44px; }
     .flight-turn { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; text-align: center; }
     .flight-layout { display: flex; flex-direction: column; gap: 11px; }
     .flight-stage { order: 1; width: 100%; }
@@ -392,6 +394,84 @@
     .flight-log { display: flex; max-height: 135px; }
     .flight-legend { display: none; }
     .flight-piece b { display: none; }
+}
+
+/* 第三批移动端：短边横屏让骰子、完整棋盘和玩家状态同屏。 */
+@media (orientation: landscape) and (max-height: 520px) {
+    .flight-game {
+        display: grid;
+        grid-template-columns: clamp(118px, 18vw, 154px) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        gap: 9px;
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        padding: 7px 9px;
+        overflow: hidden;
+    }
+    .flight-header {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 7px;
+        min-width: 0;
+        width: auto;
+        margin: 0;
+    }
+    .flight-brand { gap: 7px; min-width: 0; }
+    .flight-brand-mark { flex: none; width: 36px; height: 36px; border-radius: 10px; font-size: 17px; box-shadow: none; }
+    .flight-brand small { display: none; }
+    .flight-brand h1 { margin: 0; font-size: 18px; letter-spacing: .06em; }
+    .flight-turn { padding: 8px 9px; border-radius: 10px; font-size: 12px; line-height: 1.2; white-space: normal; }
+    .flight-turn small { font-size: 8px; }
+    .flight-header-actions { margin-top: auto; }
+    .flight-header-actions button { width: 100%; min-height: 44px; padding: 8px 10px; }
+    .flight-layout {
+        display: grid;
+        grid-template-columns: clamp(108px, 17vw, 145px) minmax(0, 1fr);
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+    .flight-players { display: flex; order: initial; gap: 4px; max-height: 100%; padding: 6px; overflow-y: auto; border-radius: 12px; }
+    .flight-seat { padding: 6px; border-radius: 8px; }
+    .flight-seat-head { grid-template-columns: 23px minmax(0, 1fr) auto; gap: 4px; }
+    .flight-seat-plane { width: 22px; height: 22px; }
+    .flight-seat-head strong { font-size: 9px; }
+    .flight-seat-head small { font-size: 7px; }
+    .flight-seat-head b { font-size: 9px; }
+    .flight-seat-planes { gap: 2px; margin-top: 4px; }
+    .flight-chip { height: 20px; border-radius: 5px; }
+    .flight-chip img { width: 17px; height: 17px; }
+    .flight-chip b { display: none; }
+    .flight-seat-progress { margin-top: 4px; }
+    .flight-stage { display: grid; grid-template-rows: minmax(0, 1fr) auto; order: initial; width: 100%; height: 100%; min-height: 0; gap: 5px; }
+    .flight-board-row { display: grid; grid-template-columns: clamp(82px, 13vw, 112px) minmax(0, 1fr); align-items: center; gap: 8px; width: 100%; height: 100%; min-height: 0; }
+    .flight-dice-panel { display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto auto; justify-items: center; gap: 4px; min-height: 0; max-height: 236px; padding: 8px; text-align: center; border-radius: 12px; }
+    .flight-dice-panel .flight-panel-kicker { display: none; }
+    .flight-dice-panel .flight-dice { grid-row: auto; width: 58px; height: 58px; margin: 0; padding: 9px; border-radius: 13px; }
+    .flight-dice-panel .flight-dice i { width: 8px; height: 8px; }
+    .flight-dice-panel > strong { align-self: auto; margin: 0; font-size: 10px; }
+    .flight-dice-panel > small { align-self: auto; min-height: 0; margin: 0; font-size: 7px; }
+    .flight-dice-panel .flight-roll { grid-column: auto; grid-row: auto; width: 100%; min-height: 44px; margin: 3px 0 0; padding: 7px 5px; font-size: 10px; }
+    .flight-board-wrap { align-self: center; width: min(100%, calc(100svh - var(--game-shell-offset, 48px) - 52px), 294px); padding: 4px; border-radius: 10px; }
+    .flight-command { width: 100%; min-height: 29px; padding: 5px 8px; border-radius: 9px; }
+    .flight-command strong { margin-top: 2px; font-size: 10px; }
+    .flight-log-panel { display: none; }
+    .flight-overlay { inset: var(--game-shell-offset, 48px) 0 0; padding: 8px; }
+    .flight-rules { max-height: 100%; padding: 16px; overflow: auto; }
+    .flight-rules h2 { margin: 4px 0 10px; font-size: 22px; }
+    .flight-rules ol { gap: 6px; font-size: 10px; line-height: 1.5; }
+    .flight-close { width: 44px; height: 44px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 680px) {
+    .flight-game { grid-template-columns: 106px minmax(0, 1fr); }
+    .flight-layout { grid-template-columns: minmax(0, 1fr); }
+    .flight-players { display: none; }
+    .flight-board-row { grid-template-columns: 86px minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {

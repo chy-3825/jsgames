@@ -13,10 +13,10 @@ const WATER = new Set(['1,3', '2,3', '4,3', '5,3', '1,4', '2,4', '4,4', '5,4', '
 const DENS = new Map([['3,0', 'blue'], ['3,8', 'red']]);
 const TRAPS = new Map([['2,0', 'blue'], ['4,0', 'blue'], ['3,1', 'blue'], ['2,8', 'red'], ['4,8', 'red'], ['3,7', 'red']]);
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = `/games/jungle/style.css?v=${Date.now()}`;
+    link.href = '/games/jungle/style.css?v=20260826-mobile-games-3';
     document.head.appendChild(link);
 
     let state = null;
@@ -26,7 +26,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         <header class="jungle-header">
             <div class="jungle-brand"><span class="jungle-brand-mark">兽</span><div><small>TRADITIONAL BOARD</small><h1>斗兽棋</h1></div></div>
             <div class="jungle-turn" data-role="turn">等待棋局状态</div>
-            <div class="jungle-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div>
+            <div class="jungle-actions"><button type="button" data-ui="rules">规则</button></div>
         </header>
         <main class="jungle-layout">
             <aside class="jungle-panel jungle-players"><div class="jungle-panel-title"><span>双方棋手</span><small data-role="status">等待中</small></div><div data-role="players"></div><div class="jungle-rank-key"><strong>兽子等级</strong><span>象 8 · 狮 7 · 虎 6 · 豹 5</span><span>狼 4 · 狗 3 · 猫 2 · 鼠 1</span></div></aside>
@@ -103,7 +103,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const ui = event.target.closest('[data-ui]')?.dataset.ui;
         if (ui === 'rules') overlay.classList.remove('is-hidden');
         if (ui === 'closeRules' || event.target === overlay) overlay.classList.add('is-hidden');
-        if (ui === 'leave') leaveRoom?.();
+
         const cell = event.target.closest('.jungle-cell');
         if (!cell || !state || state.status === 'ended') return;
         const x = Number(cell.dataset.x); const y = Number(cell.dataset.y); const piece = pieceAt(x, y);

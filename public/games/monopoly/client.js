@@ -117,15 +117,17 @@ const TYPE_LABELS = {
     go_to_jail: '入狱',
 };
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = `/games/monopoly/style.css?v=${Date.now()}`;
+    link.href = '/games/monopoly/style.css?v=20260826-mobile-games-2';
     document.head.appendChild(link);
     document.body.classList.add('is-monopoly-view');
 
     let state = null;
     let selectedTile = 0;
+    let followPlayerPosition = true;
+    let mobileBoardSignature = '';
     let rulesOpen = false;
     let skinMenuOpen = false;
     let tokenMenuOpen = false;
@@ -170,7 +172,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             </div>
             <div class="mono-top-actions">
                 <button class="mono-icon-button" data-ui="rules" type="button" aria-label="查看规则" title="查看规则">?</button>
-                <button class="mono-leave" data-ui="leave" type="button">退出房间</button>
+
             </div>
         </header>
 
@@ -239,6 +241,16 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
                     <footer class="mono-board-caption"><span><i class="legend-token" aria-hidden="true"></i>玩家位置</span><span><i class="legend-band" aria-hidden="true"></i>地产色组</span><span><i class="legend-house" aria-hidden="true"></i>建筑状态</span><small>点击格子查看详情</small></footer>
                 </div>
 
+                <section class="mono-mobile-navigator" data-role="mobileNavigator" aria-label="地点导航与详情">
+                    <div class="mono-mobile-inspector" data-role="mobileInspector" aria-live="polite"></div>
+                    <div class="mono-mobile-route-controls">
+                        <button data-ui="previousTile" type="button" aria-label="查看上一站">‹</button>
+                        <label><span>选择地点</span><select data-role="mobileTileSelect" aria-label="选择要查看的地点"></select></label>
+                        <button data-ui="followPosition" data-role="followPositionButton" type="button" aria-pressed="true" aria-label="跟随我的棋子位置">定位</button>
+                        <button data-ui="nextTile" type="button" aria-label="查看下一站">›</button>
+                    </div>
+                </section>
+
                 <section class="mono-command" aria-label="当前行动">
                     <header class="mono-command-head"><div><span class="mono-kicker">YOUR MOVE</span><h2 data-role="commandTitle">等待游戏状态</h2></div><span class="mono-command-state" data-role="commandState">WAITING</span></header>
                     <p class="mono-command-hint" data-role="commandHint">游戏开始后，当前玩家可以从这里提交行动。</p>
@@ -289,6 +301,8 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     const tokenTriggerEl = mount.querySelector('[data-ui="toggleTokenMenu"]');
     const tokenOptionsEl = $('tokenOptions');
     const tokenStyleButtons = mount.querySelectorAll('[data-ui="selectTokenStyle"]');
+    const mobileTileSelectEl = $('mobileTileSelect');
+    const followPositionButtonEl = $('followPositionButton');
 
     function setSkinMenu(open, returnFocus = false) {
         skinMenuOpen = Boolean(open);
@@ -621,6 +635,12 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
 
     function render() {
         if (!state) return;
+        if (followPlayerPosition) {
+            const focusPlayer = state.players?.find(player => player.id === state.myId && !player.isBankrupt)
+                || state.players?.find(player => player.id === state.currentTurn && !player.isBankrupt)
+                || state.players?.find(player => !player.isBankrupt);
+            if (focusPlayer) selectedTile = displayedPosition(focusPlayer);
+        }
         if (!state.board?.[selectedTile]) selectedTile = 0;
 
         const ended = state.status === 'ended';
@@ -663,6 +683,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         updateTokenMenu();
         renderActions();
         renderInspector();
+        renderMobileNavigator();
         renderLog();
     }
 
@@ -711,6 +732,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
                 : `<strong class="mono-tile-symbol">${tileSymbol(tile.type)}</strong><span class="mono-tile-type">${esc(TYPE_LABELS[tile.type] || '城市格')}</span>`;
             tileEl.className = `mono-tile mono-type-${kind} ${selectedTile === tile.index ? 'is-inspected' : ''} ${tile.ownerId ? 'is-owned' : ''} ${tile.mortgaged ? 'is-mortgaged' : ''} ${occupant.length ? 'has-player' : ''}`;
             tileEl.setAttribute('aria-label', `${tile.name}${tile.ownerName ? `，归 ${tile.ownerName} 所有` : ''}`);
+            tileEl.setAttribute('aria-current', selectedTile === tile.index ? 'location' : 'false');
             tileEl.innerHTML = `<span class="mono-tile-band" style="--tile-color:${esc(tile.color || '#8f9a8d')}"></span><span class="mono-tile-name">${esc(tile.name)}</span>${propertyBody}${ownerMark}<span class="mono-tokens">${tokens}${tokenOverflow}</span>`;
         });
     }
@@ -803,6 +825,30 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         $('inspector').innerHTML = `<div class="mono-inspector-content"><div class="mono-inspector-heading"><div><span class="mono-kicker">TILE ${String(tile.index).padStart(2, '0')} · ${esc(typeLabel)}</span><h2>${esc(tile.name)}</h2></div><span class="mono-inspector-owner">${esc(owner)}</span></div>${isProperty ? `<div class="mono-deed-strip" style="--tile-color:${esc(tile.color || '#8f9a8d')}"><span></span><strong>${esc(typeLabel)}</strong><small>${tile.mortgaged ? '抵押中' : '城市地产'}</small></div><div class="mono-inspector-stats"><div><small>标价</small><b>${money(tile.price)}</b></div><div><small>当前租金</small><b>${money(rent)}</b></div><div><small>状态</small><b>${esc(status)}</b></div></div><p class="mono-inspector-note">${tile.houses >= 5 ? '酒店已建成，租金按酒店档位结算。' : tile.houses ? '建筑会提升这块地产的租金。' : tile.group === 'transit' ? '拥有更多车站会提高租金。' : tile.group === 'utility' ? '租金根据最近一次骰子总点数计算。' : '点击棋盘格或操作区，继续管理这块地产。'}</p>` : `<div class="mono-special-tile"><strong>${tileSymbol(tile.type)}</strong><div><b>${esc(typeLabel)}</b><small>落点结果会显示在行动记录和城市事件中。</small></div></div>`}</div>`;
     }
 
+    function renderMobileNavigator() {
+        const tile = state.board?.[selectedTile];
+        if (!tile) return;
+        const isProperty = tile.type === 'property';
+        const typeLabel = isProperty ? (GROUP_LABELS[tile.group] || '地产') : (TYPE_LABELS[tile.type] || '城市格');
+        const owner = tile.ownerName ? `归 ${tile.ownerName} 所有` : isProperty ? '尚未出售' : '公共功能格';
+        const rent = isProperty ? (tile.currentRent || tile.rents?.[0] || 0) : 0;
+        const status = tile.mortgaged ? '已抵押' : tile.houses >= 5 ? '酒店' : tile.houses ? `${tile.houses} 栋房屋` : '无建筑';
+        const occupants = (state.players || []).filter(player => displayedPosition(player) === tile.index && !player.isBankrupt);
+        const occupantText = occupants.length ? `停留：${occupants.map(player => player.name).join('、')}` : '当前没有玩家停留';
+        const specialValue = tile.type === 'tax' ? money(tile.amount) : tile.type === 'start' ? '+¥200' : '落点触发';
+
+        $('mobileInspector').innerHTML = `<header><div><span>第 ${String(tile.index).padStart(2, '0')} 站 · ${esc(typeLabel)}</span><strong>${esc(tile.name)}</strong></div><small>${esc(owner)}</small></header><div class="mono-mobile-place-stats">${isProperty ? `<div><small>标价</small><b>${money(tile.price)}</b></div><div><small>当前租金</small><b>${money(rent)}</b></div><div><small>建筑</small><b>${esc(status)}</b></div>` : `<div><small>类型</small><b>${esc(typeLabel)}</b></div><div><small>落点</small><b>${esc(specialValue)}</b></div><div><small>位置</small><b>${tile.index} / ${BOARD_TILE_COUNT - 1}</b></div>`}</div><p>${esc(occupantText)}</p>`;
+
+        const signature = state.board.map(boardTile => `${boardTile.index}:${boardTile.name}`).join('|');
+        if (signature !== mobileBoardSignature) {
+            mobileBoardSignature = signature;
+            mobileTileSelectEl.innerHTML = state.board.map(boardTile => `<option value="${boardTile.index}">${String(boardTile.index).padStart(2, '0')} · ${esc(boardTile.name)}</option>`).join('');
+        }
+        mobileTileSelectEl.value = String(tile.index);
+        followPositionButtonEl.setAttribute('aria-pressed', String(followPlayerPosition));
+        followPositionButtonEl.classList.toggle('is-active', followPlayerPosition);
+    }
+
     function renderLog() {
         const entries = (state.actionLog || []).slice().reverse();
         $('log').innerHTML = entries.length ? entries.map((entry, index) => `<div class="mono-log-entry ${index === 0 ? 'is-latest' : ''}"><i aria-hidden="true"></i><span>${esc(entry)}</span></div>`).join('') : '<p class="mono-log-empty">第一项行动完成后，记录会出现在这里。</p>';
@@ -849,12 +895,25 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             skinUploadEl.click();
             return;
         }
+        if (ui === 'previousTile' || ui === 'nextTile') {
+            const direction = ui === 'previousTile' ? -1 : 1;
+            selectedTile = (selectedTile + direction + (state?.board?.length || BOARD_TILE_COUNT)) % (state?.board?.length || BOARD_TILE_COUNT);
+            followPlayerPosition = false;
+            render();
+            return;
+        }
+        if (ui === 'followPosition') {
+            followPlayerPosition = true;
+            render();
+            return;
+        }
         if (skinMenuOpen && !event.target.closest('.mono-skin-switcher')) setSkinMenu(false);
         if (tokenMenuOpen && !event.target.closest('.mono-token-switcher')) setTokenMenu(false);
 
         const tile = event.target.closest('.mono-tile');
         if (tile && !event.target.closest('[data-action]')) {
             selectedTile = Number(tile.dataset.index);
+            followPlayerPosition = false;
             render();
             return;
         }
@@ -876,10 +935,16 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
 
         if (ui === 'rules') setRules(true);
         if (ui === 'closeRules' || event.target === overlay) setRules(false);
-        if (ui === 'leave') leaveRoom?.();
+
     }, { signal: controller.signal });
 
     mount.addEventListener('change', event => {
+        if (event.target === mobileTileSelectEl) {
+            selectedTile = Number(event.target.value);
+            followPlayerPosition = false;
+            render();
+            return;
+        }
         if (!event.target.matches('[data-role="skinUpload"]')) return;
         selectLocalSkin(event.target.files?.[0]);
         event.target.value = '';

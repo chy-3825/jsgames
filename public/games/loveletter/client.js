@@ -38,7 +38,7 @@ export function createGameClient({ mount, send, addLog }) {
     });
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/loveletter/style.css?v=${Date.now()}`;
+    style.href = '/games/loveletter/style.css?v=20260826-mobile-games-4';
     document.head.appendChild(style);
     document.body.classList.add('is-loveletter-view');
 

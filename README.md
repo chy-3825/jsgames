@@ -60,7 +60,7 @@ npm start
 http://localhost:3000
 ```
 
-运行自动化回归测试（当前 339 项全部通过）：
+运行自动化回归测试（当前 380 项全部通过）：
 
 ```bash
 npm test
@@ -81,7 +81,8 @@ server/games/<game>/engine.js  # 游戏规则引擎
 public/index.html              # 大厅页面
 public/script.js               # 大厅连接、房间和游戏加载逻辑
 public/game-details.js         # 28 款游戏的创建前规则摘要
-public/assets/covers/          # 28 张独立艺术方向的本地横版大厅封面
+public/assets/covers/          # 28 张高清横版封面与 thumbs/ 下的大厅缩略图
+deploy/                        # systemd、Nginx 与云安全组部署模板
 public/style.css               # 大厅样式
 public/games/<game>/client.js  # 游戏前端，导出 createGameClient
 public/games/<game>/style.css  # 游戏专用样式（可选）
@@ -105,6 +106,8 @@ public/games/chess/client.js        # Three.js 棋盘和棋局界面
 
 中国象棋和军棋都使用轻量 Three.js 棋桌：棋盘、中文棋子纹理、镜头缩放/拖拽和走棋动画在浏览器端完成，规则和合法着法仍由服务端裁决。
 
+六种棋类（国际象棋、中国象棋、斗兽棋、军棋、五子棋、跳棋）支持创建房间时选择“对弈模式”或“棋谱模式”；飞行棋和大富翁保持普通对局。棋谱模式只占用房主一个真实席位，服务端为双方建立虚拟座位，左侧按钮会明确显示“切换到白方/黑方”“切换到红方/蓝方”等下一执棋方，并同步棋盘代入方向，开始后还可以在 2D 棋盘上摆放、移动、删除或清空公开局面，再确认下一手进行推演。军棋复用已有的双方暗棋布阵流程。
+
 富饶之城按官方经典基础版规则实现：8 个基础角色、67 张官方城区牌（含 13 张紫色独特区）、按人数明置/暗置弃角色、国王不可明置、魔术师换牌、2–3 人双角色共用一座城市、五色 +3 与首位建成 +4 的官方计分。
 
 猎巫镇按《Salem 1692》核心流程实现审判牌、女巫转移、阴谋牌、夜幕、Constable/Gavel、认罪免疫和正式胜负条件。
@@ -116,7 +119,7 @@ public/games/chess/client.js        # Three.js 棋盘和棋局界面
 - 服务端使用 `server/games/<type>/index.js` 作为适配层，使用 `engine.js` 保存规则。
 - `index.js` 导出 `metadata` 和 `create(roomId, players)`。
 - 游戏会话提供 `start()`、`handleAction(playerId, action)`、`getPlayerState(playerId)` 和 `getWinner()`。
-- 前端 `client.js` 导出 `createGameClient({ mount, send, addLog, leaveRoom })`。
+- 前端 `client.js` 导出 `createGameClient({ mount, send, addLog })`；大厅统一提供离开房间入口。
 - 前端只通过大厅传入的 `send` 发送 `gameAction`，不自行创建 WebSocket、房间或玩家身份。
 - 服务端以大厅传入的真实 `playerId` 为准，不信任前端 action 中伪造的身份。
 - 隐藏信息必须在 `getPlayerState(playerId)` 中按玩家分别过滤。

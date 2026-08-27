@@ -43,10 +43,10 @@ function cardMarkup(card, options = {}) {
     </${tag}>`;
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/takefive/style.css?v=${Date.now()}`;
+    style.href = '/games/takefive/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
     document.body.classList.add('is-takefive-view');
 
@@ -85,7 +85,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             </div>
             <div class="tf-header-actions">
                 <button class="tf-icon-button" data-ui="rules" type="button" title="查看游戏规则" aria-label="查看游戏规则">?</button>
-                <button class="tf-leave-button" data-ui="leave" type="button">离开牌桌</button>
+
             </div>
         </header>
 
@@ -641,7 +641,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         }
         const uiButton = event.target.closest('[data-ui]');
         const ui = uiButton?.dataset.ui;
-        if (ui === 'leave') leaveRoom?.();
+
         if (ui === 'confirmCard' && pendingCardId && !confirmingCard) {
             confirmingCard = true;
             renderHand();

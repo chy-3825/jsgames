@@ -46,13 +46,13 @@ function isRailEdge(x1, y1, x2, y2) {
 function isCampSquare(x, y) { return CAMPS.some(([campX, campY]) => campX === x && campY === y); }
 function isHeadquartersSquare(x, y) { return Object.values(HEADQUARTERS).some(squares => squares.some(([hqX, hqY]) => hqX === x && hqY === y)); }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/junqi/style.css?v=${Date.now()}`;
+    style.href = '/games/junqi/style.css?v=20260826-mobile-games-2';
     document.head.appendChild(style);
     mount.innerHTML = `<section class="junqi3d-app">
-        <header class="junqi3d-header"><button class="junqi3d-back" data-ui="leave" type="button">← <span>回到大厅</span></button><div class="junqi3d-title"><span class="junqi3d-title-mark">軍</span><div><strong>军棋</strong><small>双人暗棋对战</small></div></div><div class="junqi3d-actions"><span data-role="room">房间</span><button data-ui="viewMode" data-role="viewModeButton" type="button">切换 2D</button><button data-ui="reset" data-role="resetButton" type="button">复位视角</button><button data-ui="rules" type="button">完整规则</button></div></header>
+        <header class="junqi3d-header"><div class="junqi3d-title"><span class="junqi3d-title-mark">軍</span><div><strong>军棋</strong><small>双人暗棋对战</small></div></div><div class="junqi3d-actions"><span data-role="room">房间</span><button data-ui="viewMode" data-role="viewModeButton" type="button">切换 2D</button><button data-ui="reset" data-role="resetButton" type="button">复位视角</button><button data-ui="rules" type="button">完整规则</button></div></header>
         <main class="junqi3d-main">
             <aside class="junqi3d-side blue" data-role="blueSide"><section class="junqi3d-player-card" data-role="bluePlayer"></section><section class="junqi3d-chronicle" data-role="chronicle"><header><strong>战场记录</strong><span>最近行动</span></header><div class="junqi3d-log" data-role="log"></div></section></aside>
             <section class="junqi3d-stage"><div class="junqi3d-viewport" data-role="viewport"><canvas data-role="canvas" aria-label="三维军棋棋盘"></canvas><div class="junqi2d-board" data-role="board2d" aria-label="二维军棋棋盘" hidden></div><div class="junqi3d-stage-status" data-role="stageStatus"></div><section class="junqi3d-battle" data-role="battle" hidden></section><div class="junqi3d-hint" data-role="hint">选择自己的棋子</div></div><div class="junqi3d-captured" data-role="captured"><span>战损</span><div data-role="capturedRed"></div><i></i><div data-role="capturedBlue"></div></div></section>
@@ -134,8 +134,14 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         diagonal: new THREE.MeshBasicMaterial({ color: '#a42e2b' }),
         campLine: new THREE.LineBasicMaterial({ color: '#a7332d', transparent: true, opacity: .9 }),
     };
+    const viewModeStorageKey = 'jsgames.junqi.viewMode';
+    const explicitViewModeStorageKey = `${viewModeStorageKey}.explicit`;
+    const savedViewMode = localStorage.getItem(viewModeStorageKey);
+    const isCompactPointer = window.matchMedia?.('(max-width: 760px), (pointer: coarse), (max-width: 900px) and (max-height: 500px)').matches;
     let state = null;
-    let viewMode = localStorage.getItem('jsgames.junqi.viewMode') === '2d' ? '2d' : '3d';
+    let viewMode = isCompactPointer && localStorage.getItem(explicitViewModeStorageKey) !== '1'
+        ? '2d'
+        : savedViewMode === '2d' ? '2d' : '3d';
     let previousPieces = new Map();
     let selected = null;
     let selectedSetupPieceId = null;
@@ -168,7 +174,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     viewport.addEventListener('contextmenu', event => event.preventDefault());
     mount.addEventListener('click', onUiClick);
     canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); showGraphicsError('WebGL 图形上下文已丢失，可能是设备资源不足。'); });
-    setViewMode(viewMode);
+    setViewMode(viewMode, false);
 
     function worldPosition(x, y, height = PIECE_BASE_Y) { return new THREE.Vector3((x - 2) * WORLD_X, height, (y - 5.5) * WORLD_Z); }
     function createEnvironment() {
@@ -564,10 +570,13 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const candidate = legalMarker || legalPiece || ownPiece || legalBoard || candidates.find(item => item.pieceId) || candidates.find(item => item.hitSquare) || candidates[0];
         activateSquare(candidate.square);
     }
-    function setViewMode(mode) {
+    function setViewMode(mode, persist = true) {
         viewMode = mode === '2d' ? '2d' : '3d';
         if (viewMode === '2d') settleAnimations();
-        localStorage.setItem('jsgames.junqi.viewMode', viewMode);
+        if (persist) {
+            localStorage.setItem(viewModeStorageKey, viewMode);
+            localStorage.setItem(explicitViewModeStorageKey, '1');
+        }
         app.classList.toggle('is-2d', viewMode === '2d');
         canvas.hidden = viewMode === '2d';
         board2d.hidden = viewMode !== '2d';
@@ -580,7 +589,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     }
     function resetCamera() { const blueView = state?.myColor === 'blue'; cameraYaw = blueView ? Math.PI : 0; cameraPitch = DEFAULT_CAMERA_PITCH; cameraDistance = DEFAULT_CAMERA_DISTANCE; lookTarget.z = blueView ? -.45 : .45; updateCamera(); }
     function updateCamera() { const horizontal = Math.sin(cameraPitch) * cameraDistance; camera.position.set(Math.sin(cameraYaw) * horizontal, Math.cos(cameraPitch) * cameraDistance, Math.cos(cameraYaw) * horizontal); camera.lookAt(lookTarget); requestRender(240); }
-    function onUiClick(event) { const boardSquare = event.target.closest('[data-board-square]'); if (boardSquare) { activateSquare({ x: Number(boardSquare.dataset.x), y: Number(boardSquare.dataset.y) }); return; } const setupPiece = event.target.closest('[data-setup-piece]')?.dataset.setupPiece; if (setupPiece) { selectedSetupPieceId = setupPiece; renderSetup(); renderBoard2d(); return; } const ui = event.target.closest('[data-ui]')?.dataset.ui; if (ui === 'leave') leaveRoom?.(); if (ui === 'viewMode') setViewMode(viewMode === '3d' ? '2d' : '3d'); if (ui === 'reset') resetCamera(); if (ui === 'rules') rulesOverlay.classList.remove('is-hidden'); if (ui === 'setupReady') { send({ type: 'gameAction', action: { kind: 'setupReady' } }); selectedSetupPieceId = null; } if (ui === 'setupReset') { send({ type: 'gameAction', action: { kind: 'setupReset' } }); selectedSetupPieceId = null; } if (ui === 'closeRules' || event.target === rulesOverlay) rulesOverlay.classList.add('is-hidden'); }
+    function onUiClick(event) { const boardSquare = event.target.closest('[data-board-square]'); if (boardSquare) { activateSquare({ x: Number(boardSquare.dataset.x), y: Number(boardSquare.dataset.y) }); return; } const setupPiece = event.target.closest('[data-setup-piece]')?.dataset.setupPiece; if (setupPiece) { selectedSetupPieceId = setupPiece; renderSetup(); renderBoard2d(); return; } const ui = event.target.closest('[data-ui]')?.dataset.ui; if (ui === 'viewMode') setViewMode(viewMode === '3d' ? '2d' : '3d'); if (ui === 'reset') resetCamera(); if (ui === 'rules') rulesOverlay.classList.remove('is-hidden'); if (ui === 'setupReady') { send({ type: 'gameAction', action: { kind: 'setupReady' } }); selectedSetupPieceId = null; } if (ui === 'setupReset') { send({ type: 'gameAction', action: { kind: 'setupReset' } }); selectedSetupPieceId = null; } if (ui === 'closeRules' || event.target === rulesOverlay) rulesOverlay.classList.add('is-hidden'); }
     function handleMessage(message) { if (message.state) { state = message.state; if (previousPhase !== null && previousPhase !== state.phase) { selected = null; selectedSetupPieceId = null; } previousPhase = state.phase; if (selected && !pieceAt(selected.x, selected.y)) selected = null; if (selectedSetupPieceId && !state.setup?.pieces?.some(piece => piece.id === selectedSetupPieceId)) selectedSetupPieceId = null; if (state.myColor && cameraColor !== state.myColor) { cameraColor = state.myColor; resetCamera(); } renderState(); } if (message.type === 'error') addLog(message.message || '操作失败', 'error'); else if (message.action?.message) addLog(message.action.message, 'info'); }
     function updateAnimations(now) { for (let index = animations.length - 1; index >= 0; index -= 1) { const animation = animations[index]; const progress = Math.min(1, (now - animation.start) / animation.duration); const eased = progress * progress * progress * (progress * (progress * 6 - 15) + 10); if (animation.kind === 'capture') { animation.root.scale.setScalar(Math.max(.06, 1 - eased)); animation.root.position.y = PIECE_BASE_Y + Math.sin(progress * Math.PI) * .06; animation.root.rotation.z = Math.sin(progress * Math.PI) * .025; } else { animation.root.position.lerpVectors(animation.from, animation.to, eased); animation.root.position.y = PIECE_BASE_Y + Math.sin(progress * Math.PI) * .09; animation.root.rotation.z = Math.sin(progress * Math.PI) * .018; } if (progress >= 1) { if (animation.kind === 'capture') { boardScene.remove(animation.root); pieceRoots.delete(animation.root.userData.pieceId); } else { animation.root.rotation.z = 0; setPiecePosition(animation.root, animation.toX, animation.toY); } animations.splice(index, 1); } } }
     function settleAnimations() { for (const animation of animations) { if (animation.kind === 'capture') { boardScene.remove(animation.root); if (pieceRoots.get(animation.root.userData.pieceId) === animation.root) pieceRoots.delete(animation.root.userData.pieceId); } else { animation.root.scale.setScalar(1); animation.root.rotation.z = 0; setPiecePosition(animation.root, animation.toX, animation.toY); } } animations.length = 0; }

@@ -130,7 +130,7 @@
 
 .sc-overlay { position: fixed; z-index: 90; inset: 0; display: grid; place-items: center; padding: 18px; background: #100b18dc; backdrop-filter: blur(6px); }
 .sc-overlay.is-hidden { display: none; }
-.sc-overlay article { position: relative; width: min(570px, 100%); max-height: min(760px, calc(100vh - 36px)); overflow: auto; padding: 27px; border: 1px solid #bd8b62; border-radius: 19px; background: linear-gradient(145deg, #fff8e6, #eddbba); box-shadow: 0 28px 70px #09040dbb; color: var(--ink); }
+.sc-overlay article { position: relative; width: min(570px, 100%); max-height: min(760px, calc(100dvh - 36px)); overflow: auto; padding: 27px; border: 1px solid #bd8b62; border-radius: 19px; background: linear-gradient(145deg, #fff8e6, #eddbba); box-shadow: 0 28px 70px #09040dbb; color: var(--ink); }
 .sc-overlay article > button { position: absolute; top: 11px; right: 11px; width: 32px; height: 32px; padding: 0; border-radius: 50%; background: #4e2442; color: #ffe5a2; font-size: 19px; }
 .sc-overlay .sc-kicker { color: #a24f42; }.sc-overlay h2 { margin: 5px 0 14px; font: 800 27px "Songti SC", SimSun, serif; }.sc-overlay ol { display: grid; gap: 7px; padding-left: 20px; color: #6f5d59; font-size: 11px; line-height: 1.6; }
 .sc-art-reference { display: grid; gap: 7px; margin: 16px 0 0; padding-top: 14px; border-top: 1px solid #a8836455; }.sc-art-reference img { display: block; width: 100%; max-height: 230px; object-fit: contain; border: 1px solid #a8836488; border-radius: 9px; background: #e8dcc8; }.sc-art-reference figcaption { color: #8f7c73; font-size: 8px; }
@@ -272,7 +272,7 @@
     z-index: 1;
     inset: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     overflow: visible;
     opacity: 0;
     pointer-events: none;

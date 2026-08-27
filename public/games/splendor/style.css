@@ -14,7 +14,7 @@
     position: relative;
     isolation: isolate;
     width: 100%;
-    min-height: calc(100dvh - 70px);
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
     overflow: clip;
     background-color: #10191c !important;
     background-image:

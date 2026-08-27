@@ -3,41 +3,54 @@ const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character =>
 }[character]));
 
 const ROLE_META = {
-    merlin: { name: '梅林', faction: 'good', seal: '光', copy: '你知道部分邪恶阵营，但必须隐藏自己。' },
-    percival: { name: '派西维尔', faction: 'good', seal: '剑', copy: '你看到梅林与莫甘娜两个可能身份。' },
-    assassin: { name: '刺客', faction: 'evil', seal: '刃', copy: '三项任务成功后，选择你认为的梅林。' },
-    minion: { name: '爪牙', faction: 'evil', seal: '暗', copy: '帮助邪恶阵营破坏任务。' },
-    morgana: { name: '莫甘娜', faction: 'evil', seal: '影', copy: '你会在派西维尔眼中伪装成梅林。' },
-    mordred: { name: '莫德雷德', faction: 'evil', seal: '隐', copy: '梅林无法看见你的真实阵营。' },
-    oberon: { name: '奥伯伦', faction: 'evil', seal: '雾', copy: '你不认识其他邪恶玩家，他们也看不见你。' },
-    loyal: { name: '忠臣', faction: 'good', seal: '盾', copy: '完成任务，辨认谎言，并保护梅林。' },
+    merlin: { name: '梅林', faction: 'good', seal: '光', image: 'merlin.webp', copy: '你知道部分邪恶阵营，但必须隐藏自己。' },
+    percival: { name: '派西维尔', faction: 'good', seal: '剑', image: 'percival.webp', copy: '你看到梅林与莫甘娜两个可能身份。' },
+    assassin: { name: '刺客', faction: 'evil', seal: '刃', image: 'assassin.webp', copy: '三项任务成功后，选择你认为的梅林。' },
+    minion: { name: '爪牙', faction: 'evil', seal: '暗', image: 'minion.webp', copy: '帮助邪恶阵营破坏任务。' },
+    morgana: { name: '莫甘娜', faction: 'evil', seal: '影', image: 'morgana.webp', copy: '你会在派西维尔眼中伪装成梅林。' },
+    mordred: { name: '莫德雷德', faction: 'evil', seal: '隐', image: 'mordred.webp', copy: '梅林无法看见你的真实阵营。' },
+    oberon: { name: '奥伯伦', faction: 'evil', seal: '雾', image: 'oberon.webp', copy: '你不认识其他邪恶玩家，他们也看不见你。' },
+    loyal: { name: '忠臣', faction: 'good', seal: '盾', image: 'loyal.webp', copy: '完成任务，辨认谎言，并保护梅林。' },
 };
+
+const ROLE_ART_ROOT = '/assets/bgg/avalon/roles/';
 
 const MISSION_SIZES = {
     5: [2, 3, 2, 3, 3], 6: [2, 3, 4, 3, 4], 7: [2, 3, 3, 4, 4],
     8: [3, 4, 4, 5, 5], 9: [3, 4, 4, 5, 5], 10: [3, 4, 4, 5, 5],
 };
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/avalon/style.css?v=${Date.now()}`;
+    style.href = '/games/avalon/style.css?v=20260827-hidden-role-focus-1';
     document.head.appendChild(style);
+    const focusStyle = document.createElement('link');
+    focusStyle.rel = 'stylesheet';
+    focusStyle.href = '/games/common/hidden-role-focus.css?v=20260827-hidden-role-focus-1';
+    document.head.appendChild(focusStyle);
     document.body.classList.add('is-avalon-view');
+
+    const roleArtPreloads = [...new Set(Object.values(ROLE_META).map(role => role.image))].map(file => {
+        const image = new Image();
+        image.decoding = 'async';
+        image.src = `${ROLE_ART_ROOT}${file}`;
+        return image;
+    });
 
     mount.innerHTML = `
         <section class="avalon-app">
             <header class="av-header">
                 <div class="av-brand"><span class="av-mark" aria-hidden="true"><i></i><b></b></span><div><small>亚瑟王的圆桌</small><h1>阿瓦隆</h1><p>忠诚与背叛，都坐在同一张桌前</p></div></div>
                 <div class="av-round" data-role="round">等待圆桌开启</div>
-                <div class="av-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div>
+                <div class="av-actions"><button type="button" data-ui="rules">规则</button></div>
             </header>
             <main class="av-layout">
                 <aside class="av-players-panel"><div class="av-panel-heading"><div><span class="av-kicker">圆桌席位</span><h2>誓约成员</h2></div><span data-role="playerCount">—</span></div><div class="av-players" data-role="players"></div></aside>
                 <section class="av-table">
                     <div class="av-status" data-role="status"></div>
                     <section class="av-mission-board"><div class="av-board-heading"><div><span class="av-kicker">王国任务线</span><h2>五项试炼</h2></div><div class="av-score-seals"><span><i></i><b data-role="goodScore">0</b>善良</span><span><i></i><b data-role="evilScore">0</b>邪恶</span></div></div><div class="av-mission-road" data-role="missionRoad"></div><div class="av-reject-track" data-role="rejectTrack"></div></section>
-                    <div class="av-private-action"><section class="av-role" data-role="role"></section><section class="av-decision" data-role="decision"></section></div>
+                    <div class="av-private-action"><section class="av-role social-role-focus" data-role="role"></section><section class="av-decision" data-role="decision"></section></div>
                     <section class="av-history"><div class="av-section-title"><span>任务档案</span><small data-role="score"></small></div><div class="av-history-list" data-role="history"></div></section>
                 </section>
                 <aside class="av-side"><section class="av-panel av-vote-ledger"><div class="av-panel-heading"><div><span class="av-kicker">上一次公开表决</span><h2>圆桌立场</h2></div></div><div data-role="voteLedger"></div></section><section class="av-panel av-log-panel"><div class="av-panel-heading"><div><span class="av-kicker">公共记录</span><h2>圆桌纪事</h2></div><span data-role="logCount">0</span></div><div class="av-log" data-role="log"></div></section></aside>
@@ -173,6 +186,8 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const app = mount.querySelector('.avalon-app');
         app?.classList.remove('scene-identity', 'scene-roundtable', 'scene-expedition', 'scene-assassin', 'scene-ended');
         app?.classList.add(sceneClass(state.phase, state.status));
+        app?.classList.toggle('is-my-action', Boolean(state.availableActions && Object.values(state.availableActions).some(Boolean)));
+        if (app) app.dataset.phase = state.phase || 'waiting';
         $('round').textContent = state.status === 'ended' ? '本局结束' : state.phase === 'roleReveal' ? `身份确认 · ${state.roleConfirmCount || 0} / ${state.players?.length || 0}` : `第 ${state.round || 1} 项任务 · ${state.successfulMissions || 0} 成功 / ${state.failedMissions || 0} 失败`;
         $('playerCount').textContent = `${state.players?.length || 0} 席`;
         $('goodScore').textContent = state.successfulMissions || 0;
@@ -206,11 +221,11 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
 
     function renderRole() {
         const role = state.myRole;
-        if (!role) { $('role').className = 'av-role is-empty'; $('role').innerHTML = '<span>牌局开始后，你的私密身份会在这里展开。</span>'; return; }
+        if (!role) { $('role').className = 'av-role social-role-focus is-empty'; $('role').innerHTML = '<span>牌局开始后，你的私密身份会在这里展开。</span>'; return; }
         const meta = roleMeta(role);
         const known = state.knownPlayers?.length ? `<div class="av-known"><span>你能辨认的人</span><strong>${state.knownPlayers.map(player => `${escapeHtml(player.seat)}号 · ${escapeHtml(player.name)}`).join('、')}</strong><small>${role === 'percival' ? '两人中分别是梅林与莫甘娜，但你无法区分。' : '这些线索只对你可见，请不要展示给身边的人。'}</small></div>` : `<div class="av-known"><span>你的私密线索</span><strong>没有额外可见的玩家</strong><small>${role === 'oberon' ? '你与其他邪恶角色彼此不可见。' : '请从圆桌发言、组队和票型中寻找线索。'}</small></div>`;
-        $('role').className = `av-role is-${meta.faction}`;
-        $('role').innerHTML = `<div class="av-role-secret" data-role-secret aria-hidden="${String(!roleIdentityVisible)}"><div class="av-role-card"><header><span>${state.players?.find(player => player.id === state.myId)?.seat || '—'} 号 · 仅你可见</span><b>${meta.faction === 'evil' ? '邪恶阵营' : '善良阵营'}</b></header><div class="av-role-emblem"><i>${meta.seal}</i></div><strong>${escapeHtml(meta.name)}</strong><p>${escapeHtml(meta.copy)}</p></div>${known}</div><button class="av-role-cover" data-role-hold type="button" aria-pressed="${String(roleIdentityVisible)}" aria-label="${roleIdentityVisible ? '正在显示私密身份，松开立即隐藏' : '按住查看私密身份，松开立即隐藏'}"><span>私密身份已遮住</span><b>按住查看身份</b><small>松开或移出后立即遮住 · 也可按住空格 / Enter</small></button>`;
+        $('role').className = `av-role social-role-focus is-${meta.faction}`;
+        $('role').innerHTML = `<div class="av-role-secret" data-role-secret aria-hidden="${String(!roleIdentityVisible)}"><div class="av-role-card"><header><span>${state.players?.find(player => player.id === state.myId)?.seat || '—'} 号 · 仅你可见</span><b>${meta.faction === 'evil' ? '邪恶阵营' : '善良阵营'}</b></header><div class="av-role-art social-role-focus-art"><img src="${ROLE_ART_ROOT}${escapeHtml(meta.image)}" alt="${escapeHtml(meta.name)}角色美术" draggable="false"><span class="av-role-emblem" aria-hidden="true"><i>${meta.seal}</i></span></div><div class="av-role-copy"><strong>${escapeHtml(meta.name)}</strong><p>${escapeHtml(meta.copy)}</p></div></div>${known}</div><button class="av-role-cover" data-role-hold type="button" aria-pressed="${String(roleIdentityVisible)}" aria-label="${roleIdentityVisible ? '正在显示私密身份，松开立即隐藏' : '按住查看私密身份，松开立即隐藏'}"><span>私密身份已遮住</span><b>按住查看身份</b><small>松开或移出后立即遮住 · 也可按住空格 / Enter</small></button>`;
         setRoleIdentityVisible(roleIdentityVisible);
     }
 
@@ -266,7 +281,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     function handleClick(event) {
         if (!event.target.closest('[data-role-hold]')) hideRoleIdentity();
         const uiButton = event.target.closest('[data-ui]');
-        if (uiButton) { if (uiButton.dataset.ui === 'leave') leaveRoom?.(); if (uiButton.dataset.ui === 'rules') openRules(uiButton); if (uiButton.dataset.ui === 'closeRules') closeRules(); return; }
+        if (uiButton) { if (uiButton.dataset.ui === 'rules') openRules(uiButton); if (uiButton.dataset.ui === 'closeRules') closeRules(); return; }
         if (event.target === overlay) { closeRules(); return; }
         const playerButton = event.target.closest('[data-select-player]');
         if (playerButton) { const id = playerButton.dataset.selectPlayer; if (teamDraft.has(id)) teamDraft.delete(id); else if (teamDraft.size < state.missionSize) teamDraft.add(id); renderDecision(); mount.querySelector(`[data-select-player="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }); return; }
@@ -312,5 +327,5 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     mount.addEventListener('click', handleClick); document.addEventListener('keydown', handleKeydown);
     mount.addEventListener('pointerdown', handlePointerDown); mount.addEventListener('pointerout', handlePointerOut); mount.addEventListener('pointercancel', handlePointerEnd); mount.addEventListener('focusout', handleFocusOut);
     document.addEventListener('pointerup', handlePointerEnd); document.addEventListener('keyup', handleKeyup); document.addEventListener('visibilitychange', handleVisibilityChange); window.addEventListener('blur', hideRoleIdentity);
-    return { gameType: 'avalon', handleMessage(message) { if (message.state) { const previous = state; if (previous && (previous.phase !== message.state.phase || previous.myRole !== message.state.myRole)) hideRoleIdentity(); state = message.state; render(); maybePlaySceneTransition(previous, state); } if (message.type === 'error') addLog?.(message.message || '这一步现在无法进行', 'error'); }, destroy() { hideRoleIdentity(); hideSceneTransition(); mount.removeEventListener('click', handleClick); mount.removeEventListener('pointerdown', handlePointerDown); mount.removeEventListener('pointerout', handlePointerOut); mount.removeEventListener('pointercancel', handlePointerEnd); mount.removeEventListener('focusout', handleFocusOut); document.removeEventListener('keydown', handleKeydown); document.removeEventListener('pointerup', handlePointerEnd); document.removeEventListener('keyup', handleKeyup); document.removeEventListener('visibilitychange', handleVisibilityChange); window.removeEventListener('blur', hideRoleIdentity); closeRules(); document.body.classList.remove('is-avalon-view'); style.remove(); mount.innerHTML = ''; } };
+    return { gameType: 'avalon', handleMessage(message) { if (message.state) { const previous = state; if (previous && (previous.phase !== message.state.phase || previous.myRole !== message.state.myRole)) hideRoleIdentity(); state = message.state; render(); maybePlaySceneTransition(previous, state); } if (message.type === 'error') addLog?.(message.message || '这一步现在无法进行', 'error'); }, destroy() { hideRoleIdentity(); hideSceneTransition(); roleArtPreloads.length = 0; mount.removeEventListener('click', handleClick); mount.removeEventListener('pointerdown', handlePointerDown); mount.removeEventListener('pointerout', handlePointerOut); mount.removeEventListener('pointercancel', handlePointerEnd); mount.removeEventListener('focusout', handleFocusOut); document.removeEventListener('keydown', handleKeydown); document.removeEventListener('pointerup', handlePointerEnd); document.removeEventListener('keyup', handleKeyup); document.removeEventListener('visibilitychange', handleVisibilityChange); window.removeEventListener('blur', hideRoleIdentity); closeRules(); document.body.classList.remove('is-avalon-view'); focusStyle.remove(); style.remove(); mount.innerHTML = ''; } };
 }

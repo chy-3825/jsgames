@@ -26,7 +26,7 @@ body.is-avalon-view {
     --av-line-soft: rgba(227, 206, 160, .105);
     position: relative;
     isolation: isolate;
-    min-height: 100vh;
+    min-height: calc(100dvh - var(--game-shell-offset, 48px));
     overflow: hidden;
     padding: 22px clamp(12px, 3vw, 48px) 40px;
     background:
@@ -649,7 +649,7 @@ body.is-avalon-view {
 
 .av-private-action {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-columns: minmax(286px, .84fr) minmax(320px, 1.16fr);
     align-items: stretch;
     gap: 12px;
     margin-top: 12px;
@@ -663,6 +663,8 @@ body.is-avalon-view {
 }
 
 .av-role {
+    --role-focus-accent: rgba(98, 158, 181, .76);
+    --role-focus-glow: rgba(98, 158, 181, .15);
     position: relative;
     display: grid;
     align-content: start;
@@ -677,6 +679,11 @@ body.is-avalon-view {
     transition: opacity .16s ease, filter .16s ease;
 }
 
+.av-role.is-evil {
+    --role-focus-accent: rgba(184, 74, 84, .8);
+    --role-focus-glow: rgba(158, 63, 72, .18);
+}
+
 .av-role-secret[aria-hidden="true"] {
     visibility: hidden;
     opacity: 0;
@@ -688,7 +695,7 @@ body.is-avalon-view {
     z-index: 5;
     inset: 11px;
     display: grid;
-    min-height: 214px;
+    min-height: 390px;
     align-content: center;
     justify-items: center;
     gap: 9px;
@@ -703,7 +710,7 @@ body.is-avalon-view {
     color: var(--av-paper);
     font: inherit;
     text-align: center;
-    touch-action: none;
+    touch-action: pan-y;
     cursor: pointer;
     transition: opacity .16s ease, filter .16s ease;
 }
@@ -775,10 +782,9 @@ body.is-avalon-view {
 .av-role-card {
     position: relative;
     display: grid;
-    min-height: 214px;
+    min-height: 390px;
     align-content: start;
-    justify-items: center;
-    gap: 7px;
+    gap: 9px;
     padding: 10px;
     border: 1px solid rgba(98, 158, 181, .48);
     background:
@@ -817,6 +823,21 @@ body.is-avalon-view {
     font-size: 7px;
 }
 
+.av-role-art {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    min-height: 248px;
+    border: 1px solid rgba(158, 210, 220, .38);
+    background: #102331;
+    box-shadow: inset 0 0 0 3px rgba(7, 14, 22, .32), 0 12px 24px rgba(0, 0, 0, .28);
+}
+
+.av-role.is-evil .av-role-art {
+    border-color: rgba(212, 123, 125, .42);
+    background: #2d1720;
+}
+
 .av-role-card header b {
     color: var(--av-good-light);
 }
@@ -826,12 +847,13 @@ body.is-avalon-view {
 }
 
 .av-role-emblem {
-    position: relative;
-    z-index: 1;
+    position: absolute;
+    z-index: 2;
+    right: 9px;
+    bottom: 9px;
     display: grid;
-    width: 74px;
-    height: 74px;
-    margin-top: 4px;
+    width: 48px;
+    height: 48px;
     place-items: center;
     border: 1px solid var(--av-good-light);
     border-radius: 50% 50% 44% 44%;
@@ -847,7 +869,7 @@ body.is-avalon-view {
 
 .av-role-emblem i {
     color: var(--av-good-light);
-    font: 600 31px "Songti SC", serif;
+    font: 600 21px "Songti SC", serif;
     font-style: normal;
 }
 
@@ -855,20 +877,30 @@ body.is-avalon-view {
     color: var(--av-evil-light);
 }
 
-.av-role-card > strong {
+.av-role-copy {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    padding: 2px 6px 5px;
+    text-align: center;
+}
+
+.av-role-copy > strong {
     position: relative;
     z-index: 1;
     color: var(--av-paper);
-    font: 600 22px "Songti SC", "STSong", serif;
+    font: 600 27px "Songti SC", "STSong", serif;
 }
 
-.av-role-card p {
+.av-role-copy p {
     position: relative;
     z-index: 1;
     margin: 0;
     color: var(--av-muted);
-    font-size: 9px;
-    line-height: 1.55;
+    font-size: 10px;
+    line-height: 1.6;
     text-align: center;
 }
 
@@ -1442,7 +1474,7 @@ body.is-avalon-view {
 .av-overlay article {
     position: relative;
     width: min(620px, 100%);
-    max-height: min(760px, calc(100vh - 40px));
+    max-height: min(760px, calc(100dvh - 40px));
     overflow: auto;
     padding: 28px;
     border: 1px solid var(--av-gold);
@@ -1516,6 +1548,10 @@ body.is-avalon-view {
 
     .av-log {
         max-height: 170px;
+    }
+
+    .av-private-action {
+        grid-template-columns: minmax(250px, .8fr) minmax(0, 1.2fr);
     }
 }
 
@@ -1663,17 +1699,49 @@ body.is-avalon-view {
         grid-template-columns: 1fr;
     }
 
-    .av-decision {
+    .av-role {
         grid-row: 1;
+    }
+
+    .av-decision {
+        grid-row: 2;
         padding: 12px;
     }
 
-    .av-role {
+    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-decision {
+        grid-row: 1;
+    }
+
+    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role {
         grid-row: 2;
+        max-height: 150px;
+        min-height: 150px;
+    }
+
+    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role.is-revealed {
+        max-height: none;
     }
 
     .av-role-card {
-        min-height: 202px;
+        min-height: 360px;
+    }
+
+    .av-role-art {
+        min-height: 270px;
+    }
+
+    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role-cover {
+        min-height: 0;
+    }
+
+    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role-cover::before {
+        width: 46px;
+        height: 46px;
+        font-size: 19px;
+    }
+
+    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role-cover small {
+        display: none;
     }
 
     .av-select-players {
@@ -1708,7 +1776,7 @@ body.is-avalon-view {
     }
 
     .av-overlay article {
-        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
         padding: 24px 17px 18px;
     }
 }
@@ -1753,6 +1821,112 @@ body.is-avalon-view {
     .av-players {
         grid-template-columns: 1fr;
     }
+}
+
+/* Batch 5: keep the table, private decision and player roster in one short
+   landscape viewport; public ledgers are secondary internal scroll regions. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    body.is-game-view { overflow: hidden; }
+    .avalon-app {
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        overflow: hidden;
+        padding: 8px;
+    }
+    .av-header { grid-template-columns: minmax(150px, 1fr) minmax(130px, .8fr) auto; height: 44px; min-height: 44px; gap: 8px; margin-bottom: 8px; padding-bottom: 7px; }
+    .av-brand { gap: 7px; }
+    .av-mark { width: 35px; height: 38px; }
+    .av-mark::before { top: 5px; font-size: 18px; }
+    .av-mark i, .av-mark b { bottom: 4px; height: 17px; }
+    .av-brand small, .av-brand p { display: none; }
+    .av-brand h1 { font-size: 18px; }
+    .av-round { min-width: 0; padding: 6px 8px; font-size: 8px; }
+    .av-actions { gap: 4px; }
+    .av-actions button { min-height: 36px; padding: 6px 8px; font-size: 8px; }
+    .av-layout {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr) 190px;
+        grid-template-rows: minmax(0, 1fr);
+        height: calc(100% - 52px);
+        min-height: 0;
+        gap: 8px;
+    }
+    .av-layout > .av-players-panel,
+    .av-layout > .av-table,
+    .av-layout > .av-side {
+        grid-column: auto;
+        grid-row: auto;
+        order: 0;
+        width: auto;
+    }
+    .av-players-panel, .av-table, .av-panel { min-height: 0; overflow: hidden; padding: 8px; }
+    .av-players-panel { width: auto; max-height: none; }
+    .av-panel-heading { gap: 5px; padding-bottom: 6px; }
+    .av-panel-heading h2 { font-size: 12px; }
+    .av-players { grid-template-columns: 1fr; min-height: 0; max-height: calc(100% - 30px); overflow: auto; gap: 3px; }
+    .av-player { min-height: 31px; padding: 5px; gap: 5px; }
+    .av-seat { width: 21px; height: 21px; font-size: 9px; }
+    .av-player strong { font-size: 8px; }
+    .av-player small, .av-player em { font-size: 7px; }
+    .av-player > i { min-width: 18px; min-height: 18px; }
+    .av-table { display: flex; height: 100%; min-height: 0; flex-direction: column; }
+    .av-status { flex: 0 0 40px; height: 40px; min-height: 0; overflow: hidden; padding: 6px 8px; }
+    .av-status h2 { margin-top: 2px; font-size: 15px; }
+    .av-status small { margin-top: 3px; font-size: 7px; }
+    .av-status-seal { width: 28px; height: 28px; font-size: 11px; }
+    .av-mission-board { flex: 0 0 54px; height: 54px; min-height: 0; overflow: hidden; margin-top: 6px; padding: 5px 7px; }
+    .av-board-heading h2 { font-size: 13px; }
+    .av-score-seals { gap: 6px; }
+    .av-score-seals span { font-size: 7px; }
+    .av-score-seals b { font-size: 10px; }
+    .av-mission-road { gap: 3px; margin-top: 6px; }
+    .av-quest { gap: 3px; }
+    .av-quest > span { width: 29px; height: 29px; font-size: 11px; }
+    .av-quest strong { font-size: 7px; }
+    .av-quest small { font-size: 5px; }
+    .av-reject-track { gap: 5px; margin-top: 6px; padding-top: 5px; }
+    .av-reject-track span, .av-reject-track small { font-size: 6px; }
+    .av-reject-seals i { width: 15px; height: 15px; font-size: 5px; }
+    .av-private-action { grid-template-columns: minmax(142px, .82fr) minmax(0, 1.18fr); gap: 6px; min-height: 75px; overflow: hidden; margin-top: 6px; flex: 1 1 75px; }
+    .av-role, .av-decision { min-height: 0; overflow: auto; padding: 8px; }
+    .av-role-card { grid-template-columns: clamp(48px, calc(100svh - 320px), 92px) minmax(0, 1fr); grid-template-areas: "role-head role-head" "role-art role-copy"; min-height: 0; padding: 5px; gap: 3px 5px; }
+    .av-role-card header { grid-area: role-head; }
+    .av-role-cover { inset: 8px; min-height: 0; padding: 8px; gap: 4px; }
+    .av-role-cover::before { width: 29px; height: 29px; font-size: 14px; }
+    .av-role-cover span, .av-role-cover small { display: none; }
+    .av-role-cover b { font-size: 10px; }
+    .av-role-art { grid-area: role-art; height: clamp(48px, calc(100svh - 320px), 92px); min-height: 48px; aspect-ratio: auto; }
+    .av-role-emblem { right: 5px; bottom: 5px; width: 28px; height: 28px; }
+    .av-role-emblem i { font-size: 13px; }
+    .av-role-copy { grid-area: role-copy; align-self: center; gap: 2px; padding: 0 2px 2px; }
+    .av-role-copy > strong { font-size: 13px; }
+    .av-role-copy > p, .av-known small { margin: 1px 0; font-size: 6px; line-height: 1.25; }
+    .av-known { gap: 2px; padding: 4px; }
+    .av-known strong { font-size: 8px; }
+    .av-decision-heading { gap: 5px; }
+    .av-decision-heading h3 { font-size: 14px; }
+    .av-decision > p { margin: 5px 0; font-size: 7px; line-height: 1.35; }
+    .av-select-players { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+    .av-select-player { min-height: 34px; padding: 4px; }
+    .av-select-player b { font-size: 8px; }
+    .av-select-player small { font-size: 6px; }
+    .av-choice-cards { gap: 4px; }
+    .av-choice-cards button { min-height: 42px; padding: 5px; }
+    .av-choice-cards button strong { font-size: 9px; }
+    .av-choice-cards button small { font-size: 6px; }
+    .av-confirm { gap: 5px; margin-top: 6px; padding: 5px; }
+    .av-confirm > span { width: 24px; height: 24px; }
+    .av-confirm strong { font-size: 8px; }
+    .av-confirm small { font-size: 6px; }
+    .av-confirm .av-primary { min-height: 31px; padding: 5px 7px; font-size: 8px; }
+    .av-history { display: none; }
+    .av-side { display: flex !important; flex-direction: column; width: auto; min-height: 0; max-height: none; overflow: hidden; }
+    .av-vote-ledger { flex: 0 0 auto; max-height: 112px; }
+    .av-log-panel { min-height: 0; flex: 1; }
+    .av-log { max-height: none; overflow: auto; }
+    .av-overlay { position: fixed; inset: var(--game-shell-offset, 48px) 0 0; padding: 10px; }
+    .av-overlay article { max-height: calc(100svh - var(--game-shell-offset, 48px) - 20px); overflow: auto; padding: 16px; }
+    .av-scene-transition { position: fixed; inset: var(--game-shell-offset, 48px) 0 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

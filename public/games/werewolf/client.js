@@ -5,8 +5,9 @@ const ROLE = {
     guard: { name: '守卫', image: 'sw.png', text: '每夜守护一名玩家，但不能连续两夜守护同一个人。' }, villager: { name: '平民', image: 'pm.png', text: '从发言和投票中辨认真相，找出藏在人群中的狼人。' },
 };
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
-    const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = `/games/werewolf/style.css?v=${Date.now()}`; document.head.appendChild(style);
+export function createGameClient({ mount, send, addLog }) {
+    const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/games/werewolf/style.css?v=20260827-hidden-role-focus-1'; document.head.appendChild(style);
+    const focusStyle = document.createElement('link'); focusStyle.rel = 'stylesheet'; focusStyle.href = '/games/common/hidden-role-focus.css?v=20260827-hidden-role-focus-1'; document.head.appendChild(focusStyle);
     const controller = new AbortController();
     let state = null;
     let lastActionAt = 0;
@@ -32,7 +33,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             <header class="ww-header">
                 <div class="ww-brand"><span>狼</span><div><small data-role="boardSize">9 / 12 人 · 无主持人模式</small><h1>狼人杀 · 夜幕助手</h1></div></div>
                 <div class="ww-phase" data-role="phase">等待开始</div>
-                <div class="ww-header-actions"><button data-ui="voice" type="button" aria-pressed="false">语音：关</button><button data-ui="rules" type="button">本局规则</button><button data-ui="leave" type="button">离开</button></div>
+                <div class="ww-header-actions"><button data-ui="voice" type="button" aria-pressed="false">语音：关</button><button data-ui="rules" type="button">本局规则</button></div>
             </header>
             <main class="ww-layout">
                 <aside class="ww-seat-panel">
@@ -51,7 +52,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
                     </section>
                     <section class="ww-announcement is-hidden" data-role="announcement" aria-live="polite"></section>
                     <div class="ww-screen-body">
-                        <section class="ww-main"><div class="ww-role" data-role="role"></div><div class="ww-action" data-role="action"></div></section>
+                        <section class="ww-main"><div class="ww-role social-role-focus" data-role="role"></div><div class="ww-action" data-role="action"></div></section>
                         <aside class="ww-screen-side">
                             <section class="ww-public-card"><div class="ww-section-title"><span>在场玩家</span><small>全场可见</small></div><div class="ww-public-seats" data-role="publicSeats"></div></section>
                             <section class="ww-public-card ww-sheriff-state" data-role="sheriffState"></section>
@@ -262,6 +263,12 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         appRoot?.classList.toggle('is-my-turn', Boolean(isNight && state.skillState?.available));
         appRoot?.classList.toggle('is-flow-paused', Boolean(state.flowPaused));
         appRoot?.classList.toggle('is-test-mode', Boolean(state.testMode));
+        appRoot?.classList.toggle('is-my-action', Boolean(
+            state.skillState?.available || state.nightConfirmation || state.canVote ||
+            state.canConfirmDeathResolution || state.canStartSpeech || state.canStartLastWords ||
+            state.sheriffAction?.available
+        ));
+        if (appRoot) appRoot.dataset.phase = state.phase || 'waiting';
         updateVoiceButton();
         const boardSize = state.playerCount || seats.length;
         if ($('boardSize')) $('boardSize').textContent = `${boardSize} 人局 · 无主持人模式`;
@@ -339,7 +346,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         const role = ROLE[state.myRole];
         if (!role) { roleIdentityVisible = false; $('role').innerHTML = '<p>入局后，你的身份会在这里悄然揭晓。</p>'; return; }
         const skillStatus = state.phase === 'roleReveal' ? state.myRoleConfirmed ? '你已记下自己的身份' : '请看清并记住你的身份' : state.hunterAction?.available || state.canConfirmDeathResolution ? '请完成你的离场行动' : state.myDeathResolutionSettled ? '你的离场行动已经完成' : state.nightConfirmation ? state.nightConfirmation.stage === 'result' ? '请记住查验结果' : '请确认你的选择' : state.wolfVote ? state.wolfVote.resolved ? state.wolfVote.noKill ? '两轮平票，今夜无人遇袭' : `今夜目标：${state.wolfVote.resultTarget} 号` : state.wolfVote.myTarget ? `你已选择 ${state.wolfVote.myTarget} 号，静候同伴（${state.wolfVote.submittedCount}/${state.wolfVote.totalWolves}）` : `第 ${state.wolfVote.round} 轮，请选择目标` : state.skillState?.submitted ? '今夜的行动已经决定' : state.skillState?.available ? '夜色正在等待你的选择' : '夜色尚未呼唤你';
-        $('role').innerHTML = `<div class="ww-role-secret" data-role-secret aria-hidden="${String(!roleIdentityVisible)}"><div class="ww-role-art"><img src="/assets/werewolf-netease/characters/${role.image}" alt="${role.name}"></div><div><small>${state.activeSeat} 号玩家 · 仅你可见</small><h2>${role.name}</h2><p>${role.text}</p><span class="ww-skill-status ${state.skillState?.available ? 'is-ready' : ''} ${state.skillState?.submitted ? 'is-used' : ''}">${skillStatus}</span>${state.seerResult ? `<strong class="ww-result">查验结果：${state.seerResult.seat} 号是${state.seerResult.faction === 'wolf' ? '狼人' : '好人'}</strong>` : ''}</div></div><button class="ww-role-cover" data-role-hold type="button" aria-pressed="${String(roleIdentityVisible)}" aria-label="${roleIdentityVisible ? '正在显示私密身份，松开立即隐藏' : '按住查看私密身份，松开立即隐藏'}"><span>身份已经隐藏</span><b>按住查看身份</b><small>松开或移出后立即遮住 · 也可按住空格 / Enter</small></button>`;
+        $('role').innerHTML = `<div class="ww-role-secret" data-role-secret aria-hidden="${String(!roleIdentityVisible)}"><div class="ww-role-art social-role-focus-art"><img src="/assets/werewolf-netease/characters/${role.image}" alt="${role.name}"></div><div><small>${state.activeSeat} 号玩家 · 仅你可见</small><h2>${role.name}</h2><p>${role.text}</p><span class="ww-skill-status ${state.skillState?.available ? 'is-ready' : ''} ${state.skillState?.submitted ? 'is-used' : ''}">${skillStatus}</span>${state.seerResult ? `<strong class="ww-result">查验结果：${state.seerResult.seat} 号是${state.seerResult.faction === 'wolf' ? '狼人' : '好人'}</strong>` : ''}</div></div><button class="ww-role-cover" data-role-hold type="button" aria-pressed="${String(roleIdentityVisible)}" aria-label="${roleIdentityVisible ? '正在显示私密身份，松开立即隐藏' : '按住查看私密身份，松开立即隐藏'}"><span>身份已经隐藏</span><b>按住查看身份</b><small>松开或移出后立即遮住 · 也可按住空格 / Enter</small></button>`;
         setRoleIdentityVisible(roleIdentityVisible);
     }
     function renderNightConfirmation() {
@@ -502,7 +509,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         if (!event.target.closest('[data-role-hold]')) hideRoleIdentity();
         const ui = event.target.closest('[data-ui]')?.dataset.ui;
         const rulesOverlay = $('rules');
-        if (ui === 'leave') leaveRoom?.();
+
         if (ui === 'voice') {
             voiceEnabled = !voiceEnabled;
             if (!voiceEnabled && typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
@@ -592,5 +599,5 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) hideRoleIdentity();
     }, { signal: controller.signal });
-    return { gameType: 'werewolf', handleMessage, destroy() { controller.abort(); if (timedFlowInterval) clearInterval(timedFlowInterval); hideTransition(); hidePersonalElimination(); if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel(); style.remove(); mount.innerHTML = ''; } };
+    return { gameType: 'werewolf', handleMessage, destroy() { controller.abort(); if (timedFlowInterval) clearInterval(timedFlowInterval); hideTransition(); hidePersonalElimination(); if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel(); focusStyle.remove(); style.remove(); mount.innerHTML = ''; } };
 }

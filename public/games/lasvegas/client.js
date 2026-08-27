@@ -16,10 +16,10 @@ function renderDie(face, className = '') {
     return `<span class="lv-die face-${Number(face)} ${className}" aria-label="${Number(face)}点">${pips}</span>`;
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/lasvegas/style.css?v=${Date.now()}`;
+    style.href = '/games/lasvegas/style.css?v=20260826-mobile-shell-1';
     document.head.appendChild(style);
 
     let state = null;
@@ -50,7 +50,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             </div>
             <div class="lv-header-actions">
                 <button class="lv-quiet-button" data-ui="rules" type="button">规则</button>
-                <button class="lv-leave-button" data-ui="leave" type="button">离开</button>
+
             </div>
         </header>
 
@@ -551,7 +551,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
     function handleClick(event) {
         const control = event.target.closest('[data-ui]');
         const ui = control?.dataset.ui;
-        if (ui === 'leave') leaveRoom?.();
+
         if (ui === 'rules') openRules();
         if (ui === 'closeRules' || event.target === overlay) closeRules();
         if (ui === 'skipPresentation') skipPresentations();

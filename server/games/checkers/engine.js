@@ -75,6 +75,7 @@ class CheckersEngine {
         this.lastAction = null;
         this.actionLog = [];
         this.winner = null;
+        this.studyTemplates = [];
     }
 
     start() {
@@ -97,7 +98,40 @@ class CheckersEngine {
         this.lastAction = null;
         this.winner = null;
         this.actionLog = [`${this.players[0].name} 先手，目标是对角的 ${this.players[0].targetCorner + 1} 号角`];
+        this.studyTemplates = [...this.board.values()].map(piece => ({ ...piece }));
         return this._success('跳棋开始');
+    }
+
+    handleStudySetup(playerId, action = {}) {
+        const player = this.playerMap[playerId];
+        if (!player || this.status !== 'playing') return { success: false, message: '摆棋阶段不可用' };
+        const valid = point => validCoordinate(point?.x, point?.y) && inside(point.x, point.y);
+        if (action.kind === 'reset') return this.start();
+        if (action.kind === 'clear') { this.board.clear(); this.pendingMove = null; this.winner = null; this.actionLog = ['已清空跳棋局面']; return this._success('已清空局面'); }
+        if (action.kind === 'setTurn') {
+            const turnIndex = this.players.findIndex(item => item.color === action.color);
+            if (turnIndex < 0) return { success: false, message: '未知的先手阵营', state: this.getPlayerState(playerId) };
+            this.currentTurnIndex = turnIndex;
+            this.pendingMove = null;
+            this.winner = null;
+            this.lastAction = { kind: 'setTurn', color: action.color, message: `已将 ${action.color} 设为先手` };
+            return this._success(this.lastAction.message);
+        }
+        if (action.kind === 'remove') { if (!valid(action) || !this.board.delete(key(action.x, action.y))) return { success: false, message: '该位置没有可移除的棋子', state: this.getPlayerState(playerId) }; return this._success('已移除棋子'); }
+        if (action.kind === 'place') {
+            if (!valid(action) || this.board.has(key(action.x, action.y))) return { success: false, message: '摆棋位置无效或已有棋子', state: this.getPlayerState(playerId) };
+            const color = action.color || player.color;
+            const template = this.studyTemplates.find(piece => piece.color === color && ![...this.board.values()].some(current => current.id === piece.id));
+            if (!template) return { success: false, message: '该阵营没有可再摆放的棋子', state: this.getPlayerState(playerId) };
+            this.board.set(key(action.x, action.y), { ...template, x: action.x, y: action.y });
+            return this._success('已摆放棋子');
+        }
+        if (action.kind === 'move') {
+            const from = action.from, to = action.to; const piece = from && this.board.get(key(from.x, from.y));
+            if (!valid(from) || !valid(to) || !piece || piece.color !== player.color || this.board.has(key(to.x, to.y))) return { success: false, message: '只能移动当前执棋方的棋子到空位', state: this.getPlayerState(playerId) };
+            this.board.delete(key(from.x, from.y)); this.board.set(key(to.x, to.y), { ...piece, x: to.x, y: to.y }); return this._success('已调整棋子位置');
+        }
+        return { success: false, message: '未知摆棋操作', state: this.getPlayerState(playerId) };
     }
 
     handleAction(playerId, action = {}) {

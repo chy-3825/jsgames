@@ -35,10 +35,10 @@ function chainHeadquartersMarkup(chain, variant = '') {
     return `<span class="acquire-hq${modifier}" data-chain="${safeChainId(chain?.id)}" aria-hidden="true"><span class="acquire-hq-buildings"><i></i><i></i><i></i></span><b>${escapeHtml(chain?.short || '?')}</b></span>`;
 }
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/acquire/style.css?v=${Date.now()}`;
+    style.href = '/games/acquire/style.css?v=20260826-mobile-shell-1';
     let resolveStyleReady;
     const styleReady = new Promise(resolve => { resolveStyleReady = resolve; });
     style.addEventListener('load', resolveStyleReady, { once: true });
@@ -76,7 +76,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
                 </div>
                 <div class="acquire-header-actions">
                     <button class="acquire-quiet-button" data-ui="rules" type="button">规则</button>
-                    <button class="acquire-leave-button" data-ui="leave" type="button">离开</button>
+
                 </div>
             </header>
 
@@ -920,7 +920,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             const ui = uiButton.dataset.ui;
             if (ui === 'rules') openRules(uiButton);
             if (ui === 'closeRules') closeRules();
-            if (ui === 'leave') leaveRoom?.();
+
             if (ui === 'cancelDecision') closeDecision();
             if (ui === 'confirmDecision') confirmDecision();
             return;

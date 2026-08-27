@@ -77,6 +77,46 @@ class GobangEngine {
         return this._success(this.lastAction.message);
     }
 
+    handleStudySetup(playerId, action = {}) {
+        const player = this.playerMap[playerId];
+        if (!player || this.status !== 'playing') return { success: false, message: '摆棋阶段不可用' };
+        const color = action.color === 'white' || action.color === 'black' ? action.color : player.color;
+        const insidePoint = inside(action.x, action.y);
+        if (action.kind === 'reset') {
+            this.board.clear(); this.turn = 'black'; this.currentTurnIndex = 0; this.moveNumber = 0; this.lastMove = null; this.lastAction = null; this.winner = null; this.drawReason = null; this.actionLog = ['已恢复五子棋标准空盘'];
+            return this._success('已恢复标准空盘');
+        }
+        if (action.kind === 'clear') {
+            this.board.clear(); this.turn = 'black'; this.currentTurnIndex = 0; this.moveNumber = 0; this.lastMove = null; this.lastAction = null; this.winner = null; this.drawReason = null; this.actionLog = ['已清空五子棋局面'];
+            return this._success('已清空局面');
+        }
+        if (action.kind === 'remove') {
+            if (!insidePoint || !this.board.delete(key(action.x, action.y))) return { success: false, message: '该位置没有可移除的棋子', state: this.getPlayerState(playerId) };
+            this.winner = null; this.drawReason = null; this.status = 'playing'; this.actionLog.push(`已移除 ${String.fromCharCode(65 + action.x)}${action.y + 1} 的棋子`);
+            return this._success('已移除棋子');
+        }
+        if (action.kind === 'setTurn') {
+            if (!['black', 'white'].includes(action.color)) return { success: false, message: '行动方无效', state: this.getPlayerState(playerId) };
+            this.turn = action.color; this.currentTurnIndex = action.color === 'black' ? 0 : 1; this.status = 'playing'; this.winner = null; this.drawReason = null;
+            return this._success(`下一手为${action.color === 'black' ? '黑方' : '白方'}`);
+        }
+        if (action.kind === 'place') {
+            if (!insidePoint || this.board.has(key(action.x, action.y))) return { success: false, message: '摆棋位置无效或已有棋子', state: this.getPlayerState(playerId) };
+            this.board.set(key(action.x, action.y), { id: `${color}-${Date.now()}-${this.moveNumber + 1}`, x: action.x, y: action.y, color, move: this.moveNumber + 1 });
+            this.moveNumber += 1; this.status = 'playing'; this.winner = null; this.drawReason = null; this.actionLog.push(`已摆放${color === 'black' ? '黑' : '白'}棋`);
+            return this._success('已摆放棋子');
+        }
+        if (action.kind === 'move') {
+            const from = action.from; const to = action.to;
+            if (!inside(from?.x, from?.y) || !inside(to?.x, to?.y)) return { success: false, message: '摆棋坐标无效', state: this.getPlayerState(playerId) };
+            const piece = this.board.get(key(from.x, from.y));
+            if (!piece || piece.color !== color || this.board.has(key(to.x, to.y))) return { success: false, message: '只能移动当前执棋方的棋子到空位', state: this.getPlayerState(playerId) };
+            this.board.delete(key(from.x, from.y)); piece.x = to.x; piece.y = to.y; this.board.set(key(to.x, to.y), piece); this.winner = null; this.drawReason = null; this.status = 'playing'; this.actionLog.push('已调整棋子位置');
+            return this._success('已调整棋子位置');
+        }
+        return { success: false, message: '未知摆棋操作', state: this.getPlayerState(playerId) };
+    }
+
     _hasFive(x, y, color) {
         return [[1, 0], [0, 1], [1, 1], [1, -1]].some(([dx, dy]) => {
             let count = 1;

@@ -54,9 +54,15 @@ server/games/registry.js
 { type: 'chat', message: '聊天内容' }
 { type: 'gameAction', action: { kind: '动作名' } }
 { type: 'resumeSession', sessionToken: '浏览器保存的会话令牌' }
+{ type: 'reconnectRoom', roomId: '123456', playerId: 'P1A2B3C4' }
+{ type: 'gameAction', action: { kind: 'studySwitchSeat', seatIndex: 1 } }
+{ type: 'gameAction', action: { kind: 'studySetup', op: 'place', x: 4, y: 4, pieceType: 'q', color: 'white' } }
+{ type: 'gameAction', action: { kind: 'studyConfirmSetup' } }
 ```
 
 服务器连接时会先发送 `session`。大厅把令牌保存到当前标签页的 `sessionStorage`；连接意外断开后，30 秒内可发送 `resumeSession` 恢复原玩家、房间和游戏状态。若另一个仍在线的窗口提交同一令牌，服务器拒绝接管并保留新窗口的临时身份。主动 `leaveRoom` 会结束席位，不应继续尝试恢复该房间。
+
+当前还提供一条便于无账号环境测试的手动重连链路：玩家进入房间后会看到服务端生成的访客 `playerId`。游戏开始后，普通 `joinRoom` 只返回 `reconnectRequired`，客户端再发送房间号和断线玩家 ID；服务端只允许恢复同一房间内已经断开的成员。在线 ID 会收到 `reconnectFailed`，不会顶掉原连接或产生重复玩家。非主动断线会保留座位并暂停房间动作与系统推进，恢复全部断线成员后广播 `roomResumed`。这条链路暂不执行强制认输；账号系统接入后可将 `playerId` 换成账号 ID。
 
 新游戏通常只需要发送 `gameAction`：
 
@@ -70,6 +76,10 @@ send({
   },
 });
 ```
+
+### 棋谱模式
+
+棋类游戏可在 metadata 中声明 `studyMode: true` 和 `studyPlayerCount: 2`，并提供 `gameMode` 房间选项。房间选择 `gameMode: 'study'` 后只允许房主入座，`Room` 会创建双方虚拟引擎席位，同时在每个 `getPlayerGameState()` 中返回 `studySeatIndex`、`studySeatNames`、`studyPhase` 和当前执棋方对应的 `myColor`。前端的切换按钮按具体棋类显示并发送“切换到红方/黑方”等目标执棋方的 `studySwitchSeat`；自定义摆棋引擎通过会话适配层提供 `handleStudySetup()`，接受 `place`、`move`、`remove`、`clear`、`reset`、`setTurn` 等操作。摆棋完成后发送 `studyConfirmSetup`，随后恢复正常的服务端回合校验。飞行棋与大富翁不声明该能力。
 
 注意：`action` 里不要传自己的 `playerId` 来证明身份。大厅服务端会根据 WebSocket 连接找到真实玩家，然后调用：
 
@@ -787,12 +797,26 @@ for f in public/games/*/*.js; do node --check "$f"; done
 node --check public/games/werewolf/client.js
 ```
 
-当前全量测试共 339 项，23 个测试文件全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置和双页创建浮窗的新增回归。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js` 与 `test/regression.test.js` 持续验证。
+当前全量测试共 384 项，25 个测试文件全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置、双页创建浮窗、移动端核心布局、封面懒加载、隐藏信息游戏离场收束、阵营身份视觉契约和棋谱模式的回归。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js` 与 `test/regression.test.js` 持续验证。
 
 ## 15. BGG 美术资源接入
 
-项目早期从 BoardGameGeek 图片接口下载并接入了 19 款游戏的本地视觉资源，每款包含 `cover` 和组件/牌面参考图 `detail`，统一存放在 `public/assets/bgg/<game>/`。当前大厅卡片与创建房间规则浮窗已改用 `public/assets/covers/` 下 28 张独立艺术方向的原创横版封面；旧 BGG cover 作为历史参考保留。进入对应游戏后仍可按既有逻辑查看或使用组件参考图，情书仍会把 detail 合照裁切成独立角色牌。不会把组件合照默认铺成大厅封面，也不会在运行时请求 BGG。
+项目早期从 BoardGameGeek 图片接口下载并接入了 19 款游戏的本地视觉资源，每款包含 `cover` 和组件/牌面参考图 `detail`，统一存放在 `public/assets/bgg/<game>/`。当前创建房间规则浮窗与预开局房间使用 `public/assets/covers/` 下 28 张独立艺术方向的高清横版封面；大厅卡片和公开房间列表使用 `public/assets/covers/thumbs/` 下同名 640×360 缩略图，并按视口懒加载。旧 BGG cover 作为历史参考保留。进入对应游戏后仍可按既有逻辑查看或使用组件参考图，情书仍会把 detail 合照裁切成独立角色牌。不会把组件合照默认铺成大厅封面，也不会在运行时请求 BGG。
 
 具体图片 ID、条目链接、用途和替换约定记录在 [public/assets/bgg/SOURCES.md](public/assets/bgg/SOURCES.md)。大厅底部保留了 BGG 来源链接；逐张牌面应优先使用独立裁切资源或项目自制图标、文字和版式，避免把组件合照直接当作可编辑牌面。
 
 情书已完成美术试点并正式切换默认入口：类型仍为 `loveletter`，客户端加载 BGG cover/detail 素材，并从 detail 合照裁切出 8 张角色牌直接替换手牌、猜牌和弃牌缩略卡面；服务端规则适配层不变。大厅不再展示独立的 BGG 试点卡，用户点击原情书即可使用新版牌面。
+
+阿瓦隆已从 BGG 图片 `1453098` / `1453075` 裁切并本地化 8 张 `720×900` WebP 角色图，对应忠臣、梅林、派西维尔、爪牙、刺客、莫甘娜、莫德雷德和奥伯伦。所有角色图随客户端一起预加载，避免通过单张资源请求推测私密身份；图片不包办线上能力文本和私密线索，这些内容继续由玩家视角状态实时渲染。
+
+## 16. 阵营推理游戏身份焦点契约
+
+狼人杀、阿瓦隆和猎巫镇共用 `public/games/common/hidden-role-focus.css` 中的 `.social-role-focus` / `.social-role-focus-art` 契约。共用层只管理身份区顶边、柔光、人物图裁切和底部遮罩；三款游戏在自身 CSS 中定义 `--role-focus-accent` / `--role-focus-glow` 并保留独立题材风格。
+
+隐私边界不能为了视觉统一而改变：
+
+- 狼人杀和阿瓦隆的私密身份仍需要按住查看，松开、移出、窗口失焦或页面隐藏必须立即遮住。
+- 猎巫镇 Town Hall 是始终公开身份，不得放进私密档案；阵营、未揭示 Trial 牌、调查结果和秘密选择才可封存。
+- 桌面端应让身份牌成为主视觉之一；竖屏有当前必须行动时先保证决策可用，短横屏将身份、行动和必要公开信息放入同一可用高度，次要内容才使用内部滚动。
+
+响应式变更至少要使用 `public/__game_shell_visual_test.html` 覆盖 `390×844`、`844×390`、`667×375` 三档。短横屏必须同时通过页面宽高、身份焦点可见、当前决策同屏与猎巫镇公开区可见性断言。

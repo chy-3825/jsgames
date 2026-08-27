@@ -11,10 +11,10 @@ const PHASES = {
     ended: { name: '通信复盘', mark: '终' },
 };
 
-export function createGameClient({ mount, send, addLog, leaveRoom }) {
+export function createGameClient({ mount, send, addLog }) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = `/games/decrypto/style.css?v=${Date.now()}`;
+    style.href = '/games/decrypto/style.css?v=20260826-mobile-games-5';
     document.head.appendChild(style);
     document.body.classList.add('is-decrypto-view');
 
@@ -23,7 +23,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
             <header class="dc-header">
                 <div class="dc-brand"><span class="dc-mark" aria-hidden="true"><i></i><b>密</b></span><div><small>双队加密通信站</small><h1>谍报风云</h1><p>让队友听懂，同时让对手误判</p></div></div>
                 <div class="dc-round" data-role="round">等待频道接通</div>
-                <div class="dc-actions"><button type="button" data-ui="rules">规则</button><button type="button" data-ui="leave">离开</button></div>
+                <div class="dc-actions"><button type="button" data-ui="rules">规则</button></div>
             </header>
             <main class="dc-layout">
                 <section class="dc-workbench">
@@ -189,6 +189,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
         app.classList.remove('scene-keycheck', 'scene-encrypting', 'scene-broadcast', 'scene-tiebreak', 'scene-ended');
         app.classList.add(sceneClass());
         app.dataset.phase = state.phase || 'waiting';
+        app.classList.toggle('is-my-action', Boolean(state.availableActions && Object.values(state.availableActions).some(Boolean)));
         $('round').textContent = state.status === 'ended' ? '频道关闭' : state.phase === 'keycheck' ? `密钥核对 · ${state.keyConfirmCount || 0} / ${state.players?.length || 0}` : state.phase === 'encryptor_vote' ? `固定加密员选举 · ${state.encryptorVoteCount || 0} 票` : `第 ${state.round || 1} / ${maxRounds()} 轮 · ${phaseMeta().name}`;
         const actionable = state.availableActions && Object.values(state.availableActions).some(Boolean);
         $('status').innerHTML = `<div><span class="dc-kicker">${escapeHtml(phaseMeta().name)}</span><h2>${escapeHtml(statusTitle())}</h2><p>${escapeHtml(statusDetail())}</p></div><span class="dc-status-dial ${actionable ? 'is-live' : ''}">${state.status === 'ended' ? '终' : actionable ? '我' : phaseMeta().mark}</span>`;
@@ -343,7 +344,7 @@ export function createGameClient({ mount, send, addLog, leaveRoom }) {
 
     function handleClick(event) {
         const uiButton = event.target.closest('[data-ui]');
-        if (uiButton) { if (uiButton.dataset.ui === 'leave') leaveRoom?.(); if (uiButton.dataset.ui === 'rules') openRules(uiButton); if (uiButton.dataset.ui === 'closeRules') closeRules(); return; }
+        if (uiButton) { if (uiButton.dataset.ui === 'rules') openRules(uiButton); if (uiButton.dataset.ui === 'closeRules') closeRules(); return; }
         if (event.target === overlay) { closeRules(); return; }
         if (event.target.closest('[data-secret-toggle="keywords"]')) { setKeywordsVisible(!keywordsVisible); if (state?.phase === 'keycheck') renderCommand(); return; }
         const digitButton = event.target.closest('[data-code-digit]');

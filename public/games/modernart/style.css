@@ -365,7 +365,7 @@
 .art-presentation-scene { position: relative; z-index: 2; width: min(410px, calc(100vw - 28px)); padding: 13px 16px; border: 1px solid #706a6e; color: #eee5da; background: linear-gradient(145deg, #2b2a2d, #222124); box-shadow: 0 20px 50px rgba(0,0,0,.46); animation: art-event-in .24s ease-out both; }
 .art-presentation-layer.is-compact .art-presentation-scene { width: min(400px, calc(100vw - 28px)); }
 .art-presentation-layer.is-medium .art-presentation-scene { width: min(650px, calc(100vw - 28px)); padding: 18px 22px; }
-.art-presentation-layer.is-major .art-presentation-scene { width: min(800px, calc(100vw - 28px)); max-height: calc(100vh - 76px); overflow: auto; padding: clamp(19px, 3vw, 31px); border-color: #8d8585; background:
+.art-presentation-layer.is-major .art-presentation-scene { width: min(800px, calc(100vw - 28px)); max-height: calc(100dvh - 76px); overflow: auto; padding: clamp(19px, 3vw, 31px); border-color: #8d8585; background:
     linear-gradient(90deg, transparent 0 37px, rgba(222,71,59,.08) 37px 39px, transparent 39px),
     repeating-linear-gradient(0deg, transparent 0 25px, rgba(71,63,61,.045) 25px 26px),
     #f2ede3;
@@ -419,7 +419,7 @@
 .art-final-ranking .is-winner i { color: #fff; background: #d24e40; }
 .art-final-winner { margin: 13px 0 0; color: #b64238; font: 900 18px "Songti SC", SimSun, serif; text-align: center; }
 .art-presentation-skip { position: fixed; z-index: 6; right: 16px; bottom: 15px; min-height: 34px; padding: 0 13px; border: 1px solid #837c7c; color: #eee5d9; background: rgba(31,29,32,.9); font-size: 8px; font-weight: 900; box-shadow: 0 7px 20px rgba(0,0,0,.35); }
-.art-action-line { position: fixed; z-index: 1; inset: 0; width: 100vw; height: 100vh; overflow: visible; opacity: 0; pointer-events: none; }
+.art-action-line { position: fixed; z-index: 1; inset: 0; width: 100vw; height: 100dvh; overflow: visible; opacity: 0; pointer-events: none; }
 .art-action-line line { stroke: #e45c4f; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 9 7; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); animation: art-line-flow .62s linear infinite; }
 .art-action-line circle { fill: #ef8b7f; stroke: #332d30; stroke-width: 2; }
 .art-action-line.is-visible { opacity: 1; }
@@ -437,7 +437,7 @@
 
 .art-overlay { position: fixed; z-index: 90; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(15,14,16,.88); backdrop-filter: blur(8px); }
 .art-overlay.is-hidden { display: none; }
-.art-overlay > article { position: relative; width: min(620px, 100%); max-height: min(820px, calc(100vh - 30px)); overflow: auto; padding: 25px; border: 1px solid #6d6668; color: var(--ink); background: #f3efe6; box-shadow: 0 30px 70px rgba(0,0,0,.5); }
+.art-overlay > article { position: relative; width: min(620px, 100%); max-height: min(820px, calc(100dvh - 30px)); overflow: auto; padding: 25px; border: 1px solid #6d6668; color: var(--ink); background: #f3efe6; box-shadow: 0 30px 70px rgba(0,0,0,.5); }
 .art-close { position: absolute; top: 9px; right: 9px; display: grid; width: 31px; min-height: 31px; padding: 0; place-items: center; border-color: #b8afa3; color: #5d5551; background: #fffaf0; font-size: 18px; }
 .art-overlay h2 { margin: 4px 0 13px; font: 900 25px "Songti SC", SimSun, serif; }
 .art-overlay ol { display: grid; gap: 7px; margin: 0; padding-left: 19px; color: #69615c; font-size: 9px; line-height: 1.65; }
@@ -488,7 +488,7 @@
     .art-overlay { padding: 8px; }
     .art-overlay > article { padding: 21px 16px; }
     .art-presentation-layer { padding: 8px; }
-    .art-presentation-layer.is-major .art-presentation-scene { max-height: calc(100vh - 66px); padding: 17px 13px; }
+    .art-presentation-layer.is-major .art-presentation-scene { max-height: calc(100dvh - 66px); padding: 17px 13px; }
     .art-season-ranking { grid-template-columns: 1fr; }
     .art-season-ranking > span { grid-template-columns: 27px 1fr auto; align-items: center; }
     .art-season-ranking > span > em { grid-column: auto; margin: 0; }
