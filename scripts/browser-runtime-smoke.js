@@ -313,6 +313,152 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort) {
     return { roomId };
 }
 
+async function runPrivacyAndInputChecks(bidi, context, httpPort) {
+    const evaluateJson = expression => evaluate(bidi, context, `JSON.stringify(${expression})`).then(raw => {
+        try { return JSON.parse(raw || 'null'); } catch { return null; }
+    });
+    const identityFixtures = [
+        { game: 'werewolf', hold: '[data-role-hold]', secret: '[data-role-secret]', scope: '.social-role-focus' },
+        { game: 'avalon', hold: '[data-role-hold]', secret: '[data-role-secret]', scope: '.social-role-focus' },
+        { game: 'witchtown', hold: '[data-dossier-hold]', secret: '[data-dossier-secret]', scope: '.witchtown-dossier-stack' },
+        { game: 'coup', hold: '[data-identity-hold]', secret: '[data-private-identity]', scope: '.cp-private' },
+    ];
+    const readIdentity = fixture => evaluateJson(`(() => {
+        const hold = document.querySelector(${JSON.stringify(fixture.hold)});
+        const scope = hold?.closest(${JSON.stringify(fixture.scope)});
+        const secrets = [...document.querySelectorAll(${JSON.stringify(fixture.secret)})];
+        return {
+            holdCount: document.querySelectorAll(${JSON.stringify(fixture.hold)}).length,
+            holdVisible: Boolean(hold && getComputedStyle(hold).display !== 'none' && hold.getBoundingClientRect().width > 0 && hold.getBoundingClientRect().height > 0),
+            pressed: hold?.getAttribute('aria-pressed') || '',
+            secretCount: secrets.length,
+            secretHidden: secrets.length > 0 && secrets.every(element => element.getAttribute('aria-hidden') === 'true'),
+            secretScope: Boolean(scope),
+            scopeCount: document.querySelectorAll(${JSON.stringify(fixture.scope)}).length,
+        };
+    })()`);
+    const requireIdentity = (fixture, state, label) => {
+        if (!state || state.holdCount !== 1 || !state.holdVisible || state.secretCount < 1 || !state.secretHidden || !state.secretScope || state.scopeCount !== 1 || state.pressed !== 'false') {
+            throw new Error(`${fixture.game} ${label} 身份隔离失败：${JSON.stringify(state)}`);
+        }
+    };
+    const readHanabi = () => evaluateJson(`(() => {
+        const own = [...document.querySelectorAll('.hb-my-hand .hb-hidden-card')];
+        const teammates = [...document.querySelectorAll('.hb-teammates .hb-public-card')];
+        const publicFronts = teammates.filter(card => !card.classList.contains('hb-public-card-back'));
+        return {
+            ownCount: own.length,
+            ownBacks: own.length > 0 && own.every(card => card.querySelector('.hb-card-back') && !card.querySelector('.hb-public-card')),
+            ownReadable: own.length > 0 && own.every(card => card.getAttribute('aria-disabled') === 'false' && card.type === 'button'),
+            publicFronts: publicFronts.length,
+            leakedOwnFront: own.some(card => card.querySelector('.hb-public-card:not(.hb-public-card-back)')),
+        };
+    })()`);
+    const interactIdentity = fixture => evaluateJson(`(() => {
+        const hold = document.querySelector(${JSON.stringify(fixture.hold)});
+        const secretSelector = ${JSON.stringify(fixture.secret)};
+        const state = () => ({
+            pressed: hold?.getAttribute('aria-pressed') || '',
+            hidden: [...document.querySelectorAll(secretSelector)].every(element => element.getAttribute('aria-hidden') === 'true'),
+        });
+        const before = state();
+        hold?.focus();
+        hold?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+        const keyDown = state();
+        hold?.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true }));
+        const keyUp = state();
+        if (hold) hold.setPointerCapture = () => {};
+        hold?.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 41, pointerType: 'touch', button: 0, bubbles: true, cancelable: true }));
+        const pointerDown = state();
+        document.dispatchEvent(new PointerEvent('pointerup', { pointerId: 41, pointerType: 'touch', button: 0, bubbles: true, cancelable: true }));
+        const pointerUp = state();
+        if (hold) hold.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 42, pointerType: 'touch', button: 0, bubbles: true, cancelable: true }));
+        const blurBefore = state();
+        window.dispatchEvent(new Event('blur'));
+        const blurAfter = state();
+        return { before, keyDown, keyUp, pointerDown, pointerUp, blurBefore, blurAfter };
+    })()`);
+    for (const fixture of identityFixtures) {
+        await bidi.command('browsingContext.setViewport', { context, viewport: { width: 390, height: 844 } });
+        await bidi.command('browsingContext.navigate', { context, url: `http://127.0.0.1:${httpPort}/__game_shell_visual_test.html?game=${fixture.game}` });
+        await waitForCondition(bidi, context, `document.documentElement.dataset.shellTest === 'passed'`, `${fixture.game} 隐私视图`, 15000);
+        const initial = await readIdentity(fixture);
+        requireIdentity(fixture, initial, '初始');
+        const interaction = await interactIdentity(fixture);
+        const keyRevealed = interaction.keyDown.pressed === 'true' && interaction.keyDown.hidden === false;
+        const keyResealed = interaction.keyUp.pressed === 'false' && interaction.keyUp.hidden === true;
+        const pointerRevealed = interaction.pointerDown.pressed === 'true' && interaction.pointerDown.hidden === false;
+        const pointerResealed = interaction.pointerUp.pressed === 'false' && interaction.pointerUp.hidden === true;
+        const blurResealed = interaction.blurBefore.pressed === 'true' && interaction.blurAfter.pressed === 'false' && interaction.blurAfter.hidden === true;
+        if (!keyRevealed || !keyResealed || !pointerRevealed || !pointerResealed || !blurResealed) {
+            throw new Error(`${fixture.game} 键盘/触屏身份收束失败：${JSON.stringify(interaction)}`);
+        }
+        console.log(`privacy/input: ${fixture.game} · hidden → keyboard/touch reveal → reseal`);
+    }
+
+    await bidi.command('browsingContext.setViewport', { context, viewport: { width: 390, height: 844 } });
+    await bidi.command('browsingContext.navigate', { context, url: `http://127.0.0.1:${httpPort}/__game_shell_visual_test.html?game=hanabi` });
+    await waitForCondition(bidi, context, `document.documentElement.dataset.shellTest === 'passed'`, '花火隐私视图', 15000);
+    const hanabi = await readHanabi();
+    if (!hanabi || hanabi.ownCount !== 4 || !hanabi.ownBacks || !hanabi.ownReadable || hanabi.publicFronts < 1 || hanabi.leakedOwnFront) {
+        throw new Error(`hanabi 牌面隔离失败：${JSON.stringify(hanabi)}`);
+    }
+    console.log('privacy/input: hanabi · own hand backs/private knowledge and teammate fronts separated');
+
+    await bidi.command('browsingContext.navigate', { context, url: `http://127.0.0.1:${httpPort}/__game_shell_visual_test.html?game=decrypto&decryptoState=code` });
+    await waitForCondition(bidi, context, `document.documentElement.dataset.shellTest === 'passed'`, '谍报风云隐私视图', 15000);
+    const decrypto = await evaluateJson(`(() => {
+        const code = document.querySelector('[data-secret-code]');
+        const codeHold = document.querySelector('[data-code-hold]');
+        const keywords = document.querySelector('[data-role="keywords"]');
+        const keywordsCover = document.querySelector('[data-secret-toggle="keywords"]');
+        return {
+            codeCount: document.querySelectorAll('[data-secret-code]').length,
+            codeHidden: Boolean(code && !code.classList.contains('is-revealed')),
+            codeHoldVisible: Boolean(codeHold && getComputedStyle(codeHold).display !== 'none' && codeHold.getBoundingClientRect().width > 0),
+            keywordsHidden: Boolean(keywords && !keywords.classList.contains('is-revealed')),
+            keywordsCover: Boolean(keywordsCover && keywordsCover.getAttribute('aria-pressed') === 'false'),
+        };
+    })()`);
+    if (!decrypto || decrypto.codeCount !== 1 || !decrypto.codeHidden || !decrypto.codeHoldVisible || !decrypto.keywordsHidden || !decrypto.keywordsCover) {
+        throw new Error(`decrypto 初始隐私隔离失败：${JSON.stringify(decrypto)}`);
+    }
+    const decryptoInteraction = await evaluateJson(`(() => {
+        const hold = document.querySelector('[data-code-hold]');
+        const code = document.querySelector('[data-secret-code]');
+        const keywords = document.querySelector('[data-role="keywords"]');
+        const keywordCover = () => document.querySelector('[data-secret-toggle="keywords"]');
+        const state = () => ({ codeVisible: Boolean(code?.classList.contains('is-revealed')), keywordsVisible: Boolean(keywords?.classList.contains('is-revealed')) });
+        const before = state();
+        hold?.focus();
+        hold?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+        const keyDown = state();
+        hold?.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true }));
+        const keyUp = state();
+        if (hold) hold.setPointerCapture = () => {};
+        hold?.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 51, pointerType: 'touch', button: 0, bubbles: true, cancelable: true }));
+        const pointerDown = state();
+        hold?.dispatchEvent(new PointerEvent('pointerup', { pointerId: 51, pointerType: 'touch', button: 0, bubbles: true, cancelable: true }));
+        const pointerUp = state();
+        keywordCover()?.click();
+        const keywordsClick = state();
+        window.dispatchEvent(new Event('blur'));
+        const blur = state();
+        return { before, keyDown, keyUp, pointerDown, pointerUp, keywordsClick, blur };
+    })()`);
+    const decryptoInputPassed = decryptoInteraction
+        && !decryptoInteraction.before.codeVisible
+        && decryptoInteraction.keyDown.codeVisible
+        && !decryptoInteraction.keyUp.codeVisible
+        && decryptoInteraction.pointerDown.codeVisible
+        && !decryptoInteraction.pointerUp.codeVisible
+        && decryptoInteraction.keywordsClick.keywordsVisible
+        && !decryptoInteraction.blur.codeVisible
+        && !decryptoInteraction.blur.keywordsVisible;
+    if (!decryptoInputPassed) throw new Error(`decrypto 键盘/触屏/失焦收束失败：${JSON.stringify(decryptoInteraction)}`);
+    console.log('privacy/input: decrypto · keyword vault/code hidden and resealed on keyboard, touch, blur');
+}
+
 async function readFixture(bidi, context) {
     const raw = await evaluate(bidi, context, `JSON.stringify({
         metric: document.querySelector('#shellTestMetrics')?.textContent || '',
@@ -365,6 +511,8 @@ async function run() {
 
         const lifecycle = await runLobbyLifecycle(bidi, context, httpPort);
         console.log(`lobby lifecycle: PASS (${lifecycle.roomId})`);
+
+        await runPrivacyAndInputChecks(bidi, context, httpPort);
 
         for (const game of games) for (const [width, height] of sizes) {
             await bidi.command('browsingContext.setViewport', { context, viewport: { width, height } });

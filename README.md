@@ -78,10 +78,16 @@ npm run test:audit
 npm run test:syntax
 ```
 
-运行浏览器模块、公开/私密房间、双标签对局恢复、离场资源释放与响应式烟测（需要 Firefox，2026-08-28 为 28 个模块导入通过、双标签生命周期通过、96/96 个视口通过）：
+运行浏览器模块、公开/私密房间、双标签对局恢复、离场资源释放、隐藏信息和键盘/触屏输入烟测（需要 Firefox，2026-08-28 为 28 个模块导入通过、双标签生命周期通过、隐私输入检查通过、96/96 个视口通过）：
 
 ```bash
 npm run test:browser
+```
+
+可选地用 Chromium 复核同一组模块、72 个桌面/移动视口和隐私输入边界（需要提供 Chromium 路径）：
+
+```bash
+CHROMIUM_BIN=/path/to/chromium npm run test:browser:chromium
 ```
 
 运行性能预算、静态资源并发和 WebSocket 房间/连接清理烟测（本地有界压力，不替代生产容量压测）：

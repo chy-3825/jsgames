@@ -19,11 +19,13 @@ npm run test:audit
 npm run test:syntax
 npm test
 npm run test:browser
+# 可选但建议：CHROMIUM_BIN=/path/to/chromium npm run test:browser:chromium
 npm run test:performance
 git diff --check
 ```
 
 `test:browser` 需要 Firefox；没有图形环境时使用无头 Firefox，或通过 `FIREFOX_BIN` 指定路径。若浏览器不可用，应把门禁标记为“未执行”，不能写成通过。
+`test:browser:chromium` 使用 Chromium DevTools Protocol，复核模块导入、桌面/移动视口和隐私输入边界；通过 `CHROMIUM_BIN` 或 `CHROME_BIN` 指定可执行文件。它不能替代真实 Chromium/移动设备人工签字。
 `test:performance` 是本地有界压力和资源清理烟测：会检查首屏/主脚本/样式/Three.js 体积、静态请求并发、短时大厅连接并发，以及多房间创建/加入/离开后的连接和房间回收；它不是生产容量压测，生产容量仍需在预发布环境按真实规格执行。
 
 ## 3. 发布前人工签字
@@ -33,6 +35,8 @@ git diff --check
 - [ ] 对花火、政变、阿瓦隆、狼人杀、猎巫镇等隐藏信息游戏确认私密牌面/身份不会出现在错误玩家视角、日志或 URL。
 - [ ] 在 `390×844`、`667×375`、`844×390` 检查当前操作区可见；需要滚动的次要信息应能通过键盘和触屏访问。
 - [ ] 记录浏览器版本、测试房间号、失败截图和对应提交，写入 `TEST_REPORTS/`。
+
+`npm run test:browser` 已在 Firefox 中自动复核身份牌、花火牌背、谍报风云密钥的隐藏/按住显示/松开封存/失焦封存，以及移动视口的核心区域；这不能替代本节要求的 Chromium、真实移动浏览器和真实网络断线人工签字。
 
 ## 4. 预发布与生产
 

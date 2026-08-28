@@ -175,7 +175,8 @@
 | `scripts/checkers-acceptance.js` | 测试必需 | 自动跑中国跳棋正常、规则边界和随机复现局，并写出 JSON 记录。 |
 | `scripts/gobang-acceptance.js` | 测试必需 | 自动跑五子棋正常、规则、和棋和随机复现局，并写出 JSON 记录。 |
 | `scripts/syntax-check.js` | 测试必需 | 对首方 `app.js`、服务端、前端、脚本和测试文件执行 `node --check` 语法门禁。 |
-| `scripts/browser-runtime-smoke.js` | 测试必需 | 自启临时 HTTP/WebSocket 与 Firefox，导入 28 个客户端，执行公开/私密房间、核心落子和刷新恢复的双标签生命周期，并跑 24 款游戏四档视口运行时烟测。 |
+| `scripts/browser-runtime-smoke.js` | 测试必需 | 自启临时 HTTP/WebSocket 与 Firefox，导入 28 个客户端，执行公开/私密房间、核心落子、刷新恢复和离场资源释放的双标签生命周期，复核花火/谍报风云隐私隔离与四款身份牌的键盘/触屏收束，并跑 24 款游戏四档视口运行时烟测。 |
+| `scripts/chromium-runtime-smoke.js` | 测试必需 | 使用 Chromium DevTools Protocol 复核 28 个客户端导入、72 个桌面/移动视口，以及四款身份牌、花火和谍报风云的隐私/输入收束；需通过 `CHROMIUM_BIN` 或 `CHROME_BIN` 提供浏览器。 |
 | `scripts/performance-smoke.js` | 测试必需 | 检查首方静态资源体积、本地静态请求并发，以及大厅连接和多房间创建/加入/离开后的 WebSocket/房间清理；这是有界烟测，不是生产容量压测。 |
 
 ## 11. 测试与验收报告
@@ -634,6 +635,7 @@
 - `public/style.css` — 正式大厅全局样式。
 - `scripts/checkers-acceptance.js` — 中国跳棋完整对局验收与复现数据生成脚本。
 - `scripts/gobang-acceptance.js` — 五子棋完整对局验收与复现数据生成脚本。
+- `scripts/chromium-runtime-smoke.js` — Chromium 模块、视口、隐私和输入收束烟测。
 - `scripts/performance-smoke.js` — 静态资源预算、并发请求和 WebSocket 房间/连接清理烟测。
 - `server/games/acquire/engine.js` — 并购的服务端权威规则引擎。
 - `server/games/acquire/index.js` — 并购的大厅 metadata/create 适配层。
