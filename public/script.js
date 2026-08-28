@@ -2,7 +2,7 @@ import { getGameDetails } from './game-details.js';
 import { escapeHtml } from './games/common/html.js';
 import { getGameClientPath as getManifestClientPath, getGameStyleHrefs, getGameStylePaths as getManifestStylePaths } from './games/common/game-manifest.js';
 
-const ASSET_VERSION = '20260827-werewolf-results-1';
+const ASSET_VERSION = '20260828-phase4-runtime-1';
 window.__JSGAMES_ASSET_VERSION__ = ASSET_VERSION;
 
 const statusEl = document.getElementById('status');

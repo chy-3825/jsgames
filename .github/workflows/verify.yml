@@ -1,0 +1,56 @@
+name: jsgames verify
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20.x', '22.x']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: JavaScript syntax gate
+        run: npm run test:syntax
+      - name: Dependency security gate
+        run: npm run test:audit
+      - name: Automated regression
+        run: npm test
+
+  browser:
+    name: Firefox browser smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Ensure headless Firefox
+        run: |
+          if ! command -v firefox >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y firefox-esr
+            sudo ln -sf "$(command -v firefox-esr)" /usr/local/bin/firefox
+          fi
+      - name: Browser module and viewport smoke
+        run: npm run test:browser

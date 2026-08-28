@@ -509,12 +509,13 @@
     .art-header { grid-template-columns: minmax(160px, 1fr) auto auto; min-height: 39px; gap: 8px; margin-bottom: 5px; }
     .art-mark { display: none; }.art-brand h1 { font-size: 18px; }.art-round { grid-column: auto; grid-row: auto; padding: 6px 9px; }.art-header-actions button { min-height: 30px; }
     .art-error-banner { position: absolute; z-index: 20; top: 48px; right: 8px; width: min(520px, calc(100% - 16px)); margin: 0; }
-    .art-layout { grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 45px); gap: 0; }
+    .art-layout { grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 60px); min-height: 0; gap: 0; }
     .art-gallery { grid-template-columns: minmax(0, 1fr) minmax(300px, .72fr); grid-template-areas: "status status" "artists artists" "showroom hand"; grid-template-rows: auto auto minmax(0, 1fr); height: 100%; gap: 5px; overflow: hidden; }
+    .art-gallery { min-height: 0; }
     .art-status { grid-area: status; min-height: 40px; padding: 5px 9px 5px 13px; }.art-status h2 { font-size: 14px; }.art-status p { padding: 4px 6px; }
     .art-artist-board { grid-area: artists; }.art-artist-board > header { display: none; }.art-artist { grid-template-columns: 22px 1fr auto; padding: 4px 6px; }.art-artist > i { width: 21px; height: 21px; font-size: 9px; }.art-artist > span { display: none; }
-    .art-showroom { grid-area: showroom; grid-template-columns: minmax(0, 1fr); min-height: 0; overflow: hidden; }.art-auction { min-height: 0; height: 100%; grid-template-columns: minmax(180px, .75fr) minmax(210px, 1fr); padding: 6px; overflow: auto; }.art-stage-pair { min-height: 170px; }.art-stage-work > .art-frame, .art-stage-pair > .art-frame, .art-stage-work > .art-card-back.is-stage-back { width: min(130px, 70%); height: 160px; }.art-stage-copy { padding: 8px; }.art-stage-copy h3 { font-size: 17px; }.art-market { display: none; }
-    .art-hand { grid-area: hand; min-height: 0; overflow: auto; }.art-hand > header { padding: 5px 8px; }.art-hand > [data-role="hand"] { padding: 6px; }.art-piece { flex-basis: 102px; grid-template-rows: 91px auto; }.art-piece > .art-frame { height: 91px; }.art-hand-decision { padding: 6px 8px; }
+    .art-showroom { grid-area: showroom; grid-template-columns: minmax(0, 1fr); min-height: 0; height: 100%; overflow: hidden; }.art-auction { min-height: 0; height: 100%; grid-template-columns: minmax(180px, .75fr) minmax(210px, 1fr); padding: 6px; overflow: auto; }.art-stage-pair { min-height: 170px; }.art-stage-work > .art-frame, .art-stage-pair > .art-frame, .art-stage-work > .art-card-back.is-stage-back { width: min(130px, 70%); height: 160px; }.art-stage-copy { padding: 8px; }.art-stage-copy h3 { font-size: 17px; }.art-market { display: none; }
+    .art-hand { grid-area: hand; min-height: 0; height: 100%; overflow: auto; }.art-hand > header { padding: 5px 8px; }.art-hand > [data-role="hand"] { padding: 6px; }.art-piece { flex-basis: 102px; grid-template-rows: 91px auto; }.art-piece > .art-frame { height: 91px; }.art-hand-decision { padding: 6px 8px; }
     .art-history, .art-ledger { display: none; }
     .art-overlay > article { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); }
 }

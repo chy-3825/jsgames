@@ -60,11 +60,35 @@ npm start
 http://localhost:3000
 ```
 
-运行自动化回归测试（2026-08-28 当前 493 项全部通过）：
+运行自动化回归测试（2026-08-28 当前 494 项全部通过）：
 
 ```bash
 npm test
 ```
+
+依赖安全门禁（高危漏洞直接失败）：
+
+```bash
+npm run test:audit
+```
+
+只做首方 JavaScript 语法门禁：
+
+```bash
+npm run test:syntax
+```
+
+运行浏览器模块、双标签房间生命周期与响应式烟测（需要 Firefox，2026-08-28 为 28 个模块导入通过、双标签生命周期通过、96/96 个视口通过）：
+
+```bash
+npm run test:browser
+```
+
+完整记录见 [`TEST_REPORTS/phase4-runtime.md`](./TEST_REPORTS/phase4-runtime.md)。
+
+发布前按 [`RELEASE_CHECKLIST.md`](./RELEASE_CHECKLIST.md) 执行版本、门禁、人工签字和回滚准备。
+
+仓库的 `.github/workflows/verify.yml` 会在推送或合并请求时执行 Node 20/22 语法与回归门禁，并执行 Firefox 浏览器烟测。
 
 大厅会为当前浏览器标签页保存短期会话令牌。网络短暂断开后，页面会在 30 秒宽限期内自动恢复原玩家、房间和游戏视角；复制窗口不会抢占已在线窗口，而是保留新的玩家身份。也可以使用 `/?room=000001` 邀请链接或大厅里的 6 位房间号输入框直达房间。主动点击“离开房间”会结束该玩家在本局的席位。
 

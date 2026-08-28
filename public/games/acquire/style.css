@@ -2751,9 +2751,17 @@ body.acquire-game-active {
     .acquire-shell {
         grid-template-areas: "command stage" "rail stage";
         grid-template-columns: minmax(245px, 34%) minmax(500px, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+        height: calc(100svh - var(--game-shell-offset, 48px) - 75px);
+        min-height: 0;
         gap: 8px;
     }
+    .acquire-command,
+    .acquire-stage,
+    .acquire-rail { min-height: 0; }
     .acquire-command { max-height: 180px; padding: 9px; overflow: auto; }
+    .acquire-stage { height: 100%; overflow: auto; }
+    .acquire-rail { height: 100%; max-height: none; overflow: auto; }
     .acquire-command-head h2 { font-size: 15px; }
     .acquire-command-head p { margin-top: 3px; line-height: 1.35; }
     .acquire-command-body { margin-top: 7px; }
@@ -2769,6 +2777,12 @@ body.acquire-game-active {
     .acquire-rail-panel:not(.acquire-portfolio-panel) { display: none; }
     .acquire-portfolio-panel { padding: 8px; }
     .acquire-rules-dialog { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); overflow: auto; }
+}
+
+@media (max-width: 740px) and (orientation: landscape) and (max-height: 520px) {
+    .acquire-shell {
+        grid-template-columns: minmax(205px, 34%) minmax(0, 1fr);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

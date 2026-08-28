@@ -34,6 +34,11 @@ test('游戏入口保持薄层，协议、状态、模板、渲染、场景和�
     }
 });
 
+test('璀璨宝石卡牌助手显式导入代币集合', () => {
+    const cards = read('splendor', 'cards.js');
+    assert.match(cards, /import\s*\{[^}]*\bALL_TOKENS\b[^}]*\}\s*from ['"]\.\/constants\.js['"]/);
+});
+
 test('3D 棋类的场景和输入模块是真实实现而非占位工厂', () => {
     for (const game of ['chess', 'junqi', 'xiangqi']) {
         const scene = read(game, 'scene.js');

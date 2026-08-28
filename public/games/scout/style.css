@@ -198,6 +198,12 @@
 }
 @media (prefers-reduced-motion: reduce) { .sc-card { transition: none; } }
 
+@media (max-width: 740px) and (orientation: landscape) and (max-height: 520px) {
+    .sc-stage {
+        grid-template-columns: minmax(0, .9fr) minmax(0, 1.25fr);
+    }
+}
+
 /* Immersive stage pass: routine card movement remains focused on the central
    stage; only round and final settlements dim the whole circus tent. */
 .sc-scout-ghost {

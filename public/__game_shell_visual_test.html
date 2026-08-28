@@ -460,7 +460,7 @@
 
         try {
             const clientPath = type === 'chess' ? '/games/chess/lobby-client.js' : `/games/${type}/client.js`;
-            const module = await import(`${clientPath}?v=20260827-decrypto-notebook-1`);
+            const module = await import(`${clientPath}?v=20260828-phase4-runtime-1`);
             window.shellTestClient = module.createGameClient({ mount, send() {}, addLog() {} });
             const state = fixtureState(type);
             if (type === 'coup' && state) {

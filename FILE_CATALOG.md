@@ -28,6 +28,8 @@
 | `PROJECT_REPORT.md` | 开发资料 | 新游戏接入教程；定义大厅消息、服务端会话接口和前端客户端接口。 |
 | `GAME_GROUPS.md` | 开发资料 | 大厅三大分组、`playMode` 和分类维护规范。 |
 | `BGG_CARD_RESOURCES.md` | 开发资料 | 卡牌游戏的 BGG 美术资源选择、来源和使用记录。 |
+| `RELEASE_CHECKLIST.md` | 开发资料 | 发布前版本、自动化门禁、人工签字、预发布检查和回滚纪律。 |
+| `.github/workflows/verify.yml` | 开发资料 | 推送/合并请求的 Node 20/22 回归门禁和 Firefox 浏览器烟测。 |
 
 项目外还有 `/home/chy/桌面/jsgames综合开发与验收报告.md`，它是综合审计报告，不属于运行仓库。
 
@@ -172,6 +174,8 @@
 | --- | --- | --- |
 | `scripts/checkers-acceptance.js` | 测试必需 | 自动跑中国跳棋正常、规则边界和随机复现局，并写出 JSON 记录。 |
 | `scripts/gobang-acceptance.js` | 测试必需 | 自动跑五子棋正常、规则、和棋和随机复现局，并写出 JSON 记录。 |
+| `scripts/syntax-check.js` | 测试必需 | 对首方 `app.js`、服务端、前端、脚本和测试文件执行 `node --check` 语法门禁。 |
+| `scripts/browser-runtime-smoke.js` | 测试必需 | 自启临时 HTTP/WebSocket 与 Firefox，导入 28 个客户端，执行双标签房间生命周期并跑 24 款游戏四档视口运行时烟测。 |
 
 ## 11. 测试与验收报告
 

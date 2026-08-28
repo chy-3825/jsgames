@@ -593,8 +593,9 @@
     .camel-app { height: calc(100svh - var(--game-shell-offset, 48px)); min-height: 0; padding: 5px 7px; overflow: hidden; }
     .cm-header { grid-template-columns: minmax(170px, 1fr) auto auto; min-height: 39px; gap: 7px; margin-bottom: 5px; padding: 4px 8px; }.cm-brand-mark { display: none; }.cm-brand h1 { font-size: 18px; }.cm-brand small { font-size: 7px; }.cm-round { grid-column: auto; grid-row: auto; padding: 5px 8px; }.cm-header-actions button { min-height: 29px; }
     .cm-error-banner { position: absolute; z-index: 20; top: 46px; right: 7px; width: min(520px, calc(100% - 14px)); margin: 0; }
-    .cm-layout { grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 49px); gap: 0; }
+    .cm-layout { grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 60px); min-height: 0; gap: 0; }
     .cm-race-table { grid-template-columns: minmax(470px, 1.35fr) minmax(300px, .65fr); grid-template-areas: "status status" "track command"; grid-template-rows: auto minmax(0, 1fr); height: 100%; gap: 5px; overflow: hidden; }
+    .cm-race-table { min-height: 0; }
     .cm-status { grid-area: status; min-height: 42px; padding: 5px 9px; }.cm-status h2 { font-size: 14px; }.cm-status small, .cm-kicker { font-size: 7px; }.cm-self-summary { margin-top: 3px; }.cm-self-summary span { padding: 1px 4px; }.cm-dice-progress i { width: 21px; height: 21px; }
     .cm-track { grid-area: track; min-height: 0; padding: 5px; overflow: hidden; }.cm-track-header { display: none; }.cm-board { grid-template-rows: repeat(4, minmax(0, 1fr)); height: 100%; gap: 4px; padding: 5px; }.cm-board-center { padding: 7px; }.cm-pyramid { transform: scale(.72); }.cm-board-center > p { font-size: 8px; }.cm-track-cell { min-height: 0; padding: 3px; }.cm-camel-token { width: 42px; height: 26px; bottom: calc(var(--stack) * 9px); }.cm-token-camel { width: 36px; height: 23px; }.cm-camel-stack { height: 53px; }.cm-cell-number { font-size: 7px; }
     .cm-command { grid-area: command; min-height: 0; overflow: auto; }.cm-command > header { padding: 5px 8px; }.cm-command > header h3 { font-size: 14px; }.cm-action-tabs { padding: 5px; }.cm-action-tabs button { min-height: 31px; padding: 3px; }.cm-action-tabs button > i { width: 22px; height: 22px; }.cm-command-workspace { min-height: 66px; padding: 5px 7px; }.cm-bet-shelves { grid-template-columns: 1fr; }.cm-bet-shelves > section { padding: 5px; }.cm-bet-shelves > section > header { display: none; }.cm-leg-card, .cm-finish-card { flex: 0 0 68px; }
@@ -606,4 +607,10 @@
     .cm-track-cell.is-placeable { animation: none; }
     .cm-leg-card, .cm-finish-card, .cm-track-cell, .cm-floating-camels, .cm-floating-card, .cm-floating-tile, .cm-reveal-row { transition: none; }
     .cm-presentation-stage, .cm-event-die > i, .cm-action-line line { animation: none; }
+}
+
+@media (max-width: 740px) and (orientation: landscape) and (max-height: 520px) {
+    .cm-race-table {
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
+    }
 }

@@ -465,12 +465,13 @@
     body { overflow: hidden; }
     .manila-app { height: calc(100svh - var(--game-shell-offset, 48px)); min-height: 0; padding: 6px 8px; overflow: hidden; }
     .mn-header { grid-template-columns: minmax(145px, 1fr) auto auto; min-height: 40px; gap: 8px; margin-bottom: 5px; }.mn-seal { display: none; }.mn-brand h1 { font-size: 18px; }.mn-voyage { grid-column: auto; grid-row: auto; padding: 6px 10px; }
-    .mn-layout { grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 48px); gap: 0; }
+    .mn-layout { grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 60px); min-height: 0; gap: 0; }
     .mn-chart { grid-template-columns: minmax(430px, 1.25fr) minmax(280px, .75fr); grid-template-areas: "status status" "market market" "routes command"; grid-template-rows: auto auto minmax(0, 1fr); height: 100%; gap: 5px; overflow: hidden; }
+    .mn-chart { min-height: 0; }
     .mn-status { grid-area: status; min-height: 42px; padding: 6px 9px 6px 13px; }.mn-status h2 { font-size: 14px; }.mn-status p { padding: 3px 6px; }.mn-self-summary span { padding: 2px 4px; }
     .mn-market { grid-area: market; grid-template-columns: 84px 1fr; }.mn-market > header { padding: 5px 8px; }.mn-market-item { padding: 5px 8px; }.mn-market-item > i { width: 23px; height: 23px; }.mn-market-item > b { font-size: 14px; }
-    .mn-routes { grid-area: routes; min-height: 0; padding: 6px; overflow: auto; }.mn-section-heading { margin-bottom: 4px; }.mn-route-row { grid-template-columns: 95px minmax(210px, 1fr) 105px; min-height: 59px; }.mn-waterway { height: 47px; }.mn-route-row > header { padding: 5px; }.mn-route-row > footer { padding: 5px; }
-    .mn-command { grid-area: command; min-height: 0; padding: 8px; overflow: auto; }.mn-command h3 { font-size: 15px; }.mn-command > p { margin: 4px 0 6px; font-size: 9px; }.mn-placement-choices { grid-template-columns: repeat(2, 1fr); max-height: 150px; }
+    .mn-routes { grid-area: routes; min-height: 0; height: 100%; padding: 6px; overflow: auto; }.mn-section-heading { margin-bottom: 4px; }.mn-route-row { grid-template-columns: 95px minmax(210px, 1fr) 105px; min-height: 59px; }.mn-waterway { height: 47px; }.mn-route-row > header { padding: 5px; }.mn-route-row > footer { padding: 5px; }
+    .mn-command { grid-area: command; min-height: 0; height: 100%; padding: 8px; overflow: auto; }.mn-command h3 { font-size: 15px; }.mn-command > p { margin: 4px 0 6px; font-size: 9px; }.mn-placement-choices { grid-template-columns: repeat(2, 1fr); max-height: 150px; }
     .mn-docks, .mn-ledger { display: none; }
     .mn-overlay > article { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); }
 }
@@ -481,4 +482,10 @@
     .mn-waiting > i { animation: none; }
     .mn-presentation-scene, .mn-action-line line { animation: none; }
     .mn-moving-ship { transition-duration: .08s; }
+}
+
+@media (max-width: 740px) and (orientation: landscape) and (max-height: 520px) {
+    .mn-chart {
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr);
+    }
 }

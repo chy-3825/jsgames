@@ -2514,11 +2514,15 @@ body.is-citadels-view {
     .citadels-app.is-ended-phase .citadels-shell {
         grid-template-areas: "command stage";
         grid-template-columns: minmax(270px, 36%) minmax(480px, 1fr);
+        height: calc(100svh - var(--game-shell-offset, 48px) - 65px);
+        min-height: 0;
         gap: 8px;
     }
     .citadels-workspace { display: contents; }
     .citadels-command,
     .citadels-stage {
+        height: 100%;
+        min-height: 0;
         max-height: calc(100svh - var(--game-shell-offset, 48px) - 55px);
         padding: 9px;
         overflow: auto;
@@ -3085,4 +3089,12 @@ body.is-citadels-view {
     .citadels-finale-crown,
     .citadels-presentation-layer::before,
     .citadels-presentation-layer::after { transition-duration: .01ms !important; }
+}
+
+@media (max-width: 740px) and (orientation: landscape) and (max-height: 520px) {
+    .citadels-shell,
+    .citadels-app.is-draft-phase .citadels-shell,
+    .citadels-app.is-ended-phase .citadels-shell {
+        grid-template-columns: minmax(220px, 36%) minmax(0, 1fr);
+    }
 }

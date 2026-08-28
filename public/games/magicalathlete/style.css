@@ -445,7 +445,7 @@
     .ma-header { grid-template-columns: minmax(185px, 1fr) auto auto; min-height: 40px; gap: 7px; padding: 4px 7px; box-shadow: 3px 3px 0 var(--ma-line); }.ma-brand-mark { display: none; }.ma-brand h1 { font-size: 18px; }.ma-brand small { font-size: 7px; }.ma-brand > div > span { display: none; }.ma-round { grid-column: auto; grid-row: auto; min-width: 0; padding: 6px 9px; }.ma-actions { grid-column: auto; grid-row: auto; }.ma-actions button { width: auto; min-height: 29px; padding: 0 9px; }
     .ma-error-banner { position: absolute; z-index: 20; top: 46px; right: 7px; width: min(540px, calc(100% - 14px)); margin: 0; }
     .ma-scoreboard { grid-template-columns: repeat(6, minmax(105px, 1fr)); height: 43px; gap: 4px; margin-top: 5px; overflow: hidden; }.ma-scoreboard article { grid-template-columns: 4px 15px minmax(48px, 1fr) auto; min-width: 0; min-height: 43px; padding: 3px 5px 3px 0; }.ma-scoreboard article > div small, .ma-scoreboard article > em { display: none; }.ma-scoreboard article > b { font-size: 15px; }
-    .ma-layout { display: grid; grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 95px); gap: 0; margin-top: 5px; }.ma-stage { display: grid; grid-template-columns: minmax(475px, 1.3fr) minmax(300px, .7fr); grid-template-areas: "status status" "race command"; grid-template-rows: auto minmax(0, 1fr); width: 100%; height: 100%; padding: 5px; gap: 5px; overflow: hidden; }
+    .ma-layout { display: grid; grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 119px); min-height: 0; gap: 0; margin-top: 5px; }.ma-stage { display: grid; grid-template-columns: minmax(475px, 1.3fr) minmax(300px, .7fr); grid-template-areas: "status status" "race command"; grid-template-rows: auto minmax(0, 1fr); width: 100%; height: 100%; min-height: 0; padding: 5px; gap: 5px; overflow: hidden; }
     .ma-status { grid-area: status; min-height: 38px; padding: 3px 5px 5px; }.ma-status h2 { margin-top: 2px; font-size: 14px; }.ma-status > small { padding: 4px 6px; }
     .ma-race { grid-area: race; min-height: 0; margin: 0; padding: 5px; overflow: hidden; }.ma-track-head { display: none; }.ma-track-board { grid-template-rows: repeat(7, minmax(0, 1fr)); height: 100%; min-height: 0; gap: 2px; padding: 4px; }.ma-track-center { inset: 22px 19% 24px; padding: 5px; }.ma-track-center small { display: none; }.ma-track-center strong { font-size: 12px; }.ma-track-cell > i { display: none; }.ma-track-racer { width: 18px; height: 18px; }.ma-race-roster { display: none; }
     .ma-command { grid-area: command; min-height: 0; margin: 0; padding: 7px; overflow: auto; }.ma-command-title h3 { font-size: 14px; }.ma-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.ma-card-face:not(.is-compact) { grid-template-rows: auto 58px auto auto 1fr; min-height: 160px; }.ma-card-face p { font-size: 8px; }.ma-roll-choice { min-height: 48px; }.ma-confirm { padding: 6px; }
@@ -455,6 +455,12 @@
 
 @media (prefers-reduced-motion: reduce) {
     .ma-card-face, .ma-line i, .ma-athlete-choice:hover .ma-card-face { transition: none; transform: none; }
+}
+
+@media (max-width: 740px) and (orientation: landscape) and (max-height: 520px) {
+    .ma-stage {
+        grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr);
+    }
 }
 
 /* 2026 赛场重构：运动员直接进入 30 格赛道，所有决定先预览再确认。 */
