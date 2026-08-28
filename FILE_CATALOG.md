@@ -29,7 +29,7 @@
 | `GAME_GROUPS.md` | 开发资料 | 大厅三大分组、`playMode` 和分类维护规范。 |
 | `BGG_CARD_RESOURCES.md` | 开发资料 | 卡牌游戏的 BGG 美术资源选择、来源和使用记录。 |
 | `RELEASE_CHECKLIST.md` | 开发资料 | 发布前版本、自动化门禁、人工签字、预发布检查和回滚纪律。 |
-| `.github/workflows/verify.yml` | 开发资料 | 推送/合并请求的 Node 20/22 回归门禁和 Firefox 浏览器烟测。 |
+| `.github/workflows/verify.yml` | 开发资料 | 推送/合并请求的 Node 20/22 回归、性能/清理、发布元数据审计和 Firefox 浏览器烟测。 |
 
 项目外还有 `/home/chy/桌面/jsgames综合开发与验收报告.md`，它是综合审计报告，不属于运行仓库。
 
@@ -175,9 +175,10 @@
 | `scripts/checkers-acceptance.js` | 测试必需 | 自动跑中国跳棋正常、规则边界和随机复现局，并写出 JSON 记录。 |
 | `scripts/gobang-acceptance.js` | 测试必需 | 自动跑五子棋正常、规则、和棋和随机复现局，并写出 JSON 记录。 |
 | `scripts/syntax-check.js` | 测试必需 | 对首方 `app.js`、服务端、前端、脚本和测试文件执行 `node --check` 语法门禁。 |
-| `scripts/browser-runtime-smoke.js` | 测试必需 | 自启临时 HTTP/WebSocket 与 Firefox，导入 28 个客户端，执行公开/私密房间、核心落子、刷新恢复和离场资源释放的双标签生命周期，复核花火/谍报风云隐私隔离与四款身份牌的键盘/触屏收束，并跑 24 款游戏四档视口运行时烟测。 |
+| `scripts/browser-runtime-smoke.js` | 测试必需 | 自启临时 HTTP/WebSocket 与 Firefox，导入 28 个客户端，执行公开/私密房间、核心落子、传输断线自动重连、刷新恢复和离场资源释放的双标签生命周期，复核花火/谍报风云隐私隔离与四款身份牌的键盘/触屏收束，并跑 24 款游戏四档视口运行时烟测。 |
 | `scripts/chromium-runtime-smoke.js` | 测试必需 | 使用 Chromium DevTools Protocol 复核 28 个客户端导入、72 个桌面/移动视口，以及四款身份牌、花火和谍报风云的隐私/输入收束；需通过 `CHROMIUM_BIN` 或 `CHROME_BIN` 提供浏览器。 |
 | `scripts/performance-smoke.js` | 测试必需 | 检查首方静态资源体积、本地静态请求并发，以及大厅连接和多房间创建/加入/离开后的 WebSocket/房间清理；这是有界烟测，不是生产容量压测。 |
+| `scripts/release-audit.js` | 测试必需 | 检查版本与锁文件同步、必需发布脚本、systemd/Nginx 部署模板、`.gitignore` 和 Git 跟踪文件卫生。 |
 
 ## 11. 测试与验收报告
 
@@ -637,6 +638,7 @@
 - `scripts/gobang-acceptance.js` — 五子棋完整对局验收与复现数据生成脚本。
 - `scripts/chromium-runtime-smoke.js` — Chromium 模块、视口、隐私和输入收束烟测。
 - `scripts/performance-smoke.js` — 静态资源预算、并发请求和 WebSocket 房间/连接清理烟测。
+- `scripts/release-audit.js` — 版本、锁文件、部署模板和发布文件卫生审计。
 - `server/games/acquire/engine.js` — 并购的服务端权威规则引擎。
 - `server/games/acquire/index.js` — 并购的大厅 metadata/create 适配层。
 - `server/games/aeroplane/engine.js` — 飞行棋的服务端权威规则引擎。

@@ -5,8 +5,9 @@
  *
  * The script starts an in-process HTTP/WebSocket server, launches a temporary
  * headless Firefox WebDriver BiDi session, imports every client module, then
- * runs two-tab public/private room and reconnect smoke tests, then renders the
- * shared visual fixture at the supported desktop/mobile sizes. It intentionally
+ * runs two-tab public/private room, transport-drop reconnect and lifecycle
+ * smoke tests, then renders the shared visual fixture at the supported
+ * desktop/mobile sizes. It intentionally
  * does not replace real-player acceptance; it catches failed imports, uncaught
  * browser exceptions and the most important viewport fit regressions before a
  * release.
@@ -131,7 +132,7 @@ async function waitForCondition(bidi, context, expression, label, timeout = 1500
     throw new Error(`${label} 在 ${timeout}ms 内未完成`);
 }
 
-async function runLobbyLifecycle(bidi, hostContext, httpPort) {
+async function runLobbyLifecycle(bidi, hostContext, httpPort, wss) {
     const click = selector => evaluate(bidi, hostContext, `document.querySelector(${JSON.stringify(selector)})?.click(); true`);
     await waitForCondition(
         bidi,
@@ -238,6 +239,31 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort) {
         const occupiedBoard = `document.querySelectorAll('#gameMount .gobang-cell.is-occupied').length >= 1`;
         await waitForCondition(bidi, hostContext, occupiedBoard, '房主核心落子');
         await waitForCondition(bidi, guestContext, occupiedBoard, '成员收到核心落子');
+
+        // Terminate the newest socket in this room to model a real transport
+        // drop. The guest tab is created after the host, so its socket is the
+        // newest room client; the browser must reconnect with its session token
+        // and the room must pause until that same seat returns.
+        const roomClients = [...(wss?.clients || [])].filter(client => client.roomId === roomId && client.readyState === WebSocket.OPEN);
+        if (roomClients.length !== 2) throw new Error(`断线重连前应有 2 个房间连接，实际 ${roomClients.length}`);
+        roomClients.at(-1).terminate();
+        await waitForCondition(
+            bidi,
+            hostContext,
+            `document.querySelector('#roomConnectionState')?.hidden === false && document.querySelector('#roomConnectionState')?.textContent.includes('暂停')`,
+            '网络断线后房间暂停',
+            10000,
+        );
+        await waitForCondition(
+            bidi,
+            guestContext,
+            `${gameVisible} && document.querySelector('#roomPageIdentity')?.textContent.endsWith(${JSON.stringify(guestPlayerId)}) && document.querySelector('#roomConnectionState')?.hidden === true`,
+            '网络断线后成员自动重连恢复',
+            20000,
+        );
+        await waitForCondition(bidi, hostContext, `document.querySelector('#roomConnectionState')?.hidden === true`, '网络断线后房间恢复', 20000);
+        console.log(`transport reconnect: PASS (${guestPlayerId})`);
+
         await bidi.command('browsingContext.navigate', { context: guestContext, url: `http://127.0.0.1:${httpPort}/` });
         await waitForCondition(
             bidi,
@@ -471,7 +497,7 @@ async function readFixture(bidi, context) {
 async function run() {
     const app = require(path.join(root, 'app'));
     const server = http.createServer(app);
-    app.startWebSocketServer(server);
+    const wss = app.startWebSocketServer(server);
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');
     const httpPort = server.address().port;
@@ -509,7 +535,7 @@ async function run() {
         imports.filter(item => !item.ok).forEach(item => failures.push(`module ${item.path}: ${item.error}`));
         console.log(`browser imports: ${imports.filter(item => item.ok).length}/${imports.length}`);
 
-        const lifecycle = await runLobbyLifecycle(bidi, context, httpPort);
+        const lifecycle = await runLobbyLifecycle(bidi, context, httpPort, wss);
         console.log(`lobby lifecycle: PASS (${lifecycle.roomId})`);
 
         await runPrivacyAndInputChecks(bidi, context, httpPort);

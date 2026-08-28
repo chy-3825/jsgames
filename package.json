@@ -9,7 +9,8 @@
     "test:browser": "node scripts/browser-runtime-smoke.js",
     "test:browser:chromium": "node scripts/chromium-runtime-smoke.js",
     "test:performance": "node scripts/performance-smoke.js",
-    "test:audit": "npm audit --omit=dev --audit-level=high"
+    "test:audit": "npm audit --omit=dev --audit-level=high",
+    "test:release": "node scripts/release-audit.js"
   },
   "dependencies": {
     "debug": "~2.6.9",

@@ -78,7 +78,7 @@ npm run test:audit
 npm run test:syntax
 ```
 
-运行浏览器模块、公开/私密房间、双标签对局恢复、离场资源释放、隐藏信息和键盘/触屏输入烟测（需要 Firefox，2026-08-28 为 28 个模块导入通过、双标签生命周期通过、隐私输入检查通过、96/96 个视口通过）：
+运行浏览器模块、公开/私密房间、双标签对局恢复、传输断线自动重连、离场资源释放、隐藏信息和键盘/触屏输入烟测（需要 Firefox，2026-08-28 为 28 个模块导入通过、双标签生命周期通过、传输重连通过、隐私输入检查通过、96/96 个视口通过）：
 
 ```bash
 npm run test:browser
@@ -96,11 +96,17 @@ CHROMIUM_BIN=/path/to/chromium npm run test:browser:chromium
 npm run test:performance
 ```
 
+检查版本号、锁文件、部署模板和仓库发布卫生：
+
+```bash
+npm run test:release
+```
+
 完整记录见 [`TEST_REPORTS/phase4-runtime.md`](./TEST_REPORTS/phase4-runtime.md)。
 
 发布前按 [`RELEASE_CHECKLIST.md`](./RELEASE_CHECKLIST.md) 执行版本、门禁、人工签字和回滚准备。
 
-仓库的 `.github/workflows/verify.yml` 会在推送或合并请求时执行 Node 20/22 语法、依赖安全、性能/清理和回归门禁，并执行 Firefox 浏览器烟测。
+仓库的 `.github/workflows/verify.yml` 会在推送或合并请求时执行 Node 20/22 语法、依赖安全、性能/清理、发布元数据审计和回归门禁，并执行 Firefox 浏览器烟测。
 
 大厅会为当前浏览器标签页保存短期会话令牌。网络短暂断开后，页面会在 30 秒宽限期内自动恢复原玩家、房间和游戏视角；复制窗口不会抢占已在线窗口，而是保留新的玩家身份。也可以使用 `/?room=000001` 邀请链接或大厅里的 6 位房间号输入框直达房间。主动点击“离开房间”会结束该玩家在本局的席位。
 

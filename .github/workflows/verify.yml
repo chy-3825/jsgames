@@ -31,6 +31,8 @@ jobs:
         run: npm run test:audit
       - name: Performance and cleanup smoke
         run: npm run test:performance
+      - name: Release metadata and deployment audit
+        run: npm run test:release
       - name: Automated regression
         run: npm test
 
