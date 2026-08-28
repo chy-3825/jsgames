@@ -1,8 +1,8 @@
 # jsgames 文件目录与用途
 
-> 盘点日期：2026-08-24  
+> 盘点日期：2026-08-28
 > 盘点范围：`/home/chy/桌面/jsgames`，不包含可由 `npm install` 重新生成的 `node_modules/`，也不包含 `.git/`。  
-> 当前共有 385 个项目文件。
+> 当前共有 606 个项目文件；另保留 1 份被 Git 忽略、正在使用的 `tmp/junqi-v5-final-prompts.md`。
 
 ## 1. 状态说明
 
@@ -40,7 +40,8 @@
 | `public/index.html` | 运行必需 | 正式大厅 HTML；包含玩家名、游戏目录、房间、聊天和游戏挂载容器。 |
 | `public/script.js` | 运行必需 | 大厅浏览器逻辑；建立 WebSocket、恢复会话、管理房间、展示创建前规则与设置，并动态加载各游戏客户端和封面/组件图。 |
 | `public/game-details.js` | 运行必需 | 28 款游戏的玩家向规则摘要，供“规则说明 → 房间设置”双页创建浮窗使用。 |
-| `public/assets/covers/*.webp` | 运行必需 | 28 款游戏的原创横版封面，供大厅卡片与创建房间规则浮窗使用。 |
+| `public/assets/covers/*.webp` | 运行必需 | 与注册表一一对应的 28 张现行高清横版封面，供创建房间规则浮窗使用。 |
+| `public/assets/covers/thumbs/*.webp` | 运行必需 | 与高清封面同名的 28 张大厅缩略图。 |
 | `public/style.css` | 运行必需 | 正式大厅、等待房间、游戏卡片、双页创建浮窗和响应式布局的全局样式。 |
 
 ## 4. 通用服务端
@@ -219,13 +220,13 @@
 
 ## 12. BGG 资源总说明
 
-当前大厅封面已切换到 `public/assets/covers/` 的 28 张本地横版原创图。以下 `cover.*` 文件作为历史版本与美术参考保留；`detail.*`、组件照和少量正式牌面仍按各游戏客户端的现有逻辑使用。
+当前大厅只加载 `public/assets/covers/` 下与注册表同名的 28 张高清封面和 28 张缩略图。BGG 目录只保留现行客户端直接加载的素材，以及仍需随项目保存的来源记录；15 张不参与运行的原始合集、示例和纯参考图已移到桌面归档。
 
 `public/assets/bgg/SOURCES.md` 是全部 BGG 图片的来源、图片 ID、版本和用途总表。一般命名规则：
 
 - `cover.*`：旧版盒面/封面参考，不再是大厅默认封面。
 - `detail.*`：规则弹窗、组件参考或组件视觉来源。
-- `reference-*`：美术设计参考，不一定由正式界面加载。
+- `reference-*`：仍需随项目保存的美术设计参考；不再需要的参考图放在桌面归档。
 - 裁切单图：供正式牌面、地形或角色直接加载。
 
 ### 12.1 按游戏逐文件说明
@@ -233,14 +234,13 @@
 - `public/assets/bgg/acquire/cover.jpg`：并购当前 60 周年版大厅封面。
 - `public/assets/bgg/avalon/cover.jpg`：阿瓦隆大厅封面；`detail.jpg`：身份牌和任务组件参考。
 - `public/assets/bgg/camelup/cover.jpg`：狂野骆驼大厅封面；`detail.jpg`：赛道和下注组件参考。
-- `public/assets/bgg/citadels/cover.jpg`：富饶之城大厅封面；`detail.jpg`：角色牌组件参考；`reference-color-icons.jpg`：城区颜色图标参考；`reference-role-front-back.jpg`：角色正反面和卡背参考。
+- `public/assets/bgg/citadels/cover.jpg`：富饶之城来源封面；`detail.jpg`：角色牌组件参考；`reference-role-front-back.jpg`：角色正反面和卡背参考。
 - `public/assets/bgg/decrypto/cover.jpg`：谍报风云大厅封面；`detail.png`：密码板和组件参考。
 - `public/assets/bgg/lasvegas/cover.jpg`：拉斯维加斯大厅封面；`detail.jpg`：赌场、骰子和钞票参考。
 - `public/assets/bgg/magicalathlete/cover.png`：胡闹运动会大厅封面；`detail.png`：运动员牌和赛道组件参考。
 - `public/assets/bgg/manila/cover.jpg`：马尼拉大厅封面；`detail.jpg`：货船和港口组件参考。
 - `public/assets/bgg/monopoly/cover.jpg`：环城大富翁大厅封面；游戏内使用原创香港棋盘分层素材。
 - `public/assets/bgg/scout/cover.png`：马戏星探大厅封面；`detail.jpg`：双数字牌和筹码参考。
-- `public/assets/bgg/witchtown/reference-components.jpg`：Salem 1692 审判牌、身份牌和组件参考。
 
 #### 政变
 
@@ -248,7 +248,6 @@
 - `modern-duke.jpg`、`modern-assassin.jpg`、`modern-captain.jpg`、`modern-ambassador.jpg`、`modern-contessa.jpg`：当前正式五种角色牌面。
 - `modern-back.jpg`：当前正式卡背。
 - `modern-roles.jpg`：现代版角色牌合照和大厅组件参考。
-- `detail.png`：现代组件详情参考。
 
 #### 情书
 
@@ -276,20 +275,18 @@
 
 - `public/assets/bgg/modernart/cover.png`：大厅封面。
 - `detail.jpg`：作品与拍卖组件参考。
-- `reference-artist-aimo-taleva.jpg`、`reference-artist-bruno-maximus.jpg`、`reference-artist-hannu-leimu.jpg`、`reference-artist-jari-jarnstrom.jpg`、`reference-artist-sari-tanni.jpg`：五位版本艺术家的风格参考图；当前作品卡由 HTML/CSS 重绘。
+- 当前作品卡由 HTML/CSS 重绘；五张不参与运行的艺术家风格参考图已归档。
 
 #### 大富翁纸牌
 
 - `public/assets/bgg/monopolydeal/cover.jpg`：大厅封面。
 - `detail.jpg`：规则弹窗中的组件参考。
 - `card-back.jpg`：正式前端使用的卡背。
-- `cards.jpg`、`action-cards.jpg`、`money-cards.jpg`：地产、行动、现金的原始牌面合集。
-- `property-card.jpg`、`action-card.jpg`、`money-card.jpg`：从合集裁出的三类示例牌视觉。
+- 地产、行动和现金牌面由 HTML/CSS 绘制；六张不参与运行的原始合集与示例牌已归档。
 
 #### 璀璨宝石
 
 - `public/assets/bgg/splendor/original-cover.jpg`：当前大厅使用的原版盒面。
-- `illustrations.jpg`：八张发展牌插画的原始合集。
 - `art-1.jpg` 至 `art-8.jpg`：正式发展卡按等级分配使用的八张插画。
 - `detail.jpg`：贵族和组件参考。
 
@@ -313,41 +310,28 @@
 | `hong-kong-board-frame.png` | 运行必需 | 正式棋盘外圈、格子文字和透明中央框。 |
 | `hong-kong-board-center.png` | 运行必需 | 默认“维港纪念”中央场景。 |
 | `hong-kong-board-center-neon.png` | 运行必需 | 可选“霓虹雨夜”中央场景。 |
-| `tokens/tram.png` | 运行必需 | 双层电车玩家棋子。 |
-| `tokens/ferry.png` | 运行必需 | 渡轮玩家棋子。 |
-| `tokens/junk.png` | 运行必需 | 帆船玩家棋子。 |
-| `tokens/taxi.png` | 运行必需 | 的士玩家棋子。 |
-| `tokens/lantern.png` | 运行必需 | 灯笼玩家棋子。 |
-| `tokens/bauhinia.png` | 运行必需 | 洋紫荆玩家棋子。 |
-| `tokens/cable-car.png` | 运行必需 | 缆车玩家棋子。 |
-| `tokens/dim-sum.png` | 运行必需 | 点心笼玩家棋子。 |
+| `tokens/2d-{tram,ferry,junk,taxi,lantern,bauhinia,cable-car,dim-sum}.png` | 运行必需 | 2D 棋盘使用的八枚玩家棋子。 |
+| `tokens/3d-{tram,ferry,junk,taxi,lantern,bauhinia,cable-car,dim-sum}.png` | 运行必需 | 3D 棋盘使用的八枚玩家棋子。 |
 
-上述未写完整前缀的文件均位于 `public/assets/monopoly/`。
+上述未写完整前缀的文件均位于 `public/assets/monopoly/`；旧的无前缀棋子和两张生成图集已归档。
 
 ## 15. 狼人杀网易角色图
 
 | 文件 | 状态 | 用途 |
 | --- | --- | --- |
 | `public/assets/werewolf-netease/README.md` | 开发资料 | 角色图来源、下载日期和授权风险说明。 |
-| `public/assets/werewolf-netease/characters.js` | 开发资料 | 45 张角色图的中文名、文件名和阵营索引；当前狼人杀客户端自身也维护核心角色映射。 |
+| `characters/langr.png` | 运行必需 | 狼人立绘。 |
+| `characters/yyj.png` | 运行必需 | 预言家立绘。 |
+| `characters/nw.png` | 运行必需 | 女巫立绘。 |
+| `characters/lr.png` | 运行必需 | 猎人立绘。 |
+| `characters/sw.png` | 运行必需 | 守卫立绘。 |
+| `characters/pm.png` | 运行必需 | 平民立绘。 |
 
-`public/assets/werewolf-netease/characters/` 下每个 PNG 是一名角色的立绘：
+当前九/十二人基础流程只加载以上六种角色图；39 张未启用扩展角色图和旧索引已归档。公开或商业发布前仍需再次确认网易图片授权。
 
-- `mjsn.png` 魔镜少女；`jxyl.png` 觉醒隐狼；`jxlw.png` 觉醒狼王；`lgbj.png` 流光伯爵；`sssn.png` 蚀日侍女。
-- `bzxz.png` 白昼学者；`jyds.png` 寂夜导师；`zhouhu.png` 咒狐；`bear.png` 熊；`zh.png` 子狐。
-- `ht.png` 河豚；`cat.png` 白猫；`ljmnv.png` 炼金魔女；`lyzz.png` 狼鸦之爪；`cbzn.png` 纯白之女。
-- `langwu.png` 狼巫；`fslf.png` 蚀时狼妃；`dlwz.png` 定序王子；`qjsr.png` 奇迹商人；`alz.png` 孤独少女。
-- `emzy.png` 噩梦之影；`yyj.png` 预言家；`nw.png` 女巫；`mss.png` 魔术师；`smr.png` 摄梦人。
-- `lr.png` 猎人；`bc.png` 愚者；`yt.png` 羊驼；`sw.png` 守卫；`qs.png` 骑士。
-- `langr.png` 狼人；`lmr.png` 狼美人；`yl.png` 隐狼；`lw.png` 狼王；`blw.png` 白狼王。
-- `qbt.png` 丘比特；`dz.png` 千面人；`jz.png` 警长；`pm.png` 平民；`wy.png` 乌鸦。
-- `sxg.png` 石像鬼；`shoumr.png` 守墓人；`elqs.png` 恶夜骑士；`xyst.png` 赤月使徒；`liemr.png` 猎魔人。
+## 16. 核心路径索引
 
-当前九/十二人基础流程会直接加载其中对应的核心角色图；其余立绘为未来角色扩展资料。公开或商业发布前需要再次确认网易图片授权。
-
-## 16. 完整路径索引（逐文件）
-
-下面列出盘点范围内的每一个文件；用于快速搜索和确认没有遗漏。详细背景以前述章节为准。
+下面逐项列出需要单独说明的入口、测试和美术资源；成套封面、重复结构的游戏模块等使用前文通配规则，不再逐个展开。详细背景以前述章节为准。
 
 - `.gitignore` — 排除依赖、日志、环境变量、构建产物和编辑器缓存。
 - `.vscode/launch.json` — VS Code 的服务端和浏览器调试配置。
@@ -410,10 +394,8 @@
 - `public/assets/bgg/camelup/detail.jpg` — 狂野骆驼的 BGG 组件、牌面或实物参考图。
 - `public/assets/bgg/citadels/cover.jpg` — 富饶之城的大厅盒面/封面素材。
 - `public/assets/bgg/citadels/detail.jpg` — 富饶之城的 BGG 组件、牌面或实物参考图。
-- `public/assets/bgg/citadels/reference-color-icons.jpg` — 富饶之城的版本美术参考图。
 - `public/assets/bgg/citadels/reference-role-front-back.jpg` — 富饶之城的版本美术参考图。
 - `public/assets/bgg/coup/cover.jpg` — 政变的大厅盒面/封面素材。
-- `public/assets/bgg/coup/detail.png` — 政变的 BGG 组件、牌面或实物参考图。
 - `public/assets/bgg/coup/modern-ambassador.jpg` — 政变的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/coup/modern-assassin.jpg` — 政变的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/coup/modern-back.jpg` — 政变的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
@@ -467,21 +449,10 @@
 - `public/assets/bgg/manila/detail.jpg` — 马尼拉的 BGG 组件、牌面或实物参考图。
 - `public/assets/bgg/modernart/cover.png` — 现代艺术的大厅盒面/封面素材。
 - `public/assets/bgg/modernart/detail.jpg` — 现代艺术的 BGG 组件、牌面或实物参考图。
-- `public/assets/bgg/modernart/reference-artist-aimo-taleva.jpg` — 现代艺术的版本美术参考图。
-- `public/assets/bgg/modernart/reference-artist-bruno-maximus.jpg` — 现代艺术的版本美术参考图。
-- `public/assets/bgg/modernart/reference-artist-hannu-leimu.jpg` — 现代艺术的版本美术参考图。
-- `public/assets/bgg/modernart/reference-artist-jari-jarnstrom.jpg` — 现代艺术的版本美术参考图。
-- `public/assets/bgg/modernart/reference-artist-sari-tanni.jpg` — 现代艺术的版本美术参考图。
 - `public/assets/bgg/monopoly/cover.jpg` — 环城大富翁的大厅盒面/封面素材。
-- `public/assets/bgg/monopolydeal/action-card.jpg` — 大富翁纸牌的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
-- `public/assets/bgg/monopolydeal/action-cards.jpg` — 大富翁纸牌的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/monopolydeal/card-back.jpg` — 大富翁纸牌的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
-- `public/assets/bgg/monopolydeal/cards.jpg` — 大富翁纸牌的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/monopolydeal/cover.jpg` — 大富翁纸牌的大厅盒面/封面素材。
 - `public/assets/bgg/monopolydeal/detail.jpg` — 大富翁纸牌的 BGG 组件、牌面或实物参考图。
-- `public/assets/bgg/monopolydeal/money-card.jpg` — 大富翁纸牌的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
-- `public/assets/bgg/monopolydeal/money-cards.jpg` — 大富翁纸牌的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
-- `public/assets/bgg/monopolydeal/property-card.jpg` — 大富翁纸牌的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/scout/cover.png` — 马戏星探的大厅盒面/封面素材。
 - `public/assets/bgg/scout/detail.jpg` — 马戏星探的 BGG 组件、牌面或实物参考图。
 - `public/assets/bgg/splendor/art-1.jpg` — 璀璨宝石的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
@@ -493,71 +464,37 @@
 - `public/assets/bgg/splendor/art-7.jpg` — 璀璨宝石的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/splendor/art-8.jpg` — 璀璨宝石的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/splendor/detail.jpg` — 璀璨宝石的 BGG 组件、牌面或实物参考图。
-- `public/assets/bgg/splendor/illustrations.jpg` — 璀璨宝石的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/splendor/original-cover.jpg` — 璀璨宝石的大厅盒面/封面素材。
 - `public/assets/bgg/takefive/cover.jpg` — 牛头王的大厅盒面/封面素材。
-- `public/assets/bgg/witchtown/reference-components.jpg` — 猎巫镇的版本美术参考图。
 - `public/assets/games/magicalathlete/athlete-sprites-alpha.png` — 胡闹运动会正式使用的透明 36 人精灵图。
 - `public/assets/games/witchtown/townhall-sprites-alpha.png` — 猎巫镇正式使用的透明地点精灵图。
 - `public/assets/monopoly/README.md` — 香港主题棋盘分层、换肤和棋子素材说明。
 - `public/assets/monopoly/hong-kong-board-center-neon.png` — 环城大富翁香港棋盘的运行图层、皮肤或可再加工源文件；具体见第 14 节。
 - `public/assets/monopoly/hong-kong-board-center.png` — 环城大富翁香港棋盘的运行图层、皮肤或可再加工源文件；具体见第 14 节。
 - `public/assets/monopoly/hong-kong-board-frame.png` — 环城大富翁香港棋盘的运行图层、皮肤或可再加工源文件；具体见第 14 节。
-- `public/assets/monopoly/tokens/bauhinia.png` — 环城大富翁的洋紫荆玩家棋子。
-- `public/assets/monopoly/tokens/cable-car.png` — 环城大富翁的缆车玩家棋子。
-- `public/assets/monopoly/tokens/dim-sum.png` — 环城大富翁的点心笼玩家棋子。
-- `public/assets/monopoly/tokens/ferry.png` — 环城大富翁的渡轮玩家棋子。
-- `public/assets/monopoly/tokens/junk.png` — 环城大富翁的帆船玩家棋子。
-- `public/assets/monopoly/tokens/lantern.png` — 环城大富翁的灯笼玩家棋子。
-- `public/assets/monopoly/tokens/taxi.png` — 环城大富翁的的士玩家棋子。
-- `public/assets/monopoly/tokens/tram.png` — 环城大富翁的电车玩家棋子。
+- `public/assets/monopoly/tokens/2d-bauhinia.png` — 环城大富翁 2D 洋紫荆棋子。
+- `public/assets/monopoly/tokens/2d-cable-car.png` — 环城大富翁 2D 缆车棋子。
+- `public/assets/monopoly/tokens/2d-dim-sum.png` — 环城大富翁 2D 点心笼棋子。
+- `public/assets/monopoly/tokens/2d-ferry.png` — 环城大富翁 2D 渡轮棋子。
+- `public/assets/monopoly/tokens/2d-junk.png` — 环城大富翁 2D 帆船棋子。
+- `public/assets/monopoly/tokens/2d-lantern.png` — 环城大富翁 2D 灯笼棋子。
+- `public/assets/monopoly/tokens/2d-taxi.png` — 环城大富翁 2D 的士棋子。
+- `public/assets/monopoly/tokens/2d-tram.png` — 环城大富翁 2D 电车棋子。
+- `public/assets/monopoly/tokens/3d-bauhinia.png` — 环城大富翁 3D 洋紫荆棋子。
+- `public/assets/monopoly/tokens/3d-cable-car.png` — 环城大富翁 3D 缆车棋子。
+- `public/assets/monopoly/tokens/3d-dim-sum.png` — 环城大富翁 3D 点心笼棋子。
+- `public/assets/monopoly/tokens/3d-ferry.png` — 环城大富翁 3D 渡轮棋子。
+- `public/assets/monopoly/tokens/3d-junk.png` — 环城大富翁 3D 帆船棋子。
+- `public/assets/monopoly/tokens/3d-lantern.png` — 环城大富翁 3D 灯笼棋子。
+- `public/assets/monopoly/tokens/3d-taxi.png` — 环城大富翁 3D 的士棋子。
+- `public/assets/monopoly/tokens/3d-tram.png` — 环城大富翁 3D 电车棋子。
 - `public/assets/werewolf-netease/README.md` — 网易狼人杀角色图来源与授权风险说明。
-- `public/assets/werewolf-netease/characters.js` — 45 张网易狼人杀角色图的名称、文件和阵营索引。
-- `public/assets/werewolf-netease/characters/alz.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/bc.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/bear.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/blw.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/bzxz.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/cat.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/cbzn.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/dlwz.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/dz.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/elqs.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/emzy.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/fslf.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/ht.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/jxlw.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/jxyl.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/jyds.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/jz.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
 - `public/assets/werewolf-netease/characters/langr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/langwu.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/lgbj.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/liemr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/ljmnv.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/lmr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
 - `public/assets/werewolf-netease/characters/lr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/lw.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/lyzz.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/mjsn.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/mss.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
 - `public/assets/werewolf-netease/characters/nw.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
 - `public/assets/werewolf-netease/characters/pm.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/qbt.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/qjsr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/qs.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/shoumr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/smr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/sssn.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
 - `public/assets/werewolf-netease/characters/sw.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/sxg.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/wy.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/xyst.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/yl.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/yt.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
 - `public/assets/werewolf-netease/characters/yyj.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/zh.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/zhouhu.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
 - `public/fonts/HanWangLiSu-NOTICE.txt` — 汉王中隶书字体说明。
 - `public/fonts/HanWangLiSuMedium.ttf` — 中国象棋棋子使用的隶书字体。
 - `public/fonts/ZhiMangXing-OFL.txt` — Zhi Mang Xing 字体 OFL 许可。

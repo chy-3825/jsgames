@@ -1322,9 +1322,10 @@ test('Lobby enters a themed pregame room, preloads one game, and exposes mobile 
     const coverBlock = lobby.match(/const GAME_COVERS = \{([\s\S]*?)\n\};/)?.[1] || '';
     const coverNames = [...coverBlock.matchAll(/:\s*'\/assets\/covers\/([^']+)'/g)].map(match => match[1]);
     assert.equal(coverNames.length, 28);
+    const highResolutionNames = new Set(fs.readdirSync('public/assets/covers').filter(file => file.endsWith('.webp')));
     const thumbnailNames = new Set(fs.readdirSync('public/assets/covers/thumbs').filter(file => file.endsWith('.webp')));
-    assert.equal(coverNames.every(name => thumbnailNames.has(name)), true, '注册游戏都应有对应大厅缩略图');
-    for (const name of coverNames) assert.equal(thumbnailNames.has(name), true, `${name} 缺少大厅缩略图`);
+    assert.deepEqual([...highResolutionNames].sort(), [...coverNames].sort(), '高清封面目录只能保留注册表现行版本');
+    assert.deepEqual([...thumbnailNames].sort(), [...coverNames].sort(), '缩略图目录必须与高清封面一一对应');
 
     for (const file of fs.readdirSync('public/games', { withFileTypes: true })) {
         if (!file.isDirectory()) continue;

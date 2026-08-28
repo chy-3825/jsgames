@@ -2,9 +2,10 @@
 
 复核日期：2026-08-22
 
-本清单只覆盖本轮审计的 7 款卡牌游戏。资源分为两类：
+本清单只覆盖本轮审计的 7 款卡牌游戏。资源分为三类：
 
 - **本地参考**：已经被现行界面直接使用，或仍服务于当前版本的美术设计。
+- **已归档参考**：运行时未使用，已移出部署仓库，但来源链接和用途继续保留。
 - **仅参考**：BGG 有清晰实物图，但未在本次检索中确认允许修改。只登记链接，不应裁切后直接作为线上成品牌面。
 
 即使 BGG 标记允许修改，公开发布前仍应再次核对上传者说明、原出版社美术权利和项目用途。BGG 图片页是素材来源记录，不等于出版社自动授权。
@@ -28,7 +29,7 @@
 
 - BGG 游戏页：https://boardgamegeek.com/boardgame/118/modern-art
 - 项目现有 `detail.jpg` 已与 BGG 图片 3833818 核对一致：https://boardgamegeek.com/image/3833818/modern-art
-- 本地五组画家样本：
+- 已归档的五组画家样本（桌面 `tmp/jsgames-unused-20260828/legacy-assets/bgg/modernart/`）：
   - `reference-artist-sari-tanni.jpg`：https://boardgamegeek.com/image/372270/modern-art
   - `reference-artist-bruno-maximus.jpg`：https://boardgamegeek.com/image/372268/modern-art
   - `reference-artist-aimo-taleva.jpg`：https://boardgamegeek.com/image/372269/modern-art
@@ -40,19 +41,19 @@
 ## 大富翁纸牌（Monopoly Deal）
 
 - BGG 游戏页：https://boardgamegeek.com/boardgame/40398/monopoly-deal-card-game
-- 项目现有行动牌合集与 BGG 图片 424924 核对一致：https://boardgamegeek.com/image/424924/monopoly-deal-card-game
+- 已归档的行动牌合集曾与 BGG 图片 424924 核对一致：https://boardgamegeek.com/image/424924/monopoly-deal-card-game
 - 地产牌参考：https://boardgamegeek.com/image/424917/monopoly-deal-card-game
 - 金钱牌参考：https://boardgamegeek.com/image/424915/monopoly-deal-card-game
 - 当前 2008 版正式牌背（项目已使用）：https://boardgamegeek.com/image/424925/monopoly-deal-card-game
 - 其他版本牌背参考：https://boardgamegeek.com/image/1003319/monopoly-deal-card-game
 - 可修改筛选中的双语版布局参考：https://boardgamegeek.com/image/692790/monopoly-deal-card-game
-- 结论：项目并不缺分类参考，真正缺的是逐卡视觉映射。现有一张行动图、一张地产图和一张金钱图不应覆盖所有同类牌；正式改造时应为收租、拒绝、强制交易、拆迁、生日、房屋和酒店分别设计原创图形。
+- 结论：归档中的行动、地产和金钱示例图不应覆盖所有同类牌；运行时目前使用正式牌背并由 HTML/CSS 绘制卡面。后续应为收租、拒绝、强制交易、拆迁、生日、房屋和酒店分别设计原创图形。
 
 ## 富饶之城（Citadels）
 
 - BGG 游戏页：https://boardgamegeek.com/boardgame/478/citadels
 - 本地使用：`public/assets/bgg/citadels/reference-role-front-back.jpg`，角色正反面参考；其中蓝金国王牌背用于秘密选角牌堆：https://boardgamegeek.com/image/451100/citadels
-- 本地候选：`public/assets/bgg/citadels/reference-color-icons.jpg`，建筑颜色/符号参考：https://boardgamegeek.com/image/1044275/citadels
+- 已归档候选：`reference-color-icons.jpg`，建筑颜色/符号参考：https://boardgamegeek.com/image/1044275/citadels
 - 绿色普通建筑合集（仅参考）：https://boardgamegeek.com/image/147402/citadels
 - 紫色特殊建筑合集（仅参考）：https://boardgamegeek.com/image/147403/citadels
 - 普通建筑正面与牌背（仅参考）：https://boardgamegeek.com/image/97071/citadels
@@ -69,7 +70,7 @@
 ## 猎巫镇（Salem 1692）
 
 - BGG 游戏页：https://boardgamegeek.com/boardgame/175549/salem-1692
-- 本地候选：`public/assets/bgg/witchtown/reference-components.jpg`，BGG 图片 3721695：https://boardgamegeek.com/image/3721695/salem-1692
+- 已归档候选：`reference-components.jpg`，BGG 图片 3721695：https://boardgamegeek.com/image/3721695/salem-1692
 - 15 张 Town Hall 人物牌（仅参考）：https://boardgamegeek.com/image/3730883/salem-1692
 - Salem 行动牌与 Tryal 审判牌（仅参考）：https://boardgamegeek.com/image/3730890/salem-1692
 - Tryal 牌正面（仅参考）：https://boardgamegeek.com/image/3730889/salem-1692

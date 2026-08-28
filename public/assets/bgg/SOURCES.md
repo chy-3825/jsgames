@@ -13,6 +13,10 @@
 除非授权文件另有约定，不要把这些图片用于项目外的再分发。需要替换或删除
 某张图片时，先更新本表和对应的前端引用。
 
+2026-08-28 体积整理将只用于早期研究或裁切的 15 张源图移至桌面
+`tmp/jsgames-unused-20260828/legacy-assets/bgg/`。来源 ID 和链接继续保留在本文档中；
+运行时使用的成品牌面、卡背、组件图和地形裁图仍全部保留在本目录。
+
 | 游戏 | BGG 条目 | cover 图片 | 组件/裁切来源图片 | 说明 |
 |---|---|---:|---:|---|
 | 情书 | [129622](https://boardgamegeek.com/boardgame/129622/love-letter) | 1401448 | 1455645 | The cards |
@@ -39,10 +43,10 @@
 完整角色牌框和文字，不对原始图片做内容重绘；后续如果更换授权素材，应同步替换
 这些文件并更新前端的角色映射。
 
-补充的正式牌面参考：大富翁纸牌使用 BGG 图片 424917（地产牌）、424924（行动牌）和
-424915（现金牌），原始合集保存为 `monopolydeal/cards.jpg`、`action-cards.jpg`、
-`money-cards.jpg`，并裁出单张牌面 `property-card.jpg`、`action-card.jpg`、
-`money-card.jpg` 供手牌直接显示。牛头王大厅封面使用 BGG 图片
+补充的正式牌面参考：大富翁纸牌曾使用 BGG 图片 424917（地产牌）、424924（行动牌）和
+424915（现金牌）核对分类视觉；六张合集/示例裁图现已归档，运行时只保留并加载
+`card-back.jpg` 和规则组件图 `detail.jpg`，具体卡面、金额和动作由 HTML/CSS 与实时数据绘制。
+牛头王大厅封面使用 BGG 图片
 [8632998](https://boardgamegeek.com/image/8632998/take-5) 的 2023 英文版盒面，并以
 `contain` 完整显示；BGG 图片 [57767](https://boardgamegeek.com/image/57767/take-5)
 当前数字牌、规则样例和卡背均由 HTML/CSS 按实时数据绘制，统一采用 2023 封面的
@@ -60,9 +64,9 @@ card）中的白灰色现代卡背。大厅继续使用 BGG 图片
 现行目录移除，避免两个版本再次混用。
 
 璀璨宝石大厅使用 BGG 图片 [1904079](https://boardgamegeek.com/image/1904079/splendor)
-（Splendor, Space Cowboys, 2014，出版方提供）的原版盒面。`splendor/illustrations.jpg`
-来自 BGG 图片 1783782（Various illustrations used for the cards），并裁为 `art-1.jpg`
-至 `art-8.jpg` 八张纯插画。发展卡按等级使用互不重复的插画池，点数、永久折扣和费用始终
+（Splendor, Space Cowboys, 2014，出版方提供）的原版盒面。BGG 图片 1783782
+（Various illustrations used for the cards）的原始合集已归档，现行目录保留由其裁出的
+`art-1.jpg` 至 `art-8.jpg` 八张纯插画。发展卡按等级使用互不重复的插画池，点数、永久折扣和费用始终
 来自当前牌库数据，因此不会把实物照片里的示例数值误当成实际游戏数据。贵族肖像从同代的
 `detail.jpg` 实物组件图中按人物区域显示。十周年盒面和未接入的组件布局图不保留在现行目录。
 
