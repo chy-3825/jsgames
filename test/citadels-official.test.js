@@ -101,10 +101,34 @@ test('Citadels classic deck and session start are deterministic and guarded', ()
     assert.notDeepEqual(first, other);
     const session = Citadels.create('session', players(['a', 'b']), { random: seededRandom(8) });
     assert.equal(session.start().success, true);
+    const opening = session.engine.presentation.events[0];
+    assert.equal(opening.kind, 'roleDraftStart');
+    assert.equal(opening.crownHolderId, session.engine.crownHolderId);
+    assert.deepEqual(opening.faceUpRoles.map(role => role.id), session.engine.faceUpRoles);
     assert.equal(session.start().success, false);
     const tooMany = new CitadelsEngine('eight', players(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']));
     assert.equal(tooMany.start().success, false);
     assert.equal(tooMany.players.length, 8, '引擎不应静默截断玩家，必须明确拒绝超出基础版人数');
+});
+
+test('Citadels publishes unanswered role calls and awards the crown after the King is revealed', () => {
+    const game = new CitadelsEngine('summoning-ceremony', players(['a', 'b', 'c', 'd']), seededRandom(33));
+    assert.equal(game.start().success, true);
+    game.phase = 'character_turn';
+    game.presentation = null;
+    game.selectedRoles = { thief: 'b' };
+    game.currentRoleRank = 1;
+    game._advanceCharacter();
+    assert.deepEqual(game.presentation.events.map(event => event.kind), ['roleUnanswered', 'roleCall']);
+    assert.equal(game.presentation.events[0].role.id, 'assassin');
+    assert.equal(game.presentation.events[1].role.id, 'thief');
+
+    game.presentation = null;
+    game.selectedRoles = { king: 'a' };
+    game.currentRoleRank = 4;
+    game._advanceCharacter();
+    assert.deepEqual(game.presentation.events.map(event => event.kind), ['roleCall', 'crownAcquired']);
+    assert.equal(game.crownHolderId, 'a');
 });
 
 test('Citadels hides private hands and roles while exposing only revealed roles', () => {

@@ -36,6 +36,8 @@
 .art-header-actions { display: flex; justify-content: flex-end; gap: 7px; }
 .art-header-actions button, .art-close { min-height: 34px; padding: 0 13px; border: 1px solid #625e61; color: #e7dfd4; background: #252427; font-size: 9px; }
 .art-header-actions button:hover { border-color: #e05245; color: #fff; }
+.art-error-banner { width: min(1390px, 100%); margin: -6px auto 12px; padding: 9px 13px; border: 1px solid rgba(226,83,69,.65); border-left: 4px solid #e25345; color: #ffe3dc; background: rgba(103,30,31,.95); font-size: 10px; }
+.art-error-banner.is-hidden { display: none; }
 
 .art-layout { display: grid; grid-template-columns: minmax(0, 1fr) 284px; gap: 14px; align-items: start; }
 .art-gallery, .art-ledger { display: grid; min-width: 0; align-content: start; gap: 11px; }
@@ -396,6 +398,9 @@
 .art-sealed-results span { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid #4e4a50; background: #1d1c1f; font-size: 7px; }
 .art-sealed-results em { color: #e5bd59; font-style: normal; font-weight: 900; }
 .art-card-back.art-event-back { width: 110px; height: 145px; margin: 0 auto; }
+.art-season-hands { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.art-season-hands > span { display: flex; min-width: 105px; justify-content: space-between; gap: 10px; padding: 7px 9px; border: 1px solid #4e4a50; background: #242326; font-size: 8px; }
+.art-season-hands em { color: #e5bd59; font-style: normal; font-weight: 900; }
 .art-season-ranking { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .art-season-ranking > span { display: grid; grid-template-columns: 28px 1fr; gap: 2px 7px; padding: 9px; border: 1px solid rgba(74,68,66,.18); border-top: 4px solid var(--artist); background: rgba(255,252,245,.7); }
 .art-season-ranking > span > i { grid-row: 1 / 3; display: grid; width: 27px; height: 27px; place-items: center; border-radius: 50%; color: #fff; background: var(--artist); font: 900 11px Georgia, serif; font-style: normal; }
@@ -496,6 +501,22 @@
     .art-event-card { width: 96px; }
     .art-event-card .art-frame { height: 112px; }
     .art-presentation-skip { right: 8px; bottom: 8px; min-height: 31px; }
+}
+
+@media (max-width: 1050px) and (orientation: landscape) and (max-height: 520px) {
+    body { overflow: hidden; }
+    .art-app { height: calc(100svh - var(--game-shell-offset, 48px)); min-height: 0; padding: 5px 8px; overflow: hidden; }
+    .art-header { grid-template-columns: minmax(160px, 1fr) auto auto; min-height: 39px; gap: 8px; margin-bottom: 5px; }
+    .art-mark { display: none; }.art-brand h1 { font-size: 18px; }.art-round { grid-column: auto; grid-row: auto; padding: 6px 9px; }.art-header-actions button { min-height: 30px; }
+    .art-error-banner { position: absolute; z-index: 20; top: 48px; right: 8px; width: min(520px, calc(100% - 16px)); margin: 0; }
+    .art-layout { grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 45px); gap: 0; }
+    .art-gallery { grid-template-columns: minmax(0, 1fr) minmax(300px, .72fr); grid-template-areas: "status status" "artists artists" "showroom hand"; grid-template-rows: auto auto minmax(0, 1fr); height: 100%; gap: 5px; overflow: hidden; }
+    .art-status { grid-area: status; min-height: 40px; padding: 5px 9px 5px 13px; }.art-status h2 { font-size: 14px; }.art-status p { padding: 4px 6px; }
+    .art-artist-board { grid-area: artists; }.art-artist-board > header { display: none; }.art-artist { grid-template-columns: 22px 1fr auto; padding: 4px 6px; }.art-artist > i { width: 21px; height: 21px; font-size: 9px; }.art-artist > span { display: none; }
+    .art-showroom { grid-area: showroom; grid-template-columns: minmax(0, 1fr); min-height: 0; overflow: hidden; }.art-auction { min-height: 0; height: 100%; grid-template-columns: minmax(180px, .75fr) minmax(210px, 1fr); padding: 6px; overflow: auto; }.art-stage-pair { min-height: 170px; }.art-stage-work > .art-frame, .art-stage-pair > .art-frame, .art-stage-work > .art-card-back.is-stage-back { width: min(130px, 70%); height: 160px; }.art-stage-copy { padding: 8px; }.art-stage-copy h3 { font-size: 17px; }.art-market { display: none; }
+    .art-hand { grid-area: hand; min-height: 0; overflow: auto; }.art-hand > header { padding: 5px 8px; }.art-hand > [data-role="hand"] { padding: 6px; }.art-piece { flex-basis: 102px; grid-template-rows: 91px auto; }.art-piece > .art-frame { height: 91px; }.art-hand-decision { padding: 6px 8px; }
+    .art-history, .art-ledger { display: none; }
+    .art-overlay > article { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

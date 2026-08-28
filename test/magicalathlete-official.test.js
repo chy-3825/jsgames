@@ -191,6 +191,28 @@ test('Magical Athlete publishes face-down selection progress without leaking sel
     assert.deepEqual(publicEntry, { playerId: picker.id, selectedCount: 2, ready: true });
 });
 
+test('Magical Athlete announces the tournament, every draft round and the private lineup phase', () => {
+    const game = new MagicalAthleteEngine('ma-opening-presentation', players(['a', 'b', 'c', 'd']), () => 0.42);
+    assert.equal(game.start().success, true);
+    const opening = game.getPublicState().presentation;
+    assert.equal(opening.resolved, true);
+    assert.deepEqual(opening.events.map(event => event.kind), ['tournamentStarted', 'draftRoundStarted']);
+    assert.equal(opening.events[0].races, 4);
+    assert.equal(opening.events[1].pool.length, 8);
+    assert.equal(opening.events[1].startPlayerId, game.draftQueue[0]);
+
+    let guard = 0;
+    while (game.phase === 'draft' && guard++ < 500) {
+        const player = game.players[game.currentTurnIndex];
+        assert.equal(game.handleAction(player.id, { kind: 'chooseAthlete', athleteId: game.draftPool[0].id }).success, true);
+    }
+    assert.equal(game.phase, 'race_select');
+    const selection = game.getPublicState().presentation.events.at(-1);
+    assert.equal(selection.kind, 'raceSelectionStarted');
+    assert.equal(selection.match, 1);
+    assert.equal(selection.required, 1);
+});
+
 test('Magical Athlete pauses M.O.U.T.H. elimination until the affected player acknowledges it', () => {
     const game = new MagicalAthleteEngine('ma-mouth-ack', players(['a', 'b', 'c', 'd']), () => 0.42);
     draftAndSelect(game);
@@ -232,7 +254,7 @@ test('Magical Athlete publishes ordered movement and rich race settlement events
     game.racers[1].finishOrder = 2; game.racers[1].position = 30;
     game._finishRace();
     const events = game.getPublicState().presentation.events;
-    assert.deepEqual(events.map(event => event.kind), ['raceSettlement', 'nextRaceStarted']);
+    assert.deepEqual(events.map(event => event.kind), ['raceSettlement', 'raceSelectionStarted']);
     assert.ok(events[0].playerResults.every(result => Number.isFinite(result.scoreBefore) && Number.isFinite(result.scoreAfter)));
 });
 

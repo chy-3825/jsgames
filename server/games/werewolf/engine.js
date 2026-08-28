@@ -30,7 +30,7 @@ class WerewolfEngine {
         this.playerCount = ROLE_SETS[requestedPlayerCount] ? requestedPlayerCount : players.length > 9 ? 12 : 9;
         this.roomId = roomId; this.realPlayers = players.slice(0, this.playerCount).map((player, index) => ({ id: player.id, name: player.name, seat: index + 1, online: true, left: false }));
         this.hostId = hostId || this.realPlayers[0]?.id; this.random = random; this.now = now; this.winCondition = options.winCondition || 'parity'; this.status = 'waiting'; this.phase = 'waiting'; this.day = 0;
-        this.seats = []; this.activeSeat = {}; this.roleConfirmedSeats = {}; this.dayReadySeats = {}; this.dayVoteRound = 1; this.dayTieTargets = []; this.night = {}; this.votes = {}; this.deathResolution = null; this.pendingHunter = null; this.pendingBadge = null; this.lastWordsFlow = null; this.lastWordsHistory = []; this.speechFlow = null; this.flowPausedAt = null; this.announcement = null; this.announcementHistory = []; this.voteHistory = []; this.lastVoteResult = null; this.sheriff = this._newSheriff(Boolean(options.sheriffEnabled)); this.log = []; this.winner = null; this.witchItems = { antidote: true, poison: true };
+        this.seats = []; this.activeSeat = {}; this.roleConfirmedSeats = {}; this.dayReadySeats = {}; this.dayVoteRound = 1; this.dayTieTargets = []; this.night = {}; this.votes = {}; this.deathResolution = null; this.pendingHunter = null; this.pendingBadge = null; this.lastWordsFlow = null; this.lastWordsHistory = []; this.speechFlow = null; this.flowPausedAt = null; this.announcement = null; this.announcementHistory = []; this.voteHistory = []; this.lastVoteResult = null; this.publicEvent = null; this.publicEvents = []; this.eventSequence = 0; this.sheriff = this._newSheriff(Boolean(options.sheriffEnabled)); this.log = []; this.winner = null; this.witchItems = { antidote: true, poison: true };
     }
 
     start() {
@@ -38,7 +38,7 @@ class WerewolfEngine {
         const roles = shuffle(ROLE_SETS[this.playerCount], this.random);
         this.seats = roles.map((role, index) => ({ number: index + 1, role, alive: true, controllerId: this.realPlayers[index % this.realPlayers.length].id }));
         this.realPlayers.forEach(player => { this.activeSeat[player.id] = player.seat; });
-        this.status = 'playing'; this.phase = 'roleReveal'; this.day = 0; this.roleConfirmedSeats = {}; this.dayReadySeats = {}; this.dayVoteRound = 1; this.dayTieTargets = []; this.night = {}; this.votes = {}; this.deathResolution = null; this.pendingHunter = null; this.pendingBadge = null; this.lastWordsFlow = null; this.lastWordsHistory = []; this.speechFlow = null; this.flowPausedAt = null; this.announcement = null; this.announcementHistory = []; this.voteHistory = []; this.lastVoteResult = null; this.sheriff = this._newSheriff(this.sheriff.enabled); this.winner = null;
+        this.status = 'playing'; this.phase = 'roleReveal'; this.day = 0; this.roleConfirmedSeats = {}; this.dayReadySeats = {}; this.dayVoteRound = 1; this.dayTieTargets = []; this.night = {}; this.votes = {}; this.deathResolution = null; this.pendingHunter = null; this.pendingBadge = null; this.lastWordsFlow = null; this.lastWordsHistory = []; this.speechFlow = null; this.flowPausedAt = null; this.announcement = null; this.announcementHistory = []; this.voteHistory = []; this.lastVoteResult = null; this.publicEvent = null; this.publicEvents = []; this.eventSequence = 0; this.sheriff = this._newSheriff(this.sheriff.enabled); this.winner = null;
         this.log = [`${this.playerCount} 人局已经就绪，请各自查看并记住身份`];
         return this._success('游戏开始，请先查看你的身份');
     }
@@ -169,6 +169,7 @@ class WerewolfEngine {
             this.sheriff.signup = {};
             this._setSheriffDeadline(SHERIFF_RESPONSE_SECONDS);
             this.log.push('首日上警报名开始');
+            this._publishEvent('sheriffSignup', '警长竞选', '上警报名开始', []);
             return;
         }
         this._beginDaySpeech();
@@ -195,6 +196,7 @@ class WerewolfEngine {
             this.sheriff.campaignIndex = 0;
             this._startSheriffTurn('campaign');
             this.log.push(`上警玩家：${this.sheriff.candidates.join('、')} 号`);
+            this._publishEvent('sheriffCandidates', '警长竞选', `上警玩家：${this.sheriff.candidates.join('、')} 号`, []);
         }
         return this._privateSuccess(real.id, '所有人都已作出选择，警长竞选继续');
     }
@@ -263,6 +265,8 @@ class WerewolfEngine {
         const top = high ? candidates.filter(number => counts[number] === high) : [];
         const result = { round: this.sheriff.round, ballots: Object.entries(this.sheriff.votes).map(([voterSeat, targetSeat]) => ({ voterSeat: Number(voterSeat), targetSeat })).sort((a, b) => a.voterSeat - b.voterSeat), counts: { ...counts }, topSeats: top.slice() };
         this.sheriff.results.push(result);
+        const countText = candidates.map(number => `${number} 号 ${counts[number] || 0} 票`).join(' · ');
+        this._publishEvent('sheriffVote', this.sheriff.round === 2 ? '警长 PK 投票' : '警长投票', countText || '本轮无人得票', []);
         if (top.length === 1) return this._finishSheriffElection(top[0], `${top[0]} 号当选警长`);
         if (this.sheriff.round === 1 && top.length > 1) {
             this.phase = 'sheriffRunoffSpeech';
@@ -272,6 +276,7 @@ class WerewolfEngine {
             this.sheriff.votes = {};
             this._startSheriffTurn('runoffSpeech');
             this.log.push(`警长首轮平票，${top.join('、')} 号进入 PK`);
+            this._publishEvent('sheriffRunoff', '警长投票平票', `${top.join('、')} 号进入 PK`, []);
             return;
         }
         this._finishSheriffElection(null, this.sheriff.round === 2 ? '警长 PK 投票仍平票，本局无警长' : '警长投票全部弃票，本局无警长');
@@ -297,6 +302,7 @@ class WerewolfEngine {
         this.sheriff.deadlineAt = null;
         this.sheriff.turn = null;
         this.log.push(message);
+        this._publishEvent('sheriffElection', '警长竞选结果', message, holderSeat ? [holderSeat] : []);
         this._beginDaySpeech();
     }
 
@@ -365,6 +371,7 @@ class WerewolfEngine {
         if (flow.turn) return this._fail(real.id, '本轮发言已经开始');
         const startedAt = Number(this.now());
         flow.turn = { seat: seat.number, startedAt, deadlineAt: startedAt + flow.durationSeconds * 1000 };
+        this._publishEvent(phase === 'day' ? 'speechStart' : 'lastWordsStart', phase === 'day' ? '白天发言' : '遗言时间', `${seat.number} 号${phase === 'day' ? '开始发言' : '开始遗言'}`, []);
         return this._success(`${seat.number} 号${phase === 'day' ? '发言' : '遗言'}开始`);
     }
 
@@ -637,10 +644,12 @@ class WerewolfEngine {
         const killedByWolf = this.night.wolf && !this.night.saved && this.night.guard !== this.night.wolf ? this.night.wolf : null;
         if (killedByWolf) deaths.push(killedByWolf);
         if (this.night.poison && !deaths.includes(this.night.poison)) deaths.push(this.night.poison);
+        deaths.sort((left, right) => left - right);
         deaths.forEach(number => { const seat = this._seat(number); if (seat) seat.alive = false; });
         const text = deaths.length ? `天亮，${deaths.join('、')} 号倒牌` : '天亮，昨夜平安夜';
         this.announcement = { day: this.day, kind: 'night', deaths: deaths.slice(), peaceful: deaths.length === 0, text, createdAt: Number(this.now()) };
         this.announcementHistory.push({ ...this.announcement, deaths: this.announcement.deaths.slice() });
+        this._publishEvent(deaths.length ? 'nightDeaths' : 'peacefulNight', deaths.length ? '天亮了' : '平安夜', deaths.length ? `昨夜的死者是 ${deaths.join('、')} 号` : '昨夜无人出局', deaths);
         this.log.push(text);
         this._beginDeathResolution(deaths, 'day', this.night.poison ? [this.night.poison] : []);
     }
@@ -652,9 +661,19 @@ class WerewolfEngine {
             if (this.status === 'playing') this._continueAfterDeathResolution(after);
             return;
         }
-        this.deathResolution = { seats, settledSeats: {}, after, poisonedSeats: poisonedSeats.map(Number) };
-        const hunter = seats.map(number => this._seat(number)).find(seat => seat?.role === 'hunter' && !this.deathResolution.poisonedSeats.includes(seat.number));
+        seats.forEach(number => this._publishEvent('elimination', '玩家出局', `${number} 号已出局`, [number]));
+        const normalizedPoisoned = poisonedSeats.map(Number);
+        const hunter = seats.map(number => this._seat(number)).find(seat => seat?.role === 'hunter' && !normalizedPoisoned.includes(seat.number));
+        // A legal hunter shot is part of the same elimination chain and must
+        // resolve before checking the final boundary. Other decisive deaths
+        // finish immediately without waiting for a private acknowledgement.
+        if (!hunter) {
+            this._checkWinner();
+            if (this.status === 'ended') return;
+        }
+        this.deathResolution = { seats, settledSeats: {}, after, poisonedSeats: normalizedPoisoned };
         this.pendingHunter = hunter ? { seat: hunter.number } : null;
+        if (hunter) this._publishEvent('hunterReveal', '身份揭晓', `${hunter.number} 号的身份是猎人`, [hunter.number]);
         this.pendingBadge = this.sheriff.holderSeat && seats.includes(this.sheriff.holderSeat) ? { seat: this.sheriff.holderSeat } : null;
         this._autoTearBadgeIfNecessary();
         this.phase = 'deathResolution';
@@ -684,6 +703,8 @@ class WerewolfEngine {
             target.alive = false;
             message = `猎人开枪带走 ${target.number} 号`;
             this.log.push(`猎人开枪，${target.number} 号一同出局`);
+            this._publishEvent('hunterShot', '枪声响起', `猎人开枪带走了 ${target.number} 号`, [target.number]);
+            this._publishEvent('elimination', '玩家出局', `${target.number} 号已出局`, [target.number]);
             this.deathResolution.seats.push(target.number);
             if (this.sheriff.holderSeat === target.number) this.pendingBadge = { seat: target.number };
             if (this.deathResolution.after === 'day' && this.announcement) {
@@ -695,7 +716,10 @@ class WerewolfEngine {
                     recorded.text = this.announcement.text;
                 }
             }
-        } else if (action.choice !== 'pass') return this._fail(real.id, '请选择开枪或放弃');
+        } else if (action.choice === 'pass') {
+            this.log.push(`${hunter.number} 号猎人选择不开枪`);
+            this._publishEvent('hunterPass', '猎人抉择', `${hunter.number} 号猎人选择不开枪`, []);
+        } else return this._fail(real.id, '请选择开枪或放弃');
         this.pendingHunter = null;
         this._autoTearBadgeIfNecessary();
         if (this.pendingBadge?.seat !== hunter.number) this.deathResolution.settledSeats[hunter.number] = true;
@@ -730,6 +754,7 @@ class WerewolfEngine {
         this.pendingBadge = null;
         if (this.deathResolution) this.deathResolution.settledSeats[deadSheriff] = true;
         this.log.push('场上已无可接过警徽的玩家，警徽就此撕毁');
+        this._publishEvent('badgeTorn', '警徽流失', '警徽已经撕毁', []);
     }
 
     _sheriffBadgeAction(real, action) {
@@ -743,10 +768,12 @@ class WerewolfEngine {
             this.sheriff.holderSeat = target.number;
             this.sheriff.status = 'elected';
             this.log.push(`${sheriffSeat.number} 号将警徽移交给 ${target.number} 号`);
+            this._publishEvent('badgeTransfer', '警徽移交', `${sheriffSeat.number} 号将警徽移交给 ${target.number} 号`, [target.number]);
         } else if (action.choice === 'tear') {
             this.sheriff.holderSeat = null;
             this.sheriff.status = 'torn';
             this.log.push(`${sheriffSeat.number} 号选择撕毁警徽`);
+            this._publishEvent('badgeTorn', '警徽流失', `${sheriffSeat.number} 号选择撕毁警徽`, []);
         } else return this._fail(real.id, '请选择移交或撕毁警徽');
         this.deathResolution.settledSeats[sheriffSeat.number] = true;
         this.pendingBadge = null;
@@ -756,11 +783,11 @@ class WerewolfEngine {
 
     _vote(real, targetSeat) {
         if (this.phase !== 'vote') return this._fail(real.id, '现在不是放逐投票时间');
-        const voter = this._active(real.id); const target = this._seat(targetSeat);
-        if (!voter?.alive || !this._controlsSeat(real.id, voter) || !target?.alive) return this._fail(real.id, '只有仍在场的玩家可以投票，且只能选择仍在场的目标');
-        if (this.dayVoteRound === 2 && !this.dayTieTargets.includes(target.number)) return this._fail(real.id, '第二轮只能投给首轮平票玩家');
-        if (this.votes[voter.number]) return this._fail(real.id, '你在本轮已经投过票了');
-        this.votes[voter.number] = target.number;
+        const voter = this._active(real.id); const abstain = targetSeat === null || targetSeat === undefined; const target = abstain ? null : this._seat(targetSeat);
+        if (!voter?.alive || !this._controlsSeat(real.id, voter) || (!abstain && !target?.alive)) return this._fail(real.id, '只有仍在场的玩家可以投票，且只能选择仍在场的目标');
+        if (!abstain && this.dayVoteRound === 2 && !this.dayTieTargets.includes(target.number)) return this._fail(real.id, '第二轮只能投给首轮平票玩家');
+        if (Object.prototype.hasOwnProperty.call(this.votes, voter.number)) return this._fail(real.id, '你在本轮已经投过票了');
+        this.votes[voter.number] = abstain ? null : target.number;
         const aliveCount = this.seats.filter(seat => seat.alive).length;
         const submittedCount = Object.keys(this.votes).length;
         if (submittedCount === aliveCount) {
@@ -771,17 +798,17 @@ class WerewolfEngine {
     }
 
     _resolveVote() {
-        const weightedCounts = {}; Object.entries(this.votes).forEach(([voter, number]) => { weightedCounts[number] = (weightedCounts[number] || 0) + (Number(voter) === this.sheriff.holderSeat ? 3 : 2); });
+        const weightedCounts = {}; Object.entries(this.votes).forEach(([voter, number]) => { if (number !== null) weightedCounts[number] = (weightedCounts[number] || 0) + (Number(voter) === this.sheriff.holderSeat ? 3 : 2); });
         const high = Math.max(0, ...Object.values(weightedCounts)); const top = Object.keys(weightedCounts).filter(number => weightedCounts[number] === high).map(Number);
         const counts = Object.fromEntries(Object.entries(weightedCounts).map(([number, units]) => [number, units / 2]));
         const round = this.dayVoteRound;
-        const message = high && top.length === 1 ? `${top[0]} 号被放逐` : round === 1 ? `首轮平票（${top.join('、')}号），进入第二轮投票` : '第二轮仍平票，本轮无人出局';
+        const message = high && top.length === 1 ? `${top[0]} 号被放逐` : round === 1 ? top.length ? `首轮平票（${top.join('、')}号），进入第二轮投票` : '首轮全部弃权，进入第二轮投票' : top.length ? '第二轮仍平票，本轮无人出局' : '第二轮全部弃权，本轮无人出局';
         if (high && top.length === 1) this._seat(top[0]).alive = false;
         this.log.push(message);
         const result = {
             day: this.day,
             round,
-            ballots: Object.entries(this.votes).map(([voterSeat, targetSeat]) => ({ voterSeat: Number(voterSeat), targetSeat: Number(targetSeat), weight: Number(voterSeat) === this.sheriff.holderSeat ? 1.5 : 1 })).sort((left, right) => left.voterSeat - right.voterSeat),
+            ballots: Object.entries(this.votes).map(([voterSeat, targetSeat]) => ({ voterSeat: Number(voterSeat), targetSeat: targetSeat === null ? null : Number(targetSeat), weight: Number(voterSeat) === this.sheriff.holderSeat ? 1.5 : 1 })).sort((left, right) => left.voterSeat - right.voterSeat),
             counts: Object.fromEntries(Object.entries(counts).map(([seat, count]) => [Number(seat), count])),
             topSeats: top.slice(),
             exiledSeat: high && top.length === 1 ? top[0] : null,
@@ -791,6 +818,7 @@ class WerewolfEngine {
             resolvedAt: Number(this.now()),
         };
         this.lastVoteResult = result;
+        this._publishEvent(high && top.length === 1 ? 'exile' : 'voteTie', '投票结束', high && top.length === 1 ? `${top[0]} 号玩家被放逐` : message, high && top.length === 1 ? [top[0]] : []);
         this.voteHistory.push(result);
         this.votes = {};
         if (!(high && top.length === 1) && round === 1) {
@@ -815,10 +843,28 @@ class WerewolfEngine {
         const good = this.seats.filter(seat => seat.alive && seat.role !== 'werewolf').length;
         const villagers = this.seats.filter(seat => seat.alive && seat.role === 'villager').length;
         const gods = this.seats.filter(seat => seat.alive && !['werewolf', 'villager'].includes(seat.role)).length;
-        if (!wolves) this._finish('good', '好人阵营获胜');
-        else if (this.winCondition === 'edge' ? (!villagers || !gods) : wolves >= good) this._finish('wolf', '狼人阵营获胜');
+        if (!wolves) this._finish('good', '好人阵营获胜', 'allWolvesEliminated', '所有狼人已被消灭，小镇恢复了和平与宁静。');
+        else if (this.winCondition === 'edge' ? (!villagers || !gods) : wolves >= good) {
+            const reason = this.winCondition === 'edge' ? (!villagers ? 'allVillagersEliminated' : 'allGodsEliminated') : 'parity';
+            const text = reason === 'allVillagersEliminated' ? '最后的平民已经倒下，狼人占领了小镇。' : reason === 'allGodsEliminated' ? '守护小镇的神职已经覆灭，黑夜再无人能够阻挡。' : '狼群已经掌控局势，小镇彻底坠入长夜。';
+            this._finish('wolf', '狼人阵营获胜', reason, text);
+        }
     }
-    _finish(faction, message) { this.status = 'ended'; this.phase = 'ended'; this.winner = { faction, name: message }; this.log.push(message); }
+    _publishEvent(kind, title, text, eliminatedSeats = []) {
+        this.publicEvent = { id: ++this.eventSequence, kind, title, text, eliminatedSeats: eliminatedSeats.slice(), day: this.day, createdAt: Number(this.now()) };
+        this.publicEvents.push({ ...this.publicEvent, eliminatedSeats: this.publicEvent.eliminatedSeats.slice() });
+        if (this.publicEvents.length > 30) this.publicEvents.shift();
+    }
+    _finish(faction, message, reason, text) {
+        const triggerEvent = this.publicEvents.slice().reverse().find(event => !['elimination', 'hunterReveal'].includes(event.kind)) || this.publicEvent;
+        const groups = {};
+        this.seats.forEach(seat => { const name = ROLE_INFO[seat.role]?.name || seat.role; (groups[name] ||= []).push(seat.number); });
+        const identityText = Object.entries(groups).map(([name, seats]) => `${name}：${seats.join('、')} 号`).join('；');
+        this._publishEvent('identityReveal', '全员身份揭晓', identityText, []);
+        this.status = 'ended'; this.phase = 'ended';
+        this.winner = { faction, name: message, reason, text, trigger: triggerEvent?.kind || null, eliminatedSeats: triggerEvent?.eliminatedSeats?.slice() || [] };
+        this.log.push(`${message}：${text}`);
+    }
     _seat(number) { return this.seats.find(seat => seat.number === Number(number)); }
     _active(playerId) { return this._seat(this.activeSeat[playerId]); }
     _controlsSeat(playerId, seat) { return Boolean(seat && (this.realPlayers.length === 1 || seat.controllerId === playerId)); }
@@ -954,7 +1000,7 @@ class WerewolfEngine {
             flowRules: { lastWordsSeconds: LAST_WORDS_SECONDS, speechSeconds: SPEECH_SECONDS, sheriffEnabled: this.sheriff.enabled, winCondition: this.winCondition },
             sheriff: this._publicSheriff(), voteCount: Object.keys(this.votes).length, dayVoteRound: this.dayVoteRound, dayTieTargets: this.dayTieTargets.slice(),
             lastVoteResult: this._copyVoteResult(this.lastVoteResult), voteHistory: this.voteHistory.map(result => this._copyVoteResult(result)),
-            actionLog: this.log.slice(-20), winner: this.winner };
+            actionLog: this.log.slice(-20), publicEvent: this.publicEvent ? { ...this.publicEvent, eliminatedSeats: this.publicEvent.eliminatedSeats.slice() } : null, publicEvents: this.publicEvents.map(event => ({ ...event, eliminatedSeats: event.eliminatedSeats.slice() })), winner: this.winner ? { ...this.winner, eliminatedSeats: this.winner.eliminatedSeats.slice() } : null };
     }
     getPlayerState(playerId) {
         const state = this.getPublicState(); const seat = this._active(playerId);
@@ -1000,7 +1046,7 @@ class WerewolfEngine {
         };
         state.nightConfirmation = pendingNightAction ? { stage: 'confirm', role: seat.role, targetSeat: pendingNightAction.targetSeat, choice: pendingNightAction.choice, canConfirm: true, canCancel: true }
             : awaitingSeerResult ? { stage: 'result', role: 'seer', targetSeat: this.night.seer, canConfirm: true, canCancel: false } : null;
-        const canVote = Boolean(this.phase === 'vote' && seat?.alive && this._controlsSeat(playerId, seat) && !this.votes[seat.number]);
+        const canVote = Boolean(this.phase === 'vote' && seat?.alive && this._controlsSeat(playerId, seat) && !Object.prototype.hasOwnProperty.call(this.votes, seat.number));
         state.canVote = canVote;
         state.legalTargetSeats = canVote ? this.seats.filter(target => target.alive && (this.dayVoteRound !== 2 || this.dayTieTargets.includes(target.number))).map(target => target.number) : !state.skillState.available ? [] : this.seats.filter(target => target.alive
             && (requiredRole !== 'werewolf' || target.role !== 'werewolf')

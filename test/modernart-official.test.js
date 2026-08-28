@@ -25,10 +25,19 @@ test('Modern Art enforces the official 3-5 player setup, 70-card deck and four-s
         assert.equal(game.deck.length, 70 - count * handSize);
         assert.deepEqual(game.artistValues, { matisse: 0, cassat: 0, yoshida: 0, bruegel: 0, clyfford: 0 });
         assert.deepEqual(game.getPublicState().roundCounts, { matisse: 0, cassat: 0, yoshida: 0, bruegel: 0, clyfford: 0 });
+        assert.equal(game.presentation.resolved, true);
+        assert.equal(game.presentation.events[0].kind, 'seasonStarted');
+        assert.equal(game.presentation.events[0].seasonOpening, true);
+        assert.equal(game.presentation.events[0].sellerId, game.players[game.currentSellerIndex].id);
+        assert.deepEqual(game.presentation.events[0].handCounts.map(player => player.count), Array(count).fill(handSize));
         assert.equal(session.start().success, false);
     }
     assert.equal(ModernArt.create('modernart-too-small', players(2)).start().success, false);
     assert.equal(ModernArt.create('modernart-too-large', players(6)).start().success, false);
+    const mystery = ModernArt.create('modernart-mystery-opening', players(3), null, { mysteryPlayer: true, random: random(19) });
+    assert.equal(mystery.start().success, true);
+    assert.equal(mystery.engine.presentation.events[0].mysteryEnabled, true);
+    assert.equal(Object.prototype.hasOwnProperty.call(mystery.engine.presentation.events[0], 'hands'), false);
 });
 
 test('Modern Art supports other players taking over a double auction and keeps cumulative artist values', () => {

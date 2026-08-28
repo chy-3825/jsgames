@@ -46,6 +46,20 @@ body.acquire-game-active {
     margin-inline: auto;
 }
 
+.acquire-error-banner {
+    width: min(1440px, 100%);
+    margin: -6px auto 14px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 105, 127, .58);
+    border-left: 4px solid var(--alert);
+    border-radius: 5px;
+    background: rgba(77, 18, 35, .94);
+    color: #ffdbe1;
+    font-size: 11px;
+}
+
+.acquire-error-banner.is-hidden { display: none; }
+
 .acquire-topbar {
     display: grid;
     grid-template-columns: minmax(220px, 1fr) auto auto;
@@ -2643,10 +2657,7 @@ body.acquire-game-active {
     color: #b8cdd7;
     pointer-events: auto;
 }
-.acquire-presentation-layer.is-merger .acquire-presentation-skip,
-.acquire-presentation-layer.is-merger-bonuses .acquire-presentation-skip,
-.acquire-presentation-layer.is-end-declared .acquire-presentation-skip,
-.acquire-presentation-layer.is-final-settlement .acquire-presentation-skip { display: block; }
+.acquire-presentation-layer.is-active .acquire-presentation-skip { display: block; }
 
 /* High-impact decision confirmation -------------------------------------- */
 
@@ -2714,6 +2725,50 @@ body.acquire-game-active {
     .acquire-presentation-skip { right: 12px; bottom: 12px; }
     .acquire-decision-dialog { padding: 20px 14px; }
     .acquire-decision-actions button { min-width: 0; flex: 1; }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    body.acquire-game-active { overflow: hidden; }
+    .acquire-app {
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        padding: 6px 8px;
+        overflow: auto;
+    }
+    .acquire-topbar {
+        grid-template-columns: minmax(160px, 1fr) auto auto;
+        min-height: 42px;
+        gap: 8px;
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+    }
+    .acquire-brand-mark, .acquire-brand p { display: none; }
+    .acquire-brand h1 { margin-top: 1px; font-size: 18px; }
+    .acquire-top-stats { grid-column: auto; grid-row: auto; display: flex; width: auto; }
+    .acquire-stat { min-width: 72px; padding: 4px 7px; }
+    .acquire-turn-stat { min-width: 104px; grid-column: auto; border-top: 0; }
+    .acquire-header-actions { grid-column: auto; grid-row: auto; }
+    .acquire-shell {
+        grid-template-areas: "command stage" "rail stage";
+        grid-template-columns: minmax(245px, 34%) minmax(500px, 1fr);
+        gap: 8px;
+    }
+    .acquire-command { max-height: 180px; padding: 9px; overflow: auto; }
+    .acquire-command-head h2 { font-size: 15px; }
+    .acquire-command-head p { margin-top: 3px; line-height: 1.35; }
+    .acquire-command-body { margin-top: 7px; }
+    .acquire-stage-heading { display: none; }
+    .acquire-board-surface { padding: 4px; }
+    .acquire-hand-surface { margin-top: 6px; padding: 7px; }
+    .acquire-hand-surface .acquire-section-heading { display: none; }
+    .acquire-hand { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+    .acquire-tile { min-height: 72px; padding: 5px; }
+    .acquire-tile strong { font-size: 18px; }
+    .acquire-tile small { display: none; }
+    .acquire-rail { grid-template-columns: minmax(0, 1fr); max-height: 210px; overflow: auto; }
+    .acquire-rail-panel:not(.acquire-portfolio-panel) { display: none; }
+    .acquire-portfolio-panel { padding: 8px; }
+    .acquire-rules-dialog { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); overflow: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

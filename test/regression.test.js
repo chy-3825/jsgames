@@ -49,9 +49,14 @@ const MagicalAthleteEngine = require('../server/games/magicalathlete/engine');
 const Werewolf = require('../server/games/werewolf');
 const WerewolfEngine = require('../server/games/werewolf/engine');
 const registry = require('../server/games/registry');
-const { GAME_GROUPS } = require('../server/games/groups');
+const { GROUP_DEFINITIONS, GAME_GROUPS } = require('../server/games/groups');
 
 const players = ids => ids.map(id => ({ id, name: id }));
+const readFrontendSource = game => ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+    .filter(file => fs.existsSync(`public/games/${game}/${file}`))
+    .map(file => fs.readFileSync(`public/games/${game}/${file}`, 'utf8')).join('\n');
+const readWitchtownClient = () => ['client.js', 'constants.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+    .map(file => fs.readFileSync(`public/games/witchtown/${file}`, 'utf8')).join('\n');
 const confirmAvalonRoles = game => {
     if (game.phase !== 'roleReveal') return;
     for (const player of game.players) assert.equal(game.handleAction(player.id, { kind: 'confirmRole' }).success, true);
@@ -139,16 +144,17 @@ test('lobby registry exposes every in-scope game and new presentation target', (
 });
 
 test('BGG assets are used according to each game component type', () => {
-    const acquireClient = fs.readFileSync('public/games/acquire/client.js', 'utf8');
-    const citadelsClient = fs.readFileSync('public/games/citadels/client.js', 'utf8');
-    const lasVegasClient = fs.readFileSync('public/games/lasvegas/client.js', 'utf8');
-    const avalonClient = fs.readFileSync('public/games/avalon/client.js', 'utf8');
-    const scoutClient = fs.readFileSync('public/games/scout/client.js', 'utf8');
-    const decryptoClient = fs.readFileSync('public/games/decrypto/client.js', 'utf8');
-    const manilaClient = fs.readFileSync('public/games/manila/client.js', 'utf8');
-    const modernArtClient = fs.readFileSync('public/games/modernart/client.js', 'utf8');
-    const camelUpClient = fs.readFileSync('public/games/camelup/client.js', 'utf8');
-    const magicalAthleteClient = fs.readFileSync('public/games/magicalathlete/client.js', 'utf8');
+    const readGameClient = readFrontendSource;
+    const acquireClient = readGameClient('acquire');
+    const citadelsClient = readGameClient('citadels');
+    const lasVegasClient = readGameClient('lasvegas');
+    const avalonClient = readGameClient('avalon');
+    const scoutClient = readGameClient('scout');
+    const decryptoClient = readGameClient('decrypto');
+    const manilaClient = readGameClient('manila');
+    const modernArtClient = readGameClient('modernart');
+    const camelUpClient = readGameClient('camelup');
+    const magicalAthleteClient = readGameClient('magicalathlete');
     assert.equal(fs.existsSync('public/assets/bgg/citadels/detail.jpg'), true);
     assert.equal(fs.existsSync('public/assets/bgg/lasvegas/detail.jpg'), true);
     assert.equal(fs.existsSync('public/assets/bgg/avalon/detail.jpg'), true);
@@ -170,13 +176,20 @@ test('BGG assets are used according to each game component type', () => {
     assert.match(modernArtClient, /modernart\/detail\.jpg/);
     assert.match(camelUpClient, /camelup\/detail\.jpg/);
     assert.match(magicalAthleteClient, /magicalathlete\/detail\.png/);
-    assert.match(citadelsClient, /role-art-\$\{state\.currentRoleRank\}/);
+    assert.match(citadelsClient, /role-art-\$\{meta\.rank\}/);
 });
 
 test('lobby registry classifies every registered game into one primary group', () => {
     const games = registry.listGames();
+    const lobbyClient = fs.readFileSync('public/script.js', 'utf8');
     assert.equal(games.length, 28, '服务器应注册 28 个联机项目');
-    assert.deepEqual(games.reduce((counts, game) => { counts[game.group] = (counts[game.group] || 0) + 1; return counts; }, {}), { 'social-assist': 4, board: 8, tabletop: 16 });
+    assert.deepEqual(Object.values(GROUP_DEFINITIONS).map(({ id, name, order }) => ({ id, name, order })), [
+        { id: 'social-assist', name: '社交推理与流程辅助', order: 1 },
+        { id: 'codebreaking', name: '解密类', order: 2 },
+        { id: 'board', name: '棋类与棋盘游戏', order: 3 },
+        { id: 'tabletop', name: '卡牌与策略桌游', order: 4 },
+    ]);
+    assert.deepEqual(games.reduce((counts, game) => { counts[game.group] = (counts[game.group] || 0) + 1; return counts; }, {}), { 'social-assist': 3, codebreaking: 2, board: 8, tabletop: 15 });
     for (const game of games) {
         assert.ok(game.groupName, `${game.type} 缺少分组名称`);
         assert.ok(game.groupOrder >= 1, `${game.type} 缺少分组排序`);
@@ -184,6 +197,9 @@ test('lobby registry classifies every registered game into one primary group', (
         assert.ok(['online', 'hybrid', 'host-assist', 'auto-assist', 'solo'].includes(game.playMode), `${game.type} 使用了未知游戏模式`);
     }
     assert.deepEqual(GAME_GROUPS.werewolf, { group: 'social-assist', playMode: 'auto-assist', sortOrder: 1 });
+    assert.deepEqual(GAME_GROUPS.decrypto, { group: 'codebreaking', playMode: 'online', sortOrder: 1 });
+    assert.deepEqual(GAME_GROUPS.guessnumber, { group: 'codebreaking', playMode: 'solo', sortOrder: 2 });
+    assert.match(lobbyClient, /codebreaking: \{ name: '解密类', description: '密码、线索与逻辑破译' \}/);
 });
 
 test('registry-backed games can start and expose player state', () => {
@@ -553,6 +569,19 @@ test('Werewolf retries a tied wolf attack once, then treats a second tie as no k
     assert.equal(game.phase, 'nightSeer');
 });
 
+test('Werewolf orders simultaneous night deaths by seat number', () => {
+    const game = new WerewolfEngine('werewolf-night-order', players(['host']), 'host', () => 0, () => 99);
+    game.start();
+    const ordinary = game.seats.filter(seat => seat.role !== 'hunter').map(seat => seat.number).sort((a, b) => a - b);
+    const low = ordinary[0];
+    const high = ordinary.at(-1);
+    game.day = 1;
+    game.night = { wolf: high, saved: false, guard: null, poison: low };
+    game._resolveNight();
+    assert.deepEqual(game.announcement.deaths, [low, high]);
+    assert.equal(game.announcement.text, `天亮，${low}、${high} 号倒牌`);
+});
+
 test('Werewolf hides wolf-vote messages and state from non-wolves and dead wolves', () => {
     const game = new WerewolfEngine('werewolf-wolf-privacy', players(['wolf-user', 'good-user']), 'wolf-user', () => 0);
     game.start();
@@ -654,7 +683,10 @@ test('Werewolf uses the same private death resolution for ordinary, hunter, and 
         { phase: ordinaryPublic.phase, phaseName: ordinaryPublic.phaseName, nextPhaseName: ordinaryPublic.nextPhaseName, phaseProgress: ordinaryPublic.phaseProgress, phaseInstruction: ordinaryPublic.phaseInstruction },
         '猎人与普通玩家出局的公开阶段信息必须一致',
     );
-    assert.doesNotMatch(JSON.stringify(hunterPublic), /猎人/);
+    assert.deepEqual(hunterPublic.publicEvents.slice(-2).map(event => ({ kind: event.kind, text: event.text })), [
+        { kind: 'elimination', text: `${hunter.number} 号已出局` },
+        { kind: 'hunterReveal', text: `${hunter.number} 号的身份是猎人` },
+    ]);
     assert.doesNotMatch(hunterVote.message, /猎人|技能/);
     const bystander = game.seats.find(seat => seat.number !== hunter.number);
     game.handleAction('host', { kind: 'switchSeat', seat: bystander.number });
@@ -666,6 +698,10 @@ test('Werewolf uses the same private death resolution for ordinary, hunter, and 
     assert.equal(game.getPlayerState('host').canConfirmDeathResolution, false);
     assert.equal(game.handleAction('host', { kind: 'hunterAction', choice: 'shoot', targetSeat: wolf.number }).success, true);
     assert.equal(wolf.alive, false);
+    assert.deepEqual(game.getPublicState().publicEvents.slice(-2).map(event => ({ kind: event.kind, text: event.text })), [
+        { kind: 'hunterShot', text: `猎人开枪带走了 ${wolf.number} 号` },
+        { kind: 'elimination', text: `${wolf.number} 号已出局` },
+    ]);
     assert.equal(game.phase, 'deathResolution');
     game.handleAction('host', { kind: 'switchSeat', seat: wolf.number });
     assert.equal(game.handleAction('host', { kind: 'confirmDeathResolution' }).success, true);
@@ -829,6 +865,20 @@ test('Werewolf wraps counterclockwise speech order and records a tied public bal
     assert.equal(game.getPublicState().voteHistory.length, 2);
 });
 
+test('Werewolf public ballot supports abstention without creating a phantom target', () => {
+    const game = new WerewolfEngine('werewolf-abstain', players(['host']), 'host', () => 0, Date.now, { playerCount: 12 });
+    game.start(); game.phase = 'vote'; game.day = 1; game.votes = {};
+    for (const seat of game.seats) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seat.number });
+        const targetSeat = [10, 11].includes(seat.number) ? null : seat.number === 1 || seat.number === 3 ? 4 : 9;
+        assert.equal(game.handleAction('host', { kind: 'vote', targetSeat }).success, true);
+    }
+    const result = game.getPublicState().lastVoteResult;
+    assert.deepEqual(result.ballots.filter(ballot => ballot.targetSeat === null).map(ballot => ballot.voterSeat), [10, 11]);
+    assert.equal(Object.prototype.hasOwnProperty.call(result.counts, 0), false);
+    assert.equal(result.ballots.length, 12);
+});
+
 test('Werewolf runs a private first-day sheriff election and applies the 1.5 vote weight', () => {
     const game = new WerewolfEngine('werewolf-sheriff-election', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: true });
     game.start();
@@ -974,6 +1024,34 @@ test('Werewolf session uses the nine-player edge win condition', () => {
     assert.equal(game.winner.faction, 'wolf');
 });
 
+test('Werewolf resolves a decisive edge exile immediately and publishes it to every player', () => {
+    const game = new WerewolfEngine('werewolf-edge-exile', players(['a', 'b']), 'a', () => 0, () => 1234, { winCondition: 'edge' });
+    game.start();
+    const wolves = game.seats.filter(seat => seat.role === 'werewolf');
+    const villager = game.seats.find(seat => seat.role === 'villager');
+    const god = game.seats.find(seat => !['werewolf', 'villager'].includes(seat.role));
+    game.seats.forEach(seat => { seat.alive = wolves.includes(seat) || seat === villager || seat === god; });
+    game.phase = 'vote';
+    game.day = 2;
+    game.votes = Object.fromEntries(game.seats.filter(seat => seat.alive).map(seat => [seat.number, villager.number]));
+
+    game._resolveVote();
+
+    assert.equal(game.status, 'ended');
+    assert.deepEqual(game.winner, {
+        faction: 'wolf', name: '狼人阵营获胜', reason: 'allVillagersEliminated', text: '最后的平民已经倒下，狼人占领了小镇。', trigger: 'exile', eliminatedSeats: [villager.number],
+    });
+    for (const playerId of ['a', 'b']) {
+        const events = game.getPlayerState(playerId).publicEvents.map(event => ({ kind: event.kind, text: event.text }));
+        assert.deepEqual(events.slice(0, 2), [
+            { kind: 'exile', text: `${villager.number} 号玩家被放逐` },
+            { kind: 'elimination', text: `${villager.number} 号已出局` },
+        ]);
+        assert.equal(events[2].kind, 'identityReveal');
+        assert.match(events[2].text, /狼人：/);
+    }
+});
+
 test('Werewolf pauses on a transient disconnect and resumes the same controller safely', () => {
     const game = new WerewolfEngine('werewolf-offline', players(['a', 'b']), 'a', () => 0);
     game.start();
@@ -1032,13 +1110,13 @@ test('Werewolf WebSocket lifecycle wires transient disconnect and resume hooks',
 });
 
 test('Werewolf client uses player-facing copy, matching role art, and disposes click listeners', () => {
-    const client = fs.readFileSync('public/games/werewolf/client.js', 'utf8');
+    const client = readFrontendSource('werewolf');
     const style = fs.readFileSync('public/games/werewolf/style.css', 'utf8');
     assert.match(client, /werewolf: \{ name: '狼人', image: 'langr\.png'/);
     assert.match(client, /hunter: \{ name: '猎人', image: 'lr\.png'/);
     assert.match(client, /guard: \{ name: '守卫', image: 'sw\.png'/);
-    assert.match(client, /new AbortController\(\)/);
-    assert.match(client, /controller\.abort\(\)/);
+    assert.match(client, /createClientScope\(/);
+    assert.match(client, /scope\.destroy\(\)/);
     assert.match(client, /天黑请闭眼/);
     assert.match(client, /天亮了/);
     assert.match(client, /maybePlayTransition/);
@@ -1046,13 +1124,20 @@ test('Werewolf client uses player-facing copy, matching role art, and disposes c
     assert.match(client, /transitionGlyphs/);
     assert.match(client, /showPersonalElimination/);
     assert.match(client, /您已出局/);
-    assert.match(client, /showTransition\('day', next\.announcement, newPersonalElimination \? showPersonalElimination : null\)/);
+    assert.match(client, /enqueueScene\(\{ kind: 'victory'/);
+    assert.match(client, /sceneQueue/);
+    assert.match(client, /event\.eliminatedSeats\?\.includes\(next\.activeSeat\)/);
+    assert.match(client, /event\.kind === 'elimination'[\s\S]*enqueueScene\(\{ kind: 'event', data: event \}\)/);
+    assert.match(client, /formatVoteBallots/);
+    assert.match(client, /data-ui="bulletins"/);
+    assert.match(client, /data-action="voteAbstain"/);
+    assert.doesNotMatch(client, /next\.status === 'ended'\) return/);
     assert.doesNotMatch(client, /ww-transition-card|skipTransition/);
     assert.match(client, /confirmAllRolesForTest/);
     assert.match(client, /pendingSeats\.forEach/);
     assert.match(client, /testRoleBySeat/);
-    assert.match(client, /state\.testMode \? '测试席位' : '玩家席位'/);
-    assert.match(client, /\$\('seatTools'\)\?\.classList\.toggle\('is-hidden', !state\.testMode\)/);
+    assert.match(client, /current\.testMode \? '测试席位' : '玩家席位'/);
+    assert.match(client, /\$\('seatTools'\)\?\.classList\.toggle\('is-hidden', !current\.testMode\)/);
     assert.match(client, /你的秘密界面/);
     assert.match(client, /游戏纪事/);
     assert.doesNotMatch(client, /玩家设备视角|选择可控制的座位|私密出局结算|系统记录|自动流程助手/);
@@ -1082,7 +1167,7 @@ test('Werewolf client uses player-facing copy, matching role art, and disposes c
     assert.match(client, /addEventListener\('pointercancel'/);
     assert.match(client, /addEventListener\('keyup'/);
     assert.match(client, /addEventListener\('blur'/);
-    assert.match(client, /document\.hidden/);
+    assert.match(client, /documentRef\.hidden/);
     assert.match(client, /event\.key !== ' ' && event\.key !== 'Enter'/);
     assert.match(client, /data-action="confirmRole"/);
     assert.match(client, /data-action="confirmDeadRole"/);
@@ -1097,7 +1182,7 @@ test('Werewolf client uses player-facing copy, matching role art, and disposes c
     assert.match(client, /phase === 'deathResolution'/);
     assert.doesNotMatch(client, /phase === 'hunter'/);
     assert.match(client, /选择袭击目标/);
-    assert.match(client, /state\.wolfVote/);
+    assert.match(client, /current\.wolfVote/);
     assert.match(client, /data-modal-target/);
     assert.match(client, /确定选择/);
     assert.doesNotMatch(client, /data-night-target/, '夜间技能不应继续直接铺开目标按钮');
@@ -1351,15 +1436,16 @@ test('The shared game shell owns navigation and mobile viewport behavior', () =>
 });
 
 test('Mobile blocker games default to usable boards and expose controlled Monopoly inspection', () => {
-    const junqiClient = fs.readFileSync('public/games/junqi/client.js', 'utf8');
+    const junqiClient = readFrontendSource('junqi');
     const junqiStyle = fs.readFileSync('public/games/junqi/style.css', 'utf8');
-    const xiangqiClient = fs.readFileSync('public/games/xiangqi/client.js', 'utf8');
+    const xiangqiClient = readFrontendSource('xiangqi');
     const xiangqiStyle = fs.readFileSync('public/games/xiangqi/style.css', 'utf8');
-    const chessClient = fs.readFileSync('public/games/chess/client.js', 'utf8');
+    const chessClient = readFrontendSource('chess');
     const chessStyle = fs.readFileSync('public/games/chess/chess3d.css', 'utf8');
     const chessBridge = fs.readFileSync('public/games/chess/lobby-client.js', 'utf8');
     const chessFrame = fs.readFileSync('public/games/chess/room-frame.html', 'utf8');
-    const monopolyClient = fs.readFileSync('public/games/monopoly/client.js', 'utf8');
+    const monopolyClient = ['client.js', 'constants.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+        .map(file => fs.readFileSync(`public/games/monopoly/${file}`, 'utf8')).join('\n');
     const monopolyStyle = fs.readFileSync('public/games/monopoly/style.css', 'utf8');
 
     for (const [name, client] of [['军棋', junqiClient], ['中国象棋', xiangqiClient], ['国际象棋', chessClient]]) {
@@ -1390,10 +1476,17 @@ test('Mobile blocker games default to usable boards and expose controlled Monopo
 
 test('Remaining board games keep their core turn controls inside short landscape viewports', () => {
     const games = ['jungle', 'aeroplane', 'gobang', 'checkers'];
+    const manifest = fs.readFileSync('public/games/common/game-manifest.js', 'utf8');
     for (const game of games) {
-        const client = fs.readFileSync(`public/games/${game}/client.js`, 'utf8');
+        const client = readFrontendSource(game);
         const styles = fs.readFileSync(`public/games/${game}/style.css`, 'utf8');
-        assert.match(client, /20260826-mobile-games-3/, `${game} 应加载第三批资源版本`);
+        assert.match(client, /getGameStyleHrefs\(/, `${game} 应从统一资源清单加载样式`);
+        assert.match(client, /loadStyles\(/, `${game} 应使用公共样式加载器`);
+        assert.match(client, /createClientScope\(/, `${game} 应使用公共生命周期`);
+        assert.match(client, /createModalController\(/, `${game} 应使用公共规则弹层`);
+        assert.match(client, /from ['"]\.\.\/common\/html\.js['"]/, `${game} 应使用公共 HTML 转义`);
+        assert.doesNotMatch(client, /document\.head\.appendChild/, `${game} 不应自行追加样式标签`);
+        assert.match(manifest, new RegExp(`\\b${game}:\\s*freezeAssets`), `${game} 应登记在统一资源清单`);
         assert.match(styles, /orientation:\s*landscape/, `${game} 应提供短边横屏布局`);
         assert.match(styles, /max-height:\s*520px/, `${game} 应按可用高度而不是只按宽度适配`);
         assert.match(styles, /height:\s*calc\(100svh\s*-\s*var\(--game-shell-offset/, `${game} 横屏根场景应扣除统一顶栏`);
@@ -1418,10 +1511,19 @@ test('Remaining board games keep their core turn controls inside short landscape
 
 test('Hand and response games keep the active decision inside short mobile viewports', () => {
     const games = ['loveletter', 'coup', 'monopolydeal', 'hanabi'];
+    const expectedAssetVersion = { loveletter: '20260826-mobile-games-4', coup: '20260827-settlement-scenes-1', monopolydeal: '20260827-settlement-scenes-1', hanabi: '20260827-hanabi-a11y-1' };
+    const manifest = fs.readFileSync('public/games/common/game-manifest.js', 'utf8');
     for (const game of games) {
         const client = fs.readFileSync(`public/games/${game}/client.js`, 'utf8');
         const styles = fs.readFileSync(`public/games/${game}/style.css`, 'utf8');
-        assert.match(client, /20260826-mobile-games-4/, `${game} 应加载第四批资源版本`);
+        if (['loveletter', 'coup', 'hanabi', 'monopolydeal'].includes(game)) {
+            assert.match(client, /getGameStyleHrefs\(/, `${game} 应从统一资源清单加载样式`);
+            assert.match(client, /loadStyles\(/, `${game} 应使用公共样式加载器`);
+            assert.match(client, /createClientScope\(/, `${game} 应使用公共生命周期`);
+            assert.match(manifest, new RegExp(`\\b${game}:\\s*freezeAssets`), `${game} 应登记在统一资源清单`);
+        } else {
+            assert.match(client, new RegExp(expectedAssetVersion[game]), `${game} 应加载当前资源版本`);
+        }
         assert.match(styles, /orientation:\s*landscape/, `${game} 应提供短边横屏布局`);
         assert.match(styles, /max-height:\s*520px/, `${game} 应按短边高度切换横屏操作台`);
         assert.match(styles, /height:\s*calc\(100svh\s*-\s*var\(--game-shell-offset/, `${game} 横屏根场景应扣除统一顶栏`);
@@ -1429,11 +1531,13 @@ test('Hand and response games keep the active decision inside short mobile viewp
         assert.match(styles, /inset:\s*var\(--game-shell-offset/, `${game} 的规则或演出层不应盖住统一顶栏`);
     }
 
-    const coupClient = fs.readFileSync('public/games/coup/client.js', 'utf8');
+    const coupClient = ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+        .map(file => fs.readFileSync(`public/games/coup/${file}`, 'utf8')).join('\n');
     const coupStyle = fs.readFileSync('public/games/coup/style.css', 'utf8');
     const dealStyle = fs.readFileSync('public/games/monopolydeal/style.css', 'utf8');
     const dealChoiceStyle = fs.readFileSync('public/games/monopolydeal/choice.css', 'utf8');
     const hanabiClient = fs.readFileSync('public/games/hanabi/client.js', 'utf8');
+    const hanabiRender = fs.readFileSync('public/games/hanabi/render.js', 'utf8');
     const hanabiStyle = fs.readFileSync('public/games/hanabi/style.css', 'utf8');
     const visualFixture = fs.readFileSync('public/__game_shell_visual_test.html', 'utf8');
 
@@ -1445,7 +1549,7 @@ test('Hand and response games keep the active decision inside short mobile viewp
     assert.match(dealStyle, /\.deal-command\s*\{\s*order:\s*2/);
     assert.match(dealChoiceStyle, /orientation:\s*landscape/);
     assert.match(dealChoiceStyle, /inset:\s*var\(--game-shell-offset/);
-    assert.match(hanabiClient, /is-clue-targeting/);
+    assert.match(hanabiRender, /is-clue-targeting/);
     assert.match(hanabiStyle, /\.hb-app\.is-clue-targeting \.hb-my-hand\s*\{\s*display:\s*none/);
     assert.match(visualFixture, /20260827-hidden-role-focus-1/);
     assert.match(visualFixture, /window\.__shellTestState/);
@@ -1458,15 +1562,17 @@ test('Hand and response games keep the active decision inside short mobile viewp
 test('Hidden-information games keep private decisions inside short landscape viewports', () => {
     const games = ['werewolf', 'avalon', 'decrypto', 'witchtown'];
     const expectedAssetVersion = {
-        werewolf: '20260827-hidden-role-focus-1',
-        avalon: '20260827-hidden-role-focus-1',
-        decrypto: '20260826-mobile-games-5',
-        witchtown: '20260827-hidden-role-focus-1'
+        werewolf: '20260827-hold-identity-2',
+        avalon: '20260827-hold-identity-2',
+        decrypto: '20260827-online-notebook-1',
+        witchtown: '20260827-hold-identity-2'
     };
+    const gameManifest = fs.readFileSync('public/games/common/game-manifest.js', 'utf8');
     for (const game of games) {
-        const client = fs.readFileSync(`public/games/${game}/client.js`, 'utf8');
+        const client = readFrontendSource(game);
         const styles = fs.readFileSync(`public/games/${game}/style.css`, 'utf8');
-        assert.match(client, new RegExp(expectedAssetVersion[game]), `${game} 应加载当前资源版本`);
+        const assetSource = `${gameManifest}\n${client}`;
+        assert.match(assetSource, new RegExp(expectedAssetVersion[game]), `${game} 应加载当前资源版本`);
         assert.match(styles, /orientation:\s*landscape/, `${game} 应提供短边横屏布局`);
         assert.match(styles, /max-height:\s*520px/, `${game} 应按短边高度切换横屏操作台`);
         assert.match(styles, /height:\s*calc\(100svh\s*-\s*var\(--game-shell-offset/, `${game} 横屏根场景应扣除统一顶栏`);
@@ -1474,10 +1580,10 @@ test('Hidden-information games keep private decisions inside short landscape vie
         assert.match(styles, /inset:\s*var\(--game-shell-offset/, `${game} 的规则或演出层不应藏到统一顶栏后面`);
     }
 
-    const werewolfClient = fs.readFileSync('public/games/werewolf/client.js', 'utf8');
-    const avalonClient = fs.readFileSync('public/games/avalon/client.js', 'utf8');
-    const decryptoClient = fs.readFileSync('public/games/decrypto/client.js', 'utf8');
-    const witchtownClient = fs.readFileSync('public/games/witchtown/client.js', 'utf8');
+    const werewolfClient = readFrontendSource('werewolf');
+    const avalonClient = readFrontendSource('avalon');
+    const decryptoClient = readFrontendSource('decrypto');
+    const witchtownClient = readWitchtownClient();
     assert.match(werewolfClient, /dataset\.phase/);
     assert.match(avalonClient, /is-my-action/);
     assert.match(decryptoClient, /dataset\.phase/);
@@ -2182,8 +2288,8 @@ test('Decrypto supports the official three-player lone-interceptor variant', () 
     assert.equal(game.winner.teamId, 1);
 });
 
-test('Decrypto client protects shared secrets and uses graded offline communication transitions', () => {
-    const client = fs.readFileSync('public/games/decrypto/client.js', 'utf8');
+test('Decrypto client protects shared secrets and centers online deduction on a 1–4 clue notebook', () => {
+    const client = readFrontendSource('decrypto');
     const style = fs.readFileSync('public/games/decrypto/style.css', 'utf8');
     assert.match(client, /data-secret-toggle="keywords"/);
     assert.match(client, /data-secret-code/);
@@ -2192,16 +2298,22 @@ test('Decrypto client protects shared secrets and uses graded offline communicat
     assert.match(client, /addEventListener\('pointerdown'/);
     assert.match(client, /addEventListener\('pointercancel'/);
     assert.match(client, /addEventListener\('keyup'/);
-    assert.match(client, /document\.hidden/);
+    assert.match(client, /documentRef\.hidden/);
     assert.match(client, /action: \{ kind: 'confirmKey' \}/);
     assert.match(client, /答案收齐后统一揭晓/);
-    assert.match(client, /所有推演完全在线下自由讨论/);
+    assert.match(client, /同桌讨论或所有人都在的公共语音/);
+    assert.match(client, /一轮到底在做什么/);
+    assert.match(client, /function clueGroups/);
+    assert.match(client, /data-notebook-view="matrix"/);
+    assert.match(client, /数字—线索推理笔记/);
+    assert.match(client, /jsgames\.decrypto\.privacy/);
     assert.match(client, /dc-scene-transition/);
     assert.match(client, /密钥已经封存/);
     assert.match(client, /双方通信已经暴露/);
-    assert.doesNotMatch(client, /chat|聊天框|发言倒计时/);
     assert.match(style, /\.dc-keywords-cover/);
     assert.match(style, /\.dc-code-cover/);
+    assert.match(style, /\.dc-ledger-grid/);
+    assert.match(style, /\.dc-notebook-overlay/);
     assert.match(style, /@keyframes dcSceneCurtain/);
     assert.match(style, /prefers-reduced-motion/);
 });
@@ -2331,17 +2443,21 @@ test('Avalon uses the core hidden-role distribution and supports optional roles'
 });
 
 test('Avalon client keeps identities covered and treats discussion as an offline free-form activity', () => {
-    const client = fs.readFileSync('public/games/avalon/client.js', 'utf8');
+    const client = readFrontendSource('avalon');
     const style = fs.readFileSync('public/games/avalon/style.css', 'utf8');
     assert.match(client, /data-role-hold/);
     assert.match(client, /data-role-secret/);
     assert.match(client, /setRoleIdentityVisible\(true\)/);
-    assert.match(client, /'confirmRole', !hasViewedRole/);
+    assert.match(client, /'confirmRole', !model\.hasViewedRole/);
     assert.match(client, /讨论完全在线下自由进行/);
     assert.match(client, /辅助页面不会规定发言顺序或结束时间/);
     assert.match(client, /av-scene-transition/);
-    assert.match(client, /远征队伍已经出发/);
-    assert.match(client, /最后一把匕首仍未落下/);
+    assert.match(client, /event\.kind === 'teamVote' \? 'ballot'/);
+    assert.match(client, /event\.kind === 'identityReveal' \? 2000/);
+    assert.match(client, /pulseVoteLedger/);
+    assert.match(client, /event\.kind === 'expeditionStart'/);
+    assert.match(client, /'targetRoleReveal', 'assassinPhase'/);
+    assert.match(client, /Array\.isArray\(next\.publicEvents\)/);
     assert.doesNotMatch(client, /chat|聊天框|发言倒计时/);
     assert.match(style, /\.av-role-cover/);
     assert.match(style, /@keyframes avSceneCurtain/);
@@ -2350,11 +2466,11 @@ test('Avalon client keeps identities covered and treats discussion as an offline
 
 test('Social deduction games share a prominent responsive identity focus and Avalon uses local BGG role art', () => {
     const common = fs.readFileSync('public/games/common/hidden-role-focus.css', 'utf8');
-    const avalonClient = fs.readFileSync('public/games/avalon/client.js', 'utf8');
+    const avalonClient = readFrontendSource('avalon');
     const avalonStyle = fs.readFileSync('public/games/avalon/style.css', 'utf8');
-    const werewolfClient = fs.readFileSync('public/games/werewolf/client.js', 'utf8');
+    const werewolfClient = readFrontendSource('werewolf');
     const werewolfStyle = fs.readFileSync('public/games/werewolf/style.css', 'utf8');
-    const witchtownClient = fs.readFileSync('public/games/witchtown/client.js', 'utf8');
+    const witchtownClient = readWitchtownClient();
     const witchtownStyle = fs.readFileSync('public/games/witchtown/style.css', 'utf8');
     const sources = fs.readFileSync('public/assets/bgg/SOURCES.md', 'utf8');
     const roles = ['loyal', 'merlin', 'percival', 'minion', 'assassin', 'morgana', 'mordred', 'oberon'];
@@ -2381,6 +2497,41 @@ test('Social deduction games share a prominent responsive identity focus and Ava
     assert.match(witchtownStyle, /\.witchtown-role-panel\s*\{\s*display:\s*block;\s*grid-column:\s*2/);
     assert.match(sources, /1453098/);
     assert.match(sources, /1453075/);
+});
+
+test('Four identity-card games require hold-to-reveal and reseal on privacy loss', () => {
+    const clients = {
+        werewolf: readFrontendSource('werewolf'),
+        avalon: readFrontendSource('avalon'),
+        witchtown: readWitchtownClient(),
+        coup: ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+            .map(file => fs.readFileSync(`public/games/coup/${file}`, 'utf8')).join('\n'),
+    };
+    const styles = {
+        werewolf: fs.readFileSync('public/games/werewolf/style.css', 'utf8'),
+        avalon: fs.readFileSync('public/games/avalon/style.css', 'utf8'),
+        witchtown: fs.readFileSync('public/games/witchtown/style.css', 'utf8'),
+        coup: fs.readFileSync('public/games/coup/style.css', 'utf8'),
+    };
+    assert.match(clients.werewolf, /data-role-hold/);
+    assert.match(clients.avalon, /data-role-hold/);
+    assert.match(clients.witchtown, /data-dossier-hold/);
+    assert.match(clients.coup, /data-identity-hold/);
+    for (const [game, client] of Object.entries(clients)) {
+        assert.match(client, /pointerdown/, `${game} 缺少按住开始事件`);
+        assert.match(client, /pointerup/, `${game} 缺少松手封存事件`);
+        assert.match(client, /pointercancel/, `${game} 缺少触屏取消封存事件`);
+        assert.match(client, /keyup/, `${game} 缺少键盘松开封存事件`);
+        assert.match(client, /visibilitychange/, `${game} 切到后台时不会封存身份`);
+        assert.match(client, /blur/, `${game} 窗口失焦时不会封存身份`);
+    }
+    assert.match(clients.witchtown, /镇议会角色从开局起始终公开，不属于密封档案/);
+    assert.match(clients.coup, /privateIdentity: true/);
+    assert.match(clients.coup, /card\?\.revealed === true/);
+    assert.match(styles.werewolf, /\.ww-role-secret\s*\{[\s\S]*?transition:\s*none/);
+    assert.match(styles.avalon, /\.av-role-secret\s*\{[\s\S]*?transition:\s*none/);
+    assert.match(styles.witchtown, /\.witchtown-dossier\s*\{[\s\S]*?transition:\s*none/);
+    assert.match(styles.coup, /\.cp-private-card-cover\s*\{[\s\S]*?transition:\s*none/);
 });
 
 test('Scout builds 45 dual-number cards and locks the whole-hand orientation', () => {
@@ -3915,6 +4066,65 @@ test('Room propagates a chess move through the game adapter', () => {
     assert.equal(result.success, true); assert.equal(room.getPlayerGameState('b').turn, 'black');
 });
 
+test('Chess study editor requires study mode and the trusted room owner', () => {
+    const match = Chess.create('chess-match-auth', players(['a', 'b']), 'a', { gameMode: 'match' });
+    assert.equal(match.start().success, true);
+    assert.equal(match.handleStudySetup('a', { kind: 'clear' }, 'a').success, false);
+    assert.equal(match.engine.board.size, 32);
+
+    const study = Chess.create('chess-study-auth', players(['host', 'virtual-black']), 'host', { gameMode: 'study' });
+    assert.equal(study.start().success, true);
+    assert.equal(study.handleStudySetup('host', { kind: 'clear' }, 'intruder').success, false);
+    assert.equal(study.engine.board.size, 32);
+    assert.equal(study.handleStudySetup('virtual-black', { kind: 'clear' }, 'host').success, true);
+    assert.equal(study.handleStudySetup('virtual-black', { kind: 'place', x: 4, y: 0, color: 'black', pieceType: 'k' }, 'host').success, true);
+    assert.equal(study.engine.board.get('4,0').color, 'black');
+});
+
+test('Chess validates study positions and rebuilds metadata when the turn changes', () => {
+    const study = Chess.create('chess-study-position', players(['host', 'virtual-black']), 'host', { gameMode: 'study' });
+    assert.equal(study.start().success, true);
+    assert.equal(study.handleStudySetup('host', { kind: 'clear' }, 'host').success, true);
+    assert.equal(study.validateStudyPosition().success, false);
+    assert.equal(study.handleStudySetup('host', { kind: 'place', x: 4, y: 7, color: 'white', pieceType: 'k' }, 'host').success, true);
+    assert.equal(study.handleStudySetup('host', { kind: 'place', x: 4, y: 6, color: 'black', pieceType: 'k' }, 'host').success, true);
+    assert.equal(study.validateStudyPosition().success, false);
+    assert.equal(study.handleStudySetup('host', { kind: 'move', from: { x: 4, y: 6 }, to: { x: 4, y: 0 } }, 'host').success, false);
+    assert.equal(study.handleStudySetup('virtual-black', { kind: 'move', from: { x: 4, y: 6 }, to: { x: 4, y: 0 } }, 'host').success, true);
+    study.engine.enPassant = { x: 3, y: 2 };
+    study.engine.lastMove = { piece: { type: 'p' } };
+    study.engine.halfmoveClock = 99;
+    assert.equal(study.handleStudySetup('host', { kind: 'setTurn', color: 'black' }, 'host').success, true);
+    assert.equal(study.engine.enPassant, null);
+    assert.equal(study.engine.lastMove, null);
+    assert.equal(study.engine.halfmoveClock, 0);
+    assert.equal(study.validateStudyPosition().success, true);
+});
+
+test('Chess repetition key ignores an en-passant target with no legal capture', () => {
+    const engine = chessEngine();
+    engine.board = new Map([
+        ['4,7', { id: 'wk', type: 'k', color: 'white', moved: false }],
+        ['4,3', { id: 'wp', type: 'p', color: 'white', moved: false }],
+        ['4,0', { id: 'br', type: 'r', color: 'black', moved: false }],
+        ['0,0', { id: 'bk', type: 'k', color: 'black', moved: false }],
+        ['3,3', { id: 'bp', type: 'p', color: 'black', moved: true }],
+    ]);
+    engine.turn = 'white'; engine.currentTurnIndex = 0;
+    engine.lastMove = { from: { x: 3, y: 1 }, to: { x: 3, y: 3 }, piece: { id: 'bp', type: 'p', color: 'black' } };
+    engine.enPassant = { x: 3, y: 2 };
+    const withUnavailableTarget = engine._positionKey();
+    engine.enPassant = null;
+    assert.equal(withUnavailableTarget, engine._positionKey());
+});
+
+test('Chess rejects duplicate players and repeated starts', () => {
+    assert.throws(() => Chess.create('chess-duplicate', players(['same', 'same'])), /玩家 ID 不能重复/);
+    const session = Chess.create('chess-start-once', players(['a', 'b']));
+    assert.equal(session.start().success, true);
+    assert.equal(session.start().success, false);
+});
+
 test('Chess only applies promotion on the last rank', () => {
     const invalid = chessEngine();
     assert.equal(invalid.handleAction('white', { kind: 'move', from: { x: 4, y: 6 }, to: { x: 4, y: 4 }, promotion: 'q' }).success, true);
@@ -4713,19 +4923,26 @@ test('Witch Town completes a six-player game through night protection and final 
 });
 
 test('Witch Town client seals private dossiers and uses moderator-free scene transitions', () => {
-    const client = fs.readFileSync('public/games/witchtown/client.js', 'utf8');
+    const client = readWitchtownClient();
     const style = fs.readFileSync('public/games/witchtown/style.css', 'utf8');
     assert.match(client, /密封审判档案/);
     assert.match(client, /confirmDossier/);
     assert.match(client, /passConfession/);
     assert.match(client, /data-role="public-role"/);
     assert.match(client, /全员可见/);
-    assert.match(client, /scheduleDossierSeal/);
+    assert.match(client, /data-dossier-hold/);
+    assert.match(client, /setDossierIdentityVisible\(true\)/);
+    assert.match(client, /hideDossierIdentity/);
+    assert.doesNotMatch(client, /scheduleDossierSeal|45000/);
     assert.match(client, /visibilitychange/);
     assert.match(client, /renderDayTargetSelectors/);
     assert.match(client, /blueCardOptions\(primaryId\)/);
     assert.match(client, /queueStateScenes/);
     assert.match(client, /您已出局/);
+    assert.match(client, /event\.kind === 'victory' \? 2600/);
+    assert.match(client, /event\.kind === 'identityReveal' \? 2000/);
+    assert.match(client, /\['trialReveal', 'confession', 'nightResult'\]\.includes\(event\.kind\) \? 1600/);
+    assert.doesNotMatch(client, /persistent: true/);
     assert.doesNotMatch(client, /宣布天亮|<b>主持人<\/b>/);
     assert.match(style, /\.witchtown-scene\.is-shattering/);
     assert.match(style, /witchtown-fragment-wind/);
@@ -4763,7 +4980,7 @@ test('Study mode creates a one-person research table and switches the controlled
     assert.match(shell, /切换到下一方/);
     assert.match(shell, /STUDY_SIDE_LABELS/);
     assert.match(shell, /red: \[\['s', '兵'\].*black: \[\['s', '卒'/s);
-    const xiangqiClient = fs.readFileSync('public/games/xiangqi/client.js', 'utf8');
+    const xiangqiClient = readFrontendSource('xiangqi');
     assert.match(xiangqiClient, /const RED_LABELS = \{ k: '帥', a: '仕', e: '相'/);
     assert.match(xiangqiClient, /piece\.color === 'red' \? RED_LABELS\[piece\.type\] : LABELS\[piece\.type\]/);
     assert.match(xiangqiClient, /if \(piece\.color === 'black'\) face\.rotateZ\(Math\.PI\)/);

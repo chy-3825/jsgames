@@ -27,6 +27,9 @@ test('并购基础设置、起始地块顺序、牌库和私有手牌符合经�
         assert.ok(game.players.every(player => player.hand.length === 6));
         const ordered = game.startingTiles.slice().sort((a, b) => game._tileNumber(a.tile) - game._tileNumber(b.tile));
         assert.equal(game.players[game.currentTurnIndex].id, ordered[0].playerId);
+        assert.equal(game.presentation.events[0].kind, 'startSetup');
+        assert.deepEqual(game.presentation.events[0].startingTiles.map(entry => entry.tile.id), ordered.map(entry => entry.tile.id));
+        assert.equal(game.presentation.events[0].firstPlayer.id, ordered[0].playerId);
         assert.equal(session.start().success, false, '同一会话不能重复开始');
         assert.equal(game.start().success, false, '引擎不能绕过会话重复开始');
     }
@@ -115,6 +118,21 @@ test('并购安全集团只能阻止两个安全集团合并，单个安全集�
     assert.equal(game.players[game.currentTurnIndex].hand.length, 1);
 });
 
+test('并购集团首次达到十一格时生成安全集团里程碑播报', () => {
+    const session = Acquire.create('acquire-safe-milestone', players(['a', 'b']), { random: lcg(122) });
+    session.start();
+    const game = session.engine;
+    const current = game.players[game.currentTurnIndex];
+    game.corporations.sackson.active = true;
+    game.corporations.sackson.tiles = Array.from({ length: 10 }, (_, index) => `X${index + 1}`);
+    game.board = { A1: { id: 'A1', row: 0, col: 0, chain: 'sackson' } };
+    current.hand = [{ id: 'A2', row: 0, col: 1 }];
+    assert.equal(game.handleAction(current.id, { kind: 'placeTile', tileId: 'A2' }).success, true);
+    assert.deepEqual(game.presentation.events.map(event => event.kind), ['placeTile', 'safeChain']);
+    assert.equal(game.presentation.events[1].chain.size, 11);
+    assert.equal(game.presentation.events[1].chain.safe, true);
+});
+
 test('并购只有永久不可玩地块可以弃置，终局会发放红利并清算股票', () => {
     const session = Acquire.create('acquire-end', players(['a', 'b']), { random: lcg(93) });
     session.start();
@@ -149,6 +167,8 @@ test('并购只有永久不可玩地块可以弃置，终局会发放红利并�
     assert.equal(game.presentation.ended, true);
     assert.equal(game.presentation.winner.id, game.winner.id);
     assert.ok(game.presentation.standings.every(player => player.cashBefore + player.bonuses + player.liquidation === player.finalCash));
+    assert.ok(game.presentation.events[1].chainSettlements.length >= 2);
+    assert.ok(game.presentation.events[1].chainSettlements.every(item => item.chain && Array.isArray(item.payouts) && Array.isArray(item.liquidations)));
 });
 
 function runSixPlayerGame(seed) {

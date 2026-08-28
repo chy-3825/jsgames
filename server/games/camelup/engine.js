@@ -99,6 +99,15 @@ class CamelUpEngine {
         this.presentationPrivate = {};
         this.actionLog = ['五匹骆驼已按开局掷骰结果布置在 1–3 号格'];
         this._log(`第 ${this.leg} 回合开始，轮到 ${this.players[0].name}`);
+        this._appendPresentationEvent({
+            kind: 'raceStarted',
+            camels: this.camels.map(camel => this._publicCamel(camel)),
+            currentPlayerId: this.players[0]?.id || null,
+            currentPlayerName: this.players[0]?.name || '',
+            startingCoins: 3,
+        });
+        this._appendPresentationEvent({ kind: 'legStarted', leg: this.leg, currentPlayerId: this.players[0]?.id || null, currentPlayerName: this.players[0]?.name || '', openingLeg: true });
+        this._finishPresentation();
         return this._success('狂野骆驼开始');
     }
 

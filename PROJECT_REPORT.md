@@ -12,7 +12,7 @@
 
 ## 2. 推荐目录结构
 
-新增一个游戏时，建议只新增这些文件：
+新增一个游戏时，建议按职责拆成这些文件：
 
 ```text
 server/games/mygame/
@@ -20,9 +20,18 @@ server/games/mygame/
   engine.js     # 游戏规则，可选但强烈建议单独放
 
 public/games/mygame/
-  client.js     # 前端游戏界面，必须导出 createGameClient
+  client.js     # 协议入口和生命周期，必须导出 createGameClient
+  state.js      # 可变视图模型和派生状态
+  template.js   # 静态 HTML 模板
+  render.js     # DOM/2D 渲染
+  scene.js      # 动画、场景或 GPU 资源
+  actions.js    # 输入和动作提交
+  constants.js  # 常量，可选
+  cards.js      # 卡牌数据/牌面，可选
   style.css     # 游戏专用样式，可选
 ```
+
+这套 8 个前端文件是默认骨架，不要求每款游戏都机械填满所有文件：`constants.js` 和 `cards.js` 可以按需省略（例如牛头王把牌面辅助集中在 `cards.js`）。3D 棋类由 `scene.js` 持有 Three.js 场景、GPU 资源和动画，`actions.js` 负责事件绑定，`render.js` 只提供 DOM/2D 渲染门面；入口 `client.js` 不再承载大段界面代码。
 
 然后只改一个注册文件：
 
@@ -79,7 +88,7 @@ send({
 
 ### 棋谱模式
 
-棋类游戏可在 metadata 中声明 `studyMode: true` 和 `studyPlayerCount: 2`，并提供 `gameMode` 房间选项。房间选择 `gameMode: 'study'` 后只允许房主入座，`Room` 会创建双方虚拟引擎席位，同时在每个 `getPlayerGameState()` 中返回 `studySeatIndex`、`studySeatNames`、`studyPhase` 和当前执棋方对应的 `myColor`。前端的切换按钮按具体棋类显示并发送“切换到红方/黑方”等目标执棋方的 `studySwitchSeat`；自定义摆棋引擎通过会话适配层提供 `handleStudySetup()`，接受 `place`、`move`、`remove`、`clear`、`reset`、`setTurn` 等操作。摆棋完成后发送 `studyConfirmSetup`，随后恢复正常的服务端回合校验。飞行棋与大富翁不声明该能力。
+棋类游戏可在 metadata 中声明 `studyMode: true` 和 `studyPlayerCount: 2`，并提供 `gameMode` 房间选项。房间选择 `gameMode: 'study'` 后只允许房主入座，`Room` 会创建双方虚拟引擎席位，同时在每个 `getPlayerGameState()` 中返回 `studySeatIndex`、`studySeatNames`、`studyPhase` 和当前执棋方对应的 `myColor`。前端的切换按钮按具体棋类显示并发送“切换到红方/黑方”等目标执棋方的 `studySwitchSeat`；自定义摆棋引擎通过会话适配层提供 `handleStudySetup(enginePlayerId, action, actorId)`，接受 `place`、`move`、`remove`、`clear`、`reset`、`setTurn` 等操作。`enginePlayerId` 只表示当前控制的虚拟阵营，`actorId` 才是真实权限主体。房间层必须拒绝非房主，规则引擎也应保存由大厅传入的可信 `gameMode`、`ownerId` 并再次鉴权。摆棋完成后发送 `studyConfirmSetup`；支持自定义局面的引擎应先执行 `validateStudyPosition()`，通过后才恢复正常回合校验。飞行棋与大富翁不声明该能力。
 
 注意：`action` 里不要传自己的 `playerId` 来证明身份。大厅服务端会根据 WebSocket 连接找到真实玩家，然后调用：
 
@@ -216,8 +225,8 @@ server/games/mygame/index.js
 ```js
 module.exports = {
   metadata,
-  create(roomId, players) {
-    return new MyGameSession(roomId, players);
+  create(roomId, players, ownerId, settings) {
+    return new MyGameSession(roomId, players, ownerId, settings);
   },
 };
 ```
@@ -246,15 +255,17 @@ registry.js 里的注册 key
 
 这些名字必须一致。
 
-### `create(roomId, players)`
+### `create(roomId, players, ownerId, settings)`
 
 大厅开始游戏时会调用它。
 
 ```js
-create(roomId, players) {
-  return new MyGameSession(roomId, players);
+create(roomId, players, ownerId, settings) {
+  return new MyGameSession(roomId, players, ownerId, settings);
 }
 ```
+
+`ownerId` 和 `settings` 来自房间服务，是棋谱模式、局间控制或其他特权动作的可信上下文。普通游戏可以不使用，但不得改为信任客户端 action 中的同名字段。
 
 `players` 是大厅房间里的真实玩家数组，形状大致是：
 
@@ -412,6 +423,8 @@ import(`/games/${gameType}/client.js?v=${Date.now()}`)
 ```
 
 所以文件路径必须和 `metadata.type` 对上。
+
+入口只负责资源加载、模板组装、协议转发和销毁。收到状态后应更新 `state.js` 的模型，再调用 `render.js`；指针、按钮和键盘事件由 `actions.js` 绑定，长生命周期动画或 WebGL 资源由 `scene.js` 管理。
 
 ### `mount`
 
@@ -579,8 +592,8 @@ class MyGameSession {
 
 module.exports = {
   metadata,
-  create(roomId, players) {
-    return new MyGameSession(roomId, players);
+  create(roomId, players, ownerId, settings) {
+    return new MyGameSession(roomId, players, ownerId, settings);
   },
 };
 ```
@@ -695,14 +708,15 @@ const games = new Map([
 
 如果你已经在外面写好了一个单机 HTML/JS 游戏，不建议直接整包塞进大厅。推荐这样拆：
 
-1. 把纯界面 HTML 放进 `client.js` 的 `mount.innerHTML`。
-2. 把原来的 CSS 放进 `public/games/mygame/style.css`。
-3. 把规则逻辑移到 `server/games/mygame/engine.js`。
-4. 把原来前端里的“当前玩家”“所有玩家”“轮到谁”删除，改成使用 `message.state`。
-5. 把原来按钮事件里的本地函数调用，改成 `send({ type: 'gameAction', action })`。
-6. 在服务端 `handleAction(playerId, action)` 里处理动作。
-7. 在 `getPlayerState(playerId)` 里返回每个玩家应该看到的数据。
-8. 注册到 `registry.js`。
+1. 把纯界面 HTML 放进 `template.js`，由 `client.js` 挂载。
+2. 把可变视图状态放进 `state.js`，把 DOM 输出放进 `render.js`。
+3. 把指针、按钮和键盘事件放进 `actions.js`；需要动画或 WebGL 时放进 `scene.js`。
+4. 把原来的 CSS 放进 `public/games/mygame/style.css`。
+5. 把规则逻辑移到 `server/games/mygame/engine.js`。
+6. 把原来前端里的“当前玩家”“所有玩家”“轮到谁”删除，改成使用 `message.state`。
+7. 把原来按钮事件里的本地函数调用，改成 `send({ type: 'gameAction', action })`。
+8. 在服务端 `handleAction(playerId, action)` 和 `getPlayerState(playerId)` 中处理动作与隐私。
+9. 注册到 `registry.js`，实现 `destroy()` 并运行 `npm test`。
 
 外部游戏里如果原本有这些代码，接入大厅时通常要删掉或改掉：
 
@@ -721,7 +735,7 @@ startGame()
 
 ### 创建了两个角色，但自己不能控制
 
-通常原因是游戏自己又创建了一套玩家。正确做法是使用 `create(roomId, players)` 传进来的玩家数组，并且用 `handleAction(playerId, action)` 的 `playerId` 判断操作者。
+通常原因是游戏自己又创建了一套玩家。正确做法是使用 `create(roomId, players, ownerId, settings)` 传进来的玩家数组，并且用 `handleAction(playerId, action)` 的 `playerId` 判断操作者；需要房主权限时使用可信的 `ownerId`，不要读取 action 中伪造的身份。
 
 ### 前端能看到别人手牌
 
@@ -761,7 +775,7 @@ export function createGameClient({ mount, send, addLog }) {}
 
 - `metadata.type` 使用英文小写，不带空格。
 - `server/games/<type>/index.js` 导出 `metadata` 和 `create`。
-- `create(roomId, players)` 使用大厅传入的玩家，不自己造玩家。
+- `create(roomId, players, ownerId, settings)` 使用大厅传入的玩家与可信房间上下文，不自己造真实玩家。
 - `handleAction(playerId, action)` 只信任参数 `playerId`。
 - `getPlayerState(playerId)` 按玩家视角隐藏信息。
 - `public/games/<type>/client.js` 导出 `createGameClient`。
@@ -797,7 +811,7 @@ for f in public/games/*/*.js; do node --check "$f"; done
 node --check public/games/werewolf/client.js
 ```
 
-当前全量测试共 384 项，25 个测试文件全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置、双页创建浮窗、移动端核心布局、封面懒加载、隐藏信息游戏离场收束、阵营身份视觉契约和棋谱模式的回归。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js` 与 `test/regression.test.js` 持续验证。
+当前全量测试共 493 项，全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置、双页创建浮窗、移动端核心布局、封面懒加载、隐藏信息游戏离场收束、四款背牌身份严格按住查看、谍报风云推理笔记、解密类分组、棋谱模式、28 款游戏前端模块骨架审计和本地字体资源审计。国际象棋另覆盖普通/棋谱模式隔离、房主鉴权、非法摆棋、状态重建、重复局面键、重复启动和玩家身份完整性。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js`、`test/*-frontend.test.js` 与 `test/regression.test.js` 持续验证。
 
 ## 15. BGG 美术资源接入
 
@@ -820,3 +834,21 @@ node --check public/games/werewolf/client.js
 - 桌面端应让身份牌成为主视觉之一；竖屏有当前必须行动时先保证决策可用，短横屏将身份、行动和必要公开信息放入同一可用高度，次要内容才使用内部滚动。
 
 响应式变更至少要使用 `public/__game_shell_visual_test.html` 覆盖 `390×844`、`844×390`、`667×375` 三档。短横屏必须同时通过页面宽高、身份焦点可见、当前决策同屏与猎巫镇公开区可见性断言。
+
+## 17. 谍报风云线上推理交互约定
+
+谍报风云按 `online` 分类：游戏房间保管双方关键词、加密员密码、公开线索、两份封存答案、标记和终局。远程游玩建议使用所有人都在的公共语音，因为加密员给出的信息必须同时向对手公开；当前项目不内建音视频服务。
+
+前端的主要推理结构是“数字—线索笔记”：已揭晓电报必须按队伍和正确数字 `1–4` 聚合，而不能只提供逐轮日志。短横屏可以用弹层保留这份笔记，但不得为它牺牲当前密码、线索和答案操作的同屏可用性。关键词可由玩家选择切页自动遮盖或常显；加密员密码必须始终保持按住查看。
+
+## 18. 大厅主分组约定
+
+大厅主分组由 `server/games/groups.js` 唯一定义，registry 将 `group`、`groupName`、`groupDescription`、`groupOrder` 和组内 `sortOrder` 附加到游戏元数据。浏览器按服务端顺序渲染，不应在 HTML 中手写重复的游戏清单。
+
+当前顺序为“社交推理与流程辅助 → 解密类 → 棋类与棋盘游戏 → 卡牌与策略桌游”。`codebreaking` 对应“解密类”，包含完整线上的谍报风云和单人猜数字。分类只负责大厅展示与筛选，不得改变游戏的 `playMode`、房间协议或引擎规则；每次迁移都要同步 `GAME_GROUPS.md` 并回归总数、各组数量和组内顺序。
+
+## 19. 背牌身份隐私交互约定
+
+狼人杀、阿瓦隆、猎巫镇和政变的未公开身份必须采用 momentary reveal：只有鼠标、触控或键盘持续按住查看控件期间可见，松开、移出、取消、失焦或页面隐藏时立即恢复牌背。身份显示与封存不得使用透明度延迟，以免释放后仍残留可读内容。
+
+公开信息不应被该交互误封存：猎巫镇 Town Hall、已揭示审判牌和桌面公开牌始终可见；政变已揭示影响力、角色速查和公开声明始终可见。需要从私牌中选择时，先按住核对并记住编号，松开后再使用独立编号按钮提交，查看控件本身不得兼任选择动作。

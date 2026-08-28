@@ -43,7 +43,7 @@
 | 胡闹运动会 | `magicalathlete` | 2–6 |
 | 狼人杀线下辅助 | `werewolf` | 1–9 |
 
-大厅当前展示 28 个联机项目。狼人杀线下辅助支持每人用自己的手机加入；为便于开发测试，只有 1 名真实用户时也可开局，并可在 9 个座位间自由切换。情书默认使用 BGG 许可牌面，类型仍为 `loveletter`。
+大厅当前展示 28 个项目，依次分为“社交推理与流程辅助”“解密类”“棋类与棋盘游戏”“卡牌与策略桌游”四组；“解密类”包含谍报风云和猜数字。狼人杀线下辅助支持每人用自己的手机加入；为便于开发测试，只有 1 名真实用户时也可开局，并可在 9 个座位间自由切换。情书默认使用 BGG 许可牌面，类型仍为 `loveletter`。
 
 ## 启动
 
@@ -60,7 +60,7 @@ npm start
 http://localhost:3000
 ```
 
-运行自动化回归测试（当前 380 项全部通过）：
+运行自动化回归测试（2026-08-28 当前 493 项全部通过）：
 
 ```bash
 npm test
@@ -69,6 +69,8 @@ npm test
 大厅会为当前浏览器标签页保存短期会话令牌。网络短暂断开后，页面会在 30 秒宽限期内自动恢复原玩家、房间和游戏视角；复制窗口不会抢占已在线窗口，而是保留新的玩家身份。也可以使用 `/?room=000001` 邀请链接或大厅里的 6 位房间号输入框直达房间。主动点击“离开房间”会结束该玩家在本局的席位。
 
 点击游戏卡片会先打开完整的规则摘要，再进入房间属性设置。所有游戏都可设置房间名称、人数上限和公开/仅邀请；狼人杀另可设置 9/12 人、警长流程与胜利条件，谍报风云另可设置加密员产生方式。只有点击“确定创建”后，浏览器才会向服务器创建房间。
+
+谍报风云可完整线上游玩：网页负责关键词、密码、答案和判定，远程玩家建议进入同一公共语音。已揭晓线索会自动按队伍与 `1–4` 号归类，供后续截获使用。
 
 ## 目录结构
 
@@ -84,8 +86,16 @@ public/game-details.js         # 28 款游戏的创建前规则摘要
 public/assets/covers/          # 28 张高清横版封面与 thumbs/ 下的大厅缩略图
 deploy/                        # systemd、Nginx 与云安全组部署模板
 public/style.css               # 大厅样式
-public/games/<game>/client.js  # 游戏前端，导出 createGameClient
-public/games/<game>/style.css  # 游戏专用样式（可选）
+public/games/<game>/           # 每款游戏的独立前端模块
+  client.js                    # 协议入口与生命周期，导出 createGameClient
+  state.js                     # 可变视图模型与派生状态
+  template.js                  # 静态 HTML 模板
+  render.js                    # DOM/2D 渲染门面
+  scene.js                     # 动画、场景或 GPU 资源
+  actions.js                   # 输入、按钮和提交动作
+  constants.js                 # 常量（可选；牛头王由 cards.js 集中维护）
+  cards.js                     # 卡牌数据/牌面标记（卡牌游戏可选）
+  style.css                    # 游戏专用样式（可选）
 public/games/common/           # 可复用的网格游戏前端组件
 test/regression.test.js        # 规则和大厅协议回归测试
 test/*-official.test.js        # 各游戏官方规则专项测试
@@ -97,10 +107,12 @@ PROJECT_REPORT.md              # 新游戏开发和大厅协议说明
 ```text
 public/games/chess/lobby-client.js  # 大厅与棋盘 iframe 的桥接
 public/games/chess/room-frame.html  # 独立 3D 棋盘文档
-public/games/chess/client.js        # Three.js 棋盘和棋局界面
+public/games/chess/client.js        # 资源、模板和协议生命周期
+public/games/chess/scene.js         # Three.js 棋盘、GPU 资源和动画
+public/games/chess/actions.js       # 3D/2D 输入绑定
 ```
 
-这是为了避免 WebGL 画布受到大厅布局和尺寸监听影响，不改变大厅的 WebSocket 和身份协议。
+这是为了避免 WebGL 画布受到大厅布局和尺寸监听影响，不改变大厅的 WebSocket 和身份协议。中国象棋、军棋也使用同样的 `client → actions/render → scene` 边界；3D 场景例外保留在 `scene.js`，不再把所有职责堆回 `client.js`。
 
 军棋使用标准 12×5 暗棋棋盘，开局必须完成双方各 25 枚棋子的合法布阵；自己的棋子可见，对方棋子在交战前显示背面，服务端负责铁路/行营/战斗和军旗结算。
 
@@ -117,11 +129,12 @@ public/games/chess/client.js        # Three.js 棋盘和棋局界面
 新游戏按照 [PROJECT_REPORT.md](./PROJECT_REPORT.md) 中的开发方法和大厅协议接入。核心原则是：
 
 - 服务端使用 `server/games/<type>/index.js` 作为适配层，使用 `engine.js` 保存规则。
-- `index.js` 导出 `metadata` 和 `create(roomId, players)`。
+- `index.js` 导出 `metadata` 和 `create(roomId, players, ownerId, settings)`；后两个参数由大厅提供，普通游戏可以忽略。
 - 游戏会话提供 `start()`、`handleAction(playerId, action)`、`getPlayerState(playerId)` 和 `getWinner()`。
 - 前端 `client.js` 导出 `createGameClient({ mount, send, addLog })`；大厅统一提供离开房间入口。
 - 前端只通过大厅传入的 `send` 发送 `gameAction`，不自行创建 WebSocket、房间或玩家身份。
 - 服务端以大厅传入的真实 `playerId` 为准，不信任前端 action 中伪造的身份。
+- 棋谱或管理员类动作必须同时在房间层和规则引擎层检查可信模式与真实操作者，虚拟席位不能替代权限主体。
 - 隐藏信息必须在 `getPlayerState(playerId)` 中按玩家分别过滤。
 - 游戏退出或切换时，前端必须在 `destroy()` 中清理事件、定时器、样式和渲染资源。
 - 新游戏必须加入 `server/games/registry.js`，并保持 `metadata.type`、目录名和注册 key 一致。
@@ -139,6 +152,13 @@ public/games/chess/client.js        # Three.js 棋盘和棋局界面
 server/games/mygame/index.js
 server/games/mygame/engine.js
 public/games/mygame/client.js
+public/games/mygame/state.js
+public/games/mygame/template.js
+public/games/mygame/render.js
+public/games/mygame/scene.js
+public/games/mygame/actions.js
+public/games/mygame/constants.js    # 可选
+public/games/mygame/cards.js        # 卡牌游戏可选
 public/games/mygame/style.css       # 可选
 ```
 
@@ -171,4 +191,4 @@ send({
 
 规则引擎应当是服务端权威状态，前端只负责显示和提交意图。涉及隐藏信息、回合、合法动作、终局、和棋、玩家离线和重连时，都必须在服务端再次校验。
 
-国际象棋目前已经覆盖王安全、将军、将死、逼和、王车易位、吃过路兵、升变、重复局面和回合和棋等核心规则；计时、认输和双方协商和棋属于后续对局管理功能。
+国际象棋目前已经覆盖王安全、将军、将死、逼和、王车易位、吃过路兵、四种升变、重复局面和回合和棋等核心规则。对弈模式与棋谱编辑在房间层和引擎层双重隔离；棋谱仅允许房主控制双方，确认前验证王、兵、棋子数量和非行动方被将状态。详细结果见 [国际象棋测试与安全验收报告](./TEST_REPORTS/chess.md)。计时、认输、双方协商和棋、PGN/FEN 与 AI 属于后续功能。

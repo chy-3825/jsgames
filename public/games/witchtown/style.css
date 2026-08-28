@@ -2611,8 +2611,27 @@ body.is-witchtown-view {
     box-shadow: inset 0 0 0 5px rgba(13, 9, 8, .34), 0 10px 24px rgba(0, 0, 0, .27);
 }
 
+.witchtown-dossier-stack {
+    display: grid;
+    min-width: 0;
+}
+
+.witchtown-dossier-stack > .witchtown-dossier,
+.witchtown-dossier-stack > .witchtown-dossier-cover {
+    grid-area: 1 / 1;
+}
+
 .witchtown-dossier {
     padding: 14px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: none;
+}
+
+.witchtown-dossier-stack.is-revealed > .witchtown-dossier {
+    opacity: 1;
+    visibility: visible;
 }
 
 .witchtown-dossier-cover {
@@ -2627,7 +2646,13 @@ body.is-witchtown-view {
     padding: 23px;
     color: var(--paper);
     text-align: center;
+    user-select: none;
     transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease;
+}
+
+.witchtown-dossier-stack.is-revealed > .witchtown-dossier-cover {
+    opacity: 0;
+    transform: none;
 }
 
 .witchtown-dossier-cover::before,
@@ -3026,6 +3051,8 @@ body.is-witchtown-view {
     .witchtown-table-panel { grid-column: 1; grid-row: 1 / 3; height: 100%; max-height: 100%; min-height: 0; overflow: hidden; padding: 8px; }
     .witchtown-role-panel { display: block; grid-column: 2; grid-row: 1; height: 100%; max-height: 100%; min-height: 0; overflow: hidden; padding: 7px; }
     .witchtown-private-panel { grid-column: 2; grid-row: 2; height: 100%; max-height: 100%; min-height: 0; overflow: auto; padding: 7px; }
+    .witchtown-private-panel > .witchtown-section-heading { display: none; }
+    .witchtown-private-panel > [data-role="private"] { min-height: 100%; }
     .witchtown-hand-panel { grid-column: 3; grid-row: 1 / 3; min-height: 0; overflow: auto; padding: 7px; }
     .witchtown-players-panel, .witchtown-log-panel { display: none; }
     .witchtown-section-heading { gap: 6px; }
@@ -3046,10 +3073,10 @@ body.is-witchtown-view {
     .witchtown-public-cards { max-height: 22px; margin-top: 4px; overflow: auto; }
     .witchtown-seat-metrics { margin-top: 4px; gap: 5px; }
     .witchtown-seat-metrics span, .witchtown-seat-metrics small { font-size: 8px; }
-    .witchtown-dossier-cover { min-height: 74px; height: auto; padding: 8px; }
-    .witchtown-dossier-cover > span, .witchtown-dossier-cover > i { display: none; }
-    .witchtown-dossier-cover strong { font-size: 13px; }
-    .witchtown-dossier-cover small, .witchtown-dossier-cover b { font-size: 8px; line-height: 1.35; }
+    .witchtown-dossier-cover { min-height: 38px; height: auto; gap: 2px; padding: 4px; }
+    .witchtown-dossier-cover > span, .witchtown-dossier-cover > i, .witchtown-dossier-cover > small { display: none; }
+    .witchtown-dossier-cover strong { font-size: 10px; }
+    .witchtown-dossier-cover b { margin-top: 0; font-size: 7px; line-height: 1.2; }
     .witchtown-dossier { gap: 5px; padding: 7px; }
     .witchtown-trial-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
     .witchtown-trial-card { min-height: 54px; padding: 4px; }

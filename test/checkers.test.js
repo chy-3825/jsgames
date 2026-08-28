@@ -19,8 +19,8 @@ test('Chinese Checkers browser client is a valid ES module', () => {
 });
 
 test('Chinese Checkers maps each starting corner to the viewer bottom', () => {
-    const clientPath = path.join(__dirname, '../public/games/checkers/client.js');
-    const source = fs.readFileSync(clientPath, 'utf8');
+    const source = ['client.js', 'constants.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+        .map(file => fs.readFileSync(path.join(__dirname, '../public/games/checkers', file), 'utf8')).join('\n');
     assert.match(source, /function boardRotationForCorner|export function boardRotationForCorner/);
     assert.match(source, /180 - corner \* 60/);
 });

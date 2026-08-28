@@ -564,6 +564,7 @@ button.hb-teammate:hover { border-color: rgba(99, 185, 197, .62); background: #2
     text-align: left;
 }
 .hb-hidden-card:disabled { cursor: default; }
+.hb-hidden-card[aria-disabled="true"] { cursor: default; }
 .hb-hidden-card.tone-red { --known: #e65b53; }
 .hb-hidden-card.tone-yellow { --known: #efc84b; }
 .hb-hidden-card.tone-green { --known: #56b77d; }
@@ -1340,7 +1341,7 @@ button.hb-teammate:hover { border-color: rgba(99, 185, 197, .62); background: #2
     cursor: pointer;
     font-size: 9px;
 }
-.hb-presentation-layer.is-finale .hb-presentation-skip { display: block; }
+.hb-presentation-layer.is-active .hb-presentation-skip { display: block; }
 .hb-presentation-skip:hover { border-color: var(--hb-gold); color: #fff1d4; }
 
 @keyframes hb-line-travel { to { stroke-dashoffset: -38; } }
@@ -1649,6 +1650,27 @@ button.hb-teammate:hover { border-color: rgba(99, 185, 197, .62); background: #2
 
     .hb-overlay,
     .hb-presentation-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .hb-presentation-layer {
+        width: 100vw;
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+    }
+    .hb-action-stage { min-width: 0; min-height: 0; }
+    .hb-clue-event,
+    .hb-card-event,
+    .hb-final-round-cue,
+    .hb-finale-scene {
+        min-width: min(430px, calc(100vw - 24px));
+        max-height: calc(100svh - var(--game-shell-offset, 48px) - 16px);
+    }
+    .hb-clue-event { gap: 4px; padding: 8px 18px; }
+    .hb-clue-token { width: 74px; height: 74px; margin: 1px 0; }
+    .hb-clue-token > i { inset: 8px; }
+    .hb-clue-token strong { font-size: 15px; }
+    .hb-clue-event h2,
+    .hb-final-round-cue h2,
+    .hb-finale-scene h2 { font-size: 22px; }
+    .hb-presentation-skip { right: 8px; bottom: 8px; }
     .hb-overlay { padding: 6px; }
     .hb-rules { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); }
     .hb-close-button { width: 44px; height: 44px; }

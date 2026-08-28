@@ -110,7 +110,7 @@ class DecryptoEngine {
         if (this.phase === 'guessing') {
             if (action.kind === 'submitOwnGuess') return this._submitOwnGuess(player, action);
             if (action.kind === 'submitIntercept') return this._submitIntercept(player, action);
-            return { success: false, message: '请先在线下讨论，再封存本队的最终答案', state: this.getPlayerState(player.id) };
+            return { success: false, message: '请先与队友讨论，再封存本队的最终答案', state: this.getPlayerState(player.id) };
         }
         if (this.phase === 'tiebreak') return this._submitTiebreak(player, action);
         return { success: false, message: '当前阶段不能操作', state: this.getPlayerState(playerId) };

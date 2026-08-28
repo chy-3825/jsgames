@@ -26,6 +26,8 @@
 .manila-app button:disabled { cursor: not-allowed; opacity: .42; }
 
 .mn-header, .mn-layout { width: min(1380px, 100%); margin: 0 auto; }
+.mn-error-banner { width: min(1380px, 100%); margin: -5px auto 11px; padding: 9px 13px; border: 1px solid rgba(218,102,82,.62); border-left: 4px solid #da6652; border-radius: 7px; color: #ffe1d5; background: rgba(104,34,38,.94); font-size: 10px; }
+.mn-error-banner.is-hidden { display: none; }
 .mn-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; min-height: 58px; margin-bottom: 15px; }
 .mn-brand { display: flex; align-items: center; gap: 12px; }
 .mn-brand small, .mn-kicker { display: block; color: #d8b86d; font-size: 10px; font-weight: 900; letter-spacing: .2em; }
@@ -457,6 +459,20 @@
     .mn-final-ledger > span { grid-template-columns: 24px 1fr auto; }
     .mn-final-ledger > span > small { grid-column: 2 / -1; }
     .mn-presentation-skip { right: 9px; bottom: 9px; min-height: 31px; }
+}
+
+@media (max-width: 1050px) and (orientation: landscape) and (max-height: 520px) {
+    body { overflow: hidden; }
+    .manila-app { height: calc(100svh - var(--game-shell-offset, 48px)); min-height: 0; padding: 6px 8px; overflow: hidden; }
+    .mn-header { grid-template-columns: minmax(145px, 1fr) auto auto; min-height: 40px; gap: 8px; margin-bottom: 5px; }.mn-seal { display: none; }.mn-brand h1 { font-size: 18px; }.mn-voyage { grid-column: auto; grid-row: auto; padding: 6px 10px; }
+    .mn-layout { grid-template-columns: minmax(0, 1fr); height: calc(100svh - var(--game-shell-offset, 48px) - 48px); gap: 0; }
+    .mn-chart { grid-template-columns: minmax(430px, 1.25fr) minmax(280px, .75fr); grid-template-areas: "status status" "market market" "routes command"; grid-template-rows: auto auto minmax(0, 1fr); height: 100%; gap: 5px; overflow: hidden; }
+    .mn-status { grid-area: status; min-height: 42px; padding: 6px 9px 6px 13px; }.mn-status h2 { font-size: 14px; }.mn-status p { padding: 3px 6px; }.mn-self-summary span { padding: 2px 4px; }
+    .mn-market { grid-area: market; grid-template-columns: 84px 1fr; }.mn-market > header { padding: 5px 8px; }.mn-market-item { padding: 5px 8px; }.mn-market-item > i { width: 23px; height: 23px; }.mn-market-item > b { font-size: 14px; }
+    .mn-routes { grid-area: routes; min-height: 0; padding: 6px; overflow: auto; }.mn-section-heading { margin-bottom: 4px; }.mn-route-row { grid-template-columns: 95px minmax(210px, 1fr) 105px; min-height: 59px; }.mn-waterway { height: 47px; }.mn-route-row > header { padding: 5px; }.mn-route-row > footer { padding: 5px; }
+    .mn-command { grid-area: command; min-height: 0; padding: 8px; overflow: auto; }.mn-command h3 { font-size: 15px; }.mn-command > p { margin: 4px 0 6px; font-size: 9px; }.mn-placement-choices { grid-template-columns: repeat(2, 1fr); max-height: 150px; }
+    .mn-docks, .mn-ledger { display: none; }
+    .mn-overlay > article { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

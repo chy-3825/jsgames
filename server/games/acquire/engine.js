@@ -70,6 +70,24 @@ class AcquireEngine {
         this.eventSequence = 0;
         this.presentation = null;
         this.phase = 'place'; this.status = 'playing'; this.endGamePending = false; this.actionLog = [`${this.playerMap[first?.playerId]?.name || this.players[0].name} 按起始地块顺序先手`];
+        this._startPresentation(null, 'startSetup', {
+            startingTiles: this.startingTiles
+                .slice()
+                .sort((a, b) => this._tileNumber(a.tile) - this._tileNumber(b.tile) || String(a.tile.id).localeCompare(String(b.tile.id)))
+                .map(entry => ({
+                    tile: { ...entry.tile },
+                    playerId: entry.playerId,
+                    playerName: this.playerMap[entry.playerId]?.name || '',
+                    playerColor: this.playerMap[entry.playerId]?.color || '',
+                })),
+            firstPlayer: first ? {
+                id: first.playerId,
+                name: this.playerMap[first.playerId]?.name || '',
+                color: this.playerMap[first.playerId]?.color || '',
+                tile: { ...first.tile },
+            } : null,
+        });
+        this._updatePresentation({ resolved: true, nextPhase: 'place', nextPlayerId: first?.playerId || null });
         return this._success('并购开始');
     }
 
@@ -142,14 +160,16 @@ class AcquireEngine {
         if (chainIds.length === 1) {
             const before = this._chainPresentation(chainIds[0]);
             this._absorbNeutralNeighbors(tile, chainIds[0]);
+            const after = this._chainPresentation(chainIds[0]);
             this._startPresentation(player, 'placeTile', {
                 tile: { ...tile },
                 resultKind: 'expand',
                 adjacentChainIds: chainIds.slice(),
                 adjacentNeutralIds: neutralAdjacent.map(neighbor => neighbor.id),
                 chainBefore: before,
-                chainAfter: this._chainPresentation(chainIds[0]),
+                chainAfter: after,
             });
+            if (!before.safe && after.safe) this._appendPresentationEvent(player, 'safeChain', { chain: after });
         }
         if (chainIds.length === 0 && neutralAdjacent.length > 0) {
             this.pendingTile = tile;
@@ -213,6 +233,8 @@ class AcquireEngine {
             chain: this._chainPresentation(chainId),
             founderShare,
         });
+        const foundedChain = this._chainPresentation(chainId);
+        if (foundedChain.safe) this._appendPresentationEvent(player, 'safeChain', { chain: foundedChain });
         return this._finishFoundation(player, chainId);
     }
 

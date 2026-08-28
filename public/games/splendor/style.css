@@ -908,6 +908,118 @@ html:has(body.is-splendor-view) { background: #10191c; scrollbar-color: #626a67 
     .sp-market-cards .sp-dev-card { width: 124px; flex-basis: 124px; }
 }
 
+/* Short landscape keeps the public market and the current transaction together. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .sp-app {
+        display: grid;
+        grid-template-rows: 40px minmax(0, 1fr);
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        overflow: hidden;
+    }
+    .sp-header {
+        position: relative;
+        top: auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        min-height: 40px;
+        height: 40px;
+        gap: 7px;
+        padding: 2px 7px;
+    }
+    .sp-brand { display: none; }
+    .sp-turn { grid-column: 1; grid-row: 1; min-width: 0; width: 100%; padding: 5px 7px; overflow: hidden; font-size: 9px; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+    .sp-header-score { grid-column: 2; grid-row: 1; padding-left: 7px; }
+    .sp-header-score small { display: none; }
+    .sp-header-score strong { font-size: 16px; }
+    .sp-header-actions { grid-column: 3; grid-row: 1; }
+
+    .sp-layout {
+        display: grid;
+        grid-template-columns: minmax(400px, 1.45fr) minmax(220px, .75fr);
+        grid-template-areas: "market command";
+        align-items: stretch;
+        gap: 6px;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        padding: 5px 6px max(5px, env(safe-area-inset-bottom));
+        overflow: hidden;
+    }
+    .sp-guild,
+    .sp-table-rail,
+    .sp-nobles-panel { display: none; }
+    .sp-market-stage,
+    .sp-command-column,
+    .sp-command-panel { height: 100%; min-height: 0; overflow: hidden; }
+    .sp-section-header { min-height: 24px; margin-bottom: 3px; padding-bottom: 3px; }
+    .sp-section-header h2 { font-size: 10px; }
+    .sp-section-header small,
+    .sp-section-header > span { font-size: 6px; }
+    .sp-market { height: calc(100% - 27px); gap: 3px; }
+    .sp-tier { grid-template-columns: 54px minmax(0, 1fr); min-height: 0; padding: 3px; border-radius: 5px; }
+    .sp-tier > header { gap: 2px; padding: 1px 4px 1px 0; }
+    .sp-tier-number { font-size: 14px; }
+    .sp-tier > header small { display: none; }
+    .sp-tier > header h3 { font-size: 7px; }
+    .sp-deck-reserve { grid-template-columns: 22px; min-height: 24px; padding: 2px; justify-content: center; }
+    .sp-deck-reserve > span:last-child { display: none; }
+    .sp-deck-stack { width: 22px; height: 22px; }
+    .sp-deck-stack > .sp-card-back { width: 14px; height: 21px; }
+    .sp-market-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding-left: 4px; }
+    .sp-dev-card { height: 76px; grid-template-rows: minmax(0, 1fr) 18px; border-radius: 4px; }
+    .sp-card-face > img { width: 64%; }
+    .sp-card-face > header { padding: 3px; }
+    .sp-card-face > header > strong { min-width: 19px; height: 19px; font-size: 11px; }
+    .sp-bonus-gem { width: 19px; height: 19px; border-width: 1px; }
+    .sp-bonus-gem i { width: 8px; height: 8px; }
+    .sp-card-costs { bottom: 2px; left: 3px; flex-direction: row; flex-wrap: wrap; gap: 1px; }
+    .sp-cost { grid-template-columns: 6px auto; min-width: 16px; min-height: 12px; gap: 1px; padding: 1px 2px; }
+    .sp-cost > i { width: 5px; height: 5px; }
+    .sp-cost > b { font-size: 6px; }
+    .sp-card-level { display: none; }
+    .sp-dev-card > footer button,
+    .sp-card-prompt { font-size: 5px; }
+
+    .sp-command-column { position: static; display: block; }
+    .sp-command-panel { padding: 6px; border-radius: 5px; border-top-width: 2px; overflow: auto; }
+    .sp-command-panel > header,
+    .sp-command-heading { min-height: 25px; padding-bottom: 4px; }
+    .sp-command-panel h2 { font-size: 10px; }
+    .sp-command-panel header small { font-size: 6px; }
+    .sp-command-wallet { gap: 3px; margin: 4px 0; padding: 4px; }
+    .sp-command-wallet > span { display: none; }
+    .sp-command-wallet > strong { font-size: 12px; }
+    .sp-bank-heading { margin-bottom: 3px; }
+    .sp-bank { grid-template-columns: repeat(3, 1fr); gap: 3px; }
+    .sp-bank-token { grid-template-columns: 19px auto; min-height: 34px; padding: 3px; }
+    .sp-bank-token > .sp-gem { width: 18px; height: 18px; border-width: 1px; }
+    .sp-bank-token > strong { font-size: 10px; }
+    .sp-bank-token > small { font-size: 5px; }
+    .sp-primary { min-height: 29px; margin-top: 4px; }
+    .sp-market-actions,
+    .sp-last-action { display: none; }
+    .sp-return-status { margin: 4px 0; padding: 4px; }
+    .sp-return-list { gap: 3px; }
+    .sp-return-row { min-height: 32px; padding: 2px; }
+    .sp-command-nobles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .sp-overlay,
+    .sp-presentation-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .sp-overlay { padding: 6px; }
+    .sp-rules { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); }
+    .sp-rules-art { min-height: 0; padding: 12px; }
+    .sp-rules-copy { padding: 14px; }
+    .sp-rules-copy h2 { margin-bottom: 7px; font-size: 18px; }
+    .sp-rules-copy ol { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; }
+    .sp-rules-copy li { grid-template-columns: 64px minmax(0, 1fr); padding-bottom: 3px; }
+    .sp-transaction-stage { min-height: 0; }
+    .sp-token-event,
+    .sp-reserve-event,
+    .sp-buy-event,
+    .sp-noble-event { min-height: 250px; }
+    .sp-presentation-skip { right: 8px; bottom: 8px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .sp-app *,
     .sp-app *::before,
@@ -1143,7 +1255,7 @@ html:has(body.is-splendor-view) { background: #10191c; scrollbar-color: #626a67 
 .sp-final-standings article > b small { margin-left: 3px; color: #777f7b; font: 800 5px "Noto Sans SC", sans-serif; }
 .sp-final-standings article > em { color: #7e8782; font-size: 6px; font-style: normal; text-align: right; }
 .sp-presentation-skip { display: none; position: absolute; z-index: 4; right: 20px; bottom: 18px; padding: 7px 13px; border: 1px solid rgba(241, 236, 220, .3); border-radius: 4px; background: rgba(17, 27, 30, .88); color: #aeb6b1; cursor: pointer; font-size: 7px; }
-.sp-presentation-layer.is-finale .sp-presentation-skip { display: block; }
+.sp-presentation-layer.is-active .sp-presentation-skip { display: block; }
 
 @keyframes sp-line-flow { to { stroke-dashoffset: -19; } }
 @keyframes sp-gem-float { to { transform: translateY(-5px); } }

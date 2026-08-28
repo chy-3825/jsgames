@@ -1,0 +1,9 @@
+import { escapeHtml } from '../common/html.js';
+export { escapeHtml };
+export const CAMELS = Object.freeze([{ id: 'red', name: '赤焰', mark: '赤', color: '#cf4d3f' }, { id: 'blue', name: '海蓝', mark: '蓝', color: '#347f9d' }, { id: 'green', name: '绿洲', mark: '绿', color: '#56865b' }, { id: 'yellow', name: '金沙', mark: '金', color: '#d89a2e' }, { id: 'white', name: '月白', mark: '白', color: '#a5aba8' }]);
+export const TRACK_LAYOUT = Object.freeze({ 1: [1, 1], 2: [1, 2], 3: [1, 3], 4: [1, 4], 5: [1, 5], 6: [1, 6], 7: [2, 6], 8: [3, 6], 9: [4, 6], 10: [4, 5], 11: [4, 4], 12: [4, 3], 13: [4, 2], 14: [4, 1], 15: [3, 1], 16: [2, 1] });
+export const MOBILE_TRACK_LAYOUT = Object.freeze({ 1: [1, 1], 2: [1, 2], 3: [1, 3], 4: [1, 4], 5: [2, 4], 6: [2, 3], 7: [2, 2], 8: [2, 1], 9: [3, 1], 10: [3, 2], 11: [3, 3], 12: [3, 4], 13: [4, 4], 14: [4, 3], 15: [4, 2], 16: [4, 1] });
+export function camelMeta(id) { return CAMELS.find(camel => camel.id === id) || { id, name: id || '未知', mark: '驼', color: '#8e735a' }; }
+export function camelGlyph(className = '') { return `<svg class="${className}" viewBox="0 0 112 68" aria-hidden="true"><path d="M8 49h14l8-15 13-4 7-17c1-3 5-3 7 0l6 12 11-11c2-2 5-1 7 1l8 13 9-1 8 8-5 8-4 19h-8l1-18H68l-2 18h-8l-3-18H39l-6 18h-8l3-20-8 9H8z"></path><circle cx="96" cy="33" r="2"></circle><path class="cm-glyph-saddle" d="M45 28h25l-5 13H42z"></path></svg>`; }
+export function finishCardBack(className = '') { return `<i class="cm-finish-back ${className}" aria-hidden="true"><span></span><b>终局</b></i>`; }
+export function finishBackFan(count, className = '') { const visible = Math.min(3, Math.max(0, Number(count) || 0)); return `<span class="cm-finish-back-fan ${className}" aria-hidden="true">${Array.from({ length: visible }, (_, index) => finishCardBack(`is-${index + 1}`)).join('')}</span>`; }

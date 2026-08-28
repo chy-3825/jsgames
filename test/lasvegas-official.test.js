@@ -24,18 +24,25 @@ test('Las Vegas follows the official bank, setup, neutral-dice variants and four
         assert.equal(game.casinos.length, 6);
         assert.equal(game.casinos.every(casino => casino.money.reduce((sum, value) => sum + value, 0) >= 50), true);
         assert.equal(game.round, 1);
+        assert.equal(game.presentation.resolved, true);
+        assert.equal(game.presentation.events[0].kind, 'roundStarted');
+        assert.equal(game.presentation.events[0].round, 1);
+        assert.equal(game.presentation.events[0].starterId, 'lv0');
+        assert.deepEqual(game.presentation.events[0].casinos.map(casino => casino.face), [1, 2, 3, 4, 5, 6]);
         assert.equal(session.start().success, false);
         if (count <= 4) {
             assert.ok(game.neutral);
             assert.equal(game.neutral.diceRemaining, 8);
             assert.equal(game.players.reduce((sum, player) => sum + player.neutralDiceRemaining, 0), 8);
             assert.equal(game.participants.length, count + 1);
+            assert.equal(game.presentation.events[0].neutralDiceTotal, 8);
             if (count === 2) assert.deepEqual(game.players.map(player => player.neutralDiceRemaining), [4, 4]);
             if (count === 3) assert.deepEqual(game.players.map(player => player.neutralDiceRemaining), [4, 2, 2]);
             if (count === 4) assert.deepEqual(game.players.map(player => player.neutralDiceRemaining), [2, 2, 2, 2]);
         } else {
             assert.equal(game.neutral, null);
             assert.equal(game.participants.length, count);
+            assert.equal(game.presentation.events[0].neutralDiceTotal, 0);
         }
     }
 });

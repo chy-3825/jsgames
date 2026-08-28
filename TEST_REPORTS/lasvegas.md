@@ -4,7 +4,7 @@
 
 本轮按 Ravensburger/Alea 2012 基础版规则复核，覆盖 2–5 人设置、54 张钞票、六家赌场、每轮 8 枚自有骰子、2–4 人中立骰子变体、四轮多数分配、平票、钞票回收和终局同分裁定。
 
-结论：**通过，10/10**。专项测试 5/5 通过，现有拉斯维加斯回归测试全部通过；最大人数 5 人连续完成 3 局。
+结论：**通过，10/10**。规则专项 5/5、前端专项 4/4 通过，现有拉斯维加斯回归测试全部通过；最大人数 5 人连续完成 3 局。
 
 规则依据：[Ravensburger 官方 Las Vegas 规则书](https://www.ravensburger.org/spielanleitungen/ecm/Spielanleitungen/26938_Vegas_EN.pdf)和[Ravensburger 产品页](https://www.ravensburger.us/en-US/products/games/family-games/las-vegas-24903)。官方规则明确 6 家赌场、54 张钞票、每局 4 轮，以及 2–4 人中立骰子变体。
 
@@ -28,6 +28,15 @@
 2. 修正钞票牌库：不再每轮重新生成 54 张牌；已发出的钞票从牌库移除，未发出的钞票和中立赢得的钞票回到牌库底部。
 3. 增加开始状态保护和随机源注入，保证一局只能开始一次并支持可复现测试。
 4. 前端玩家席位同时显示自有骰子和中立骰子剩余数量，规则浮层同步展示 2–4 人变体。
+5. 掷骰和确认放置增加统一提交锁与处理中反馈，服务端状态或错误返回后恢复，避免重复提交。
+6. 增加持续可见的操作错误提示；规则弹层补齐背景隔离、Tab 焦点循环和关闭后的焦点归还。
+7. 规则弹层补全 2–4 人中立骰分配以及三人局剩余中立骰的控制说明。
+8. 增加手机短横屏布局，并把待掷骰、掷骰、预选、平手、中立骰、结算、排名、演出和终局九种状态纳入统一视觉夹具。
+
+## 全屏播报补强（2026-08-27）
+
+- 第一轮与后续轮次统一播放开桌动画，展示六家赌场奖池、先手玩家，以及本局是否启用 8 枚中立骰。
+- 最终标题直接宣布“玩家名成为今晚的赌场之王”；多人完全同分时列出全部姓名并宣布并列称霸。
 
 ## 三局五人完整流程
 
@@ -73,12 +82,15 @@
 
 ## 自动化专项测试
 
+- `test/lasvegas-frontend.test.js`：4/4 通过，覆盖提交锁、处理中反馈、错误恢复、规则弹层、短横屏和九种视觉状态。
+
 - `Las Vegas follows the official bank, setup, neutral-dice variants and four-round lifecycle`
 - `Las Vegas resolves ties before payout and returns neutral winnings to the bank`
 - `Las Vegas completes three independent five-player maximum games`
 - `Las Vegas publishes split dice and structured placement presentation events`
 - `Las Vegas preserves every casino settlement scene and uses banknote count as the final tiebreaker`
 - 既有回归中的完整牌组、两人中立骰、平票结算和五人四轮对局测试
+- 全项目 `npm test`：429/429 通过。
 
 ## 最终评分
 

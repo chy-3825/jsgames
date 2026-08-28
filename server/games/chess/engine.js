@@ -3,25 +3,46 @@ function key(x, y) { return `${x},${y}`; }
 function inside(x, y) { return x >= 0 && x < 8 && y >= 0 && y < 8; }
 
 class ChessEngine {
-    constructor(roomId, players) {
-        this.roomId = roomId; this.players = players.slice(0, 2).map((p, i) => ({ id: p.id, name: p.name, color: i === 0 ? 'white' : 'black', isOnline: true })); this.playerMap = Object.fromEntries(this.players.map(p => [p.id, p])); this.board = this._createBoard(); this.status = 'waiting'; this.turn = 'white'; this.currentTurnIndex = 0; this.castling = { K: true, Q: true, k: true, q: true }; this.enPassant = null; this.lastMove = null; this.lastAction = null; this.actionLog = []; this.winner = null; this.drawReason = null; this.halfmoveClock = 0; this.positionCounts = new Map();
+    constructor(roomId, players, ownerId = null, settings = {}) {
+        if (!Array.isArray(players) || players.length !== 2) throw new Error('国际象棋需要恰好 2 名玩家');
+        const validId = id => (typeof id === 'string' || typeof id === 'number') && String(id).trim().length > 0 && String(id).length <= 128;
+        if (!players.every(player => player && validId(player.id))) throw new Error('玩家 ID 无效');
+        if (new Set(players.map(player => String(player.id))).size !== 2) throw new Error('玩家 ID 不能重复');
+        this.roomId = roomId; this.players = players.map((p, i) => ({ id: p.id, name: String(p.name ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 40) || `玩家 ${i + 1}`, color: i === 0 ? 'white' : 'black', isOnline: true })); this.playerMap = Object.fromEntries(this.players.map(p => [p.id, p])); this.gameMode = settings?.gameMode === 'study' ? 'study' : 'match'; this.ownerId = validId(ownerId) ? ownerId : this.players[0].id; this.studyPieceSequence = 0; this.board = this._createBoard(); this.status = 'waiting'; this.turn = 'white'; this.currentTurnIndex = 0; this.castling = { K: true, Q: true, k: true, q: true }; this.enPassant = null; this.lastMove = null; this.lastAction = null; this.actionLog = []; this.winner = null; this.drawReason = null; this.halfmoveClock = 0; this.positionCounts = new Map();
     }
     _createBoard() { const board = new Map(); const back = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']; for (let x = 0; x < 8; x++) { board.set(key(x, 0), { id: `br${x}`, type: back[x], color: 'black', moved: false }); board.set(key(x, 1), { id: `bp${x}`, type: 'p', color: 'black', moved: false }); board.set(key(x, 6), { id: `wp${x}`, type: 'p', color: 'white', moved: false }); board.set(key(x, 7), { id: `wr${x}`, type: back[x], color: 'white', moved: false }); } return board; }
-    start() { if (this.players.length !== 2) return { success: false, message: '国际象棋需要 2 名玩家' }; this.status = 'playing'; this.positionCounts.clear(); this._recordPosition(); this.actionLog = [`${this.players[0].name} 执白，请开始走棋`]; return this._success('国际象棋开始'); }
+    start() { if (this.status !== 'waiting') return { success: false, message: '棋局已经开始，不能重复启动' }; this.status = 'playing'; this.positionCounts.clear(); this._recordPosition(); this.actionLog = [`${this.players[0].name} 执白，请开始走棋`]; return this._success('国际象棋开始'); }
     handleAction(playerId, action = {}) { if (this.status !== 'playing') return { success: false, message: '棋局尚未开始或已结束' }; const player = this.playerMap[playerId]; if (!player || !player.isOnline) return { success: false, message: '玩家不存在或已离线' }; if (player.color !== this.turn) return { success: false, message: '还没轮到你', state: this.getPlayerState(playerId) }; if (action.kind === 'claimDraw') { const repetitions = this.positionCounts.get(this._positionKey()) || 0; if (this.halfmoveClock < 100 && repetitions < 3) return { success: false, message: '当前还不能声明和棋', state: this.getPlayerState(playerId) }; const reason = this.halfmoveClock >= 100 ? '五十回合规则和棋' : '三次重复局面和棋'; this._endDraw(reason); this.lastAction = { kind: 'draw', playerId, playerName: player.name, message: `${player.name} 声明${reason}` }; return this._success(this.lastAction.message); } if (action.kind !== 'move') return { success: false, message: '请提交走棋操作', state: this.getPlayerState(playerId) }; const from = this._coord(action.from); const to = this._coord(action.to); const piece = from && this.board.get(key(from.x, from.y)); if (!from || !to) return { success: false, message: '坐标无效', state: this.getPlayerState(playerId) }; if (!piece || piece.color !== this.turn) return { success: false, message: '只能移动自己的棋子', state: this.getPlayerState(playerId) }; const move = this._legalMovesForPiece(piece).find(m => m.to.x === to.x && m.to.y === to.y); if (!move) return { success: false, message: '这步不符合国际象棋规则', state: this.getPlayerState(playerId) }; const requestedPromotion = this._normalizePromotion(action.promotion); const promotion = move.promotion ? requestedPromotion || 'q' : null; const wasPawn = piece.type === 'p'; const wasCapture = Boolean(move.capture); this._updateCastlingRights(piece, from, to); this._applyMove(this.board, { ...move, promotion }); this.lastMove = { from, to, piece: { ...piece }, capture: wasCapture, enPassant: Boolean(move.enPassant), castle: Boolean(move.castle), promotion }; this.enPassant = wasPawn && Math.abs(to.y - from.y) === 2 ? { x: from.x, y: (to.y + from.y) / 2 } : null; this.halfmoveClock = wasPawn || wasCapture ? 0 : this.halfmoveClock + 1; this.lastAction = { kind: 'move', playerId, playerName: player.name, message: `${player.name} 走了 ${piece.type.toUpperCase()} ${FILES[from.x]}${8 - from.y}→${FILES[to.x]}${8 - to.y}` }; this.actionLog.push(this.lastAction.message); this.turn = this.turn === 'white' ? 'black' : 'white'; this.currentTurnIndex = this.turn === 'white' ? 0 : 1; const checkingPieceIds = this._checkingPieces(this.turn, this.board); this.lastMove.gaveCheck = checkingPieceIds.length > 0; this.lastMove.checkingPieceIds = checkingPieceIds; this._recordPosition(); this._evaluatePosition(); return this._success(this.lastAction.message); }
-    handleStudySetup(playerId, action = {}) {
+    handleStudySetup(playerId, action = {}, actorId = playerId) {
         const player = this.playerMap[playerId];
+        if (this.gameMode !== 'study' || actorId !== this.ownerId) return { success: false, message: '只有棋谱模式的房主可以编辑棋盘' };
         if (!player || this.status !== 'playing') return { success: false, message: '摆棋阶段不可用' };
         const coord = value => this._coord(value);
         const resetMeta = message => { this.status = 'playing'; this.winner = null; this.drawReason = null; this.lastMove = null; this.lastAction = null; this.halfmoveClock = 0; this.enPassant = null; this.positionCounts.clear(); this._recordPosition(); this.actionLog = [message]; return this._success(message); };
         const invalidateCastling = () => { this.castling = { K: false, Q: false, k: false, q: false }; };
         if (action.kind === 'reset') { this.board = this._createBoard(); this.castling = { K: true, Q: true, k: true, q: true }; this.turn = 'white'; this.currentTurnIndex = 0; return resetMeta('已恢复国际象棋标准开局'); }
         if (action.kind === 'clear') { this.board = new Map(); this.castling = { K: false, Q: false, k: false, q: false }; this.turn = 'white'; this.currentTurnIndex = 0; return resetMeta('已清空国际象棋局面'); }
-        if (action.kind === 'setTurn') { if (!['white', 'black'].includes(action.color)) return { success: false, message: '行动方无效', state: this.getPlayerState(playerId) }; this.turn = action.color; this.currentTurnIndex = action.color === 'white' ? 0 : 1; this.status = 'playing'; this.winner = null; this.drawReason = null; return this._success(`下一手为${action.color === 'white' ? '白方' : '黑方'}`); }
+        if (action.kind === 'setTurn') { if (!['white', 'black'].includes(action.color)) return { success: false, message: '行动方无效', state: this.getPlayerState(playerId) }; this.turn = action.color; this.currentTurnIndex = action.color === 'white' ? 0 : 1; return resetMeta(`下一手为${action.color === 'white' ? '白方' : '黑方'}`); }
         if (action.kind === 'remove') { const point = coord({ x: action.x, y: action.y }); if (!point || !this.board.delete(key(point.x, point.y))) return { success: false, message: '该位置没有可移除的棋子', state: this.getPlayerState(playerId) }; invalidateCastling(); return resetMeta('已移除棋子'); }
-        if (action.kind === 'place') { const point = coord({ x: action.x, y: action.y }); const color = action.color === 'black' ? 'black' : action.color === 'white' ? 'white' : player.color; const type = ['p', 'n', 'b', 'r', 'q', 'k'].includes(action.pieceType || action.type) ? (action.pieceType || action.type) : 'p'; if (!point || this.board.has(key(point.x, point.y))) return { success: false, message: '摆棋位置无效或已有棋子', state: this.getPlayerState(playerId) }; this.board.set(key(point.x, point.y), { id: `study-${color}-${Date.now()}-${this.board.size}`, type, color, moved: false }); invalidateCastling(); return resetMeta('已摆放棋子'); }
+        if (action.kind === 'place') { const point = coord({ x: action.x, y: action.y }); const color = action.color === 'black' ? 'black' : action.color === 'white' ? 'white' : player.color; const type = ['p', 'n', 'b', 'r', 'q', 'k'].includes(action.pieceType || action.type) ? (action.pieceType || action.type) : 'p'; if (!point || this.board.has(key(point.x, point.y))) return { success: false, message: '摆棋位置无效或已有棋子', state: this.getPlayerState(playerId) }; this.board.set(key(point.x, point.y), { id: `study-${color}-${++this.studyPieceSequence}`, type, color, moved: false }); invalidateCastling(); return resetMeta('已摆放棋子'); }
         if (action.kind === 'move') { const from = coord(action.from); const to = coord(action.to); const piece = from && this.board.get(key(from.x, from.y)); if (!from || !to || !piece || piece.color !== player.color || this.board.has(key(to.x, to.y))) return { success: false, message: '只能移动当前执棋方的棋子到空位', state: this.getPlayerState(playerId) }; this.board.delete(key(from.x, from.y)); piece.moved = false; this.board.set(key(to.x, to.y), piece); invalidateCastling(); return resetMeta('已调整棋子位置'); }
         return { success: false, message: '未知摆棋操作', state: this.getPlayerState(playerId) };
+    }
+    validateStudyPosition() {
+        if (this.gameMode !== 'study') return { success: false, message: '当前不是棋谱模式' };
+        const pieces = [...this.board.entries()];
+        for (const color of ['white', 'black']) {
+            const own = pieces.filter(([, piece]) => piece.color === color);
+            if (own.filter(([, piece]) => piece.type === 'k').length !== 1) return { success: false, message: `${color === 'white' ? '白方' : '黑方'}必须有且仅有一个王` };
+            if (own.length > 16 || own.filter(([, piece]) => piece.type === 'p').length > 8) return { success: false, message: `${color === 'white' ? '白方' : '黑方'}棋子数量超出合法上限` };
+        }
+        if (pieces.some(([pos, piece]) => piece.type === 'p' && ['0', '7'].includes(pos.split(',')[1]))) return { success: false, message: '兵不能摆在第一或第八横线' };
+        const whiteKing = this._kingEntry('white', this.board), blackKing = this._kingEntry('black', this.board);
+        const [wx, wy] = whiteKing[0].split(',').map(Number), [bx, by] = blackKing[0].split(',').map(Number);
+        if (Math.max(Math.abs(wx - bx), Math.abs(wy - by)) <= 1) return { success: false, message: '双方的王不能相邻' };
+        const inactive = this.turn === 'white' ? 'black' : 'white';
+        if (this._isInCheck(inactive, this.board)) return { success: false, message: '非行动方不能处于被将军状态' };
+        return { success: true, message: '棋谱局面合法' };
     }
     _coord(v) { return v && Number.isInteger(v.x) && Number.isInteger(v.y) && inside(v.x, v.y) ? { x: v.x, y: v.y } : null; }
     _normalizePromotion(v) { return ['q', 'r', 'b', 'n'].includes(v) ? v : null; }
@@ -109,9 +130,10 @@ class ChessEngine {
     _positionKey() {
         const pieces = [...this.board.entries()].map(([pos, piece]) => `${pos}:${piece.color[0]}${piece.type}`).sort().join('/');
         const rights = ['K', 'Q', 'k', 'q'].filter(right => this.castling[right]).join('') || '-';
-        const enPassant = this.enPassant ? `${this.enPassant.x},${this.enPassant.y}` : '-';
+        const enPassant = this._hasLegalEnPassant() ? `${this.enPassant.x},${this.enPassant.y}` : '-';
         return `${this.turn}|${rights}|${enPassant}|${pieces}`;
     }
+    _hasLegalEnPassant() { return Boolean(this.enPassant && [...this.board.values()].filter(piece => piece.color === this.turn && piece.type === 'p').some(piece => this._legalMovesForPiece(piece).some(move => move.enPassant))); }
     _isDeadPosition() {
         const nonKings = [...this.board.values()].filter(piece => piece.type !== 'k');
         if (!nonKings.length) return true;

@@ -1,6 +1,8 @@
 import { getGameDetails } from './game-details.js';
+import { escapeHtml } from './games/common/html.js';
+import { getGameClientPath as getManifestClientPath, getGameStyleHrefs, getGameStylePaths as getManifestStylePaths } from './games/common/game-manifest.js';
 
-const ASSET_VERSION = '20260827-hidden-role-focus-1';
+const ASSET_VERSION = '20260827-werewolf-results-1';
 window.__JSGAMES_ASSET_VERSION__ = ASSET_VERSION;
 
 const statusEl = document.getElementById('status');
@@ -112,7 +114,7 @@ const GAME_PRESENTATION = {
     lasvegas: { symbol: '$', title: '拉斯维加斯', subtitle: '骰子、赌场与多数争夺', english: 'LAS VEGAS', players: '2–5 人', time: '30 分钟', tone: 'teal', description: '把骰子押在最值得争夺的赌场。' },
     avalon: { symbol: '⚔', title: '阿瓦隆', subtitle: '封存身份，在真实圆桌前自由推理', english: 'AVALON', players: '5–10 人', time: '35 分钟', tone: 'violet', description: '页面保管秘密与规则，玩家在线下自由讨论、组队、投票并完成远征。' },
     scout: { symbol: '★', title: '马戏星探', subtitle: '手牌顺序与马戏表演', english: 'SCOUT', players: '2–5 人', time: '20 分钟', tone: 'rose', description: '不能重排的手牌，也能拼出最强演出。' },
-    decrypto: { symbol: '⌁', title: '谍报风云', subtitle: '封存电报，在真实桌面上破译', english: 'DECRYPTO', players: '3–8 人', time: '30 分钟', tone: 'blue', description: '页面保管密钥与通信，双方在线下自由讨论、误导并破译频道。' },
+    decrypto: { symbol: '⌁', title: '谍报风云', subtitle: '公共语音推演，逐轮破译密码', english: 'DECRYPTO', players: '3–8 人', time: '30 分钟', tone: 'blue', description: '页面保管关键词、密码和判定，双方可在同桌或公共语音中完整游玩。' },
     manila: { symbol: '⚓', title: '马尼拉', subtitle: '货船、股份与港口投机', english: 'MANILA', players: '3–5 人', time: '60 分钟', tone: 'gold', description: '押注哪艘货船抵达港口，成为最富有的商人。' },
     modernart: { symbol: '▧', title: '现代艺术', subtitle: '竞价、炒作与艺术市场', english: 'MODERN ART', players: '3–5 人', time: '45 分钟', tone: 'rose', description: '买下潜力艺术家，再把热度变成财富。' },
     camelup: { symbol: '🐪', title: '狂野骆驼', subtitle: '骆驼赛跑与赔率下注', english: 'CAMEL UP', players: '3–8 人', time: '35 分钟', tone: 'sand', description: '猜谁会冲线，别让叠在一起的骆驼骗过你。' },
@@ -163,6 +165,7 @@ let entryExitTimer = null;
 let entryReturnTimer = null;
 const GROUP_PRESENTATION = {
     'social-assist': { name: '社交推理与流程辅助', description: '身份、沟通与自动流程' },
+    codebreaking: { name: '解密类', description: '密码、线索与逻辑破译' },
     board: { name: '棋类与棋盘游戏', description: '棋盘对弈与路线竞赛' },
     tabletop: { name: '卡牌与策略桌游', description: '卡牌、经营、竞价与策略' },
 };
@@ -181,10 +184,10 @@ const GAME_COVERS = {
     chess: '/assets/covers/chess-v6.webp',
     xiangqi: '/assets/covers/xiangqi-v3.webp',
     jungle: '/assets/covers/jungle.webp',
-    junqi: '/assets/covers/junqi.webp',
+    junqi: '/assets/covers/junqi-v10.webp',
     aeroplane: '/assets/covers/aeroplane.webp',
     gobang: '/assets/covers/gobang.webp',
-    checkers: '/assets/covers/checkers-v2.webp',
+    checkers: '/assets/covers/checkers-v10.webp',
     monopoly: '/assets/covers/monopoly.webp',
     loveletter: '/assets/covers/loveletter.webp',
     coup: '/assets/covers/coup.webp',
@@ -890,15 +893,10 @@ function renderWaitingRoomPanel() {
     lobbyStartGameBtn.style.display = 'none';
     renderWaitingRoomScene();
 }
-function getGameClientPath(gameType) { return gameType === 'chess' ? '/games/chess/lobby-client.js' : `/games/${gameType}/client.js`; }
-function getGameStylePaths(gameType) {
-    if (gameType === 'chess') return ['/games/chess/chess3d.css'];
-    if (gameType === 'monopolydeal') return ['/games/monopolydeal/style.css', '/games/monopolydeal/choice.css'];
-    return [`/games/${gameType}/style.css`];
-}
+function getGameClientPath(gameType) { return getManifestClientPath(gameType); }
+function getGameStylePaths(gameType) { return getManifestStylePaths(gameType); }
 function preloadGameStyles(gameType) {
-    getGameStylePaths(gameType).forEach(path => {
-        const href = `${path}?v=${ASSET_VERSION}`;
+    getGameStyleHrefs(gameType).forEach(href => {
         if (document.head.querySelector(`link[data-game-preload="${gameType}"][href="${href}"]`)) return;
         const link = document.createElement('link');
         link.rel = 'preload';
@@ -1650,7 +1648,6 @@ function setConnectionStatus(text, className) {
 }
 function isInRoom(roomId) { return currentRoomId === roomId; }
 function roomStatusText(status) { return status === 'playing' ? '游戏中' : status === 'ended' ? '已结束' : '等待中'; }
-function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
 function openMobileRooms() { if (!mobileRoomsDrawer) return; mobileRoomsDrawer.hidden = false; mobileRoomsDrawer.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-mobile-drawer'); mobileRoomsDrawer.querySelector('section [data-close-mobile-rooms]')?.focus(); }
 function closeMobileRooms() { if (!mobileRoomsDrawer || mobileRoomsDrawer.hidden) return; mobileRoomsDrawer.hidden = true; mobileRoomsDrawer.setAttribute('aria-hidden', 'true'); document.body.classList.remove('has-mobile-drawer'); openMobileRoomsBtn?.focus(); }
 

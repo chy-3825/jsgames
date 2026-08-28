@@ -54,6 +54,25 @@ test('Avalon seals every private identity before opening the round table', () =>
     assert.equal(game.getPublicState().roleConfirmCount, 5);
 });
 
+test('Avalon publishes the complete team ballot only after every player votes', () => {
+    const game = new AvalonEngine('avalon-public-ballot', players(5), () => 0);
+    game.start(); confirmRoles(game);
+    const team = game.players.slice(0, 2).map(player => player.id);
+    assert.equal(game.handleAction(game.players[0].id, { kind: 'proposeTeam', playerIds: team }).success, true);
+    const proposalEventId = game.getPublicState().publicEvent.id;
+    for (const player of game.players.slice(0, -1)) {
+        assert.equal(game.handleAction(player.id, { kind: 'castVote', approve: player.id !== 'p4' }).success, true);
+        assert.equal(game.getPublicState().publicEvent.id, proposalEventId);
+        assert.equal(game.getPublicState().publicEvents.some(event => event.kind === 'teamVote'), false);
+    }
+    assert.equal(game.handleAction('p5', { kind: 'castVote', approve: true }).success, true);
+    const event = game.getPublicState().publicEvents.findLast(item => item.kind === 'teamVote');
+    assert.deepEqual({ kind: event.kind, title: event.title, detail: event.detail, approvals: event.approvals, rejections: event.rejections }, {
+        kind: 'teamVote', title: '提案获得通过 · 4 比 1', detail: '1、2、3、5 号赞成；4 号反对', approvals: 4, rejections: 1,
+    });
+    assert.deepEqual(event.ballots, { p1: true, p2: true, p3: true, p4: false, p5: true });
+});
+
 test('Avalon enforces official mission sizes and the two-fail fourth mission', () => {
     const sizes = { 5: [2, 3, 2, 3, 3], 6: [2, 3, 4, 3, 4], 7: [2, 3, 3, 4, 4], 8: [3, 4, 4, 5, 5], 9: [3, 4, 4, 5, 5], 10: [3, 4, 4, 5, 5] };
     for (const [count, expected] of Object.entries(sizes)) {
@@ -81,6 +100,7 @@ test('Avalon enforces official mission sizes and the two-fail fourth mission', (
     assert.equal(sevenOneFail.handleAction(sevenOneFail.team[0], { kind: 'missionVote', result: 'fail' }).success, true);
     for (const id of sevenOneFail.team.slice(1)) assert.equal(sevenOneFail.handleAction(id, { kind: 'missionVote', result: 'success' }).success, true);
     assert.equal(sevenOneFail.lastMission.success, true);
+    assert.equal(sevenOneFail.getPublicState().publicEvents.findLast(event => event.kind === 'missionResult').detail, '1 张失败牌，不足 2 张，任务仍然成功');
 });
 
 test('Avalon enforces private role knowledge and optional role visibility rules', () => {
@@ -117,6 +137,28 @@ test('Avalon only allows the assassin to target a good player', () => {
     const good = game.players.find(player => player.role === 'loyal');
     assert.equal(game.handleAction(assassin.id, { kind: 'assassinate', targetId: good.id }).success, true);
     assert.equal(game.winner.faction, 'good');
+    assert.equal(game.winner.reason, 'missedMerlin');
+    assert.equal(game.winner.targetId, good.id);
+    const endingKinds = game.getPublicState().publicEvents.slice(-3).map(event => event.kind);
+    assert.deepEqual(endingKinds, ['assassination', 'targetRoleReveal', 'identityReveal']);
+    const assassination = game.getPublicState().publicEvents.find(event => event.kind === 'assassination');
+    assert.deepEqual({ title: assassination.title, detail: assassination.detail, targetId: assassination.targetId, hit: assassination.hit }, {
+        title: `刺客选择了 ${good.seat} 号 · ${good.name}`, detail: '梅林仍隐藏在圆桌之中', targetId: good.id, hit: false,
+    });
+});
+
+test('Avalon publishes the complete ten-player ceremony sequence', () => {
+    const game = new AvalonEngine('avalon-ceremony', players(10), () => 0);
+    game.start();
+    assert.equal(game.getPublicState().publicEvents[0].kind, 'identityBriefing');
+    confirmRoles(game);
+    assert.equal(game.getPublicState().publicEvent.kind, 'roundStart');
+    const team = game.players.slice(0, 3).map(player => player.id);
+    approveTeam(game, team, false);
+    assert.deepEqual(game.getPublicState().publicEvents.slice(-2).map(event => event.kind), ['teamVote', 'leaderTransfer']);
+    game.round = 3; game.phase = 'mission'; game.team = team; game.missionVotes = Object.fromEntries(team.map(id => [id, 'success'])); game.successfulMissions = 1;
+    game._resolveMission();
+    assert.deepEqual(game.getPublicState().publicEvents.slice(-3).map(event => event.kind), ['missionResult', 'roundStart', 'twoFailRule']);
 });
 
 test('Avalon completes three independent maximum-player games from start to finish', () => {

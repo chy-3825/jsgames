@@ -1,0 +1,8 @@
+export function createMagicalAthleteModel() {
+    return { state: null, interactionSignature: '', pendingAction: null, actionPending: false, previousFocus: null, presentationQueue: [], presentationPlaying: false, presentationToken: 0, presentationTimer: null, presentationRelease: null, lastPresentationSequence: null, acknowledgementTimer: null, acknowledgementId: null, latestPresentationState: null };
+}
+export function playerName(state, id) { return state?.players?.find(player => player.id === id)?.name || id; }
+export function playerColor(state, id) { return state?.players?.find(player => player.id === id)?.color || '#fff'; }
+export function athleteById(state, id) { return state?.athletes?.find(athlete => athlete.id === id); }
+export function signature(next) { const racers = (next.racers || []).map(racer => `${racer.id}:${racer.position}:${racer.finishOrder}:${racer.tripped}:${racer.eliminated}`).join(','); const prompt = next.prompt ? `${next.prompt.kind}:${next.prompt.playerId}:${next.prompt.racerId}:${next.prompt.targetRacerId}` : ''; const team = (next.myTeam || []).map(athlete => `${athlete.id}:${athlete.used}`).join(','); const selections = (next.raceSelectionStatus || []).map(entry => `${entry.playerId}:${entry.selectedCount}:${entry.ready}`).join(','); return [next.status, next.phase, next.match, next.currentTurn, next.draftRound, prompt, racers, team, selections, next.myRacer?.roll, (next.myRaceSelections || []).join(','), (next.actionLog || []).at(-1)].join('|'); }
+export function resetInteraction(model) { model.pendingAction = null; model.actionPending = false; }

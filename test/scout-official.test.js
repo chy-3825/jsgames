@@ -45,6 +45,11 @@ test('Scout validates the official roster, deck variants, marker, and one-shot s
     assert.equal(game.players.flatMap(player => player.hand).length, 45);
     assert.equal(game.players.every(player => player.hand.length === 9), true);
     assert.ok(game.players.some(player => player.hand.some(card => card.front === 1 && card.back === 2)));
+    assert.equal(game.presentation.resolved, true);
+    assert.equal(game.presentation.events[0].kind, 'roundStarted');
+    assert.equal(game.presentation.events[0].round, 1);
+    assert.equal(game.presentation.events[0].starterId, game.players[game.startPlayerIndex].id);
+    assert.deepEqual(game.presentation.events[0].handCounts.map(player => player.count), [9, 9, 9, 9, 9]);
 });
 
 test('Scout applies the official setup removals and combination hierarchy', () => {

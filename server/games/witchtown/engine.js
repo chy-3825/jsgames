@@ -76,6 +76,7 @@ class WitchTownEngine {
         this.pendingDraw = null; this.dayTurn = null;
         this.lastNightDeaths = []; this.lastTrialReveal = null; this.trialRevealSequence = 0;
         this.revealedWitchCount = 0; this.winner = null; this.judgeMessage = '等待开始'; this.actionLog = [];
+        this.presentationEvents = []; this.presentationSequence = 0;
     }
 
     start() {
@@ -108,8 +109,10 @@ class WitchTownEngine {
         this.status = 'playing'; this.day = 1; this.night = 0; this.currentTurnId = null; this.currentTurnIndex = 0; this.dayTurn = null;
         this.dawnVotes = {}; this.blackCatOwnerId = null; this.currentConspiracy = null; this.pendingDraw = null; this.winner = null; this.revealedWitchCount = 0;
         this.lastNightDeaths = []; this.lastTrialReveal = null; this.trialRevealSequence = 0; this.nightStep = null;
+        this.presentationEvents = []; this.presentationSequence = 0;
         this.actionLog = ['审判档案与镇议会角色已经送达，请各自秘密核对'];
         this._startDossierReview('opening');
+        this._publishEvent('dossierBriefing', '审判开始前', '请核对你的审判档案', `全部 ${this.players.length} 名玩家确认后，黑猫将寻找主人`);
         return this._success('审判档案已经送达');
     }
 
@@ -173,9 +176,11 @@ class WitchTownEngine {
             this.phase = 'dawn';
             this.judgeMessage = '夜色尚未散去。女巫阵营正在决定黑猫的归属。';
             this._log('所有玩家均已核对审判档案');
+            this._publishEvent('blackCatChoice', '审判即将开始', '黑猫正在寻找主人', '请保持安静，等待女巫阵营作出秘密决定');
             return this._success('所有档案核对完毕');
         }
         this._resumeAfterConspiracy(review.resume || {});
+        this._publishEvent('dossierConfirmed', '档案核对完成', '所有秘密已重新封存', '白天审判继续');
         return this._success('所有玩家均已核对新的审判档案');
     }
 
@@ -192,6 +197,8 @@ class WitchTownEngine {
             if (owner) { owner.blueCards.push(this.blackCatCard); this.blackCatOwnerId = owner.id; }
             this._beginDay(owner?.id || this.players[0]?.id, true);
             this._log(`${owner?.name || '一名玩家'} 获得黑猫并成为首位行动者`);
+            this._publishEvent('blackCatAssigned', '晨雾散去', `${owner?.seat || '—'} 号获得黑猫`, `${owner?.name || '一名玩家'} 成为首位行动者`);
+            this._publishEvent('dayStart', `第 ${this.day} 天`, '审判开始', '自由讨论已经开始');
             return this._success('黎明完成，黑猫已放置');
         }
         return this._success('已记录女巫的黑猫选择');
@@ -368,6 +375,7 @@ class WitchTownEngine {
         const blackCatOwner = this.playerMap[this.blackCatOwnerId];
         if (blackCatOwner && !this._hasHall(blackCatOwner, 'mary-warren')) { this.phase = 'conspiracy_reveal'; this.judgeMessage = '阴谋触发：先由抽到阴谋的玩家选择黑猫持有者的一张审判牌揭示。'; }
         else this._prepareConspiracy();
+        this._publishEvent('conspiracyStart', '流言穿过人群', '阴谋蔓延', blackCatOwner && !this._hasHall(blackCatOwner, 'mary-warren') ? `即将揭示 ${blackCatOwner.seat} 号黑猫持有者的一张审判牌` : '审判档案即将易手');
         this._log('阴谋牌触发，开始顺时针交换审判牌'); return this._success('阴谋阶段开始');
     }
     _prepareConspiracy() {
@@ -407,6 +415,8 @@ class WitchTownEngine {
         if (this.status === 'ended') { this.pendingDraw = null; return this._success('阴谋揭开了最终身份'); }
         this._startDossierReview('conspiracy', { triggerIndex, hadPendingDraw });
         this._log('审判牌已经易手，所有玩家正在重新核对档案');
+        this._publishEvent('conspiracyComplete', '阴谋交换完成', '审判档案已经易手', '任何人的立场都可能已经改变');
+        this._publishEvent('dossierReview', '阴谋过后', '重新审视你的秘密', '打开完整审判档案，确认你如今效忠于谁');
         return this._success('阴谋传递完成，请重新核对审判档案');
     }
 
@@ -434,19 +444,23 @@ class WitchTownEngine {
         this.players.forEach(player => { player.confessed = false; });
         this.judgeMessage = `第 ${this.night} 夜：女巫正在黑暗中决定今晚的目标。`;
         this._log(`第 ${this.night} 夜降临塞勒姆`);
+        this._publishEvent('nightfall', `第 ${this.night} 夜`, '夜幕降临', '塞勒姆已经沉入寂静，请等待属于你的时刻');
         if (!this._alive().some(player => this._isWitch(player))) return this._beginConstableStep();
         return this._success('夜幕降临');
     }
     _beginConstableStep() {
+        this._publishEvent('witchesComplete', '黑暗中的低语已经消失', '女巫的决定已经封存', '夜间目标仍然保密');
         const constable = this._alive().find(player => this._isConstable(player));
-        if (!constable) return this._beginConfessionStep();
+        if (!constable) { this._publishEvent('constableSkipped', '法槌没有落下', '今夜没有警长行动', '塞勒姆直接进入认罪时刻'); return this._beginConfessionStep(); }
         this.nightStep = 'constable';
         this.judgeMessage = `第 ${this.night} 夜：警长正在决定法槌保护的位置。`;
+        this._publishEvent('constableStart', `第 ${this.night} 夜`, '警长开始行动', '法槌将秘密保护一名玩家');
         return this._success('警长开始行动');
     }
     _beginConfessionStep() {
         this.nightStep = 'confession';
         this.judgeMessage = `第 ${this.night} 夜：晨钟响起前，每位存活玩家都必须选择认罪或保持沉默。`;
+        this._publishEvent('confessionStart', '晨钟响起之前', '全员进入认罪时刻', '认罪者将获得本夜庇护');
         return this._success('进入认罪时刻');
     }
     _nightAction(player, action) {
@@ -470,6 +484,7 @@ class WitchTownEngine {
             const target = this._validTarget(action.targetId, false, player.id);
             if (!target) return { success: false, message: '警长不能保护自己', state: this.getPlayerState(player.id) };
             this.nightActions.protect = target.id;
+            this._publishEvent('constableComplete', '法槌已经落下', '警长的决定已经封存', '受保护者的身份仍然保密');
             return this._beginConfessionStep();
         }
         if (action.kind === 'confess') return this._confess(player, action.trialId, false);
@@ -491,6 +506,7 @@ class WitchTownEngine {
         const trial = useFreeConfession ? null : player.trialCards.find(card => !card.revealed && ['town', 'witch'].includes(card.type) && card.id === trialId);
         if (!useFreeConfession && !trial) return { success: false, message: '请选择一张自己的镇民或女巫审判牌', state: this.getPlayerState(player.id) };
         this.nightActions.confessions[player.id] = 'confessed';
+        this._publishEvent('confession', '公开认罪', `${player.seat} 号已经认罪`, '该玩家获得本夜庇护', { playerId: player.id, playerSeat: player.seat });
         if (trial) this._revealTrial(player, trial.id, 'confess');
         if (useFreeConfession) player.townHallUsed.freeConfess = true;
         player.confessed = true;
@@ -502,7 +518,14 @@ class WitchTownEngine {
     }
     _resolveNight() {
         const counts = new Map(); Object.values(this.nightActions.kills).forEach(id => counts.set(id, (counts.get(id) || 0) + 1)); const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]); const target = ranked.length && (!ranked[1] || ranked[1][1] < ranked[0][1]) ? this.playerMap[ranked[0][0]] : null;
-        if (target && !target.eliminated && target.id !== this.nightActions.protect && !target.confessed && !this._hasBlue(target, 'asylum')) { this._eliminate(target, '夜间击杀'); this.lastNightDeaths.push(target.id); }
+        if (target && !target.eliminated && target.id !== this.nightActions.protect && !target.confessed && !this._hasBlue(target, 'asylum')) {
+            const aliveBefore = new Set(this._alive().map(player => player.id));
+            this._eliminate(target, '夜间击杀', false);
+            this.lastNightDeaths.push(...this.players.filter(player => aliveBefore.has(player.id) && player.eliminated).map(player => player.id));
+        }
+        const deathText = this.lastNightDeaths.length ? this.lastNightDeaths.map(id => `${this.playerMap[id].seat} 号`).join('、') : '';
+        this._publishEvent('nightResult', '晨钟响起', '天亮了', deathText ? `昨夜的死者是 ${deathText}` : '昨夜无人遇害');
+        this.lastNightDeaths.forEach(id => this._publishElimination(this.playerMap[id], id === target?.id ? '夜间击杀' : '红娘连带出局'));
         this._log(this.lastNightDeaths.length ? `${this.lastNightDeaths.map(id => this.playerMap[id].name).join('、')} 在夜晚出局` : '本夜无人出局'); this.nightActions = { kills: {}, protect: null, confessions: {} }; this.nightStep = null; this._rebuildDeckAfterNight(); this._checkWin();
         if (this.status === 'ended') { this.pendingDraw = null; return this._success('游戏结束'); }
         this.day += 1;
@@ -520,26 +543,42 @@ class WitchTownEngine {
         trial.revealed = true; player.revealed = true; this._refreshAlignment(player); if (trial.type === 'witch') this.revealedWitchCount += 1;
         this.trialRevealSequence += 1;
         this.lastTrialReveal = { sequence: this.trialRevealSequence, playerId: player.id, playerName: player.name, trialId: trial.id, type: trial.type, reason };
+        this._publishEvent('trialReveal', '证据已经公开', `${trial.type === 'witch' ? '女巫' : trial.type === 'constable' ? '警长' : '镇民'}审判牌`, `${player.seat} 号的档案被揭开`, { playerId: player.id, playerSeat: player.seat, trialType: trial.type, reason });
         if (trial.type === 'witch' || player.trialCards.every(card => card.revealed)) this._eliminate(player, trial.type === 'witch' ? '翻出女巫审判牌' : '所有审判牌已揭示');
         if (reason === 'accusation') this.players.filter(other => other.id !== player.id && !other.eliminated && this._hasHall(other, 'rebecca-nurse')).forEach(other => this._drawForPlayer(other, 1));
         this._refreshAlignment(player); return trial;
     }
-    _eliminate(player, reason) {
+    _eliminate(player, reason, publish = true) {
         if (player.eliminated) return; player.eliminated = true; player.revealed = true; player.trialCards.filter(card => !card.revealed).forEach(card => { card.revealed = true; if (card.type === 'witch') this.revealedWitchCount += 1; });
         const hand = player.hand.splice(0); const blue = player.blueCards.splice(0); const red = player.redCards.splice(0); this.discard.push(...hand, ...blue, ...red); player.redAccusations = 0; this._syncHealth(player); if (this.blackCatOwnerId === player.id) this.blackCatOwnerId = null; this._log(`${player.name} ${reason}，公开剩余审判牌`);
         const proctor = this.players.find(other => !other.eliminated && this._hasHall(other, 'john-proctor')); if (proctor) { for (const card of hand) { const index = this.discard.lastIndexOf(card); if (index >= 0) this.discard.splice(index, 1); proctor.hand.push(card); } for (const card of blue) { const index = this.discard.lastIndexOf(card); if (index >= 0) this.discard.splice(index, 1); proctor.blueCards.push(card); if (card.kind === 'blackcat') this.blackCatOwnerId = proctor.id; } }
         const partners = this.players.filter(other => other.id !== player.id && !other.eliminated && other.blueCards.some(card => card.kind === 'matchmaker'));
-        partners.forEach(other => { if (!this._hasHall(other, 'mary-warren')) this._eliminate(other, '红娘连带出局'); });
+        partners.forEach(other => { if (!this._hasHall(other, 'mary-warren')) this._eliminate(other, '红娘连带出局', publish); });
         if (this.status === 'playing' && this.phase === 'day' && this.currentTurnId === player.id) this._nextTurn();
+        if (publish) this._publishElimination(player, reason);
     }
+    _publishElimination(player, reason) { if (player) this._publishEvent('elimination', '审判结果', `${player.seat} 号已出局`, reason, { playerId: player.id, playerSeat: player.seat }); }
     _checkWin() {
         // The victory condition is based on the setup count.  Trial cards can
         // move during Conspiracy and are revealed/removed on elimination; a
         // live count would incorrectly end the game if a test or a client
         // temporarily reorders hidden cards.
         const totalWitches = this.totalWitches;
-        if (this.revealedWitchCount >= totalWitches) { this.status = 'ended'; this.phase = 'ended'; this.winner = { faction: 'town', name: '镇民阵营' }; this.judgeMessage = '所有女巫审判牌已揭示，镇民阵营获胜'; this._log(this.judgeMessage); return; }
-        const living = this._alive(); if (living.length && living.every(player => this._isWitch(player))) { this.status = 'ended'; this.phase = 'ended'; this.winner = { faction: 'witch', name: '女巫阵营' }; this.judgeMessage = '所有仍存活的玩家都属于女巫阵营，女巫获胜'; this._log(this.judgeMessage); }
+        if (this.revealedWitchCount >= totalWitches) { this._finish('town', '镇民阵营', '所有女巫审判牌已揭示，镇民阵营获胜'); return; }
+        const living = this._alive(); if (living.length && living.every(player => this._isWitch(player))) this._finish('witch', '女巫阵营', '所有仍存活的玩家都属于女巫阵营，女巫获胜');
+    }
+    _finish(faction, name, message) {
+        if (this.status === 'ended') return;
+        this.status = 'ended'; this.phase = 'ended'; this.winner = { faction, name }; this.judgeMessage = message; this._log(message);
+        const groups = {};
+        this.players.forEach(player => { const name = IDENTITIES[player.identity]?.name || '未知'; (groups[name] ||= []).push(player.seat); });
+        const identities = Object.entries(groups).map(([name, seats]) => `${name}：${seats.join('、')} 号`).join('；');
+        this._publishEvent('identityReveal', '全员身份揭晓', '塞勒姆的秘密已经公开', identities);
+        this._publishEvent('victory', '最终判决', `${name}获胜`, message, { faction });
+    }
+    _publishEvent(kind, kicker, title, detail, data = {}) {
+        const event = { id: ++this.presentationSequence, kind, kicker, title, detail, ...data };
+        this.presentationEvents.push(event); if (this.presentationEvents.length > 50) this.presentationEvents.shift(); return event;
     }
 
     getPublicState() {
@@ -554,7 +593,7 @@ class WitchTownEngine {
             nightProgress = this.nightStep === 'confession' ? { completed, required, sealed: false } : { completed: 0, required: 0, sealed: true };
         }
         return { roomId: this.roomId, status: this.status, phase: this.phase, day: this.day, night: this.night, hostId: this.hostId, currentTurnId: this.currentTurnId,
-            judgeMessage: this.judgeMessage, deckCount: this.deck.length, blackCatOwnerId: this.blackCatOwnerId, lastNightDeaths: this.lastNightDeaths.slice(), lastTrialReveal: this.lastTrialReveal ? { ...this.lastTrialReveal } : null,
+            judgeMessage: this.judgeMessage, deckCount: this.deck.length, blackCatOwnerId: this.blackCatOwnerId, lastNightDeaths: this.lastNightDeaths.slice(), lastTrialReveal: this.lastTrialReveal ? { ...this.lastTrialReveal } : null, presentationEvents: this.presentationEvents.map(event => ({ ...event })),
             dossierReviewReason: this.dossierReview?.reason || null, dossierProgress: { confirmed: dossierConfirmed, required: dossierRequired }, nightStep: this.nightStep, nightProgress,
             players: this.players.map(player => ({ id: player.id, name: player.name, seat: player.seat, townHall: player.townHall ? { ...player.townHall } : null, health: player.health, eliminated: player.eliminated, trialCount: player.trialCards.length, revealedTrialCount: player.trialCards.filter(card => card.revealed).length, revealedTrialCards: player.trialCards.filter(card => card.revealed).map(card => ({ id: card.id, type: card.type })), accusations: player.redAccusations, redAccusations: player.redAccusations, redCards: player.redCards.map(cardSummary), blueCards: player.blueCards.map(cardSummary), exposedHandCards: player.exposedHandCards.map(cardSummary), isOnline: player.isOnline, identity: reveal || player.eliminated ? IDENTITIES[player.identity] : null })),
             actionLog: this.actionLog.slice(-20), winner: this.winner, currentTurnName: current?.name || null };

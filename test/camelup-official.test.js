@@ -26,6 +26,12 @@ test('Camel Up enforces the official 3-8 player setup and private five-card hand
     assert.equal(game.camels.every(camel => camel.position >= 1 && camel.position <= 3), true);
     assert.equal(game.players.every(player => player.cash === 3 && player.tile === null), true);
     assert.equal(game.getPublicState().players.every(player => !Object.hasOwn(player, 'raceCards')), true);
+    const presentation = game.getPublicState().presentation;
+    assert.equal(presentation.resolved, true);
+    assert.deepEqual(presentation.events.map(event => event.kind), ['raceStarted', 'legStarted']);
+    assert.deepEqual(presentation.events[0].camels.map(camel => [camel.id, camel.position, camel.order]), game.camels.map(camel => [camel.id, camel.position, camel.order]));
+    assert.equal(presentation.events[0].startingCoins, 3);
+    assert.equal(presentation.events[1].leg, 1);
 });
 
 test('Camel Up applies stacked movement, oasis/mirage order and finite leg rewards', () => {

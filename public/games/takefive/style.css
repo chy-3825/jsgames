@@ -1066,6 +1066,7 @@ button.tf-row { cursor: pointer; }
     transition: opacity .28s ease;
 }
 .tf-settlement-layer[hidden] { display: none; }
+.tf-settlement-layer.is-active,
 .tf-settlement-layer.is-revealed { opacity: 1; }
 .tf-settlement-scene {
     display: grid;
@@ -1076,6 +1077,7 @@ button.tf-row { cursor: pointer; }
     transform: translateY(18px) scale(.97);
     transition: transform .42s ease;
 }
+.tf-settlement-layer.is-active .tf-settlement-scene,
 .tf-settlement-layer.is-revealed .tf-settlement-scene { transform: none; }
 .tf-settlement-kicker { color: var(--tf-yellow); font-size: 8px; font-weight: 900; letter-spacing: .18em !important; }
 .tf-settlement-seal {
@@ -1287,6 +1289,162 @@ button.tf-row { cursor: pointer; }
     .tf-settlement-board article { grid-template-columns: 24px minmax(0, 1fr) auto 72px; gap: 5px; min-height: 34px; }
     .tf-settlement-board article > span { font-size: 6px; }
     .tf-settlement-board article > em { font-size: 8px; }
+}
+
+/* Short landscape: four rows and the private hand stay operable side by side. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .takefive-app {
+        display: grid;
+        grid-template-rows: 46px minmax(0, 1fr);
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        overflow: hidden;
+    }
+    .tf-header {
+        position: relative;
+        top: auto;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        min-height: 46px;
+        height: 46px;
+        gap: 8px;
+        padding: 3px 8px;
+    }
+    .tf-brand-mark { width: 32px; height: 32px; flex-basis: 32px; }
+    .tf-brand-mark b { font-size: 15px; }
+    .tf-brand small,
+    .tf-header-round { display: none; }
+    .tf-brand h1 { font-size: 15px; }
+    .tf-turn {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        width: 100%;
+        padding: 6px 8px;
+        overflow: hidden;
+        font-size: 9px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .tf-header-actions { grid-column: 3; grid-row: 1; }
+    .tf-icon-button { width: 34px; height: 34px; }
+
+    .tf-layout {
+        display: grid;
+        grid-template-columns: minmax(350px, 1.25fr) minmax(270px, .75fr);
+        grid-template-areas: "board hand";
+        align-items: stretch;
+        gap: 6px;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        padding: 5px 6px max(5px, env(safe-area-inset-bottom));
+        overflow: hidden;
+    }
+    .tf-players-panel,
+    .tf-table-rail { display: none; }
+    .tf-board,
+    .tf-hand-panel {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+        border-radius: 5px;
+    }
+    .tf-board { padding: 5px 6px; }
+    .tf-board-header { min-height: 24px; margin-bottom: 3px; padding: 0 2px 3px; }
+    .tf-board-header small,
+    .tf-round-progress { display: none; }
+    .tf-board-header h2 { font-size: 10px; }
+    .tf-public-stage,
+    .tf-draft { display: none; }
+    .tf-rows { gap: 3px; }
+    .tf-row {
+        grid-template-columns: 24px minmax(0, 1fr) 30px;
+        min-height: 49px;
+        gap: 3px;
+        padding: 2px 3px;
+    }
+    .tf-row-label small,
+    .tf-row-label em,
+    .tf-row-tally > span,
+    .tf-row-tally > small,
+    .tf-row-tally > em { display: none; }
+    .tf-row-label strong,
+    .tf-row-tally > b { font-size: 14px; }
+    .tf-row-track { grid-template-columns: repeat(5, minmax(0, 38px)) 24px; gap: 2px; }
+    .tf-row-card,
+    .tf-empty-slot {
+        width: 100%;
+        height: 43px;
+        aspect-ratio: auto;
+    }
+    .tf-row-card > strong { font-size: 14px; }
+    .tf-row-card > small,
+    .tf-row-card .tf-card-corner,
+    .tf-row-card .tf-bull-pips { display: none; }
+    .tf-empty-slot span { font-size: 6px; }
+    .tf-sixth-slot { min-width: 0; height: 43px; }
+    .tf-sixth-slot b { font-size: 12px; }
+    .tf-sixth-slot small { font-size: 5px; }
+    .tf-resolution {
+        grid-template-columns: 25px minmax(0, 1fr);
+        min-height: 43px;
+        margin-top: 3px;
+        padding: 3px 5px;
+    }
+    .tf-resolution-mark { width: 23px; height: 23px; font-size: 10px; }
+    .tf-resolution strong { font-size: 8px; }
+    .tf-resolution small { display: none; }
+    .tf-row-confirm { min-height: 27px; margin-top: 3px; }
+
+    .tf-hand-panel {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        padding: 7px;
+    }
+    .tf-hand-header { min-height: 28px; margin-bottom: 3px; padding-bottom: 4px; }
+    .tf-hand-header small,
+    .tf-hand-stats span { display: none; }
+    .tf-hand-header h2 { font-size: 10px; }
+    .tf-cards {
+        align-content: start;
+        flex-wrap: wrap;
+        min-height: 0;
+        gap: 4px;
+        padding: 4px 2px;
+        overflow: hidden auto;
+    }
+    .tf-hand-card { width: 45px; height: 70px; }
+    .tf-hand-card > strong { font-size: 20px; }
+    .tf-hand-card > small,
+    .tf-hand-card .tf-card-corner { display: none; }
+    .tf-hand-card .tf-bull-pips i { width: 3px; height: 3px; }
+    .tf-hand-confirm { min-height: 39px; padding-top: 4px; }
+    .tf-hand-confirm > small { display: none; }
+    .tf-confirm-button { width: 100%; min-width: 0; min-height: 34px; }
+
+    .tf-overlay,
+    .tf-settlement-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .tf-overlay { padding: 6px; }
+    .tf-rules { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); }
+    .tf-rules-art { min-height: 250px; }
+    .tf-rules-copy { padding: 18px 16px; }
+    .tf-settlement-layer { padding: 6px 46px 6px 10px; overflow: auto; }
+    .tf-settlement-scene { width: min(620px, 100%); }
+    .tf-settlement-kicker { font-size: 6px; }
+    .tf-settlement-seal { width: 42px; height: 42px; margin: 3px 0; border-width: 2px; font-size: 21px; }
+    .tf-settlement-scene h2 { margin: 1px 0; font-size: 23px; }
+    .tf-settlement-scene > p { margin-bottom: 5px; font-size: 7px; }
+    .tf-settlement-board { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; gap: 3px; }
+    .tf-settlement-board article {
+        grid-template-columns: 20px minmax(0, 1fr) auto 58px;
+        min-height: 27px;
+        gap: 4px;
+        padding: 3px 5px;
+    }
+    .tf-settlement-board article > strong { font-size: 8px; }
+    .tf-settlement-board article > span { font-size: 6px; }
+    .tf-settlement-board article > em { font-size: 8px; }
+    .tf-settlement-skip { right: 8px; bottom: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

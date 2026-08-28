@@ -164,8 +164,13 @@ class MagicalAthleteEngine {
         this.pendingAcknowledgements = [];
         this.deferredAfterAcknowledgement = null;
         this.finalStandings = [];
+        this._appendPresentationEvent({
+            kind: 'tournamentStarted', playerCount: this.players.length, teamSize: this.teamSize,
+            races: RACES, racersPerPlayer: this.racersPerPlayer,
+        });
         this._openDraftRound();
         this.actionLog.push('官方蛇形轮抽：组建自己的运动员队伍');
+        this._finishPresentation();
         return this._success('胡闹运动会开始');
     }
 
@@ -183,6 +188,11 @@ class MagicalAthleteEngine {
         this.draftQueue = (this.players.length === 2 ? [...snake, ...snake] : snake).map(index => this.players[index].id);
         this.draftQueueIndex = 0;
         this.currentTurnIndex = this.players.findIndex(player => player.id === this.draftQueue[0]);
+        this._appendPresentationEvent({
+            kind: 'draftRoundStarted', round: this.draftRound + 1, totalRounds: this._draftRounds(),
+            pool: clone(this.draftPool), startPlayerId: this.draftQueue[0] || null,
+            startPlayerName: this.playerMap[this.draftQueue[0]]?.name || '',
+        });
     }
 
     _draftRounds() { return this.players.length <= 3 ? (this.players.length === 2 ? 2 : 4) : 2; }
@@ -230,6 +240,11 @@ class MagicalAthleteEngine {
         this.racers = [];
         this.pending = null;
         this.actionLog.push(`第 ${this.match} 场${this.trackSide === 'wild' ? '狂野' : '温和'}赛道：同时选出上场运动员`);
+        this._appendPresentationEvent({
+            kind: 'raceSelectionStarted', match: this.match, trackSide: this.trackSide,
+            required: this.racersPerPlayer, startPlayerId: this.raceSelectionQueue[0] || null,
+            startPlayerName: this.playerMap[this.raceSelectionQueue[0]]?.name || '',
+        });
     }
 
     _selectRaceAthlete(player, athleteId) {
@@ -1268,12 +1283,6 @@ class MagicalAthleteEngine {
         this.startPlayerIndex = this._nextRaceStartPlayerIndex();
         this.match += 1;
         this._beginRaceSelection();
-        this._appendPresentationEvent({
-            kind: 'nextRaceStarted', match: this.match, trackSide: this.trackSide,
-            gold: GOLD_POINTS[this.match - 1] || 0, silver: SILVER_POINTS[this.match - 1] || 0,
-            startPlayerId: this.players[this.startPlayerIndex]?.id || null,
-            startPlayerName: this.players[this.startPlayerIndex]?.name || '',
-        });
         if (standalonePresentation) this._finishPresentation();
     }
 

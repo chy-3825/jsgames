@@ -1,0 +1,12 @@
+/* Local typefaces used by the board games and card artwork. */
+@font-face {
+    font-family: "HanWang LiSu";
+    src: url("/fonts/HanWangLiSuMedium.ttf") format("truetype");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Zhi Mang Xing";
+    src: url("/fonts/ZhiMangXing-Regular.ttf") format("truetype");
+    font-display: swap;
+}

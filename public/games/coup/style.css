@@ -1157,6 +1157,13 @@ button.cp-seat {
     gap: 12px;
 }
 
+.cp-private-identity,
+.cp-loss-identity,
+.cp-exchange-identity {
+    position: relative;
+    min-width: 0;
+}
+
 .cp-influence {
     position: relative;
     display: block;
@@ -1176,6 +1183,96 @@ button.cp-seat {
 .cp-influence.is-face {
     border-color: var(--cp-role, #bfa064);
     box-shadow: 0 0 0 2px rgba(var(--cp-role-rgb, 191, 160, 100), .12), 5px 9px 18px rgba(0, 0, 0, .32);
+}
+
+.cp-private-card-secret,
+.cp-private-card-cover {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+
+.cp-private-card-secret {
+    z-index: 1;
+}
+
+.cp-private-card-cover {
+    z-index: 3;
+    overflow: hidden;
+    background: #11161c;
+    opacity: 1;
+    transition: none;
+}
+
+.cp-private-card-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cp-app.is-identity-revealed .cp-private-card-cover {
+    opacity: 0;
+}
+
+.cp-app:not(.is-identity-revealed) .cp-influence.is-private-identity {
+    border-color: #887d69;
+    box-shadow: 5px 9px 18px rgba(0, 0, 0, .32);
+}
+
+.cp-identity-hold {
+    position: absolute;
+    z-index: 8;
+    right: 7px;
+    bottom: 7px;
+    display: flex;
+    min-height: 34px;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 8px;
+    border: 1px solid rgba(225, 193, 127, .72);
+    border-radius: 4px;
+    background: rgba(13, 17, 22, .94);
+    color: #f0dab0;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, .42);
+    text-align: left;
+    user-select: none;
+    transition: border-color .12s ease, background .12s ease, opacity .12s ease;
+}
+
+.cp-identity-hold > i {
+    width: 17px;
+    height: 24px;
+    flex: 0 0 auto;
+    border: 1px solid #b79659;
+    border-radius: 2px;
+    background: linear-gradient(145deg, #663133, #181b23 65%);
+    box-shadow: inset 0 0 0 2px rgba(231, 203, 145, .12);
+}
+
+.cp-identity-hold > span {
+    display: grid;
+    gap: 1px;
+}
+
+.cp-identity-hold b {
+    font-size: 9px;
+}
+
+.cp-identity-hold small {
+    color: #a9a59a;
+    font-size: 7px;
+    white-space: nowrap;
+}
+
+.cp-identity-hold:hover,
+.cp-identity-hold:focus-visible {
+    border-color: #f0cd84;
+    background: rgba(25, 28, 33, .98);
+}
+
+.cp-app.is-identity-revealed .cp-identity-hold {
+    opacity: .18;
 }
 
 button.cp-influence {
@@ -1303,6 +1400,37 @@ button.cp-influence {
     transform: translateY(-5px);
 }
 
+.cp-private-choice-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 9px;
+}
+
+.cp-private-choice-button {
+    min-height: 34px;
+    padding: 6px 10px;
+    border: 1px solid #9a8257;
+    border-radius: 4px;
+    background: #23272b;
+    color: #ead7b2;
+    font-size: 9px;
+}
+
+.cp-private-choice-button:hover:not(:disabled),
+.cp-private-choice-button:focus-visible,
+.cp-private-choice-button.is-selected {
+    border-color: #e7c576;
+    background: #433729;
+    color: #fff0c9;
+}
+
+.cp-private-choice-button:disabled {
+    cursor: not-allowed;
+    opacity: .42;
+}
+
 .cp-influence.is-mini {
     width: 42px;
     min-width: 42px;
@@ -1390,6 +1518,19 @@ button.cp-influence {
     cursor: not-allowed;
     filter: grayscale(.4);
     opacity: .35;
+}
+
+.cp-action-wrap {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.cp-action-reason {
+    padding: 0 5px 2px;
+    color: #d6a0a5;
+    font-size: 9px;
+    line-height: 1.3;
 }
 
 .cp-action.is-coup {
@@ -1601,9 +1742,21 @@ button.cp-influence {
 }
 
 .cp-scene-layer.is-elimination,
-.cp-scene-layer.is-victory {
+.cp-scene-layer.is-victory,
+.cp-scene-layer.is-declaration,
+.cp-scene-layer.is-verdict,
+.cp-scene-layer.is-block {
     background: radial-gradient(circle at 50% 40%, rgba(116, 39, 51, .44), rgba(5, 7, 10, .94) 66%);
     backdrop-filter: blur(10px) brightness(.58);
+}
+
+.cp-scene-layer.is-verdict.is-proved,
+.cp-scene-layer.is-block {
+    background: radial-gradient(circle at 50% 40%, rgba(47, 103, 82, .48), rgba(5, 7, 10, .94) 66%);
+}
+
+.cp-scene-layer.is-verdict.is-failed {
+    background: radial-gradient(circle at 50% 40%, rgba(139, 45, 51, .5), rgba(5, 7, 10, .94) 66%);
 }
 
 .cp-scene {
@@ -1631,6 +1784,36 @@ button.cp-influence {
     margin: 0;
     color: #bdb5a7;
     font-size: 12px;
+}
+
+.cp-scene-verdict-mark {
+    display: grid;
+    width: 96px;
+    height: 96px;
+    margin-top: 20px;
+    place-items: center;
+    border: 2px solid #d2ad60;
+    border-radius: 50%;
+    background: rgba(55, 24, 29, .88);
+    color: #f2d08a;
+    font: 700 38px "Noto Serif SC", serif;
+    box-shadow: 0 0 38px rgba(176, 71, 78, .36);
+    opacity: 0;
+    transform: scale(.7) rotate(-10deg);
+    transition: opacity .3s ease, transform .48s cubic-bezier(.2, .76, .2, 1);
+}
+
+.cp-scene-layer.is-verdict.is-proved .cp-scene-verdict-mark,
+.cp-scene-layer.is-block .cp-scene-verdict-mark {
+    border-color: #89b9a0;
+    background: rgba(24, 62, 51, .9);
+    color: #c9ead7;
+    box-shadow: 0 0 38px rgba(75, 156, 119, .35);
+}
+
+.cp-scene-layer.is-revealed .cp-scene-verdict-mark {
+    opacity: 1;
+    transform: scale(1) rotate(0);
 }
 
 .cp-scene-role-row {
@@ -1900,6 +2083,15 @@ button.cp-influence {
     margin: 20px 0;
 }
 
+.cp-exchange-identity .cp-identity-hold {
+    right: 12px;
+    bottom: 12px;
+}
+
+.cp-private-choice-row.is-exchange {
+    margin: -4px 0 14px;
+}
+
 .cp-influence.is-exchange {
     width: 100%;
     box-shadow: 4px 8px 16px rgba(71, 52, 30, .26);
@@ -1983,6 +2175,11 @@ button.cp-influence {
     to { stroke-dashoffset: -34; }
 }
 
+/* Responsive layout
+ * 1100/900px: compact desktop and tablet
+ * 680/420px: portrait phones
+ * short landscape: dedicated council + command split view
+ */
 @media (max-width: 1100px) {
     .cp-statusbar {
         grid-template-columns: minmax(170px, 1fr) minmax(190px, auto) auto 38px;
@@ -2531,7 +2728,7 @@ button.cp-influence {
     }
 }
 
-/* 第四批移动端：行动台提前到首屏；横屏只保留席位、私牌和当前决策。 */
+/* Phone priority overrides: keep private cards and decisions ahead of the table. */
 @media (max-width: 680px) {
     .cp-app { grid-template-rows: auto auto auto minmax(0, 1fr); }
     .cp-statusbar { top: var(--game-shell-offset, 48px); grid-row: 1; }
@@ -2724,6 +2921,88 @@ button.cp-influence {
     .cp-action-symbol { width: 25px; height: 25px; font-size: 9px; }
     .cp-action b { font-size: 8px; }
     .cp-action small { display: none; }
+
+    .cp-identity-hold {
+        right: 3px;
+        bottom: 3px;
+        min-height: 28px;
+        padding: 3px 5px;
+    }
+    .cp-identity-hold > i { width: 13px; height: 19px; }
+    .cp-identity-hold small { display: none; }
+    .cp-identity-hold b { font-size: 8px; }
+
+    .cp-loss-panel {
+        grid-template-columns: minmax(190px, .78fr) minmax(250px, 1.22fr);
+        grid-template-rows: minmax(0, 1fr) auto;
+        align-items: center;
+        width: calc(100% - 24px);
+        height: 100%;
+        min-height: 0;
+        gap: 5px 16px;
+        padding: 6px 0;
+    }
+    .cp-loss-copy { grid-column: 1; grid-row: 1 / 3; }
+    .cp-loss-identity { grid-column: 2; grid-row: 1; min-height: 0; }
+    .cp-loss-cards { gap: 10px; }
+    .cp-loss-cards .cp-influence { width: min(13vw, 112px); }
+    .cp-loss-panel > .cp-private-choice-row {
+        grid-column: 2;
+        grid-row: 2;
+        flex-wrap: nowrap;
+        margin: 0;
+    }
+    .cp-loss-panel .cp-private-choice-button {
+        min-height: 30px;
+        flex: 1 1 0;
+        padding: 4px 6px;
+        font-size: 8px;
+    }
+
+    .cp-exchange-dialog {
+        padding: 11px 14px;
+    }
+    .cp-exchange-dialog h2 {
+        margin-block: 3px;
+        font-size: 18px;
+    }
+    .cp-exchange-dialog > p {
+        margin: 3px 0 5px;
+        font-size: 9px;
+        line-height: 1.35;
+    }
+    .cp-exchange-options {
+        grid-template-columns: repeat(4, minmax(76px, 88px));
+        justify-content: center;
+        gap: 7px;
+        margin: 6px 0;
+    }
+    .cp-exchange-options .cp-influence.is-exchange {
+        width: 100%;
+    }
+    .cp-exchange-identity .cp-identity-hold {
+        right: 5px;
+        bottom: 5px;
+    }
+    .cp-private-choice-row.is-exchange {
+        flex-wrap: nowrap;
+        margin: 3px 0 6px;
+    }
+    .cp-private-choice-row.is-exchange .cp-private-choice-button {
+        min-height: 27px;
+        flex: 1 1 0;
+        padding: 3px 5px;
+        font-size: 8px;
+    }
+    .cp-exchange-footer {
+        display: flex;
+        padding-top: 6px;
+    }
+    .cp-exchange-footer .cp-primary {
+        width: auto;
+        min-height: 30px;
+        padding-block: 4px;
+    }
 
     .cp-app.is-challenge-decision .cp-command { display: none; }
     .cp-app.is-challenge-decision .cp-table {

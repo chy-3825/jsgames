@@ -93,6 +93,17 @@ class ManilaEngine {
         this.actionLog = ['马尼拉商人们领取资本、股份和帮手'];
         this.lastVoyage = null; this.voyageHistory = []; this.winner = null; this.winners = []; this.finalFortunes = null; this.presentation = null; this.presentationSequence = 0; this.presentationEventSequence = 0;
         this._beginAuction();
+        this._appendPresentationEvent({
+            kind: 'voyageStarted',
+            voyage: this.voyage,
+            harborMasterId: this.harborMasterId,
+            harborMasterName: this.playerMap[this.harborMasterId]?.name || '',
+            seasonOpening: true,
+            startingCash: 30,
+            privateSharesEach: 2,
+            accomplicesEach: this.players.length === 3 ? 4 : 3,
+        });
+        this._finishPresentation();
         return this._success('马尼拉开始');
     }
 
@@ -132,6 +143,8 @@ class ManilaEngine {
         if (index < 0 || index >= player.shares.length || player.encumberedShares.includes(index)) return { success: false, message: '没有可抵押的未抵押股份', state: this.getPlayerState(player.id) };
         player.encumberedShares.push(index);
         player.cash += 12;
+        this._startPresentation(player.id, 'takeLoan', { kind: 'loanTaken', actorId: player.id, actorName: player.name, amount: 12, cashAfter: player.cash, encumberedCount: player.encumberedShares.length });
+        this._finishPresentation();
         return this._success(`${player.name} 抵押了${player.shares[index]}股份`);
     }
 
@@ -140,6 +153,8 @@ class ManilaEngine {
         if (!Number.isInteger(index) || !player.encumberedShares.includes(index) || player.cash < 15) return { success: false, message: '需要选择已抵押股份且拥有 15 比索', state: this.getPlayerState(player.id) };
         player.cash -= 15;
         player.encumberedShares = player.encumberedShares.filter(shareIndex => shareIndex !== index);
+        this._startPresentation(player.id, 'repayLoan', { kind: 'loanRepaid', actorId: player.id, actorName: player.name, amount: 15, cashAfter: player.cash, encumberedCount: player.encumberedShares.length });
+        this._finishPresentation();
         return this._success(`${player.name} 偿还贷款，恢复一张股份`);
     }
 
@@ -449,7 +464,14 @@ class ManilaEngine {
         this.voyageHistory.push(clone(this.lastVoyage));
         this._appendPresentationEvent({ kind: 'voyageSettlement', ...clone(this.lastVoyage) });
         payouts.forEach(message => this._log(message));
-        if (Object.values(this.market).some(value => value >= 30)) { this._finish(); return; }
+        if (Object.values(this.market).some(value => value >= 30)) {
+            this._appendPresentationEvent({
+                kind: 'marketThresholdReached',
+                goods: GOODS.filter(good => this.market[good] >= 30).map(good => ({ good, before: marketBefore[good], after: this.market[good] })),
+            });
+            this._finish();
+            return;
+        }
         this.voyage += 1; this._beginAuction(); this._appendPresentationEvent({ kind: 'voyageStarted', voyage: this.voyage, harborMasterId: this.harborMasterId, harborMasterName: this.playerMap[this.harborMasterId]?.name || '' }); this._finishPresentation();
     }
 

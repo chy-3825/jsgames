@@ -7,10 +7,13 @@
     <link rel="stylesheet" href="/style.css?v=20260827-seat-ring-v15">
     <!-- Load the four batch-5 game styles before the module so Firefox's
          command-line screenshot mode measures the final mobile layout. -->
-    <link rel="stylesheet" href="/games/werewolf/style.css?v=20260827-hidden-role-focus-1">
-    <link rel="stylesheet" href="/games/avalon/style.css?v=20260827-hidden-role-focus-1">
-    <link rel="stylesheet" href="/games/decrypto/style.css?v=20260826-mobile-games-5">
-    <link rel="stylesheet" href="/games/witchtown/style.css?v=20260827-hidden-role-focus-1">
+    <link rel="stylesheet" href="/games/werewolf/style.css?v=20260827-hold-identity-2">
+    <link rel="stylesheet" href="/games/avalon/style.css?v=20260827-hold-identity-2">
+    <link rel="stylesheet" href="/games/decrypto/style.css?v=20260827-online-notebook-1">
+    <link rel="stylesheet" href="/games/witchtown/style.css?v=20260827-hold-identity-2">
+    <link rel="stylesheet" href="/games/hanabi/style.css?v=20260827-hanabi-a11y-1">
+    <link rel="stylesheet" href="/games/splendor/style.css?v=20260827-splendor-mobile-1">
+    <link rel="stylesheet" href="/games/kingdomino/style.css?v=20260827-kingdomino-mobile-1">
     <link rel="stylesheet" href="/games/common/hidden-role-focus.css?v=20260827-hidden-role-focus-1">
     <style>
         .shell-test-metrics {
@@ -113,6 +116,14 @@
                     myId: 'p1', myIsCurrentTurn: true,
                 };
             }
+            if (gameType === 'guessnumber') {
+                const history = [];
+                return {
+                    status: 'playing', currentTurn: 'p1', currentTurnName: '破译员', myId: 'p1', myIsCurrentTurn: true,
+                    players: [{ id: 'p1', name: '破译员', attempts: 0, history }],
+                    availableActions: { canGuess: true }, lastResult: null, secret: null, winner: null,
+                };
+            }
             if (gameType === 'coup') {
                 const names = ['甲方玩家', '乙方玩家', '丙方玩家', '丁方玩家', '戊方玩家', '己方玩家'];
                 const players = names.map((name, index) => ({
@@ -125,6 +136,22 @@
                     roomId: 'visual', phase: 'idle', currentTurn: 'p1', players, gameOver: false, winner: null, interaction: null,
                     lastReveal: null, challenge: null, actionLog: ['游戏开始！'], myId: 'p1',
                     self: { id: 'p1', coins: 2, influences: players[0].influences },
+                };
+            }
+            if (gameType === 'takefive') {
+                const values = [8, 17, 26, 35, 44, 53, 62, 71, 80, 89];
+                const bullheads = value => value === 55 ? 7 : value % 11 === 0 ? 5 : value % 10 === 0 ? 3 : value % 5 === 0 ? 2 : 1;
+                const card = value => ({ id: `card-${value}`, value, bullheads: bullheads(value) });
+                const players = ['甲方玩家', '乙方玩家', '丙方玩家', '丁方玩家', '戊方玩家', '己方玩家', '庚方玩家', '辛方玩家', '壬方玩家', '癸方玩家']
+                    .map((name, index) => ({ id: `p${index + 1}`, name, score: index * 4, bullPileCount: index % 3, handCount: 10, isOnline: true, hasSelected: index > 3 }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'selecting', variant: 'standard', round: 4, maxRounds: 10,
+                    handNumber: 1, maxHands: null, targetScore: 66, deckCount: 0, selectedCount: 6, playerCount: 10,
+                    rows: [[card(12), card(18)], [card(29), card(41), card(47)], [card(55)], [card(63), card(74), card(82), card(91)]],
+                    revealedCards: [], resolutionEvent: null, handSettlement: null, draft: null, pendingRowChoice: null,
+                    lastResolution: [], lastHand: null, players, actionLog: ['六名玩家已经锁定手牌', '等待其他玩家同时选牌'],
+                    winner: null, winners: [], myId: 'p1', mySelectedCardId: null,
+                    myHand: values.map(card), myBullPileCount: 0, availableActions: { canSelect: true, canDraft: false, canChooseRow: false },
                 };
             }
             if (gameType === 'monopolydeal') {
@@ -177,6 +204,172 @@
                     fireworks: Object.fromEntries(colors.map((color, index) => [color, index % 3])), discard: [], players,
                     actionLog: ['甲方玩家先行动。记住：你看不到自己的牌。'], lastAction: null, winner: null, score: 4, scoreRating: '刚刚起步',
                     myId: 'p1', myHand, availableActions: { canAct: true, canGiveClue: true, canPlay: true, canDiscard: true },
+                };
+            }
+            if (gameType === 'splendor') {
+                const colors = ['white', 'blue', 'green', 'red', 'black'];
+                const tokens = overrides => Object.fromEntries([...colors, 'gold'].map(color => [color, overrides?.[color] || 0]));
+                const card = (id, tier, bonus, points, costs) => ({ id, tier, bonus, points, cost: Object.fromEntries(colors.map(color => [color, costs?.[color] || 0])) });
+                const market = {
+                    1: [card('s1', 1, 'white', 0, { blue: 1, green: 1 }), card('s2', 1, 'blue', 0, { red: 2 }), card('s3', 1, 'green', 1, { black: 3 }), card('s4', 1, 'red', 0, { white: 2, blue: 1 })],
+                    2: [card('s5', 2, 'black', 2, { white: 3, red: 2 }), card('s6', 2, 'green', 1, { blue: 3, black: 2 }), card('s7', 2, 'white', 2, { green: 4 }), card('s8', 2, 'blue', 3, { red: 5 })],
+                    3: [card('s9', 3, 'red', 4, { white: 6 }), card('s10', 3, 'black', 5, { blue: 7 }), card('s11', 3, 'green', 4, { red: 3, black: 3 }), card('s12', 3, 'white', 3, { green: 5, blue: 3 })],
+                };
+                const nobles = Array.from({ length: 5 }, (_, index) => ({ id: `n${index + 1}`, name: `贵族 ${index + 1}`, points: 3, requirements: { [colors[index]]: 4, [colors[(index + 1) % 5]]: 4 } }));
+                const players = ['甲方商会', '乙方商会', '丙方商会', '丁方商会'].map((name, index) => ({ id: `p${index + 1}`, name, points: index * 3, cardCount: index * 2, reservedCount: index % 2, tokens: tokens({ white: 1, blue: index }), isOnline: true, isCurrentTurn: index === 0 }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'action', currentTurn: 'p1', currentTurnName: '甲方商会', startingPlayerId: 'p1',
+                    finalRoundStart: null, endReason: null, tokens: tokens({ white: 7, blue: 6, green: 5, red: 7, black: 4, gold: 5 }), market, nobles,
+                    pendingNoble: null, pendingTokenReturn: null, players, actionLog: ['甲方商会正在选择第一笔交易'], presentation: null,
+                    winner: null, winners: [], myId: 'p1', myTokens: tokens({ white: 2, blue: 2, green: 1, gold: 1 }), myCards: [card('mine-1', 1, 'red', 0, {})],
+                    myReserved: [card('reserve-1', 2, 'blue', 2, { white: 3, green: 2 })], availableActions: { canAct: true, canChooseNoble: false, canReturnTokens: false, returnTokenCount: 0 },
+                };
+            }
+            if (gameType === 'kingdomino') {
+                const tile = (id, number, left, right, crowns = [0, 0]) => ({ id, number, left, right, crowns, selectedBy: null });
+                const draft = [tile('k1', 8, '麦田', '森林', [0, 1]), tile('k2', 17, '海洋', '草地'), tile('k3', 26, '沼泽', '麦田', [1, 0]), tile('k4', 39, '矿山', '森林', [2, 0])];
+                const players = ['甲方国王', '乙方国王', '丙方国王', '丁方国王'].map((name, index) => ({ id: `p${index + 1}`, name, color: ['#d6a63d', '#5fa3bb', '#b75b55', '#77a46e'][index], score: index * 5, placedCount: index + 1, selectionCount: 0, hasSelection: false, isOnline: true, isCurrentTurn: index === 0 }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'selecting', round: 4, maxRounds: 12, boardSize: 5, draftSize: 4, remainingTileCount: 28,
+                    discardedTileCount: 0, currentTurn: 'p1', currentToken: { playerId: 'p1', token: 0 }, currentTurnName: '甲方国王', draft, players,
+                    lastAction: { message: '新一轮领地已经揭晓' }, actionLog: ['第 4 轮开始', '甲方国王准备选择领地'], presentation: null, winner: null,
+                    myId: 'p1', myGrid: { '2,2': { terrain: '城堡', crowns: 0 }, '2,1': { terrain: '麦田', crowns: 0, dominoId: 'old-1' }, '3,1': { terrain: '森林', crowns: 1, dominoId: 'old-1' } },
+                    mySelectedTiles: [], mySelectedTile: null, availableActions: { canSelect: true, canPlace: false, canDiscard: false },
+                };
+            }
+            if (gameType === 'acquire') {
+                const chainData = [
+                    ['sackson', 'S', '萨克森', '#d05793', 5, 16, 400], ['imperial', 'I', '帝国', '#e77b3c', 12, 11, 700],
+                    ['america', 'A', '美洲', '#4b8fd2', 0, 25, 0], ['festival', 'F', '节庆', '#c5a33a', 0, 25, 0],
+                    ['worldwide', 'W', '环球', '#66a578', 3, 20, 300], ['continental', 'C', '大陆', '#8068b2', 0, 25, 0], ['tower', 'T', '塔楼', '#55aeb3', 0, 25, 0],
+                ];
+                const corporations = Object.fromEntries(chainData.map(([id, short, name, color, size, sharesAvailable, sharePrice]) => [id, { id, short, name, color, size, sharesAvailable, sharePrice, active: size > 0 }]));
+                const players = ['甲方投资人', '乙方投资人', '丙方投资人', '丁方投资人'].map((name, index) => ({ id: `p${index + 1}`, name, cash: 6000 - index * 400, shares: { sackson: index + 1, imperial: index % 2, worldwide: 0 }, handCount: 6, isOnline: true, isCurrentTurn: index === 0 }));
+                const board = { A1: { id: 'A1', row: 0, col: 0, chain: null }, C4: { id: 'C4', row: 2, col: 3, chain: 'sackson' }, C5: { id: 'C5', row: 2, col: 4, chain: 'sackson' }, D4: { id: 'D4', row: 3, col: 3, chain: 'sackson' }, E7: { id: 'E7', row: 4, col: 6, chain: 'imperial' }, E8: { id: 'E8', row: 4, col: 7, chain: 'imperial' }, F7: { id: 'F7', row: 5, col: 6, chain: 'imperial' }, H10: { id: 'H10', row: 7, col: 9, chain: 'worldwide' } };
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'place', currentTurn: 'p1', currentTurnName: '甲方投资人', deckCount: 72,
+                    players, board, corporations, pendingMerger: null, mergerSettlement: null, endGamePending: false,
+                    actionLog: ['甲方投资人正在选择建筑地块', '帝国集团达到安全规模'], presentation: null, winner: null,
+                    myId: 'p1', myHand: [{ id: 'B2', row: 1, col: 1 }, { id: 'D5', row: 3, col: 4 }, { id: 'F8', row: 5, col: 7 }, { id: 'G3', row: 6, col: 2 }, { id: 'H11', row: 7, col: 10 }, { id: 'I6', row: 8, col: 5 }],
+                    availableActions: { canPlace: true, canDiscard: false, canSkipPlacement: false, canFound: false, canChooseMerger: false, canSettleMerger: false, canBuy: false, canEndGame: false },
+                };
+            }
+            if (gameType === 'citadels') {
+                const roles = [
+                    ['assassin', 1, '刺客'], ['thief', 2, '盗贼'], ['magician', 3, '魔术师'], ['king', 4, '国王'],
+                    ['bishop', 5, '主教'], ['merchant', 6, '商人'], ['architect', 7, '建筑师'], ['warlord', 8, '军阀'],
+                ].map(([id, rank, name]) => ({ id, rank, name }));
+                const card = (id, name, color, cost, effect = null) => ({ id, name, color, cost, points: cost, effect });
+                const cities = [card('city-1', '庄园', 'noble', 3), card('city-2', '神殿', 'religious', 1), card('city-3', '市场', 'trade', 2), card('city-4', '瞭望塔', 'military', 1)];
+                const players = ['甲方城主', '乙方城主', '丙方城主', '丁方城主'].map((name, index) => ({
+                    id: `p${index + 1}`, name, gold: 5 - index, city: cities.slice(0, Math.max(1, 4 - index)), handCount: 4, roles: [], murderedRoles: [], isOnline: true,
+                }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'role_selection', round: 4, crownHolderId: 'p1', draftPlayerId: 'p1', draftDiscarding: false,
+                    currentPlayerId: null, currentRoleRank: null, currentRoleName: null, roleDeckCount: 5, faceDownCount: 1, faceUpRoles: [roles[7]],
+                    availableRoles: roles.slice(0, 5), discardOptions: [], players, actionLog: ['第 4 轮秘密选角开始'], presentation: null,
+                    districtDeckCount: 43, pendingGraveyard: null, destroyTargets: [], scores: [], winner: null, winners: [], myId: 'p1', myRoles: [],
+                    myHand: [card('hand-1', '城堡', 'noble', 4), card('hand-2', '修道院', 'religious', 3), card('hand-3', '贸易站', 'trade', 2), card('hand-4', '实验室', 'unique', 5, 'laboratory')],
+                    myDrawOptions: [], myDrawKeepCount: 1, availableActions: { chooseRole: true },
+                };
+            }
+            if (gameType === 'lasvegas') {
+                const colors = ['red', 'blue', 'green', 'violet', 'gold'];
+                const players = ['甲方赌客', '乙方赌客', '丙方赌客', '丁方赌客', '戊方赌客'].map((name, index) => ({
+                    id: `p${index + 1}`, name, color: colors[index], money: index * 20, banknoteCount: index, diceRemaining: 8 - index, neutralDiceRemaining: 0, placedCount: index, isOnline: true,
+                }));
+                const casinos = Array.from({ length: 6 }, (_, index) => ({ face: index + 1, money: [[50, 20], [60], [40, 20], [90], [50, 10], [70]][index], dice: index < 3 ? { p2: index + 1, p3: 1 } : {} }));
+                return {
+                    roomId: 'visual', status: 'playing', round: 2, maxRounds: 4, currentTurn: 'p1', myId: 'p1', myTurn: true,
+                    players, neutral: null, casinos, currentRoll: [], currentRollOwn: [], currentRollNeutral: [], moneyDeckCount: 31,
+                    lastPayouts: [{ playerId: 'p2', playerName: '乙方赌客', amount: 60, casino: 2, dice: 3 }],
+                    actionLog: ['第 2 轮开始', '甲方赌客准备掷骰'], presentation: null, winners: [], availableActions: { canRoll: true, canPlaceFaces: [] },
+                };
+            }
+            if (gameType === 'scout') {
+                const card = (id, front, back, orientation = 0) => ({ id, front, back, orientation, value: orientation ? back : front, otherValue: orientation ? front : back });
+                const players = ['甲方马戏团', '乙方马戏团', '丙方马戏团', '丁方马戏团', '戊方马戏团'].map((name, index) => ({ id: `p${index + 1}`, name, seat: index + 1, score: index * 2, handCount: 9 - index, captured: index, scoutTokens: index % 2, isCurrent: index === 0, isOnline: true }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'orienting', round: 2, maxRounds: 5, startPlayerId: 'p1', currentPlayerId: null, currentPlayerName: null,
+                    players, activeSet: [], activeOwnerId: null, activeOwnerName: null, actionLog: ['第 2 轮开始，请锁定节目单方向'], presentation: null,
+                    myId: 'p1', myHand: [card('s1', 1, 6), card('s2', 2, 8), card('s3', 3, 7), card('s4', 4, 9), card('s5', 5, 10), card('s6', 6, 9), card('s7', 7, 10), card('s8', 3, 8), card('s9', 4, 7)],
+                    myScoutShowAvailable: true, myScoutChips: null, availableActions: { canSetOrientation: true, canShow: false, canScout: false, canScoutShow: false }, winners: [],
+                };
+            }
+            if (gameType === 'manila') {
+                const players = ['甲方船主', '乙方商人', '丙方经理', '丁方保险家', '戊方海盗'].map((name, index) => ({
+                    id: `p${index + 1}`, name, color: ['#c96555', '#4f8bb0', '#c79442', '#778f68', '#8b6598'][index], cash: 30 - index * 2,
+                    sharesCount: 3 - (index % 2), encumberedShares: index === 0 ? 1 : 0, accomplices: Math.max(0, 3 - index % 3), isOnline: true, fortune: null,
+                }));
+                const locations = Object.fromEntries(['ginseng', 'jade', 'nutmeg', 'silk', 'port-a', 'port-b', 'port-c', 'shipyard-a', 'shipyard-b', 'shipyard-c', 'pirate', 'pilot-small', 'pilot-large', 'insurance'].map(id => [id, []]));
+                locations.jade = [{ playerId: 'p2', playerName: '乙方商人', fee: 3, slot: 1 }];
+                locations['pilot-large'] = [{ playerId: 'p1', playerName: '甲方船主', fee: 5, slot: 1 }];
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'auction', voyage: 3, movementRound: 0, masterStep: null,
+                    harborMasterId: 'p1', harborMasterName: '甲方船主', currentTurn: 'p1', currentTurnName: '甲方船主', myId: 'p1',
+                    players, locations, market: { '人参': 15, '玉石': 20, '肉豆蔻': 10, '丝绸': 25 }, shareMarket: { '人参': 2, '玉石': 3, '肉豆蔻': 1, '丝绸': 2 },
+                    myShares: ['玉石', '丝绸', '人参'], myEncumberedShares: [2], auction: { highestBid: 8, highestBidder: 'p1', passed: [] },
+                    boats: [{ id: 1, good: '人参', position: 4, fate: 'sailing', arrived: false, accomplices: 1 }, { id: 2, good: '玉石', position: 7, fate: 'sailing', arrived: false, accomplices: 2 }, { id: 3, good: '肉豆蔻', position: 10, fate: 'sailing', arrived: false, accomplices: 1 }],
+                    movementPlan: null, pendingPlunder: null, presentation: null, winner: null, availableActions: { bid: true, pass: true },
+                    actionLog: ['第 3 次航行开始', '甲方船主正在竞价港务长'],
+                };
+            }
+            if (gameType === 'modernart') {
+                const cards = [
+                    ['ma-1', 'matisse', '马蒂斯', 'open'], ['ma-2', 'cassat', '卡萨特', 'once'], ['ma-3', 'yoshida', '吉田', 'sealed'],
+                    ['ma-4', 'bruegel', '勃鲁盖尔', 'fixed'], ['ma-5', 'clyfford', '克里福特', 'double'], ['ma-6', 'clyfford', '克里福特', 'open'],
+                ].map(([id, artistId, artistName, auctionType]) => ({ id, artistId, artistName, auctionType }));
+                const players = ['甲方藏家', '乙方画廊', '丙方策展人', '丁方买家', '戊方经纪人'].map((name, index) => ({
+                    id: `p${index + 1}`, name, color: ['#d45f54', '#4d82a6', '#bf8b3e', '#6d9466', '#89689e'][index], cash: index ? null : 78,
+                    handCount: 6 - index, collectionCount: index % 3, isOnline: true,
+                }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'auction', round: 2, maxRounds: 4, currentTurn: 'p1', currentTurnName: '甲方藏家', myId: 'p1', myCash: 78,
+                    rules: { players: '3–5', rounds: 4, marketThreshold: 5, moneyHidden: true, mysteryPlayer: false }, mysteryCount: 0,
+                    roundCounts: { matisse: 3, cassat: 4, yoshida: 1, bruegel: 2, clyfford: 2 }, artistValues: { matisse: 30, cassat: 20, yoshida: 0, bruegel: 10, clyfford: 0 },
+                    auction: null, doubleOffer: null, mysteryOffer: null, players, myHand: cards, myCollection: cards.slice(1, 3),
+                    market: [{ cardId: 'sold-1', artistId: 'matisse', artistName: '马蒂斯', price: 12 }, { cardId: 'sold-2', artistId: 'cassat', artistName: '卡萨特', price: 16 }],
+                    history: [{ round: 1, market: [1, 2, 3], values: { matisse: 30, cassat: 20, bruegel: 10 }, cumulativeValues: { matisse: 30, cassat: 20, bruegel: 10 } }],
+                    availableActions: { startAuction: true }, actionLog: ['第 2 季展览开始', '甲方藏家正在选择作品'], presentation: null, winner: null, winners: [],
+                };
+            }
+            if (gameType === 'camelup') {
+                const camels = [
+                    ['red', '赤焰', '#cf4d3f', 10, 1], ['blue', '海蓝', '#347f9d', 10, 0], ['green', '绿洲', '#56865b', 7, 0], ['yellow', '金沙', '#d89a2e', 5, 1], ['white', '月白', '#a5aba8', 5, 0],
+                ].map(([id, name, color, position, order]) => ({ id, name, color, position, order }));
+                const players = ['甲方驯驼师', '乙方观赛客', '丙方商人', '丁方旅人', '戊方领队'].map((name, index) => ({
+                    id: `p${index + 1}`, name, color: ['#c75244', '#467f9c', '#c09137', '#63865c', '#83699a'][index], cash: 17 - index,
+                    pyramidTileCount: index % 2, legBetCount: index % 3, overallBetCount: index % 2, finishCardCount: 5 - index % 2, isOnline: true,
+                }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'leg', leg: 3, currentTurn: 'p1', currentTurnName: '甲方驯驼师', myId: 'p1',
+                    rolled: ['green', 'white'], ranking: ['red', 'blue', 'green', 'yellow', 'white'], legTiles: { red: 2, blue: 3, green: 1, yellow: 2, white: 3 }, camels,
+                    tiles: { 3: { ownerId: 'p2', ownerName: '乙方观赛客', kind: 'oasis' }, 13: { ownerId: 'p1', ownerName: '甲方驯驼师', kind: 'mirage' } }, players,
+                    myRaceCards: ['red', 'blue', 'green', 'yellow', 'white'].map(id => ({ id: `finish-p1-${id}`, camelId: id, ownerId: 'p1' })),
+                    myLegBets: [{ camelId: 'red', payout: 5 }], myOverallBets: [], myPyramidTiles: 1, overallBetPiles: { winner: 2, loser: 1 },
+                    lastLeg: { leg: 2, ranking: ['blue', 'red', 'yellow', 'green', 'white'], payouts: [], pyramidRewards: [] },
+                    availableActions: { rollDie: true, betLeg: true, betOverall: true, placeTile: true }, actionLog: ['第 3 赛段开始', '轮到甲方驯驼师'], winner: null, winners: [], presentation: null,
+                };
+            }
+            if (gameType === 'magicalathlete') {
+                const athlete = (id, name, description) => ({ id, name, description, used: false });
+                const athletes = [
+                    athlete('alchemist', '炼金术师', '主移动较小时可改为前进 4 格。'), athlete('banana', '香蕉', '超过我的运动员会摔倒。'),
+                    athlete('egg', '蛋', '赛前抽取候选运动员并复制能力。'), athlete('genius', '天才', '预测主移动骰子点数。'),
+                    athlete('hypnotist', '催眠师', '可传送一名运动员。'), athlete('magician', '魔法师', '可重掷主移动。'),
+                    athlete('mouth', '大嘴', '与一名对手同格时淘汰对方。'), athlete('rocketscientist', '火箭医生', '可翻倍主移动，之后摔倒。'),
+                    athlete('twin', '双胞胎', '复制上一场冠军能力。'), athlete('hare', '快兔', '主移动额外前进。'),
+                ];
+                const players = ['甲方教练', '乙方选手', '丙方领队', '丁方运动员', '戊方队长', '己方选手'].map((name, index) => ({ id: `p${index + 1}`, name, color: ['#dc6256', '#4c83ad', '#c18c3a', '#6d966a', '#80699b', '#228c83'][index], score: 5 - index, bronze: index % 2, isOnline: true }));
+                const racers = athletes.slice(0, 6).map((item, index) => ({ id: `r${index + 1}`, playerId: `p${index + 1}`, athleteId: item.id, athlete: item, athleteName: item.name, playerName: players[index].name, position: [13, 16, 9, 7, 5, 11][index], tripped: false, eliminated: false, finishOrder: null, bronze: index % 2, copiedAthlete: null }));
+                return {
+                    roomId: 'visual', status: 'playing', phase: 'race', match: 2, maxMatches: 4, teamSize: 4, racersPerPlayer: 1, trackSide: 'wild', trackLength: 30, draftRound: 2,
+                    draftPool: athletes.slice(0, 6), currentTurn: 'p1', currentTurnName: '甲方教练', myId: 'p1', athletes, players, racers,
+                    trackSpecials: { 1: 'star', 5: 'trip', 7: 'arrow+3', 11: 'arrow+1', 13: 'star', 15: 'arrow-4', 16: 'trip', 22: 'arrow+2', 23: 'arrow-2', 25: 'trip' },
+                    history: [{ match: 1, trackSide: 'mild', ranking: [{ place: 1, playerId: 'p1', athleteId: 'alchemist', gold: 2, silver: 0 }, { place: 2, playerId: 'p2', athleteId: 'banana', gold: 0, silver: 1 }] }],
+                    prompt: null, acknowledgement: null, actionLog: ['第 2 场使用狂野赛道', '轮到甲方教练行动'],
+                    myTeam: athletes.slice(0, 4).map((item, index) => ({ ...item, used: index === 0 })), myRaceSelections: [], myBronze: 1, myAthlete: athletes[3], myRacer: { ...racers[0], roll: null, extraTurn: false },
+                    raceSelectionStatus: players.map(player => ({ playerId: player.id, selectedCount: 0, ready: false })), availableActions: { roll: true }, winner: null, winners: [], presentation: null,
                 };
             }
             if (gameType === 'werewolf') {
@@ -267,27 +460,495 @@
 
         try {
             const clientPath = type === 'chess' ? '/games/chess/lobby-client.js' : `/games/${type}/client.js`;
-            const module = await import(`${clientPath}?v=20260827-hidden-role-focus-1`);
+            const module = await import(`${clientPath}?v=20260827-decrypto-notebook-1`);
             window.shellTestClient = module.createGameClient({ mount, send() {}, addLog() {} });
             const state = fixtureState(type);
+            if (type === 'coup' && state) {
+                const scenario = params.get('coupState') || 'turn';
+                if (scenario === 'challenge') {
+                    state.currentTurn = 'p2';
+                    state.interaction = { actionId: 41, kind: 'steal', actorId: 'p2', targetId: 'p1', claimedRole: 'captain', stage: 'challenge' };
+                    state.challenge = { phase: 'challenge', actionKind: 'steal', claimedRole: 'captain', responderId: 'p2', currentChallengerId: 'p1', isMyTurn: true };
+                    state.actionLog.push('乙方玩家声称船长偷窃甲方玩家');
+                } else if (scenario === 'loss') {
+                    state.currentTurn = 'p2';
+                    state.interaction = { actionId: 42, kind: 'coup', actorId: 'p2', targetId: 'p1', stage: 'influence_loss', lossPlayerId: 'p1', lossReason: 'coup' };
+                    state.influenceLoss = { playerId: 'p1', isMyTurn: true };
+                    state.actionLog.push('甲方玩家必须失去一张影响力');
+                } else if (scenario === 'exchange') {
+                    state.currentTurn = 'p1';
+                    state.interaction = { actionId: 43, kind: 'exchange', actorId: 'p1', claimedRole: 'ambassador', stage: 'exchange' };
+                    state.exchange = {
+                        isMyTurn: true,
+                        keepCount: 2,
+                        options: [
+                            { index: 0, role: 'captain', revealed: false, source: 'existing' },
+                            { index: 1, role: 'assassin', revealed: false, source: 'existing' },
+                            { index: 2, role: 'duke', revealed: false, source: 'drawn' },
+                            { index: 3, role: 'contessa', revealed: false, source: 'drawn' },
+                        ],
+                    };
+                }
+            }
+            if (type === 'guessnumber' && state) {
+                const scenario = params.get('guessState') || 'ready';
+                const supportedScenarios = ['empty', 'ready', 'feedback', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown guessnumber fixture: ${scenario}`);
+                if (scenario === 'feedback' || scenario === 'ended') {
+                    const history = [
+                        { guess: '1234', exact: 1, misplaced: 1, absent: 2 },
+                        { guess: '5071', exact: 2, misplaced: 1, absent: 1 },
+                    ];
+                    state.players[0].history = history;
+                    state.players[0].attempts = history.length;
+                    state.lastResult = { ...history[history.length - 1], attempt: history.length };
+                }
+                if (scenario === 'ended') {
+                    state.status = 'ended';
+                    state.availableActions.canGuess = false;
+                    state.secret = '5071';
+                    state.winner = { id: 'p1', name: '破译员' };
+                    state.lastResult = { guess: '5071', exact: 4, misplaced: 0, absent: 0, attempt: 3 };
+                }
+            }
+            if (type === 'takefive' && state) {
+                const scenario = params.get('takefiveState') || 'select';
+                if (!['select', 'locked', 'settlement'].includes(scenario)) throw new Error(`Unknown takefive fixture: ${scenario}`);
+                if (scenario === 'locked') {
+                    state.mySelectedCardId = state.myHand[3].id;
+                    state.selectedCount = 10;
+                    state.players.forEach(player => { player.hasSelected = true; });
+                    state.availableActions.canSelect = false;
+                }
+                if (scenario === 'settlement') {
+                    state.phase = 'selecting';
+                    state.round = 1;
+                    state.handNumber = 2;
+                    state.availableActions.canSelect = true;
+                    state.handSettlement = {
+                        settlementId: 1, handNumber: 1, ended: false, targetScore: 66, winners: [], triggeredBy: [],
+                        scores: state.players.map((player, index) => ({ id: player.id, name: player.name, penalty: (index * 3) % 14, total: 9 + index * 5 })),
+                    };
+                }
+            }
+            if (type === 'hanabi' && state) {
+                const scenario = params.get('hanabiState') || 'hand';
+                const supportedScenarios = ['hand', 'clue-color', 'clue-value', 'presentation', 'final-round', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown hanabi fixture: ${scenario}`);
+                if (scenario === 'final-round') {
+                    state.deckCount = 0;
+                    state.finalTurnsRemaining = 4;
+                    state.actionLog.push('牌库最后一张已经抽出，每位玩家还剩一次行动');
+                }
+                if (scenario === 'ended') {
+                    state.status = 'ended';
+                    state.phase = 'ended';
+                    state.currentTurn = null;
+                    state.currentTurnName = null;
+                    state.deckCount = 0;
+                    state.finalTurnsRemaining = 0;
+                    state.endReason = 'fuses';
+                    state.strikes = 3;
+                    state.score = 13;
+                    state.scoreRating = '值得纪念的演出';
+                    state.availableActions = { canAct: false, canGiveClue: false, canPlay: false, canDiscard: false };
+                }
+            }
+            if (type === 'splendor' && state) {
+                const scenario = params.get('splendorState') || 'tokens';
+                const supportedScenarios = ['tokens', 'card', 'return', 'noble', 'presentation', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown splendor fixture: ${scenario}`);
+                if (scenario === 'return') {
+                    state.phase = 'return_tokens';
+                    state.myTokens = { white: 3, blue: 2, green: 2, red: 2, black: 2, gold: 1 };
+                    state.pendingTokenReturn = { playerId: 'p1', playerName: '甲方商会', amount: 2 };
+                    state.availableActions = { canAct: false, canChooseNoble: false, canReturnTokens: true, returnTokenCount: 2 };
+                }
+                if (scenario === 'noble') {
+                    state.phase = 'choose_noble';
+                    state.pendingNoble = { playerId: 'p1', playerName: '甲方商会', options: state.nobles.slice(0, 2) };
+                    state.availableActions = { canAct: false, canChooseNoble: true, canReturnTokens: false, returnTokenCount: 0 };
+                }
+                if (scenario === 'ended') {
+                    state.status = 'ended'; state.phase = 'ended'; state.endReason = 'points'; state.finalRoundStart = 0;
+                    state.players[0].points = 16; state.winners = [{ id: 'p1', name: '甲方商会', points: 16, cardCount: 9 }];
+                    state.availableActions = { canAct: false, canChooseNoble: false, canReturnTokens: false, returnTokenCount: 0 };
+                }
+            }
+            if (type === 'kingdomino' && state) {
+                const scenario = params.get('kingdominoState') || 'draft';
+                const supportedScenarios = ['draft', 'place-start', 'place-preview', 'discard', 'duel', 'presentation', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown kingdomino fixture: ${scenario}`);
+                if (['place-start', 'place-preview', 'discard', 'duel'].includes(scenario)) {
+                    state.phase = 'placing';
+                    state.mySelectedTile = { ...state.draft[0] };
+                    state.mySelectedTiles = [{ token: 0, tile: { ...state.draft[0] } }];
+                    state.availableActions = { canSelect: false, canPlace: true, canDiscard: true };
+                }
+                if (scenario === 'discard') {
+                    state.myGrid = Object.fromEntries(Array.from({ length: 25 }, (_, index) => [`${index % 5},${Math.floor(index / 5)}`, { terrain: index === 12 ? '城堡' : '矿山', crowns: 0, dominoId: `full-${index}` }]));
+                }
+                if (scenario === 'duel') {
+                    state.boardSize = 7; state.maxRounds = 12; state.remainingTileCount = 20;
+                    state.myGrid = { '3,3': { terrain: '城堡', crowns: 0 }, '3,2': { terrain: '海洋', crowns: 0, dominoId: 'duel-1' }, '4,2': { terrain: '草地', crowns: 1, dominoId: 'duel-1' } };
+                }
+                if (scenario === 'ended') {
+                    state.status = 'ended'; state.phase = 'ended'; state.round = 12;
+                    state.players[0].score = 42; state.winner = { id: 'p1', name: '甲方国王', score: 42 };
+                    state.availableActions = { canSelect: false, canPlace: false, canDiscard: false };
+                }
+            }
+            if (type === 'acquire' && state) {
+                const scenario = params.get('acquireState') || 'place';
+                const supportedScenarios = ['place', 'foundation', 'merger', 'settlement', 'buy', 'presentation', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown acquire fixture: ${scenario}`);
+                if (scenario === 'foundation') {
+                    state.phase = 'foundation'; state.availableActions = { ...state.availableActions, canPlace: false, canFound: true };
+                }
+                if (scenario === 'merger') {
+                    state.phase = 'merger'; state.pendingMerger = { chains: ['sackson', 'imperial'] };
+                    state.corporations.imperial.size = 5; state.availableActions = { ...state.availableActions, canPlace: false, canChooseMerger: true };
+                }
+                if (scenario === 'settlement') {
+                    state.phase = 'merger_settlement'; state.mergerSettlement = { currentPlayerId: 'p1', chainId: 'sackson', survivingId: 'imperial', holding: 4 };
+                    state.availableActions = { ...state.availableActions, canPlace: false, canSettleMerger: true };
+                }
+                if (scenario === 'buy') {
+                    state.phase = 'buy'; state.availableActions = { ...state.availableActions, canPlace: false, canBuy: true, canEndGame: true };
+                }
+                if (scenario === 'ended') {
+                    state.status = 'ended'; state.phase = 'ended'; state.deckCount = 0; state.players[0].cash = 28400;
+                    state.winner = { id: 'p1', name: '甲方投资人' }; state.availableActions = {};
+                }
+            }
+            if (type === 'citadels' && state) {
+                const scenario = params.get('citadelsState') || 'draft';
+                const supportedScenarios = ['draft', 'resource', 'draw', 'build', 'ability', 'warlord', 'graveyard', 'presentation', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown citadels fixture: ${scenario}`);
+                const enterTurn = (roleId, rank, name, actions) => {
+                    state.phase = 'character_turn'; state.draftPlayerId = null; state.currentPlayerId = 'p1'; state.currentRoleRank = rank; state.currentRoleName = name;
+                    state.myRoles = [{ id: roleId, rank, name }]; state.availableActions = actions;
+                };
+                if (scenario === 'resource') enterTurn('merchant', 6, '商人', { takeGold: true, drawDistrict: true, collectIncome: true });
+                if (scenario === 'draw') {
+                    enterTurn('merchant', 6, '商人', { keepDistrict: true });
+                    state.myDrawOptions = [{ id: 'draw-1', name: '港口', color: 'trade', cost: 4, points: 4 }, { id: 'draw-2', name: '采石场', color: 'unique', cost: 5, points: 5, effect: 'quarry' }];
+                }
+                if (scenario === 'build') enterTurn('architect', 7, '建筑师', { buildDistrict: true, endTurn: true });
+                if (scenario === 'ability') enterTurn('assassin', 1, '刺客', { assassinate: true, takeGold: true, drawDistrict: true });
+                if (scenario === 'warlord') {
+                    enterTurn('warlord', 8, '军阀', { destroyDistrict: true, endTurn: true });
+                    state.destroyTargets = [{ targetId: 'p2', targetName: '乙方城主', cost: 2, greatWall: false, card: state.players[1].city[0] }];
+                }
+                if (scenario === 'graveyard') {
+                    enterTurn('warlord', 8, '军阀', { graveyardRecover: true, declineGraveyard: true });
+                    state.pendingGraveyard = { cardName: '庄园' };
+                }
+                if (scenario === 'ended') {
+                    state.status = 'ended'; state.phase = 'ended'; state.availableActions = {}; state.currentPlayerId = null;
+                    state.scores = state.players.map((player, index) => ({ id: player.id, name: player.name, districtSum: 25 - index * 2, firstFinisherBonus: index ? 0 : 4, eightCityBonus: index === 1 ? 2 : 0, colorBonus: index < 2 ? 3 : 0, treasuryBonus: 0, mapRoomBonus: 0, score: 32 - index * 4 }));
+                    state.winner = { id: 'p1', name: '甲方城主' }; state.winners = [state.winner];
+                }
+            }
+            if (type === 'lasvegas' && state) {
+                const scenario = params.get('lasvegasState') || 'ready';
+                const supportedScenarios = ['ready', 'rolled', 'selected', 'tie', 'neutral', 'settlement', 'standings', 'presentation', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown lasvegas fixture: ${scenario}`);
+                if (['rolled', 'selected', 'tie', 'neutral'].includes(scenario)) {
+                    state.currentRollOwn = [2, 2, 3, 4, 6]; state.currentRollNeutral = scenario === 'neutral' ? [2, 5] : [];
+                    state.currentRoll = [...state.currentRollOwn, ...state.currentRollNeutral]; state.availableActions = { canRoll: false, canPlaceFaces: [...new Set(state.currentRoll)] };
+                }
+                if (scenario === 'tie') state.casinos[1].dice = { p1: 2, p2: 2, p3: 1 };
+                if (scenario === 'neutral') {
+                    state.players[0].neutralDiceRemaining = 2;
+                    state.neutral = { id: 'neutral', name: '中立骰子', color: 'neutral', isNeutral: true, diceRemaining: 2 };
+                    state.casinos[1].dice = { p2: 2, neutral: 3 };
+                }
+                if (scenario === 'settlement') state.lastPayouts = [{ playerId: 'p1', playerName: '甲方赌客', amount: 90, casino: 4, dice: 4 }, { playerId: 'p3', playerName: '丙方赌客', amount: 50, casino: 1, dice: 3 }];
+                if (scenario === 'standings') { state.round = 3; state.actionLog.unshift('第 2 轮结算完成，甲方赌客本轮获得 90 万'); }
+                if (scenario === 'ended') {
+                    state.status = 'ended'; state.round = 4; state.currentTurn = null; state.myTurn = false; state.availableActions = { canRoll: false, canPlaceFaces: [] };
+                    state.players[0].money = 370; state.players[0].banknoteCount = 7; state.winners = [{ id: 'p1', name: '甲方赌客' }];
+                }
+            }
+            if (type === 'scout' && state) {
+                const scenario = params.get('scoutState') || 'orientation';
+                const supportedScenarios = ['orientation', 'show', 'beat', 'scout', 'scout-show', 'duel', 'settlement', 'presentation', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown scout fixture: ${scenario}`);
+                const enterTurn = () => {
+                    state.phase = 'playing'; state.currentPlayerId = 'p1'; state.currentPlayerName = '甲方马戏团';
+                    state.availableActions = { canSetOrientation: false, canShow: true, canScout: true, canScoutShow: true };
+                    state.activeSet = [{ id: 'a1', front: 4, back: 8, orientation: 0, value: 4, otherValue: 8 }, { id: 'a2', front: 5, back: 9, orientation: 0, value: 5, otherValue: 9 }];
+                    state.activeOwnerId = 'p2'; state.activeOwnerName = '乙方马戏团';
+                };
+                if (scenario !== 'orientation' && scenario !== 'ended') enterTurn();
+                if (scenario === 'beat') state.activeSet = [{ id: 'b1', front: 2, back: 7, orientation: 0, value: 2, otherValue: 7 }, { id: 'b2', front: 2, back: 8, orientation: 0, value: 2, otherValue: 8 }];
+                if (scenario === 'duel') {
+                    state.players = state.players.slice(0, 2); state.maxRounds = 2; state.myScoutChips = 3; state.myScoutShowAvailable = false; state.availableActions.canScoutShow = false;
+                }
+                if (scenario === 'settlement') { state.round = 3; state.actionLog.unshift('第 2 轮结束：甲方马戏团本轮获得 5 分'); }
+                if (scenario === 'ended') {
+                    state.status = 'ended'; state.phase = 'ended'; state.round = 5; state.availableActions = {}; state.players[0].score = 18;
+                    state.winners = [{ id: 'p1', name: '甲方马戏团', score: 18 }];
+                }
+            }
+            if (type === 'manila' && state) {
+                const scenario = params.get('manilaState') || 'auction';
+                const supportedScenarios = ['auction', 'share', 'boats', 'placement', 'sailing', 'pilot', 'pirate-board', 'plunder', 'insurance', 'settlement', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown manila fixture: ${scenario}`);
+                if (scenario === 'share' || scenario === 'boats') {
+                    state.phase = 'master'; state.masterStep = scenario === 'share' ? 'share' : 'boats';
+                    state.availableActions = scenario === 'share' ? { buyShare: true, skipShare: true } : { setBoats: true };
+                }
+                if (scenario === 'placement' || scenario === 'insurance') {
+                    state.phase = 'placement'; state.movementRound = 1; state.availableActions = { placeAccomplice: true, passPlacement: true, takeLoan: true, repayLoan: scenario === 'insurance' };
+                    if (scenario === 'insurance') state.locations.insurance = [{ playerId: 'p1', playerName: '甲方船主', fee: 0, slot: 1 }];
+                }
+                if (scenario === 'sailing') {
+                    state.phase = 'sailing'; state.movementRound = 2; state.availableActions = { sailBoats: true };
+                    state.movementPlan = { round: 2, rolls: state.boats.map((boat, index) => ({ boatId: boat.id, good: boat.good, roll: [3, 4, 2][index], from: boat.position, projected: boat.position + [3, 4, 2][index] })) };
+                }
+                if (scenario === 'pilot') { state.phase = 'pilot'; state.movementRound = 2; state.availableActions = { pilotMove: true, skipPilot: true }; }
+                if (scenario === 'pirate-board') { state.phase = 'pirateBoard'; state.movementRound = 2; state.boats[1].position = 13; state.availableActions = { boardPirate: true, skipPirate: true }; }
+                if (scenario === 'plunder') { state.phase = 'plunder'; state.movementRound = 3; state.boats[1].position = 13; state.pendingPlunder = { boatId: 2, good: '玉石', cargoAccomplices: 2 }; state.availableActions = { plunderDestination: true }; }
+                if (scenario === 'settlement') { state.phase = 'auction'; state.availableActions = {}; }
+                if (scenario === 'ended') { state.status = 'ended'; state.phase = 'ended'; state.availableActions = {}; state.winner = { id: 'p1', name: '甲方船主', fortune: 96 }; state.players[0].fortune = 96; }
+            }
+            if (type === 'modernart' && state) {
+                const scenario = params.get('modernartState') || 'selection';
+                const supportedScenarios = ['selection', 'double-offer', 'mystery', 'open', 'once', 'sealed', 'fixed', 'double', 'presentation', 'hammer', 'settlement', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown modernart fixture: ${scenario}`);
+                const enterBidding = auctionType => {
+                    state.phase = 'bidding'; state.currentTurn = 'p1'; state.currentTurnName = '甲方藏家'; state.availableActions = { bid: true };
+                    state.auction = { artist: '马蒂斯', artistId: 'matisse', artists: auctionType === 'double' ? ['马蒂斯', '马蒂斯'] : ['马蒂斯'], sellerId: 'p2', sellerName: '乙方画廊', type: auctionType, typeName: auctionType, fixedPrice: auctionType === 'fixed' ? 18 : null, highestBid: 12, highestBidder: 'p3', bidCount: auctionType === 'sealed' ? 2 : 0, passed: [] };
+                };
+                if (scenario === 'double-offer') { state.phase = 'double_offer'; state.availableActions = { offerSecond: true, passSecond: true }; state.doubleOffer = { artistId: 'clyfford', artist: '克里福特', originalSellerName: '乙方画廊', currentPlayerName: '甲方藏家', passed: [] }; }
+                if (scenario === 'mystery') { state.phase = 'mystery_offer'; state.rules.mysteryPlayer = true; state.mysteryCount = 7; state.availableActions = { revealMystery: true, skipMystery: true }; state.mysteryOffer = { remaining: 7 }; }
+                if (['open', 'once', 'sealed', 'fixed', 'double'].includes(scenario)) enterBidding(scenario);
+                if (['presentation', 'hammer', 'settlement'].includes(scenario)) { enterBidding('open'); state.availableActions = {}; }
+                if (scenario === 'ended') { state.status = 'ended'; state.phase = 'ended'; state.auction = null; state.availableActions = {}; state.myCash = 284; state.players[0].cash = 284; state.winner = { id: 'p1', name: '甲方藏家', cash: 284 }; state.winners = [state.winner]; }
+            }
+            if (type === 'camelup' && state) {
+                const scenario = params.get('camelupState') || 'ready';
+                const supportedScenarios = ['ready', 'roll', 'leg-bet', 'overall-winner', 'overall-loser', 'tile-oasis', 'tile-mirage', 'die', 'move', 'secret', 'leg-settlement', 'reveal', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown camelup fixture: ${scenario}`);
+                if (['die', 'move', 'secret', 'leg-settlement', 'reveal'].includes(scenario)) state.availableActions = {};
+                if (scenario === 'ended') { state.status = 'ended'; state.phase = 'ended'; state.availableActions = {}; state.players[0].cash = 31; state.winner = { id: 'p1', name: '甲方驯驼师', cash: 31 }; state.winners = [state.winner]; }
+            }
+            if (type === 'magicalathlete' && state) {
+                const scenario = params.get('magicalathleteState') || 'race';
+                const supportedScenarios = ['draft', 'race-select', 'race', 'tripped', 'acknowledgement', 'private-pick', 'target', 'ability', 'reroll', 'genius', 'lineup', 'roll-presentation', 'ability-presentation', 'elimination', 'settlement', 'ended'];
+                if (!supportedScenarios.includes(scenario)) throw new Error(`Unknown magicalathlete fixture: ${scenario}`);
+                if (scenario === 'draft') { state.phase = 'draft'; state.racers = []; state.availableActions = { chooseAthlete: true }; }
+                if (scenario === 'race-select') { state.phase = 'race_select'; state.racers = []; state.availableActions = { selectRaceAthlete: true }; state.racersPerPlayer = 1; }
+                if (scenario === 'tripped') state.racers[0].tripped = true;
+                if (scenario === 'acknowledgement') { state.racers[1].eliminated = true; state.availableActions = {}; state.acknowledgement = { id: 'ack-1', playerId: 'p1', playerName: '甲方教练', racerId: 'r1', athleteId: 'alchemist', athleteName: '炼金术师', sourceRacerId: 'r2', sourceAthleteName: '大嘴', position: 16 }; }
+                if (scenario === 'private-pick') { state.availableActions = {}; state.prompt = { kind: 'eggPick', playerId: 'p1', racerId: 'r1', pool: ['banana', 'genius', 'hare'] }; }
+                if (scenario === 'target') { state.availableActions = {}; state.prompt = { kind: 'hypnotist', playerId: 'p1', racerId: 'r1' }; }
+                if (scenario === 'ability') { state.availableActions = {}; state.prompt = { kind: 'rocket', playerId: 'p1', racerId: 'r1' }; }
+                if (scenario === 'reroll') { state.availableActions = {}; state.prompt = { kind: 'magician', playerId: 'p1', racerId: 'r1', roll: 2 }; }
+                if (scenario === 'genius') { state.availableActions = {}; state.prompt = { kind: 'genius', playerId: 'p1', racerId: 'r1' }; }
+                if (['lineup', 'roll-presentation', 'ability-presentation', 'elimination', 'settlement'].includes(scenario)) state.availableActions = {};
+                if (scenario === 'ended') { state.status = 'ended'; state.phase = 'ended'; state.availableActions = {}; state.players[0].score = 18; state.winner = { id: 'p1', name: '甲方教练', score: 18 }; state.winners = [state.winner]; }
+            }
             window.__shellTestState = state ? JSON.parse(JSON.stringify(state)) : null;
             if (state) window.shellTestClient.handleMessage({ type: 'gameState', state });
             if (type === 'loveletter') mount.querySelector('[data-card-index="0"]')?.click();
+            if (type === 'guessnumber' && (params.get('guessState') || 'ready') === 'ready') {
+                for (const digit of ['1', '2', '3', '4']) mount.querySelector(`[data-digit="${digit}"]`)?.click();
+            }
             if (type === 'monopolydeal') mount.querySelector('[data-card-index="0"]')?.click();
-            if (type === 'hanabi') mount.querySelector('[data-hand-card-id]')?.click();
+            if (type === 'hanabi') {
+                const scenario = params.get('hanabiState') || 'hand';
+                if (scenario === 'hand') mount.querySelector('[data-hand-card-id]')?.click();
+                if (scenario === 'clue-color' || scenario === 'clue-value') {
+                    mount.querySelector('[data-target-id]')?.click();
+                    if (scenario === 'clue-value') mount.querySelector('[data-clue-kind="value"]')?.click();
+                }
+                if (scenario === 'presentation') {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    nextState.lastAction = {
+                        kind: 'giveClue', actionId: 1, playerId: 'p1', playerName: '甲方玩家', targetId: 'p2', targetName: '乙方玩家',
+                        clueKind: 'color', value: 'red', matchedCardIds: ['p2-1'], matchedIndexes: [0], message: '甲方玩家给乙方玩家提供了红色提示',
+                    };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'splendor') {
+                const scenario = params.get('splendorState') || 'tokens';
+                if (scenario === 'tokens') mount.querySelector('[data-token-color="white"]')?.click();
+                if (scenario === 'card') mount.querySelector('[data-card-select="s1"]')?.click();
+                if (scenario === 'return') mount.querySelector('[data-token-adjust="1"]')?.click();
+                if (scenario === 'presentation') {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    nextState.presentation = { sequence: 1, transactionId: 1, events: [{ kind: 'takeTokens', playerId: 'p1', playerName: '甲方商会', colors: ['white', 'blue', 'green'], counts: { white: 1, blue: 1, green: 1 }, tokenTotalBefore: 6, tokenTotalAfter: 9 }], resolved: true };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'kingdomino') {
+                const scenario = params.get('kingdominoState') || 'draft';
+                if (scenario === 'draft') mount.querySelector('[data-domino-id="k1"]')?.click();
+                if (scenario === 'place-preview') {
+                    mount.querySelector('.kd-cell.is-placeable')?.click();
+                    mount.querySelector('.kd-cell.is-candidate')?.click();
+                }
+                if (scenario === 'presentation') {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    nextState.presentation = { sequence: 1, events: [{ kind: 'selectDomino', playerId: 'p1', playerName: '甲方国王', playerColor: '#d6a63d', tokenNumber: 1, tile: { ...state.draft[0] } }] };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'acquire') {
+                const scenario = params.get('acquireState') || 'place';
+                if (scenario === 'place') mount.querySelector('[data-tile-id="D5"]')?.click();
+                if (scenario === 'presentation') {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    nextState.presentation = { sequence: 1, events: [{ kind: 'placeTile', playerId: 'p1', playerName: '甲方投资人', tile: { id: 'D5' }, resultKind: 'neutral' }] };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'citadels') {
+                const scenario = params.get('citadelsState') || 'draft';
+                if (scenario === 'draft') mount.querySelector('.citadels-role-option')?.click();
+                if (scenario === 'build') mount.querySelector('[data-action="selectBuild"]')?.click();
+                if (scenario === 'ability' || scenario === 'warlord') mount.querySelector('[data-action="prepareDecision"]')?.click();
+                if (scenario === 'presentation') {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    nextState.presentation = { sequence: 1, events: [{ kind: 'roleCall', playerId: 'p1', playerName: '甲方城主', role: { id: 'king', rank: 4, name: '国王' } }] };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'lasvegas') {
+                const scenario = params.get('lasvegasState') || 'ready';
+                if (scenario === 'selected') mount.querySelector('[data-face="2"]')?.click();
+                if (scenario === 'presentation') {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    nextState.presentation = { sequence: 1, events: [{ kind: 'diceRolled', actorId: 'p1', actorName: '甲方赌客', actorColor: 'red', ownResults: [1, 2, 2, 4, 5, 6], neutralResults: [] }] };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'scout') {
+                const scenario = params.get('scoutState') || 'orientation';
+                if (scenario === 'orientation') mount.querySelector('[data-orientation-choice="0"]')?.click();
+                if (scenario === 'show' || scenario === 'beat') { mount.querySelector('[data-card-index="0"]')?.click(); mount.querySelector('[data-card-index="1"]')?.click(); }
+                if (scenario === 'scout' || scenario === 'scout-show') mount.querySelector(`[data-mode="${scenario === 'scout' ? 'scout' : 'scoutShow'}"]`)?.click();
+                if (['settlement', 'presentation'].includes(scenario)) {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    nextState.presentation = scenario === 'settlement'
+                        ? { sequence: 1, events: [{ kind: 'roundSettlement', round: 2, reason: 'hand-empty', scores: state.players.map((player, index) => ({ ...player, roundScore: 5 - index, capturedPoints: index, scoutTokenPoints: index % 2, handPenalty: -index, totalScore: player.score + 5 - index })) }] }
+                        : { sequence: 1, events: [{ kind: 'orientationLocked', playerId: 'p1', playerName: '甲方马戏团', lockedCount: 3, totalPlayers: 5 }] };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'manila' && (params.get('manilaState') || 'auction') === 'settlement') {
+                const nextState = JSON.parse(JSON.stringify(state));
+                nextState.presentation = { sequence: 1, resolved: true, events: [{ kind: 'voyageSettlement', voyage: 3,
+                    boats: nextState.boats.map((boat, index) => ({ ...boat, fate: index < 2 ? 'port' : 'shipyard', portIndex: index + 1, shipyardIndex: 1 })),
+                    players: nextState.players.map((player, index) => ({ id: player.id, name: player.name, cashBefore: player.cash, cashAfter: player.cash + 12 - index * 2, gained: 12 - index * 2 })),
+                    marketBefore: nextState.market, marketAfter: { ...nextState.market, '人参': 20, '玉石': 25 }, payoutDetails: [],
+                }] };
+                window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+            }
+            if (type === 'modernart') {
+                const scenario = params.get('modernartState') || 'selection';
+                if (scenario === 'selection') mount.querySelector('[data-card-index="0"]')?.click();
+                if (scenario === 'double-offer') mount.querySelector('[data-card-index="5"]')?.click();
+                if (['presentation', 'hammer', 'settlement'].includes(scenario)) {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    const work = { id: 'event-1', artistId: 'matisse', artistName: '马蒂斯', auctionType: 'open' };
+                    const events = scenario === 'presentation'
+                        ? [{ kind: 'paintingPresented', actorId: 'p2', actorName: '乙方画廊', sellerId: 'p2', sellerName: '乙方画廊', card: work, auctionType: 'open', auctionTypeName: '公开竞价', appearance: 4, endsSeason: false }]
+                        : scenario === 'hammer'
+                            ? [{ kind: 'auctionResolved', cards: [work], auctionType: 'open', auctionTypeName: '公开竞价', sellerId: 'p2', sellerName: '乙方画廊', buyerId: 'p1', buyerName: '甲方藏家', price: 18, selfPurchase: false, sealedBids: null }]
+                            : [{ kind: 'seasonSettlement', round: 2, trigger: { kind: 'fifthPainting' }, ranking: [
+                                { rank: 1, artistId: 'cassat', artistName: '卡萨特', count: 5, roundValue: 30, cumulativeValue: 50 }, { rank: 2, artistId: 'matisse', artistName: '马蒂斯', count: 4, roundValue: 20, cumulativeValue: 50 }, { rank: 3, artistId: 'bruegel', artistName: '勃鲁盖尔', count: 2, roundValue: 10, cumulativeValue: 20 },
+                            ], players: nextState.players.map(player => ({ playerId: player.id, playerName: player.name, collectionCount: player.collectionCount })), ownResult: { playerId: 'p1', playerName: '甲方藏家', cashBefore: 78, cashAfter: 148, payout: 70, paintings: [] } }];
+                    nextState.presentation = { sequence: 21, resolved: true, events };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+                if (scenario === 'ended') {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    nextState.presentation = { sequence: 22, resolved: true, events: [{ kind: 'finalSettlement', winnerIds: ['p1'], artistValues: nextState.artistValues,
+                        standings: nextState.players.map((player, index) => ({ rank: index + 1, id: player.id, name: player.name, color: player.color, fortune: 284 - index * 23 })), seasons: nextState.history,
+                    }] };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'camelup') {
+                const scenario = params.get('camelupState') || 'ready';
+                if (scenario === 'roll') mount.querySelector('[data-action-mode="rollDie"]')?.click();
+                if (scenario === 'leg-bet') mount.querySelector('[data-leg-camel="red"]')?.click();
+                if (scenario === 'overall-winner' || scenario === 'overall-loser') {
+                    mount.querySelector('[data-action-mode="betOverall"]')?.click();
+                    if (scenario === 'overall-loser') mount.querySelector('[data-outcome="loser"]')?.click();
+                    mount.querySelector('[data-finish-card="finish-p1-red"]')?.click();
+                }
+                if (scenario === 'tile-oasis' || scenario === 'tile-mirage') {
+                    mount.querySelector('[data-action-mode="placeTile"]')?.click();
+                    if (scenario === 'tile-mirage') mount.querySelector('[data-tile-type="mirage"]')?.click();
+                    mount.querySelector('[data-track-position="15"]')?.click();
+                }
+                if (['die', 'move', 'secret', 'leg-settlement', 'reveal', 'ended'].includes(scenario)) {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    const camel = { id: 'red', name: '赤焰', color: '#cf4d3f', position: 10, order: 1 };
+                    let events = [];
+                    if (scenario === 'die') events = [{ kind: 'dieRevealed', actorId: 'p1', actorName: '甲方驯驼师', camel, steps: 3, remainingBefore: 3, pyramidReward: 1 }];
+                    if (scenario === 'move') events = [{ kind: 'camelMoved', actorId: 'p1', actorName: '甲方驯驼师', camel, steps: 3, from: 7, to: 10, movingCamels: [camel], destinationStack: nextState.camels.filter(item => item.position === 10) }];
+                    if (scenario === 'secret') events = [{ kind: 'overallBetPlaced', actorId: 'p1', actorName: '甲方驯驼师', outcome: 'winner', order: 3, private: { cardId: 'finish-p1-red', camelId: 'red', camelName: '赤焰' } }];
+                    if (scenario === 'leg-settlement') events = [{ kind: 'legSettlement', leg: 3, final: false, ranking: nextState.camels, playerResults: nextState.players.map((player, index) => ({ playerId: player.id, playerName: player.name, cashBefore: player.cash, cashAfter: player.cash + 3 - index, change: 3 - index, pyramidCount: player.pyramidTileCount, pyramidReward: player.pyramidTileCount, bets: [] })) }];
+                    if (scenario === 'reveal') events = [{ kind: 'overallBetsRevealed', ranking: nextState.camels, winnerBets: [{ order: 1, playerId: 'p1', playerName: '甲方驯驼师', cardId: 'a', camelId: 'red', camelName: '赤焰', correct: true, reward: 8, cashBefore: 23, cashAfter: 31 }], loserBets: [{ order: 1, playerId: 'p2', playerName: '乙方观赛客', cardId: 'b', camelId: 'white', camelName: '月白', correct: true, reward: 8, cashBefore: 16, cashAfter: 24 }] }];
+                    if (scenario === 'ended') events = [{ kind: 'finalSettlement', winnerIds: ['p1'], camelRanking: nextState.camels, standings: nextState.players.map((player, index) => ({ rank: index + 1, id: player.id, name: player.name, color: player.color, cash: 31 - index * 3 })) }];
+                    nextState.presentation = { sequence: 31, resolved: true, events };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'magicalathlete') {
+                const scenario = params.get('magicalathleteState') || 'race';
+                if (scenario === 'draft') mount.querySelector('[data-athlete="alchemist"]')?.click();
+                if (scenario === 'race-select') mount.querySelector('[data-athlete]')?.click();
+                if (scenario === 'race' || scenario === 'tripped') mount.querySelector('[data-action="roll"]')?.click();
+                if (scenario === 'private-pick') mount.querySelector('[data-prompt-pick="banana"]')?.click();
+                if (scenario === 'target') mount.querySelector('[data-prompt-target="r2"]')?.click();
+                if (scenario === 'ability') mount.querySelector('[data-prompt-action="promptUse"][data-prompt-value="1"]')?.click();
+                if (scenario === 'reroll') mount.querySelector('[data-prompt-action="promptReroll"][data-prompt-value="1"]')?.click();
+                if (scenario === 'genius') mount.querySelector('[data-genius-guess="4"]')?.click();
+                if (['lineup', 'roll-presentation', 'ability-presentation', 'elimination', 'settlement', 'ended'].includes(scenario)) {
+                    const nextState = JSON.parse(JSON.stringify(state));
+                    const source = { ...nextState.racers[0], athleteName: '炼金术师', playerName: '甲方教练' };
+                    let events = [];
+                    if (scenario === 'lineup') events = [{ kind: 'lineupRevealed', match: 2, trackSide: 'wild', racers: nextState.racers }];
+                    if (scenario === 'roll-presentation') events = [{ kind: 'dieRevealed', racer: source, value: 4, reroll: false }];
+                    if (scenario === 'ability-presentation') events = [{ kind: 'abilityTriggered', abilityId: 'alchemist', abilityName: '炼金术', source, targets: [nextState.racers[1]] }];
+                    if (scenario === 'elimination') events = [{ kind: 'eliminationThreatened', source: { ...source, athleteId: 'mouth', athleteName: '大嘴', position: 16 }, victim: { ...nextState.racers[1], athleteName: '香蕉', position: 16 }, position: 16, targetPlayerId: 'p2' }];
+                    if (scenario === 'settlement') events = [{ kind: 'matchSettlement', match: 2, racers: nextState.racers, ranking: [{ id: 'r1', place: 1, gold: 4, silver: 0 }, { id: 'r2', place: 2, gold: 0, silver: 2 }], playerResults: nextState.players.map((player, index) => ({ playerId: player.id, playerName: player.name, color: player.color, scoreBefore: player.score, scoreAfter: player.score + (index < 2 ? 4 - index * 2 : 0), bronze: player.bronze })) }];
+                    if (scenario === 'ended') events = [{ kind: 'finalSettlement', winnerIds: ['p1'], standings: nextState.players.map((player, index) => ({ rank: index + 1, playerId: player.id, playerName: player.name, color: player.color, score: 18 - index * 2, bronze: player.bronze })) }];
+                    nextState.presentation = { sequence: 41, resolved: true, events };
+                    window.shellTestClient.handleMessage({ type: 'gameState', state: nextState });
+                }
+            }
+            if (type === 'takefive' && (params.get('takefiveState') || 'select') === 'select') mount.querySelector('[data-card-id]')?.click();
             if (params.get('rules') === '1') {
                 mount.querySelector('[data-ui="rules"], [data-action="rules"], [data-action="roles"]')?.click();
             }
+            if (params.get('tutorial') === '1') mount.querySelector('[data-ui="tutorial"]')?.click();
+            if (params.get('notebook') === '1') mount.querySelector('[data-ui="notebook"]')?.click();
             if (params.get('revealRole') === '1') {
-                const roleCover = mount.querySelector('[data-role-hold]');
-                roleCover?.focus({ preventScroll: true });
+                const roleCover = mount.querySelector('[data-role-hold], [data-dossier-hold], [data-identity-hold]');
                 roleCover?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
                 // Keep the visual-fixture frame open after the synthetic hold;
                 // real clients still use press-and-hold and hide on keyup.
-                roleCover?.style.setProperty('display', 'none');
                 roleCover?.closest('.social-role-focus')?.classList.add('is-revealed');
                 roleCover?.parentElement.querySelector('[data-role-secret]')?.setAttribute('aria-hidden', 'false');
+                roleCover?.closest('.witchtown-dossier-stack')?.classList.add('is-revealed');
+                roleCover?.closest('.witchtown-dossier-stack')?.querySelector('[data-dossier-secret]')?.setAttribute('aria-hidden', 'false');
+                roleCover?.closest('.cp-app')?.classList.add('is-identity-revealed');
+                roleCover?.closest('.cp-app')?.querySelectorAll('[data-private-identity]').forEach(element => element.setAttribute('aria-hidden', 'false'));
             }
+            if (type === 'coup' && ['challenge', 'loss'].includes(params.get('coupState'))) {
+                await new Promise(resolve => setTimeout(resolve, 950));
+            }
+            window.dispatchEvent(new Event('resize'));
+            await new Promise(resolve => requestAnimationFrame(resolve));
             // Firefox's command-line screenshot mode captures after the
             // module has rendered but does not wait for an arbitrary Promise
             // continuation. Keep the regular font/layout settle for manual
@@ -308,24 +969,44 @@
             const actionRect = coreAction?.getBoundingClientRect();
             const optionalActionRect = optionalAction?.getBoundingClientRect();
             const shortLandscape = viewportWidth > viewportHeight && viewportHeight <= 520;
+            const coupFixtureState = params.get('coupState') || 'turn';
+            const hanabiFixtureState = params.get('hanabiState') || 'hand';
             const cardCoreSelectors = {
                 loveletter: ['.ll-opponents', '.ll-hand', '.ll-action-panel'],
+                guessnumber: ['.gn-secret-zone', '.gn-input-slots', '.gn-keypad'],
                 coup: ['.cp-council', '.cp-private', '.cp-action-console'],
+                takefive: ['.tf-board', '.tf-hand-panel'],
                 monopolydeal: ['.deal-hand', '.deal-command'],
                 hanabi: ['.hb-command-panel', '.hb-teammates-section', '.hb-my-hand', '.hb-hand-action-bar'],
+                splendor: ['.sp-market-stage', '.sp-command-panel'],
+                kingdomino: ['.kd-command-column', '.kd-kingdom-stage'],
+                acquire: ['.acquire-command', '.acquire-stage'],
+                citadels: ['.citadels-command', '.citadels-stage'],
+                lasvegas: ['.lv-command', '.lv-casinos'],
+                scout: ['.sc-show-board', '.sc-hand-panel', '.sc-command'],
+                manila: ['.mn-status', '.mn-routes', '.mn-command'],
+                modernart: ['.art-status', '.art-auction', '.art-hand'],
+                camelup: ['.cm-status', '.cm-track', '.cm-command'],
+                magicalathlete: ['.ma-status', '.ma-race', '.ma-command'],
                 werewolf: ['.ww-role', '.ww-action'],
                 avalon: ['.av-status', '.av-mission-board', '.av-private-action'],
                 decrypto: ['.dc-status', '.dc-signal-grid', '.dc-command'],
                 witchtown: ['.witchtown-command', '.witchtown-table-panel', '.witchtown-role-panel', '.witchtown-private-panel'],
             };
+            if (type === 'coup' && coupFixtureState === 'challenge') cardCoreSelectors.coup = ['.cp-council', '.cp-stage', '.cp-challenge'];
+            if (type === 'coup' && coupFixtureState === 'loss') cardCoreSelectors.coup = ['.cp-council', '.cp-loss-panel'];
+            if (type === 'coup' && coupFixtureState === 'exchange') cardCoreSelectors.coup = ['.cp-exchange-dialog'];
+            if (type === 'hanabi' && ['clue-color', 'clue-value'].includes(hanabiFixtureState)) cardCoreSelectors.hanabi = ['.hb-teammates-section', '.hb-command-panel'];
+            if (type === 'hanabi' && hanabiFixtureState === 'presentation') cardCoreSelectors.hanabi = ['.hb-presentation-layer', '.hb-presentation-skip'];
+            if (type === 'hanabi' && hanabiFixtureState === 'ended') cardCoreSelectors.hanabi = ['.hb-command-panel', '.hb-teammates-section', '.hb-my-hand'];
             const cardCore = (cardCoreSelectors[type] || []).map(selector => mount.querySelector(selector)).filter(Boolean);
             const cardCoreFits = cardCore.length === (cardCoreSelectors[type] || []).length && cardCore.every(element => {
                 const rect = element.getBoundingClientRect();
-                return rect.left >= -1 && rect.right <= viewportWidth + 1 && rect.top >= headerHeight - 1 && rect.bottom <= viewportHeight + 1;
+                return rect.left >= -2 && rect.right <= viewportWidth + 2 && rect.top >= headerHeight - 2 && rect.bottom <= viewportHeight + 2;
             });
             const boardCoreFits = Boolean(boardRect && actionRect && boardRect.left >= -1 && boardRect.right <= viewportWidth + 1 && boardRect.top >= headerHeight - 1 && boardRect.bottom <= viewportHeight + 1 && actionRect.bottom <= viewportHeight + 1 && (!optionalActionRect || optionalActionRect.bottom <= viewportHeight + 1));
             const coreFits = board ? boardCoreFits : cardCoreFits;
-            const landscapeHeightFits = !shortLandscape || scrollHeight <= viewportHeight + 1;
+            const landscapeHeightFits = !shortLandscape || type === 'coup' || scrollHeight <= viewportHeight + 1;
             const witchPortraits = type === 'witchtown' ? [...mount.querySelectorAll('.witchtown-seat-portrait, .witchtown-hall-art')] : [];
             const witchImageRatiosValid = witchPortraits.every(element => { const rect = element.getBoundingClientRect(); return Math.abs(rect.width - rect.height) <= 1; });
             const witchPublicFieldsVisible = type !== 'witchtown' || !shortLandscape || ['.witchtown-public-trials', '.witchtown-accusation-line', '.witchtown-public-cards'].every(selector => [...mount.querySelectorAll(selector)].every(element => getComputedStyle(element).display !== 'none'));
@@ -334,13 +1015,24 @@
             const roleFocusVisible = !roleFocus || getComputedStyle(roleFocus).display !== 'none' && roleFocus.getBoundingClientRect().width >= (shortLandscape ? 90 : 1) && roleFocus.getBoundingClientRect().height >= (shortLandscape ? 70 : 1);
             const roleArtDeferred = params.get('screenshot') === '1' && roleArt?.tagName === 'IMG' && !roleArt.complete;
             const roleArtReady = !roleArt || roleArt.tagName !== 'IMG' || roleArt.complete && roleArt.naturalWidth > 0 || roleArtDeferred;
-            const passed = scrollWidth <= viewportWidth && landscapeHeightFits && visibleLeaves === 1 && headerHeight >= 44 && headerHeight <= 64 && (!shortLandscape || coreFits) && witchImageRatiosValid && witchPublicFieldsVisible && roleFocusVisible && roleArtReady && runtimeErrors.length === 0;
+            const coupScenario = type === 'coup' ? params.get('coupState') || 'turn' : '';
+            const coupScenarioTargets = {
+                challenge: ['.cp-challenge .cp-danger', '.cp-challenge .cp-secondary'],
+                loss: ['.cp-loss-panel > .cp-private-choice-row [data-loss-index]'],
+                exchange: ['.cp-exchange-dialog'],
+            };
+            const coupScenarioElements = (coupScenarioTargets[coupScenario] || []).map(selector => mount.querySelector(selector)).filter(Boolean);
+            const coupScenarioFits = type !== 'coup' || !coupScenarioTargets[coupScenario] || coupScenarioElements.length === coupScenarioTargets[coupScenario].length && coupScenarioElements.every(element => {
+                const rect = element.getBoundingClientRect();
+                return rect.left >= -2 && rect.right <= viewportWidth + 2 && rect.top >= headerHeight - 2 && rect.bottom <= viewportHeight + 2;
+            });
+            const passed = scrollWidth <= viewportWidth && landscapeHeightFits && visibleLeaves === 1 && headerHeight >= 44 && headerHeight <= 64 && (!shortLandscape || coreFits) && coupScenarioFits && witchImageRatiosValid && witchPublicFieldsVisible && roleFocusVisible && roleArtReady && runtimeErrors.length === 0;
             const boardSize = boardRect ? `${Math.round(boardRect.width)}×${Math.round(boardRect.height)}` : 'missing';
             const coreLabel = shortLandscape ? (coreFits ? 'fit' : 'clipped') : 'portrait-only';
             const diagnostic = params.get('debug') === '1'
                 ? ` · ${[mount.firstElementChild, ...cardCore, ...mount.querySelectorAll('.witchtown-shell,.witchtown-workspace')].filter(Boolean).map(element => { const rect = element.getBoundingClientRect(); return `${element.className.split(' ')[0]}:${Math.round(rect.left)}-${Math.round(rect.right)}×${Math.round(rect.top)}-${Math.round(rect.bottom)}`; }).join(',')}`
                 : '';
-            metrics.textContent = `${passed ? 'PASS' : 'FAIL'} · ${type} · ${viewportWidth}×${viewportHeight} · scroll ${scrollWidth}×${scrollHeight}px · board ${boardSize} · core ${coreLabel} · art ${roleArtDeferred ? 'deferred' : witchImageRatiosValid && roleArtReady ? 'ready' : 'invalid'} · role ${roleFocusVisible ? 'visible' : 'hidden'} · public ${witchPublicFieldsVisible ? 'visible' : 'hidden'} · exits ${visibleLeaves}${diagnostic}`;
+            metrics.textContent = `${passed ? 'PASS' : 'FAIL'} · ${type}${coupScenario ? `:${coupScenario}` : ''} · ${viewportWidth}×${viewportHeight} · scroll ${scrollWidth}×${scrollHeight}px · board ${boardSize} · core ${coreLabel} · scenario ${coupScenarioFits ? 'fit' : 'clipped'} · art ${roleArtDeferred ? 'deferred' : witchImageRatiosValid && roleArtReady ? 'ready' : 'invalid'} · role ${roleFocusVisible ? 'visible' : 'hidden'} · public ${witchPublicFieldsVisible ? 'visible' : 'hidden'} · exits ${visibleLeaves}${diagnostic}`;
             metrics.classList.toggle('is-failed', !passed);
             document.documentElement.dataset.shellTest = passed ? 'passed' : 'failed';
         } catch (error) {

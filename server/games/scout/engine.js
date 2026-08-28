@@ -48,6 +48,9 @@ class ScoutEngine {
         this.players.forEach(player => { player.score = 0; player.isOnline = true; });
         this.status = 'playing'; this.round = 1; this.maxRounds = this.players.length; this.startPlayerIndex = 0; this.twoPlayerReserve = []; this.lastRound = null; this.roundHistory = []; this.actionLog = []; this.winner = null; this.winners = []; this.presentation = null; this.presentationSequence = 0; this.presentationEventSequence = 0;
         this._startRound();
+        const starter = this.players[this.startPlayerIndex];
+        this._appendPresentationEvent({ kind: 'roundStarted', round: this.round, starterId: starter?.id || null, starterName: starter?.name || '', handCounts: this.players.map(player => ({ id: player.id, name: player.name, count: player.hand.length })) });
+        this._finishPresentation();
         return this._success('马戏星探开始');
     }
 

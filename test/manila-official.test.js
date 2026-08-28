@@ -18,11 +18,30 @@ test('Manila uses the official roster, private shares, fees and no artificial vo
     assert.deepEqual(ManilaEngine.LOCATIONS.find(location => location.id === 'port-c').payout, 15);
     assert.deepEqual(ManilaEngine.LOCATIONS.find(location => location.id === 'jade').fees, [3, 4, 5, 6]);
     assert.equal(game.getPublicState().maxVoyages, null);
+    assert.equal(game.presentation.resolved, true);
+    assert.equal(game.presentation.events[0].kind, 'voyageStarted');
+    assert.equal(game.presentation.events[0].seasonOpening, true);
+    assert.equal(game.presentation.events[0].privateSharesEach, 2);
+    assert.equal(Object.prototype.hasOwnProperty.call(game.presentation.events[0], 'shares'), false);
     assert.equal(game.handleAction('p1', { kind: 'pass' }).success, true, '只有轮到的玩家可以竞价或放弃');
     assert.equal(game.handleAction('p2', { kind: 'pass' }).success, true);
     assert.equal(game.handleAction('p3', { kind: 'pass' }).success, true);
     assert.equal(game.handleAction('p4', { kind: 'pass' }).success, true);
     assert.equal(game.phase, 'master');
+});
+
+test('Manila publishes manual loan and repayment without revealing the mortgaged good', () => {
+    const game = new ManilaEngine('manila-loan-presentation', players(3), () => 0);
+    assert.equal(game.start().success, true);
+    const player = game.players[0];
+    assert.equal(game.handleAction(player.id, { kind: 'takeLoan', shareIndex: 0 }).success, true);
+    assert.equal(game.presentation.events[0].kind, 'loanTaken');
+    assert.equal(game.presentation.events[0].amount, 12);
+    assert.equal(Object.prototype.hasOwnProperty.call(game.presentation.events[0], 'good'), false);
+    assert.equal(game.handleAction(player.id, { kind: 'repayLoan', shareIndex: 0 }).success, true);
+    assert.equal(game.presentation.events[0].kind, 'loanRepaid');
+    assert.equal(game.presentation.events[0].amount, 15);
+    assert.equal(Object.prototype.hasOwnProperty.call(game.presentation.events[0], 'good'), false);
 });
 
 test('Manila charges only the winning auction bid and supports blind cargo passengers', () => {
@@ -221,8 +240,9 @@ test('Manila publishes voyage ledger, market changes and final standings for maj
     assert.equal(publicState.lastVoyage.marketAfter.人参, 30);
     assert.equal(publicState.lastVoyage.payoutDetails.some(detail => detail.kind === 'cargo' && detail.playerId === 'p1'), true);
     assert.equal(publicState.lastVoyage.payoutDetails.some(detail => detail.kind === 'port' && detail.playerId === 'p2'), true);
-    assert.deepEqual(publicState.presentation.events.map(event => event.kind), ['voyageSettlement', 'finalSettlement']);
-    const finale = publicState.presentation.events[1];
+    assert.deepEqual(publicState.presentation.events.map(event => event.kind), ['voyageSettlement', 'marketThresholdReached', 'finalSettlement']);
+    assert.deepEqual(publicState.presentation.events[1].goods, [{ good: '人参', before: 25, after: 30 }]);
+    const finale = publicState.presentation.events[2];
     assert.equal(finale.standings.length, 3);
     assert.deepEqual(new Set(finale.winnerIds), new Set(publicState.winners.map(player => player.id)));
     assert.equal(finale.standings.every(player => Number.isFinite(player.fortune)), true);

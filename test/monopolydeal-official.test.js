@@ -98,11 +98,12 @@ test('重复提交同一张手牌不会误打后方卡牌或虚增出牌数', ()
 });
 
 test('客户端用卡牌 ID 提交、锁定重复操作并在销毁时移除牌桌监听', () => {
-    const source = fs.readFileSync('public/games/monopolydeal/client.js', 'utf8');
-    assert.match(source, /return \{ kind, cardIndex, cardId: card\?\.id, \.\.\.extra \}/);
-    assert.match(source, /if \(submissionPending\) return false/);
-    assert.equal((source.match(/\{ signal: controller\.signal \}/g) || []).length >= 6, true);
-    assert.doesNotMatch(source, /说不|交易破坏者|通过起点|生日收礼|偷偷交易|强制交换/);
+    const clientSource = fs.readFileSync('public/games/monopolydeal/client.js', 'utf8');
+    const actionsSource = fs.readFileSync('public/games/monopolydeal/actions.js', 'utf8');
+    assert.match(actionsSource, /return \{ kind, cardIndex, cardId: card\?\.id, \.\.\.extra \}/);
+    assert.match(actionsSource, /if \(model\.submissionPending\) return false/);
+    assert.equal((clientSource.match(/signal: scope\.signal/g) || []).length >= 5, true);
+    assert.doesNotMatch(clientSource, /说不|交易破坏者|通过起点|生日收礼|偷偷交易|强制交换/);
 });
 
 test('每回合摸牌、空手摸五张、最多三张和七张手牌上限正确执行', () => {

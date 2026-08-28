@@ -45,6 +45,16 @@ class ModernArtEngine {
         this.presentation = null; this.presentationSequence = 0; this.presentationEventSequence = 0; this.seasonPrivateResults = {};
         this.artistValues = Object.fromEntries(ARTISTS.map(artist => [artist.id, 0]));
         this.deck = shuffle(this._buildDeck(), this.random); this._dealRound(); this._beginAuction();
+        this._appendPresentationEvent({
+            kind: 'seasonStarted',
+            round: this.round,
+            sellerId: this.players[this.currentSellerIndex]?.id || null,
+            sellerName: this.players[this.currentSellerIndex]?.name || '',
+            seasonOpening: true,
+            mysteryEnabled: this.mysteryEnabled,
+            handCounts: this.players.map(player => ({ id: player.id, name: player.name, count: player.hand.length })),
+        });
+        this._finishPresentation();
         return this._success('现代艺术开始');
     }
 

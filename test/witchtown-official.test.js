@@ -72,6 +72,26 @@ test('Witch Town seals the opening dossier until every player confirms it', () =
     assert.equal(game.phase, 'dawn', '全员确认后应自动唤醒女巫选择黑猫');
 });
 
+test('Witch Town queues the complete public ceremony and final verdict', () => {
+    const session = WitchTown.create('presentation-events', players(['a', 'b', 'c', 'd']), { random: seededRandom(311) });
+    session.start();
+    const game = session.engine;
+    assert.equal(game.presentationEvents[0].kind, 'dossierBriefing');
+    confirmDossiers(session);
+    assert.equal(game.presentationEvents.at(-1).kind, 'blackCatChoice');
+    chooseBlackCat(session);
+    assert.deepEqual(game.presentationEvents.slice(-2).map(event => event.kind), ['blackCatAssigned', 'dayStart']);
+
+    const witch = game.players.find(player => player.trialCards.some(card => card.type === 'witch'));
+    const witchTrial = witch.trialCards.find(card => card.type === 'witch');
+    game._revealTrial(witch, witchTrial.id, 'accusation');
+    game._checkWin();
+    assert.deepEqual(game.presentationEvents.slice(-4).map(event => event.kind), ['trialReveal', 'elimination', 'identityReveal', 'victory']);
+    assert.match(game.presentationEvents.find(event => event.kind === 'identityReveal').detail, /镇民：/);
+    assert.match(game.presentationEvents.find(event => event.kind === 'identityReveal').detail, /女巫：/);
+    assert.equal(game.presentationEvents.at(-1).faction, 'town');
+});
+
 test('Witch Town publishes revealed Trial evidence without leaking face-down cards', () => {
     const session = WitchTown.create('public-trial', players(['a', 'b', 'c', 'd']), { random: seededRandom(32) });
     session.start();

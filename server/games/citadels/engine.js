@@ -190,6 +190,12 @@ class CitadelsEngine {
         const crownName = this._player(this.crownHolderId)?.name || '玩家';
         this.actionLog.push(`第 ${this.round} 轮：${crownName} 持有皇冠，开始秘密选角`);
         if (this.faceUpRoles.length) this.actionLog.push(`本轮明置角色：${this.faceUpRoles.map(id => this._roleName(id)).join('、')}`);
+        this._appendPresentationEvent(this._player(this.crownHolderId), 'roleDraftStart', {
+            round: this.round,
+            crownHolderId: this.crownHolderId,
+            crownHolderName: crownName,
+            faceUpRoles: this.faceUpRoles.map(id => this._publicRole(id)),
+        });
     }
 
     _buildDraftSteps() {
@@ -308,7 +314,11 @@ class CitadelsEngine {
         while (this.currentRoleRank <= 8) {
             const roleId = ROLES.find(role => role.rank === this.currentRoleRank)?.id;
             const ownerId = this.selectedRoles[roleId];
-            if (!ownerId) { this.currentRoleRank += 1; continue; }
+            if (!ownerId) {
+                this._appendPresentationEvent(null, 'roleUnanswered', { role: this._publicRole(roleId), round: this.round });
+                this.currentRoleRank += 1;
+                continue;
+            }
             const player = this._player(ownerId);
             if (this.killedRole === roleId) {
                 player.murdered = true;
@@ -339,7 +349,10 @@ class CitadelsEngine {
             }
             this.currentPlayerId = player.id;
             this.turn = { roleId, incomeTaken: false, incomeCollected: false, merchantBonusCollected: false, architectBonusDrawn: false, built: 0, buildPhaseClosed: false, powerUsed: false, laboratoryUsed: false, smithyUsed: false };
-            if (roleId === 'king') this.crownHolderId = player.id;
+            if (roleId === 'king') {
+                this.crownHolderId = player.id;
+                this._appendPresentationEvent(player, 'crownAcquired', { role: this._publicRole(roleId), round: this.round });
+            }
             this.actionLog.push(`呼叫角色：${this._roleName(roleId)}（${player.name}）`);
             return;
         }

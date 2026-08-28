@@ -73,6 +73,15 @@ class LasVegasEngine {
         this.presentationEventSequence = 0;
         this._startRound();
         this._log(`第 ${this.round} 轮开始，${this.players[0].name} 先掷骰`);
+        this._appendPresentationEvent({
+            kind: 'roundStarted',
+            round: this.round,
+            starterId: this.players[0]?.id || null,
+            starterName: this.players[0]?.name || '',
+            casinos: this.casinos.map(casino => ({ face: casino.face, money: casino.money.slice() })),
+            neutralDiceTotal: this.players.reduce((sum, player) => sum + player.neutralDiceRemaining, 0),
+        });
+        this._finishPresentation();
         this._advanceToAction();
         return this._success('拉斯维加斯开始');
     }
@@ -301,7 +310,7 @@ class LasVegasEngine {
                 kind: 'finalSettlement',
                 round: settlingRound,
                 standings,
-                winnerIds: this.winners.map(player => player.id),
+            winnerIds: this.winners.map(player => player.id),
                 roundHistory: this.roundHistory.map(entry => ({
                     round: entry.round,
                     players: entry.players.map(player => ({ id: player.id, name: player.name, color: player.color, gained: player.gained, money: player.money, banknoteCount: player.banknoteCount })),

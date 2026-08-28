@@ -11,26 +11,35 @@ const GROUP_DEFINITIONS = {
         description: '身份、沟通与自动流程',
         order: 1,
     },
+    codebreaking: {
+        id: 'codebreaking',
+        name: '解密类',
+        description: '密码、线索与逻辑破译',
+        order: 2,
+    },
     board: {
         id: 'board',
         name: '棋类与棋盘游戏',
         description: '棋盘对弈与路线竞赛',
-        order: 2,
+        order: 3,
     },
     tabletop: {
         id: 'tabletop',
         name: '卡牌与策略桌游',
         description: '卡牌、经营、竞价与策略',
-        order: 3,
+        order: 4,
     },
 };
 
 const GAME_GROUPS = {
     // 社交推理与流程辅助
     avalon: { group: 'social-assist', playMode: 'online', sortOrder: 2 },
-    decrypto: { group: 'social-assist', playMode: 'hybrid', sortOrder: 3 },
-    witchtown: { group: 'social-assist', playMode: 'online', sortOrder: 4 },
+    witchtown: { group: 'social-assist', playMode: 'online', sortOrder: 3 },
     werewolf: { group: 'social-assist', playMode: 'auto-assist', sortOrder: 1 },
+
+    // 解密类
+    decrypto: { group: 'codebreaking', playMode: 'online', sortOrder: 1 },
+    guessnumber: { group: 'codebreaking', playMode: 'solo', sortOrder: 2 },
 
     // 棋类与棋盘游戏
     chess: { group: 'board', playMode: 'online', sortOrder: 1 },
@@ -45,7 +54,6 @@ const GAME_GROUPS = {
     // 卡牌与策略桌游
     loveletter: { group: 'tabletop', playMode: 'online', sortOrder: 1 },
     coup: { group: 'tabletop', playMode: 'online', sortOrder: 2 },
-    guessnumber: { group: 'tabletop', playMode: 'solo', sortOrder: 3 },
     monopolydeal: { group: 'tabletop', playMode: 'online', sortOrder: 4 },
     takefive: { group: 'tabletop', playMode: 'online', sortOrder: 5 },
     hanabi: { group: 'tabletop', playMode: 'online', sortOrder: 6 },

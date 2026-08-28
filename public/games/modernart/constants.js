@@ -1,0 +1,10 @@
+import { escapeHtml } from '../common/html.js';
+export { escapeHtml };
+export const ARTISTS = Object.freeze([{ id: 'matisse', name: '马蒂斯', mark: '马', color: '#e45f4f', style: '色块构成' }, { id: 'cassat', name: '卡萨特', mark: '卡', color: '#dfaa43', style: '暖调人物' }, { id: 'yoshida', name: '吉田', mark: '吉', color: '#4f8eae', style: '几何风景' }, { id: 'bruegel', name: '勃鲁盖尔', mark: '勃', color: '#6d9b69', style: '乡野叙事' }, { id: 'clyfford', name: '克里福特', mark: '克', color: '#8c659e', style: '抽象张力' }]);
+export const AUCTION_TYPES = Object.freeze({ open: { mark: '声', label: '公开竞价', note: '可反复加价；放弃后退出' }, once: { mark: '轮', label: '一轮竞价', note: '每人只有一次报价机会' }, sealed: { mark: '密', label: '秘密竞价', note: '所有报价在落槌前隐藏' }, fixed: { mark: '价', label: '定价拍卖', note: '首位接受者按标价买入' }, double: { mark: '双', label: '双重拍卖', note: '同艺术家两幅一起拍卖' } });
+export function artistMeta(id) { return ARTISTS.find(artist => artist.id === id) || { id, name: id || '未知', mark: '艺', color: '#71808c', style: '未知流派' }; }
+export function artVariant(card, fallback = 0) { const serial = Number(String(card?.id || '').match(/(\d+)$/)?.[1]); if (Number.isFinite(serial) && serial > 0) return ((serial - 1) % 5) + 1; const seed = `${card?.artistId || 'mystery'}:${fallback}`.split('').reduce((sum, character) => sum + character.charCodeAt(0), 0); return (seed % 5) + 1; }
+export function artCanvas(card, fallback = 0, className = '') { return `<span class="art-frame ${className}" data-artist="${escapeHtml(card?.artistId || 'mystery')}"><i class="art-canvas" data-variant="${artVariant(card, fallback)}" aria-hidden="true"><b></b><em></em></i></span>`; }
+export function cardBack(className = '') { return `<span class="art-card-back ${className}" aria-hidden="true"><i></i><b><span>MODERN</span><span>ART</span></b></span>`; }
+export function cardBackFan(count) { const visible = Math.min(3, Math.max(0, Number(count) || 0)); return `<span class="art-card-back-fan" aria-hidden="true">${Array.from({ length: visible }, () => cardBack('is-mini')).join('')}</span>`; }
+export function auctionMeta(type) { return AUCTION_TYPES[type] || { mark: '拍', label: type || '拍卖', note: '' }; }

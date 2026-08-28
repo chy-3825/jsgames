@@ -9,6 +9,7 @@
 | ID | 大厅名称 | 说明 |
 |---|---|---|
 | `social-assist` | 社交推理与流程辅助 | 身份、沟通与自动流程 |
+| `codebreaking` | 解密类 | 密码、线索与逻辑破译 |
 | `board` | 棋类与棋盘游戏 | 棋盘对弈与路线竞赛 |
 | `tabletop` | 卡牌与策略桌游 | 卡牌、经营、竞价与策略 |
 
@@ -30,8 +31,14 @@
 |---|---|---|---:|---:|
 | `werewolf` | 狼人杀自动辅助 | `auto-assist` | 1–9 | 1 |
 | `avalon` | 阿瓦隆 | `online` | 5–10 | 2 |
-| `decrypto` | 谍报风云 | `hybrid` | 3–8 | 3 |
-| `witchtown` | 猎巫镇 | `online` | 4–12 | 4 |
+| `witchtown` | 猎巫镇 | `online` | 4–12 | 3 |
+
+### 解密类
+
+| type | 名称 | playMode | 人数 | 排序 |
+|---|---|---|---:|---:|
+| `decrypto` | 谍报风云 | `online` | 3–8 | 1 |
+| `guessnumber` | 猜数字 | `solo` | 1 | 2 |
 
 ### 棋类与棋盘游戏
 
@@ -52,7 +59,6 @@
 |---|---|---|---:|---:|
 | `loveletter` | 情书（默认 BGG 美术版） | `online` | 2–4 | 1 |
 | `coup` | 政变 | `online` | 2–6 | 2 |
-| `guessnumber` | 猜数字 | `solo` | 1 | 3 |
 | `monopolydeal` | 大富翁纸牌 | `online` | 2–5 | 4 |
 | `takefive` | 牛头王 | `online` | 2–10 | 5 |
 | `hanabi` | 花火 | `online` | 2–5 | 6 |

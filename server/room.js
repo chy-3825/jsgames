@@ -459,13 +459,18 @@ class Room {
         }
 
         if (this.studyModeSupported && this.gameOptions.gameMode === 'study') {
+            if (playerId !== this.hostId) return { success: false, message: '只有房主可以操作棋谱模式' };
             const enginePlayerId = this._studyEnginePlayerId(playerId);
             if (!enginePlayerId) return { success: false, message: '研究执棋方尚未准备好' };
             if (this.studyPhase === 'setup' && action?.kind === 'studyConfirmSetup') {
                 const selected = this._studyPlayers()[Number(this.studyControl.get(playerId) ?? 0)];
                 if (selected && typeof this.game.handleStudySetup === 'function') {
-                    const turnResult = this.game.handleStudySetup(enginePlayerId, { kind: 'setTurn', color: selected.color });
+                    const turnResult = this.game.handleStudySetup(enginePlayerId, { kind: 'setTurn', color: selected.color }, playerId);
                     if (!turnResult.success) return turnResult;
+                }
+                if (typeof this.game.validateStudyPosition === 'function') {
+                    const validation = this.game.validateStudyPosition();
+                    if (!validation.success) return { ...validation, state: this.getPlayerGameState(playerId) };
                 }
                 this.studyPhase = 'play';
                 return { success: true, message: '摆棋完成，可以开始推演', state: this.getPlayerGameState(playerId), action: { kind: 'studyConfirmSetup' } };
@@ -568,7 +573,7 @@ class Room {
         // switching perspective first.
         const enginePlayer = this._studyPlayers().find(player => player.id === enginePlayerId);
         if (enginePlayer && (action.kind === 'place' || action.kind === 'move')) action = { ...action, color: enginePlayer.color };
-        return this.game.handleStudySetup(enginePlayerId, action);
+        return this.game.handleStudySetup(enginePlayerId, action, viewerId);
     }
 
     _applyStudySetupActions(state, enginePlayerId) {

@@ -86,6 +86,19 @@ class KingdominoEngine {
         this._openDraft();
         this.status = 'playing';
         this.phase = 'selecting';
+        this._startPresentation(null, 'gameStart', {
+            round: this.round,
+            maxRounds: this.maxRounds,
+            boardSize: this.boardSize,
+        });
+        this._appendPresentationEvent(null, 'roundReveal', {
+            round: this.round,
+            maxRounds: this.maxRounds,
+            draft: this._publicDraft(),
+            isLastRound: this.round === this.maxRounds,
+            remainingTileCount: this.deck.length,
+        });
+        this._updatePresentation({ resolved: true, nextPlayerId: this.currentQueue[0]?.playerId || null });
         this.actionLog = [`第 1 轮：按王冠旁的顺序选择多米诺`];
         return this._success('多米诺王国开始');
     }
@@ -125,7 +138,14 @@ class KingdominoEngine {
         });
         if (this.currentQueueIndex >= this.currentQueue.length) {
             const selectedIds = new Set(Array.from(this.selected.values()).map(selected => selected.id));
-            this.discarded.push(...this.draft.filter(tile => !selectedIds.has(tile.id)));
+            const unclaimedTiles = this.draft.filter(tile => !selectedIds.has(tile.id));
+            this.discarded.push(...unclaimedTiles);
+            for (const unclaimedTile of unclaimedTiles) {
+                this._appendPresentationEvent(null, 'unclaimedDomino', {
+                    tile: this._publicTile(unclaimedTile),
+                    round: this.round,
+                });
+            }
             this.phase = 'placing';
             this.currentQueue = this._orderByDraftSelection();
             this.currentQueueIndex = 0;

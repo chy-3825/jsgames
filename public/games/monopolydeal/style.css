@@ -1109,6 +1109,14 @@ html:has(body.is-monopolydeal-view) { background: #0b2431; scrollbar-color: rgba
 .deal-victory-layer.is-revealed .deal-victory-seal { transform: rotate(-4deg) scale(1); }
 .deal-victory-scene h2 { margin: 5px 0 0; font: 700 clamp(30px, 5vw, 54px)/1.15 "Noto Serif SC", serif; }
 .deal-victory-scene > p { max-width: 580px; margin: 0; color: #b6c4b8; font-size: 10px; line-height: 1.7; }
+.deal-victory-source { display: grid; gap: 3px; padding: 7px 18px; border-top: 1px solid rgba(236, 198, 116, .46); border-bottom: 1px solid rgba(236, 198, 116, .46); }
+.deal-victory-source span { color: #92aaa0; font-size: 7px; font-weight: 900; }
+.deal-victory-source strong { color: #efd58f; font: 700 13px "Noto Serif SC", serif; }
+.deal-takeover-mark { display: grid; width: 82px; height: 82px; place-items: center; border: 2px solid #e6c16f; border-radius: 8px; background: linear-gradient(145deg, #9f453b, #552a2c); box-shadow: 0 0 0 9px rgba(232, 193, 111, .08), 0 18px 45px rgba(0, 0, 0, .4); color: #f2d68d; font: 700 38px "Noto Serif SC", serif; opacity: 0; transform: rotate(-9deg) scale(.72); transition: opacity .3s ease, transform .48s cubic-bezier(.18, .8, .2, 1.1); }
+.deal-victory-layer.is-revealed .deal-takeover-mark { opacity: 1; transform: rotate(-2deg) scale(1); }
+.deal-takeover-route { display: flex; align-items: center; gap: 13px; padding: 8px 18px; border: 1px solid rgba(105, 205, 207, .35); border-radius: 30px; background: rgba(35, 101, 107, .2); color: #a8bab1; font-size: 11px; }
+.deal-takeover-route i { color: #e3bd69; font-size: 20px; font-style: normal; }
+.deal-takeover-route strong { color: #82d4d2; }
 .deal-victory-groups { display: grid; grid-template-columns: repeat(3, minmax(110px, 1fr)); width: min(520px, 100%); gap: 9px; }
 .deal-victory-groups article { display: grid; gap: 4px; padding: 13px; border: 1px solid rgba(234, 207, 148, .42); border-radius: 5px; background: rgba(238, 223, 188, .08); }
 .deal-victory-groups i { display: block; height: 8px; border-radius: 2px; background: var(--victory-color); box-shadow: 0 0 15px color-mix(in srgb, var(--victory-color), transparent 35%); }

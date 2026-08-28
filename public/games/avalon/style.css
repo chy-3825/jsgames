@@ -676,7 +676,7 @@ body.is-avalon-view {
 .av-role-secret {
     display: grid;
     gap: 10px;
-    transition: opacity .16s ease, filter .16s ease;
+    transition: none;
 }
 
 .av-role.is-evil {
@@ -712,7 +712,7 @@ body.is-avalon-view {
     text-align: center;
     touch-action: pan-y;
     cursor: pointer;
-    transition: opacity .16s ease, filter .16s ease;
+    transition: none;
 }
 
 .av-role-cover::before {
@@ -1379,6 +1379,12 @@ body.is-avalon-view {
 
 .av-scene-transition.is-hidden {
     display: none;
+}
+.av-vote-ledger.is-receiving { animation: avLedgerReceive .9s ease both; }
+@keyframes avLedgerReceive {
+    0% { transform: translateY(-9px) scale(1.025); border-color: rgba(233, 194, 119, .95); box-shadow: 0 0 0 rgba(222, 178, 92, 0); }
+    45% { transform: translateY(0) scale(1); box-shadow: 0 0 28px rgba(222, 178, 92, .46); }
+    100% { transform: none; box-shadow: none; }
 }
 
 .av-scene-transition::before,

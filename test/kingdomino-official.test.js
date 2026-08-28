@@ -47,6 +47,9 @@ test('多米诺王国基础牌组、人数调整、棋盘尺寸和随机顺序�
         assert.equal(game.deck.length, tileCount - draftSize);
         assert.equal(game.draft.length, draftSize);
         assert.equal(game.getPublicState().remainingTileCount, tileCount - draftSize, '客户端应能显示未揭示地块数量');
+        assert.deepEqual(game.presentation.events.map(event => event.kind), ['gameStart', 'roundReveal']);
+        assert.deepEqual(game.presentation.events[1].draft.map(tile => tile.id), game.draft.map(tile => tile.id), '第一轮公开领地应进入开场播报');
+        assert.equal(game.presentation.resolved, true);
         const castleKey = `${Math.floor(boardSize / 2)},${Math.floor(boardSize / 2)}`;
         assert.ok(game.players.every(player => player.grid[castleKey]?.terrain === '城堡'));
         assert.equal(session.start().success, false, '同一会话不能重复开始');
@@ -64,6 +67,19 @@ test('多米诺王国基础牌组、人数调整、棋盘尺寸和随机顺序�
     first.start(); second.start();
     assert.deepEqual(first.engine.draft, second.engine.draft, '大厅随机源应能复现首轮公开牌');
     assert.deepEqual(first.engine.selectionOrder, second.engine.selectionOrder);
+});
+
+test('多米诺王国仅在公开领地确实无人认领时生成移出播报', () => {
+    const session = Kingdomino.create('kingdomino-unclaimed', players(['a', 'b', 'c']), { random: lcg(109), startingPlayerId: 'a' });
+    assert.equal(session.start().success, true);
+    const game = session.engine;
+    assert.equal(game.draft.length, 3, '官方三人局每轮只公开三块领地');
+    while (game.phase === 'selecting') {
+        const token = game.currentQueue[game.currentQueueIndex];
+        const tile = game.draft.find(candidate => ![...game.selected.values()].some(item => item.id === candidate.id));
+        assert.equal(session.handleAction(token.playerId, { kind: 'selectDomino', dominoId: tile.id }).success, true);
+    }
+    assert.equal(game.presentation.events.some(event => event.kind === 'unclaimedDomino'), false, '标准三人局不应虚构第四块落选牌');
 });
 
 test('多米诺王国选牌严格按王冠顺序，未选牌弃置且重复选择被拒绝', () => {
