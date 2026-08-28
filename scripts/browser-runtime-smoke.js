@@ -5,10 +5,11 @@
  *
  * The script starts an in-process HTTP/WebSocket server, launches a temporary
  * headless Firefox WebDriver BiDi session, imports every client module, then
- * runs a two-tab room lifecycle smoke test and renders the shared visual
- * fixture at the supported desktop/mobile sizes. It intentionally does not
- * replace real-player acceptance; it catches failed imports, uncaught browser
- * exceptions and the most important viewport fit regressions before a release.
+ * runs two-tab public/private room and reconnect smoke tests, then renders the
+ * shared visual fixture at the supported desktop/mobile sizes. It intentionally
+ * does not replace real-player acceptance; it catches failed imports, uncaught
+ * browser exceptions and the most important viewport fit regressions before a
+ * release.
  */
 
 'use strict';
@@ -179,6 +180,12 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort) {
         );
         await evaluate(bidi, guestContext, `document.querySelector('#entryJoinBtn')?.click(); true`);
         await waitForCondition(bidi, guestContext, `document.querySelector('#joinLobbyView')?.style.display === 'block'`, '找房大厅');
+        await waitForCondition(
+            bidi,
+            guestContext,
+            `document.querySelector('#joinLobbyRoomList')?.textContent.includes(${JSON.stringify(roomId)})`,
+            '成员看到公开房间',
+        );
         await evaluate(bidi, guestContext, `(() => {
             const input = document.querySelector('#joinLobbyCodeInput');
             if (input) {
@@ -225,10 +232,78 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort) {
         await waitForCondition(bidi, guestContext, gameVisible, '成员游戏界面', 20000);
         const fatal = `document.querySelector('#fatalErrorBox')?.style.display !== 'none'`;
         if (await evaluate(bidi, hostContext, fatal) || await evaluate(bidi, guestContext, fatal)) throw new Error('多人房间生命周期出现前端致命错误');
+        const guestPlayerId = await evaluate(bidi, guestContext, `document.querySelector('#roomPageIdentity')?.textContent.replace(/^玩家 ID\\s*/, '') || ''`);
+        if (!guestPlayerId) throw new Error('成员游戏界面没有显示玩家 ID');
+        await evaluate(bidi, hostContext, `document.querySelector('#gameMount .gobang-cell:not([disabled])')?.click(); true`);
+        const occupiedBoard = `document.querySelectorAll('#gameMount .gobang-cell.is-occupied').length >= 1`;
+        await waitForCondition(bidi, hostContext, occupiedBoard, '房主核心落子');
+        await waitForCondition(bidi, guestContext, occupiedBoard, '成员收到核心落子');
+        await bidi.command('browsingContext.navigate', { context: guestContext, url: `http://127.0.0.1:${httpPort}/` });
+        await waitForCondition(
+            bidi,
+            guestContext,
+            `document.querySelector('#gameMount')?.style.display === 'block' && document.querySelector('#gameMount')?.dataset.gameType === 'gobang' && document.querySelector('#roomPageIdentity')?.textContent.endsWith(${JSON.stringify(guestPlayerId)})`,
+            '成员刷新后恢复原座位和对局',
+            20000,
+        );
+        await waitForCondition(bidi, hostContext, `document.querySelector('#roomConnectionState')?.hidden === true`, '房主看到房间恢复', 20000);
         await evaluate(bidi, guestContext, `document.querySelector('#leaveRoomBtn')?.click(); true`);
         await waitForCondition(bidi, guestContext, `document.querySelector('#roomView')?.style.display === 'none' && document.querySelector('#lobbyView')?.style.display === 'grid'`, '成员离开房间');
         await evaluate(bidi, hostContext, `document.querySelector('#leaveRoomBtn')?.click(); true`);
         await waitForCondition(bidi, hostContext, `document.querySelector('#roomView')?.style.display === 'none' && document.querySelector('#lobbyView')?.style.display === 'grid'`, '房主清理房间');
+
+        // A second short flow verifies that an invite-only room stays out of
+        // the public catalog while remaining joinable with its six-digit code.
+        await click('#gamePicker [data-game-type="gobang"]');
+        await waitForCondition(bidi, hostContext, `document.querySelector('#createRoomDialog')?.hidden === false`, '私密房间规则页');
+        await click('#createRoomNextBtn');
+        await waitForCondition(bidi, hostContext, `document.querySelector('#createRoomDialog')?.classList.contains('is-settings')`, '私密房间设置页');
+        await evaluate(bidi, hostContext, `(() => {
+            const name = document.querySelector('#createRoomName');
+            const privateChoice = document.querySelector('#createRoomForm input[name="isPublic"][value="false"]');
+            if (name) name.value = '浏览器私密房间验收';
+            if (privateChoice) privateChoice.checked = true;
+            document.querySelector('#createRoomForm')?.requestSubmit();
+            return true;
+        })()`);
+        await waitForCondition(
+            bidi,
+            hostContext,
+            `document.querySelector('#roomView')?.style.display === 'block' && Boolean(document.querySelector('#roomMount .pregame-room[data-game-type="gobang"]'))`,
+            '私密房间等待页',
+        );
+        const privateRoomId = await evaluate(
+            bidi,
+            hostContext,
+            `document.querySelector('#roomPageCode')?.textContent.match(/\\b\\d{6}\\b/)?.[0] || ''`,
+        );
+        if (!/^\d{6}$/.test(privateRoomId)) throw new Error('私密房间没有可用房间号');
+        await bidi.command('browsingContext.navigate', { context: guestContext, url: `http://127.0.0.1:${httpPort}/` });
+        await waitForCondition(bidi, guestContext, `document.querySelector('#entryConnectionStatus')?.textContent.includes('已连接')`, '私密房间成员大厅连接');
+        await evaluate(bidi, guestContext, `document.querySelector('#entryJoinBtn')?.click(); true`);
+        await waitForCondition(bidi, guestContext, `document.querySelector('#joinLobbyView')?.style.display === 'block'`, '私密房间找房大厅');
+        await wait(500);
+        const appearsPublicly = await evaluate(bidi, guestContext, `document.querySelector('#joinLobbyRoomList')?.textContent.includes(${JSON.stringify(privateRoomId)})`);
+        if (appearsPublicly) throw new Error(`私密房间 ${privateRoomId} 出现在公开房间列表`);
+        await evaluate(bidi, guestContext, `(() => {
+            const input = document.querySelector('#joinLobbyCodeInput');
+            if (input) {
+                input.value = ${JSON.stringify(privateRoomId)};
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            document.querySelector('#joinLobbyCodeForm')?.requestSubmit();
+            return true;
+        })()`);
+        await waitForCondition(
+            bidi,
+            guestContext,
+            `document.querySelector('#roomView')?.style.display === 'block' && Boolean(document.querySelector('#roomMount .pregame-room[data-game-type="gobang"]'))`,
+            '私密房间按房间号加入',
+        );
+        await evaluate(bidi, guestContext, `document.querySelector('#leaveRoomBtn')?.click(); true`);
+        await waitForCondition(bidi, guestContext, `document.querySelector('#roomView')?.style.display === 'none'`, '私密房间成员离开');
+        await evaluate(bidi, hostContext, `document.querySelector('#leaveRoomBtn')?.click(); true`);
+        await waitForCondition(bidi, hostContext, `document.querySelector('#roomView')?.style.display === 'none'`, '私密房间房主清理');
     } finally {
         try { await bidi.command('browsingContext.close', { context: guestContext }); } catch {}
     }

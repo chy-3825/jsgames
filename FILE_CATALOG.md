@@ -175,7 +175,7 @@
 | `scripts/checkers-acceptance.js` | 测试必需 | 自动跑中国跳棋正常、规则边界和随机复现局，并写出 JSON 记录。 |
 | `scripts/gobang-acceptance.js` | 测试必需 | 自动跑五子棋正常、规则、和棋和随机复现局，并写出 JSON 记录。 |
 | `scripts/syntax-check.js` | 测试必需 | 对首方 `app.js`、服务端、前端、脚本和测试文件执行 `node --check` 语法门禁。 |
-| `scripts/browser-runtime-smoke.js` | 测试必需 | 自启临时 HTTP/WebSocket 与 Firefox，导入 28 个客户端，执行双标签房间生命周期并跑 24 款游戏四档视口运行时烟测。 |
+| `scripts/browser-runtime-smoke.js` | 测试必需 | 自启临时 HTTP/WebSocket 与 Firefox，导入 28 个客户端，执行公开/私密房间、核心落子和刷新恢复的双标签生命周期，并跑 24 款游戏四档视口运行时烟测。 |
 
 ## 11. 测试与验收报告
 
