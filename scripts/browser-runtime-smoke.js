@@ -249,8 +249,11 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort) {
         await waitForCondition(bidi, hostContext, `document.querySelector('#roomConnectionState')?.hidden === true`, '房主看到房间恢复', 20000);
         await evaluate(bidi, guestContext, `document.querySelector('#leaveRoomBtn')?.click(); true`);
         await waitForCondition(bidi, guestContext, `document.querySelector('#roomView')?.style.display === 'none' && document.querySelector('#lobbyView')?.style.display === 'grid'`, '成员离开房间');
+        const releasedGameMount = `document.querySelector('#gameMount')?.style.display === 'none' && document.querySelector('#gameMount')?.innerHTML === '' && !document.querySelector('#gameMount')?.dataset.gameType`;
+        await waitForCondition(bidi, guestContext, releasedGameMount, '成员释放游戏资源');
         await evaluate(bidi, hostContext, `document.querySelector('#leaveRoomBtn')?.click(); true`);
         await waitForCondition(bidi, hostContext, `document.querySelector('#roomView')?.style.display === 'none' && document.querySelector('#lobbyView')?.style.display === 'grid'`, '房主清理房间');
+        await waitForCondition(bidi, hostContext, releasedGameMount, '房主释放游戏资源');
 
         // A second short flow verifies that an invite-only room stays out of
         // the public catalog while remaining joinable with its six-digit code.

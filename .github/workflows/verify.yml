@@ -29,6 +29,8 @@ jobs:
         run: npm run test:syntax
       - name: Dependency security gate
         run: npm run test:audit
+      - name: Performance and cleanup smoke
+        run: npm run test:performance
       - name: Automated regression
         run: npm test
 

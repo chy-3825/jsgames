@@ -7,6 +7,7 @@
     "test": "node --test",
     "test:syntax": "node scripts/syntax-check.js",
     "test:browser": "node scripts/browser-runtime-smoke.js",
+    "test:performance": "node scripts/performance-smoke.js",
     "test:audit": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {

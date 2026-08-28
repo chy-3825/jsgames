@@ -19,10 +19,12 @@ npm run test:audit
 npm run test:syntax
 npm test
 npm run test:browser
+npm run test:performance
 git diff --check
 ```
 
 `test:browser` 需要 Firefox；没有图形环境时使用无头 Firefox，或通过 `FIREFOX_BIN` 指定路径。若浏览器不可用，应把门禁标记为“未执行”，不能写成通过。
+`test:performance` 是本地有界压力和资源清理烟测：会检查首屏/主脚本/样式/Three.js 体积、静态请求并发、短时大厅连接并发，以及多房间创建/加入/离开后的连接和房间回收；它不是生产容量压测，生产容量仍需在预发布环境按真实规格执行。
 
 ## 3. 发布前人工签字
 

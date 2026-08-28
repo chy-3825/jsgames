@@ -806,12 +806,13 @@ export function createGameClient({ mount, send, addLog }) {}
 
 ```bash
 npm test
+npm run test:performance
 for f in server/games/*/*.js; do node --check "$f"; done
 for f in public/games/*/*.js; do node --check "$f"; done
 node --check public/games/werewolf/client.js
 ```
 
-当前全量测试共 494 项，全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置、双页创建浮窗、移动端核心布局、封面懒加载、隐藏信息游戏离场收束、四款背牌身份严格按住查看、谍报风云推理笔记、解密类分组、棋谱模式、28 款游戏前端模块骨架审计、本地字体资源审计和璀璨宝石卡牌助手的显式依赖审计。`npm run test:audit` 提供高危依赖安全门禁（当前 0 vulnerabilities），`npm run test:syntax` 提供首方 JavaScript 语法门禁，`npm run test:browser` 提供 Firefox 浏览器模块/视口烟测。国际象棋另覆盖普通/棋谱模式隔离、房主鉴权、非法摆棋、状态重建、重复局面键、重复启动和玩家身份完整性。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js`、`test/*-frontend.test.js` 与 `test/regression.test.js` 持续验证。
+当前全量测试共 494 项，全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置、双页创建浮窗、移动端核心布局、封面懒加载、隐藏信息游戏离场收束、四款背牌身份严格按住查看、谍报风云推理笔记、解密类分组、棋谱模式、28 款游戏前端模块骨架审计、本地字体资源审计和璀璨宝石卡牌助手的显式依赖审计。`npm run test:audit` 提供高危依赖安全门禁（当前 0 vulnerabilities），`npm run test:syntax` 提供首方 JavaScript 语法门禁，`npm run test:browser` 提供 Firefox 浏览器模块/视口和双标签生命周期烟测，`npm run test:performance` 提供静态资源预算、并发请求及 WebSocket 房间/连接清理烟测。国际象棋另覆盖普通/棋谱模式隔离、房主鉴权、非法摆棋、状态重建、重复局面键、重复启动和玩家身份完整性。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js`、`test/*-frontend.test.js` 与 `test/regression.test.js` 持续验证。
 
 ## 15. BGG 美术资源接入
 
