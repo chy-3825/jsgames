@@ -1,0 +1,365 @@
+/* Waiting-room layer: loaded after the global shell so the lobby entry,
+ * room controls, seats, transitions, and responsive overrides stay together. */
+/* P0 lobby controls */
+.quick-join-card{display:grid;gap:7px;padding:10px 13px;border:1px solid rgba(32,51,59,.13);border-radius:13px;background:rgba(255,253,248,.74);box-shadow:0 7px 25px rgba(35,52,54,.05)}
+.quick-join-card label{color:#80918b;font-size:8px;letter-spacing:.11em}.quick-join-card>div{display:flex;gap:7px}.quick-join-card input{min-width:0;flex:1;border:1px solid rgba(32,51,59,.12);border-radius:7px;padding:7px 8px;background:#fffdf8;color:var(--ink);font-size:11px;letter-spacing:.15em}.quick-join-card button{padding:7px 10px;border-radius:7px;background:var(--navy);color:var(--gold-light);font-size:10px;font-weight:700}.quick-join-card button span{font-size:13px}.catalog-filter select{border:0;background:transparent;color:#82918d;font-size:10px;outline:0;cursor:pointer}.catalog-filter select:focus-visible{outline:2px solid rgba(189,138,69,.45);outline-offset:3px}
+@media (max-width:760px){.rooms-card{display:none}.lobby-sidebar{gap:10px}.quick-join-card{padding:9px}.lounge-log{height:110px}}
+.lobby-shell :focus-visible,.site-header :focus-visible,.room-view :focus-visible{outline:3px solid rgba(189,138,69,.65);outline-offset:3px}.game-card[hidden]{display:none!important}@media (prefers-reduced-motion:reduce){.lobby-shell *,.room-view *{transition:none!important;animation:none!important}}
+
+/* Waiting-room seats: the occupant is represented by a living blue flame, not a card. */
+.pregame-seat,
+.pregame-stage[data-seat-count="9"] .pregame-seat,
+.pregame-stage[data-seat-count="10"] .pregame-seat,
+.pregame-stage[data-seat-count="11"] .pregame-seat,
+.pregame-stage[data-seat-count="12"] .pregame-seat { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; justify-items: center; align-items: center; align-content: end; gap: 0; width: 128px; min-height: 126px; padding: 0 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; filter: none; transition: opacity .25s ease, filter .25s ease; }
+.pregame-stage[data-seat-count="9"] .pregame-seat,
+.pregame-stage[data-seat-count="10"] .pregame-seat,
+.pregame-stage[data-seat-count="11"] .pregame-seat,
+.pregame-stage[data-seat-count="12"] .pregame-seat { width: 100px; min-height: 108px; }
+.pregame-chair { bottom: -1px; width: 58%; height: 15px; border-color: rgba(122, 205, 220, .2); background: linear-gradient(180deg, rgba(17, 48, 57, .8), rgba(3, 13, 18, .94)); box-shadow: 0 7px 17px rgba(0,0,0,.45), inset 0 1px 0 rgba(148, 236, 247, .1); transform: translateX(-50%) perspective(80px) rotateX(48deg); }
+.pregame-seat-fire { position: relative; display: block; width: 63px; height: 77px; margin-bottom: -1px; filter: drop-shadow(0 8px 11px rgba(0, 132, 185, .22)); isolation: isolate; }
+.pregame-seat-fire::before { position: absolute; right: 7px; bottom: 6px; left: 7px; height: 34px; border-radius: 50%; background: rgba(41, 203, 242, .42); content: ''; filter: blur(15px); opacity: .75; animation: pregameFireGlow 2.1s ease-in-out var(--flame-delay, 0ms) infinite; }
+.pregame-seat-fire::after { position: absolute; top: 11px; left: 50%; width: 3px; height: 3px; border-radius: 50%; background: #baf8ff; box-shadow: -19px 29px 0 -1px rgba(114, 228, 247, .76), 18px 35px 0 -1px rgba(90, 214, 241, .55), 8px 20px 0 -1px rgba(190, 249, 255, .54); content: ''; opacity: .7; animation: pregameFireSpark 1.8s ease-in-out var(--flame-delay, 0ms) infinite; }
+.pregame-fire-glow, .pregame-fire-flame, .pregame-fire-core { position: absolute; display: block; left: 50%; transform-origin: 50% 100%; }
+.pregame-fire-glow { bottom: 7px; width: 43px; height: 52px; border-radius: 55% 0 55% 55%; background: linear-gradient(155deg, rgba(119, 241, 255, .52), rgba(22, 112, 172, .82)); opacity: .76; filter: blur(3px); transform: translateX(-50%) rotate(45deg); animation: pregameFireFlame 1.25s ease-in-out var(--flame-delay, 0ms) infinite; }
+.pregame-fire-flame { bottom: 10px; width: 35px; height: 53px; border-radius: 58% 0 58% 58%; background: linear-gradient(155deg, #b8f8ff 0%, #38c9ed 29%, #176c9e 72%, #0b385d 100%); box-shadow: inset -5px 4px 6px rgba(232, 255, 255, .33), 0 0 16px rgba(40, 206, 241, .55); transform: translateX(-50%) rotate(45deg); animation: pregameFireFlame 1.05s ease-in-out calc(var(--flame-delay, 0ms) + 70ms) infinite; }
+.pregame-fire-core { bottom: 8px; width: 20px; height: 32px; border-radius: 60% 0 60% 60%; background: linear-gradient(155deg, #fff 0%, #d6fbff 31%, #5ad9ef 82%); box-shadow: 0 0 12px rgba(198, 251, 255, .9); transform: translateX(-50%) rotate(45deg); animation: pregameFireCore 1s ease-in-out calc(var(--flame-delay, 0ms) + 110ms) infinite; }
+.pregame-seat-copy { position: relative; z-index: 2; display: grid; justify-items: center; min-width: 0; width: 100%; gap: 3px; }
+.pregame-seat-copy strong { display: block; overflow: hidden; max-width: 100%; padding: 2px 9px 3px; border-bottom: 1px solid rgba(111, 221, 241, .34); color: #f1fbf8; font-size: 10px; line-height: 1.2; text-align: center; text-overflow: ellipsis; text-shadow: 0 2px 9px rgba(0,0,0,.9); white-space: nowrap; }
+.pregame-seat-copy small { color: #8faeae; font-size: 8px; line-height: 1; text-shadow: 0 2px 7px rgba(0,0,0,.9); }
+.pregame-seat > b { display: none; }
+.pregame-seat.is-empty { opacity: .47; filter: saturate(.45); }
+.pregame-seat.is-empty .pregame-seat-fire::before,
+.pregame-seat.is-empty .pregame-seat-fire::after,
+.pregame-seat.is-empty .pregame-fire-glow,
+.pregame-seat.is-empty .pregame-fire-flame,
+.pregame-seat.is-empty .pregame-fire-core { animation: none; }
+.pregame-seat.is-empty .pregame-seat-fire { opacity: .22; filter: grayscale(.45); }
+.pregame-seat.is-empty .pregame-seat-copy strong { border-bottom-color: rgba(150, 176, 175, .2); color: #a1b0ac; }
+.pregame-seat.is-me { opacity: 1; }
+.pregame-seat.is-me { --seat-x: 50% !important; --seat-y: 89% !important; }
+.pregame-seat.is-me .pregame-seat-fire { filter: hue-rotate(160deg) saturate(1.45); --flame-hue: 160deg; --flame-saturation: 1.45; }
+.pregame-seat.is-me .pregame-seat-fire::before { opacity: 1; }
+.pregame-seat.is-host .pregame-seat-copy small { color: #e2c37e; }
+.pregame-seat.is-extinguishing { animation: pregameSeatExtinguish .72s ease-out both; }
+.pregame-seat.is-extinguishing .pregame-seat-fire { animation: pregameSeatExtinguishFire .72s ease-out both; }
+@keyframes pregameFireGlow { 0%, 100% { opacity: .56; transform: scaleX(.9); } 50% { opacity: .92; transform: scaleX(1.08); } }
+@keyframes pregameFireFlame { 0%, 100% { margin-left: 0; transform: translateX(-50%) rotate(45deg) scale(.94, 1); } 35% { margin-left: -2px; transform: translateX(-50%) rotate(40deg) scale(1.05, 1.08); } 70% { margin-left: 2px; transform: translateX(-50%) rotate(49deg) scale(.91, 1.03); } }
+@keyframes pregameFireCore { 0%, 100% { transform: translateX(-50%) rotate(45deg) scale(.92, .97); opacity: .82; } 50% { transform: translateX(-50%) rotate(51deg) scale(1.08, 1.11); opacity: 1; } }
+@keyframes pregameFireSpark { 0%, 100% { opacity: .25; transform: translate(-50%, 7px); } 45% { opacity: .82; transform: translate(-50%, -3px); } 80% { opacity: .1; transform: translate(-47%, -11px); } }
+@keyframes pregameSeatExtinguish { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes pregameSeatExtinguishFire { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.2, .12); } }
+@media (max-width: 760px) {
+    .pregame-seat,
+    .pregame-stage[data-seat-count="9"] .pregame-seat,
+    .pregame-stage[data-seat-count="10"] .pregame-seat,
+    .pregame-stage[data-seat-count="11"] .pregame-seat,
+    .pregame-stage[data-seat-count="12"] .pregame-seat { grid-template-columns: minmax(0, 1fr); width: 78px; min-height: 95px; padding: 0 2px; }
+    .pregame-seat-fire { width: 46px; height: 58px; margin-bottom: 0; }
+    .pregame-seat-fire::before { right: 4px; left: 4px; height: 25px; filter: blur(10px); }
+    .pregame-fire-glow { bottom: 5px; width: 33px; height: 39px; }
+    .pregame-fire-flame { bottom: 7px; width: 27px; height: 38px; }
+    .pregame-fire-core { bottom: 6px; width: 15px; height: 24px; }
+    .pregame-seat-copy { gap: 2px; }
+    .pregame-seat-copy strong { padding: 1px 3px 2px; font-size: 8px; }
+    .pregame-seat-copy small { font-size: 7px; }
+    .pregame-chair { bottom: -3px; height: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pregame-seat-fire::before,
+    .pregame-seat-fire::after,
+    .pregame-fire-glow,
+    .pregame-fire-flame,
+    .pregame-fire-core { animation: none; }
+}
+
+/* Game entry: seat flames resolve in opposing pairs before the pregame table breaks open. */
+.pregame-room.is-entry-transitioning .pregame-seat-fire,
+.pregame-room.is-entry-transitioning .pregame-seat-fire::before,
+.pregame-room.is-entry-transitioning .pregame-seat-fire::after,
+.pregame-room.is-entry-transitioning .pregame-fire-glow,
+.pregame-room.is-entry-transitioning .pregame-fire-flame,
+.pregame-room.is-entry-transitioning .pregame-fire-core { animation-play-state: paused; }
+.pregame-room.is-entry-transitioning .pregame-seat.is-entry-flash .pregame-seat-fire { animation: pregameEntryFlashFire .48s cubic-bezier(.2, .8, .25, 1) both; }
+.pregame-room.is-entry-transitioning .pregame-seat.is-entry-fading { animation: pregameEntrySeatFade .46s ease-out both; }
+.pregame-room.is-entry-transitioning .pregame-seat.is-entry-fading .pregame-seat-fire { animation: pregameEntryFadeFire .46s ease-out both; }
+@keyframes pregameEntryFlashFire {
+    0% { filter: drop-shadow(0 8px 11px rgba(0, 132, 185, .22)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); opacity: .9; transform: translateY(0) scale(.92); }
+    42% { filter: drop-shadow(0 0 28px rgba(77, 231, 255, .98)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); opacity: 1; transform: translateY(-6px) scale(1.32); }
+    100% { filter: drop-shadow(0 8px 15px rgba(0, 191, 243, .34)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes pregameEntryFadeFire {
+    0% { opacity: 1; transform: scale(1); }
+    32% { opacity: .9; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(.16, .08); }
+}
+@keyframes pregameEntrySeatFade {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(.72); }
+}
+.game-entry-transition { position: fixed; z-index: 300; inset: 0; overflow: hidden; pointer-events: none; opacity: 0; background: transparent; }
+.game-entry-transition::before { position: absolute; z-index: 3; inset: 0; background: radial-gradient(circle at 50% 48%, rgba(115, 225, 240, .22), rgba(5, 14, 20, .9) 67%); content: ''; opacity: 0; }
+.game-entry-transition.is-gathering,
+.game-entry-transition.is-bursting { opacity: 1; }
+.game-entry-transition.is-gathering::before { background: radial-gradient(circle at var(--entry-core-x, 50%) var(--entry-core-y, 50%), rgba(80, 218, 250, .13), transparent 20%, transparent 50%); opacity: 1; }
+.game-entry-transition.is-bursting::before { opacity: 0; }
+.game-entry-burst { position: absolute; z-index: 7; inset: 0; opacity: 0; pointer-events: none; }
+.game-entry-burst::before { position: absolute; top: var(--entry-core-y, 50%); left: var(--entry-core-x, 50%); width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 0 24px 10px rgba(203, 252, 255, .98); content: ''; opacity: 0; transform: translate(-50%, -50%) scale(.08); }
+.game-entry-burst::after { position: absolute; z-index: 3; inset: 0; background: #fff; content: ''; opacity: 0; }
+.game-entry-burst-ring { position: absolute; z-index: 2; top: var(--entry-core-y, 50%); left: var(--entry-core-x, 50%); width: clamp(110px, 16vw, 210px); aspect-ratio: 1; border: 2px solid rgba(220, 253, 255, .98); border-radius: 50%; box-shadow: 0 0 18px rgba(129, 239, 255, .85); opacity: 0; transform: translate(-50%, -50%) scale(.08); }
+.game-entry-transition.is-bursting .game-entry-burst { opacity: 1; }
+.game-entry-transition.is-bursting .game-entry-burst::before { animation: gameEntryBurstCore .56s cubic-bezier(.12, .8, .22, 1) both; }
+.game-entry-transition.is-bursting .game-entry-burst::after { animation: gameEntryWhiteBurst .84s ease-out both; }
+.game-entry-transition.is-bursting .game-entry-burst-ring.is-wide { animation: gameEntryBurstRing .66s cubic-bezier(.12, .72, .2, 1) both; }
+.game-entry-transition.is-bursting .game-entry-burst-ring.is-tight { animation: gameEntryBurstRing .52s cubic-bezier(.12, .72, .2, 1) .07s both; }
+.game-entry-streams { position: absolute; z-index: 4; inset: 0; }
+.game-entry-streams > i { position: absolute; top: var(--stream-y); left: var(--stream-x); width: var(--stream-length); height: 2px; border-radius: 999px; background: linear-gradient(90deg, transparent 0 7%, rgba(32, 175, 229, .36) 28%, #76ebff 76%, #fff 100%); box-shadow: 0 0 8px rgba(80, 226, 255, .72); opacity: 0; transform: translateY(-50%) rotate(var(--stream-angle)) scaleX(0); transform-origin: 0 50%; }
+.game-entry-streams > i::after { position: absolute; top: 50%; left: 0; width: 6px; height: 6px; border-radius: 50%; background: #eaffff; box-shadow: 0 0 12px 4px rgba(91, 232, 255, .9); content: ''; opacity: 0; transform: translate(-50%, -50%); }
+.game-entry-transition.is-gathering .game-entry-streams > i { animation: gameEntryStreamGather .62s cubic-bezier(.3, .04, .18, 1) var(--stream-delay) both; }
+.game-entry-transition.is-gathering .game-entry-streams > i::after { animation: gameEntryStreamSpark .62s ease-in var(--stream-delay) both; }
+.game-entry-portal { position: absolute; z-index: 5; top: var(--entry-core-y, 50%); left: var(--entry-core-x, 50%); width: 0; height: 0; opacity: 0; filter: drop-shadow(0 0 16px rgba(66, 219, 252, .68)); }
+.game-entry-portal-plane { position: absolute; top: 0; left: 0; width: clamp(180px, 24vw, 300px); aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%) perspective(620px) rotateX(68deg) scale(.3); transform-style: preserve-3d; }
+.game-entry-portal-ring, .game-entry-portal-well, .game-entry-portal-plane > b { position: absolute; display: block; border-radius: 50%; }
+.game-entry-portal-ring.is-outer { inset: 0; background: repeating-conic-gradient(from 4deg, rgba(166, 247, 255, .94) 0 2deg, transparent 2deg 9deg, rgba(45, 190, 231, .72) 9deg 12deg, transparent 12deg 22deg); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); filter: drop-shadow(0 0 5px #57ddf4); }
+.game-entry-portal-ring.is-middle { inset: 15%; background: repeating-conic-gradient(from 18deg, rgba(117, 235, 255, .92) 0 5deg, transparent 5deg 17deg); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); }
+.game-entry-portal-ring.is-inner { inset: 29%; border: 2px solid rgba(177, 249, 255, .76); box-shadow: inset 0 0 18px rgba(39, 193, 229, .48), 0 0 13px rgba(52, 211, 244, .56); }
+.game-entry-portal-well { inset: 34%; background: radial-gradient(circle, #fff 0 8%, #b9fbff 14%, #46d9f4 31%, rgba(21, 116, 188, .76) 48%, rgba(6, 23, 55, .16) 68%, transparent 72%); box-shadow: 0 0 30px 11px rgba(67, 214, 249, .55); }
+.game-entry-portal-plane > b { inset: 38%; color: rgba(235, 255, 255, .98); font: 500 clamp(26px, 4vw, 48px)/1 Georgia, serif; text-align: center; text-shadow: 0 0 12px #83edff, 0 0 25px #2cbddd; }
+.game-entry-portal-column { position: absolute; bottom: 0; left: 0; width: clamp(68px, 9vw, 110px); height: clamp(130px, 22vh, 210px); background: linear-gradient(0deg, rgba(199, 253, 255, .9), rgba(67, 209, 243, .2) 48%, transparent); clip-path: polygon(33% 100%, 67% 100%, 90% 0, 10% 0); opacity: 0; filter: blur(3px); transform: translateX(-50%) scaleY(0); transform-origin: 50% 100%; }
+.game-entry-transition.is-gathering .game-entry-portal { opacity: .38; }
+.game-entry-transition.is-gathering .game-entry-portal-plane { animation: gameEntryPortalGather .66s ease-out both; }
+.game-entry-transition.is-bursting .game-entry-portal { animation: gameEntryPortalBurst .52s cubic-bezier(.16, .78, .22, 1) both; }
+.game-entry-transition.is-bursting .game-entry-portal-plane { animation: gameEntryPortalPlaneBurst .52s cubic-bezier(.16, .78, .22, 1) both; }
+@keyframes gameEntryStreamGather {
+    0% { opacity: 0; transform: translateY(-50%) rotate(var(--stream-angle)) scaleX(0); }
+    18% { opacity: 1; }
+    78% { opacity: .95; transform: translateY(-50%) rotate(var(--stream-angle)) scaleX(1); }
+    100% { opacity: 0; transform: translateY(-50%) rotate(var(--stream-angle)) scaleX(1); }
+}
+@keyframes gameEntryStreamSpark {
+    0% { left: 0; opacity: 0; }
+    20% { opacity: 1; }
+    92% { left: 100%; opacity: 1; }
+    100% { left: 100%; opacity: 0; }
+}
+@keyframes gameEntryPortalGather {
+    0% { opacity: 0; transform: translate(-50%, -50%) perspective(620px) rotateX(68deg) scale(.2); }
+    100% { opacity: 1; transform: translate(-50%, -50%) perspective(620px) rotateX(68deg) scale(.72); }
+}
+@keyframes gameEntryPortalBurst {
+    0% { opacity: .38; filter: brightness(1) drop-shadow(0 0 14px rgba(66, 219, 252, .62)); }
+    38% { opacity: 1; filter: brightness(1.6) drop-shadow(0 0 34px rgba(133, 245, 255, 1)); }
+    64% { opacity: .82; filter: brightness(2.4) drop-shadow(0 0 50px rgba(226, 255, 255, 1)); }
+    100% { opacity: 0; filter: brightness(3.2) drop-shadow(0 0 70px rgba(255, 255, 255, 1)); }
+}
+@keyframes gameEntryPortalPlaneBurst {
+    0% { transform: translate(-50%, -50%) perspective(620px) rotateX(68deg) scale(.72); }
+    34% { transform: translate(-50%, -50%) perspective(620px) rotateX(68deg) scale(1.08); }
+    62% { transform: translate(-50%, -50%) perspective(620px) rotateX(68deg) scale(1.65); }
+    100% { transform: translate(-50%, -50%) perspective(620px) rotateX(68deg) scale(3.2); }
+}
+@keyframes gameEntryBurstCore {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(.08); }
+    24% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    58% { opacity: 1; transform: translate(-50%, -50%) scale(2.2); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(5); }
+}
+@keyframes gameEntryBurstRing {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(.08); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(5); }
+}
+@keyframes gameEntryWhiteBurst {
+    0%, 18% { opacity: 0; }
+    38% { opacity: .9; }
+    56% { opacity: 1; }
+    100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pregame-room.is-entry-transitioning .pregame-seat.is-entry-flash .pregame-seat-fire,
+    .pregame-room.is-entry-transitioning .pregame-seat.is-entry-fading,
+    .pregame-room.is-entry-transitioning .pregame-seat.is-entry-fading .pregame-seat-fire { animation: none; }
+    .game-entry-transition.is-gathering::before,
+    .game-entry-transition.is-bursting::before { animation: none; opacity: 0; }
+    .game-entry-transition.is-gathering .game-entry-streams > i,
+    .game-entry-transition.is-gathering .game-entry-streams > i::after { animation: none; opacity: 0; }
+    .game-entry-transition.is-bursting .game-entry-portal,
+    .game-entry-transition.is-bursting .game-entry-portal-plane,
+    .game-entry-transition.is-bursting .game-entry-burst,
+    .game-entry-transition.is-bursting .game-entry-burst::before,
+    .game-entry-transition.is-bursting .game-entry-burst::after,
+    .game-entry-transition.is-bursting .game-entry-burst-ring { animation: none; }
+    .game-entry-transition.is-bursting .game-entry-portal { opacity: 0; }
+    .game-entry-transition.is-bursting .game-entry-burst { opacity: 1; }
+    .game-entry-transition.is-bursting .game-entry-burst::after { opacity: 0; }
+}
+
+/* Organic blue flame artwork: one alpha asset is shared by every occupied seat. */
+.pregame-seat-fire { width: 72px; height: 88px; margin-bottom: -1px; background: url('/assets/pregame-blue-flame-v1.webp') center bottom / contain no-repeat; animation: pregameFireLiving 2.35s ease-in-out var(--flame-delay, 0ms) infinite; --flame-hue: 0deg; --flame-saturation: 1; }
+.pregame-seat.is-me { border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+.pregame-seat.is-me .pregame-seat-fire { --flame-hue: 160deg; --flame-saturation: 1.45; }
+.pregame-fire-glow, .pregame-fire-flame, .pregame-fire-core { display: none; }
+.pregame-seat.is-igniting .pregame-seat-fire { animation: pregameSeatIgnite .84s cubic-bezier(.16, .82, .25, 1) both; }
+.pregame-seat.is-igniting .pregame-seat-fire::before { animation: pregameIgniteBase .84s ease-out both; }
+.pregame-seat.is-igniting .pregame-seat-fire::after { animation: pregameIgniteSparks .84s ease-out both; }
+.pregame-seat.is-igniting .pregame-seat-copy { animation: pregameIgniteName .84s ease-out both; }
+@keyframes pregameFireLiving {
+    0%, 100% { filter: drop-shadow(0 8px 12px rgba(0, 128, 205, .24)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); transform: translateY(0) rotate(-1deg) scale(.96, 1); }
+    34% { filter: drop-shadow(0 3px 19px rgba(31, 203, 255, .55)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); transform: translate(-1px, -2px) rotate(1deg) scale(1.01, 1.04); }
+    67% { filter: drop-shadow(1px 7px 17px rgba(30, 145, 237, .4)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); transform: translate(2px, 0) rotate(-2deg) scale(.98, 1.02); }
+}
+@keyframes pregameSeatIgnite {
+    0% { clip-path: inset(92% 0 0); opacity: 0; filter: brightness(1.2) drop-shadow(0 0 0 rgba(70, 231, 255, 0)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); transform: translateY(7px) scale(.94, 1); }
+    18% { clip-path: inset(72% 0 0); opacity: 1; filter: brightness(1.9) drop-shadow(0 3px 22px rgba(116, 242, 255, .96)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); transform: translateY(4px) scale(1.05, .92); }
+    52% { clip-path: inset(20% 0 0); opacity: 1; filter: brightness(1.45) drop-shadow(0 0 28px rgba(70, 231, 255, .88)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); transform: translateY(-3px) scale(1.04, 1.07); }
+    72% { clip-path: inset(0); opacity: 1; filter: brightness(1.25) drop-shadow(0 2px 20px rgba(70, 231, 255, .7)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); transform: translateY(1px) scale(.98, 1.02); }
+    100% { clip-path: inset(0); opacity: 1; filter: drop-shadow(0 8px 12px rgba(0, 128, 205, .24)) hue-rotate(var(--flame-hue, 0deg)) saturate(var(--flame-saturation, 1)); transform: translateY(0) scale(1); }
+}
+@keyframes pregameIgniteBase {
+    0% { opacity: 0; transform: scaleX(.12) scaleY(.35); }
+    17% { opacity: 1; filter: blur(8px) brightness(2.3); transform: scaleX(1.45) scaleY(.72); }
+    46% { opacity: .9; filter: blur(13px) brightness(1.6); transform: scaleX(1.12) scaleY(1.06); }
+    100% { opacity: .75; filter: blur(15px) brightness(1); transform: scaleX(1) scaleY(1); }
+}
+@keyframes pregameIgniteSparks {
+    0%, 12% { opacity: 0; transform: translate(-50%, 13px) scale(.4); }
+    35% { opacity: 1; transform: translate(-50%, -1px) scale(1.35); }
+    72% { opacity: .48; transform: translate(-47%, -12px) scale(.85); }
+    100% { opacity: .7; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes pregameIgniteName {
+    0%, 52% { opacity: 0; transform: translateY(4px); }
+    76%, 100% { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 760px) {
+    .pregame-seat-fire { width: 52px; height: 66px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pregame-seat-fire,
+    .pregame-seat.is-igniting .pregame-seat-fire,
+    .pregame-seat.is-igniting .pregame-seat-fire::before,
+    .pregame-seat.is-igniting .pregame-seat-fire::after,
+    .pregame-seat.is-igniting .pregame-seat-copy { animation: none !important; }
+}
+
+/* Waiting-room center: the magic circle is drawn into the table surface itself. */
+.pregame-table-action { position: absolute; z-index: 2; inset: 0; display: block; width: 100%; height: 100%; text-align: center; }
+.pregame-magic-control { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pregame-magic-trigger,
+.pregame-magic-static { position: absolute; left: 50%; top: 50%; display: block; width: 70%; height: 70%; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #33474d; transform: translate(-50%, -50%); transform-origin: 50% 50%; transition: transform .2s ease; }
+.pregame-magic-trigger { cursor: not-allowed; appearance: none; }
+.pregame-magic-static { cursor: default; }
+.pregame-magic-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; color: currentColor; pointer-events: none; }
+.pregame-magic-svg circle,
+.pregame-magic-svg path { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.pregame-magic-outer { stroke-width: 1.5; opacity: .7; }
+.pregame-magic-inner { stroke-width: 1; stroke-dasharray: 4 8; opacity: .72; }
+.pregame-magic-triangle { stroke-width: 2; opacity: .8; }
+.pregame-magic-node { fill: currentColor !important; stroke-width: 1; opacity: .86; }
+.pregame-magic-control.is-locked .pregame-magic-svg,
+.pregame-magic-control.is-setup .pregame-magic-svg { color: #253337; filter: none; opacity: .72; }
+.pregame-magic-control.is-error .pregame-magic-svg { color: #90675d; opacity: .7; filter: drop-shadow(0 0 7px rgba(173, 91, 73, .16)); }
+.pregame-magic-control.is-loading .pregame-magic-svg { color: #78a1a4; opacity: .76; filter: drop-shadow(0 0 9px rgba(101, 198, 212, .22)); }
+.pregame-magic-control.is-loading .pregame-magic-inner { animation: pregameMagicTrace 1.8s linear infinite; }
+.pregame-magic-control.is-ready .pregame-magic-svg { color: #b9f6ff; opacity: .9; filter: drop-shadow(0 0 8px rgba(102, 222, 244, .42)); animation: pregameMagicBreathe 2.5s ease-in-out infinite; }
+.pregame-magic-control.is-ready .pregame-magic-inner { animation: pregameMagicTrace 3.8s linear infinite; }
+.pregame-magic-control.is-waiting-host .pregame-magic-svg { color: #78a9ad; opacity: .65; filter: drop-shadow(0 0 7px rgba(102, 208, 216, .2)); }
+.pregame-magic-trigger:hover { transform: translate(-50%, -50%) scale(1.025); }
+.pregame-magic-control.is-locked .pregame-magic-trigger:hover .pregame-magic-svg,
+.pregame-magic-control.is-setup .pregame-magic-trigger:hover .pregame-magic-svg { opacity: .84; }
+.pregame-magic-control.is-ready .pregame-magic-trigger { cursor: pointer; }
+.pregame-magic-control.is-ready .pregame-magic-trigger:hover .pregame-magic-svg { opacity: 1; filter: drop-shadow(0 0 16px rgba(126, 240, 255, .82)); }
+.pregame-magic-trigger:focus-visible { outline: 2px solid rgba(181, 245, 255, .9); outline-offset: 4px; border-radius: 50%; }
+.pregame-magic-trigger:active { transform: translate(-50%, -50%) scale(.985); }
+@keyframes pregameMagicBreathe { 0%, 100% { opacity: .64; } 50% { opacity: 1; } }
+@keyframes pregameMagicTrace { to { stroke-dashoffset: -48px; } }
+
+.pregame-start-guidance { width: min(1280px, 100%); min-height: 19px; margin: -27px auto 7px; padding: 0; color: #748682; font: 500 12px/1.5 "Songti SC", SimSun, serif; letter-spacing: .05em; text-align: right; pointer-events: none; }
+.pregame-start-guidance.is-ready { color: #e8fffc; text-shadow: 0 0 8px rgba(103, 225, 237, .62), 0 0 20px rgba(103, 225, 237, .36); }
+.pregame-start-guidance.is-waiting-host,
+.pregame-start-guidance.is-loading { color: #a9c4c2; }
+.pregame-start-guidance.is-error { color: #dba397; }
+.pregame-start-guidance.has-player-count { text-shadow: 0 0 7px color-mix(in srgb, currentColor 52%, transparent), 0 0 17px color-mix(in srgb, currentColor 32%, transparent); animation: pregameGuidanceGlow 2.2s ease-in-out infinite; }
+.pregame-start-guidance.is-ready.has-player-count { text-shadow: 0 0 9px rgba(128, 242, 247, .82), 0 0 22px rgba(103, 225, 237, .48); }
+@keyframes pregameGuidanceGlow { 0%, 100% { opacity: .78; } 50% { opacity: 1; } }
+
+.room-feedback { position: fixed; z-index: 140; top: 50%; left: calc(50% + min(250px, 19vw)); display: grid; gap: 3px; width: max-content; max-width: min(220px, calc(100% - 32px)); padding: 10px 13px; border: 1px solid rgba(223, 116, 96, .62); border-radius: 9px; background: rgba(26, 22, 23, .94); color: #f0c5b9; box-shadow: 0 10px 30px rgba(0, 0, 0, .38), 0 0 18px rgba(190, 76, 66, .18); opacity: 0; pointer-events: none; transform: translate(0, calc(-50% + 8px)); transition: opacity .2s ease, transform .2s ease; }
+.room-feedback.is-visible { opacity: 1; transform: translate(0, -50%); }
+.room-feedback.is-info { border-color: rgba(113, 190, 201, .56); color: #c2e7e8; box-shadow: 0 10px 30px rgba(0, 0, 0, .38), 0 0 18px rgba(72, 176, 192, .16); }
+.room-connection-state { position: fixed; z-index: 130; top: 84px; left: 50%; width: max-content; max-width: min(620px, calc(100% - 32px)); padding: 10px 16px; border: 1px solid rgba(214,157,87,.56); border-radius: 999px; background: rgba(18, 27, 29, .92); color: #f0d49b; box-shadow: 0 10px 28px rgba(0,0,0,.24), 0 0 22px rgba(214,157,87,.12); font-size: 11px; line-height: 1.35; text-align: center; transform: translateX(-50%); backdrop-filter: blur(14px); }
+.room-connection-state.is-paused { animation: roomConnectionPulse 1.8s ease-in-out infinite; }
+@keyframes roomConnectionPulse { 0%, 100% { border-color: rgba(214,157,87,.42); } 50% { border-color: rgba(240,207,139,.9); box-shadow: 0 10px 28px rgba(0,0,0,.24), 0 0 26px rgba(214,157,87,.24); } }
+@media (max-width: 760px) {
+    .pregame-seat.is-me { --seat-y: 88% !important; }
+    .pregame-start-guidance { margin-top: -21px; padding: 0; font-size: 10px; }
+    .room-feedback { top: auto; right: 16px; bottom: max(84px, calc(70px + env(safe-area-inset-bottom))); left: 16px; justify-items: center; width: auto; max-width: none; text-align: center; transform: translateY(8px); }
+    .room-feedback.is-visible { transform: translateY(0); }
+    .room-connection-state { top: 70px; max-width: calc(100% - 24px); padding: 8px 12px; font-size: 10px; }
+    .room-page-identity { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pregame-magic-svg,
+    .pregame-magic-control.is-loading .pregame-magic-inner,
+    .pregame-magic-control.is-ready .pregame-magic-inner { animation: none !important; }
+    .pregame-magic-trigger { transition: none; }
+    .pregame-start-guidance.has-player-count { animation: none; }
+    .room-feedback { transition: none; }
+    .room-connection-state { animation: none; }
+}
+
+/* Waiting-room controls: management stays secondary to the table while
+   remaining available on narrow screens. */
+.pregame-room-tools { position: relative; z-index: 12; width: min(640px, calc(100% - 24px)); margin: 12px auto 58px; border: 1px solid color-mix(in srgb, var(--seat-accent) 27%, rgba(255,255,255,.12)); border-radius: 15px; background: rgba(8, 20, 25, .76); box-shadow: 0 20px 48px rgba(0,0,0,.28); color: #dce9e4; backdrop-filter: blur(16px); }
+.pregame-room-tools[open] { box-shadow: 0 22px 58px rgba(0,0,0,.34), 0 0 22px color-mix(in srgb, var(--seat-accent) 10%, transparent); }
+.pregame-room-tools summary { display: flex; align-items: center; gap: 11px; padding: 12px 15px; cursor: pointer; list-style: none; }
+.pregame-room-tools summary::-webkit-details-marker { display: none; }
+.pregame-room-tools summary::after { margin-left: auto; color: #8caeaa; content: '⌄'; font-size: 16px; transition: transform .2s ease; }
+.pregame-room-tools:not([open]) summary::after { transform: rotate(-90deg); }
+.pregame-room-tools summary span, .pregame-player-list header span, .pregame-inline-settings header span { color: color-mix(in srgb, var(--seat-accent) 82%, white); font-size: 8px; font-weight: 800; letter-spacing: .16em; }
+.pregame-room-tools summary strong { color: #f5ecd8; font: 500 16px/1 "Songti SC", SimSun, serif; }
+.pregame-room-tools summary em { margin-left: auto; color: #9bb5b0; font-size: 9px; font-style: normal; }
+.pregame-tools-body { display: grid; gap: 13px; padding: 0 13px 14px; }
+.pregame-ready-panel { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 12px; border: 1px solid rgba(152, 214, 215, .15); border-radius: 11px; background: rgba(255,255,255,.045); }
+.pregame-ready-panel > div, .pregame-player-name { display: grid; gap: 4px; min-width: 0; }
+.pregame-ready-panel strong, .pregame-player-list header strong, .pregame-inline-settings header strong { color: #f3ead8; font: 500 15px/1.1 "Songti SC", SimSun, serif; }
+.pregame-ready-panel small, .pregame-inline-settings header small { color: #91a8a3; font-size: 9px; line-height: 1.45; }
+.pregame-ready-button, .pregame-settings-save { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 86px; padding: 9px 12px; border: 1px solid rgba(155, 224, 226, .34); border-radius: 8px; background: rgba(48, 120, 128, .22); color: #d9ffff; cursor: pointer; font-size: 10px; font-weight: 750; transition: .18s ease; }
+.pregame-ready-button:hover, .pregame-ready-button.is-ready, .pregame-settings-save:hover { border-color: rgba(182, 244, 241, .78); background: rgba(62, 157, 163, .42); box-shadow: 0 0 18px rgba(99, 226, 220, .2); transform: translateY(-1px); }
+.pregame-ready-button.is-ready { color: #f8f2d8; }
+.pregame-player-list, .pregame-inline-settings { display: grid; gap: 8px; }
+.pregame-player-list header, .pregame-inline-settings header { display: grid; grid-template-columns: auto 1fr; gap: 4px 9px; align-items: baseline; padding: 3px 2px 2px; }
+.pregame-player-list header strong, .pregame-inline-settings header strong { grid-column: 1 / -1; }
+.pregame-inline-settings header small { grid-column: 1 / -1; }
+.pregame-player-row { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; gap: 9px; align-items: center; min-height: 37px; padding: 6px 9px; border: 1px solid rgba(255,255,255,.07); border-radius: 8px; background: rgba(255,255,255,.035); }
+.pregame-player-row.is-ready { border-color: rgba(113, 219, 207, .2); }
+.pregame-player-row.is-offline { opacity: .62; }
+.pregame-player-state { width: 7px; height: 7px; border-radius: 50%; background: #6a7776; box-shadow: 0 0 0 3px rgba(106,119,118,.1); }
+.pregame-player-row.is-ready .pregame-player-state { background: #8ee8d3; box-shadow: 0 0 10px rgba(111, 235, 212, .8); }
+.pregame-player-name strong { overflow: hidden; color: #e6eee9; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.pregame-player-name small { color: #879c98; font-size: 8px; }
+.pregame-kick-button { padding: 5px 8px; border: 1px solid rgba(224, 135, 116, .28); border-radius: 6px; background: transparent; color: #d99f90; cursor: pointer; font-size: 8px; }
+.pregame-kick-button:hover { border-color: rgba(239, 153, 129, .72); background: rgba(154, 61, 49, .22); color: #ffd0c1; }
+.pregame-inline-settings { padding-top: 3px; border-top: 1px solid rgba(255,255,255,.08); }
+.pregame-inline-settings .pregame-room-setting-fields { display: grid; gap: 8px; }
+.pregame-inline-settings .room-setting-field { padding: 10px; border-color: rgba(255,255,255,.1); background: rgba(255,255,255,.045); }
+.pregame-inline-settings .room-setting-field > span,
+.pregame-inline-settings .room-setting-field legend { color: #d9e7e2; }
+.pregame-inline-settings .room-setting-field > small { color: #8da39e; }
+.pregame-inline-settings .room-setting-options { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.pregame-inline-settings .room-setting-options label > span { border-color: rgba(255,255,255,.1); background: rgba(5, 16, 21, .56); color: #a6b8b4; }
+.pregame-inline-settings .room-setting-options label > span b { color: #e5eee9; }
+.pregame-inline-settings .room-setting-options label > span small { color: #92a7a2; }
+.pregame-inline-settings .room-setting-options input:checked + span { border-color: color-mix(in srgb, var(--seat-accent) 78%, white); background: color-mix(in srgb, var(--seat-accent) 16%, rgba(5,16,21,.72)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--seat-accent) 25%, transparent), 0 0 12px color-mix(in srgb, var(--seat-accent) 12%, transparent); }
+.pregame-settings-save { justify-self: end; min-width: 125px; }
+.room-settings-configuration > .pregame-room-setting-fields { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.room-settings-configuration .room-setting-field { margin: 0; }
+
+@media (max-width: 760px) {
+    .pregame-room-tools { width: calc(100% - 16px); margin-bottom: 36px; }
+    .pregame-room-tools summary { padding: 11px 12px; }
+    .pregame-room-tools summary strong { font-size: 14px; }
+    .pregame-tools-body { padding: 0 9px 10px; }
+    .pregame-ready-panel { align-items: stretch; flex-direction: column; gap: 9px; }
+    .pregame-ready-button, .pregame-settings-save { width: 100%; }
+    .pregame-inline-settings .room-setting-options { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,130 @@
+// Presentation and artwork metadata for the lobby catalog.
+// No DOM or transport state belongs here; the bootstrap can be tested with
+// plain data and every visual surface consumes the same canonical mapping.
+
+const GAME_PRESENTATION = {
+    loveletter: { symbol: '✉', title: '情书', subtitle: '读心、试探与最后一张牌', english: 'LOVE LETTER', players: '2–4 人', time: '15 分钟', tone: 'rose', description: '把你的心意安全送到公主手中。' },
+    coup: { symbol: '♜', title: '政变', subtitle: '谎言、质疑与权力游戏', english: 'COUP', players: '2–6 人', time: '20 分钟', tone: 'violet', description: '藏好你的身份，掌控这场权力游戏。' },
+    monopoly: { symbol: '⌂', title: '环城大富翁', subtitle: '置业、收租与环城冒险', english: 'MONOPOLY', players: '2–8 人', time: '30 分钟', tone: 'green', description: '买下城市最好的街区，成为最后赢家。' },
+    monopolydeal: { symbol: '◈', title: '大富翁纸牌', subtitle: '成套、交易与一击突破', english: 'DEAL CARDS', players: '2–5 人', time: '20 分钟', tone: 'teal', description: '用三套地产和一次漂亮交易结束比赛。' },
+    guessnumber: { symbol: 'A B', title: '猜数字', subtitle: '推理四位数字与隐藏答案', english: 'BULLS & COWS', players: '单人', time: '10 分钟', tone: 'blue', description: '每一次猜测，都让答案更接近真相。' },
+    chess: { symbol: '♞', title: '国际象棋', subtitle: '将军、策略与八方棋盘', english: 'CHESS', players: '2 人', time: '30 分钟', tone: 'wood', description: '在八乘八的棋盘上，寻找唯一的将杀。' },
+    xiangqi: { symbol: '將', title: '中国象棋', subtitle: '楚河汉界与炮火突围', english: 'XIANGQI', players: '2 人', time: '25 分钟', tone: 'vermilion', description: '车马炮在楚河汉界之间展开攻防。' },
+    jungle: { symbol: '象', title: '斗兽棋', subtitle: '过河、陷阱与猛兽博弈', english: 'JUNGLE', players: '2 人', time: '20 分钟', tone: 'forest', description: '穿越河流，利用地形占领对手兽穴。' },
+    gobang: { symbol: '五', title: '五子棋', subtitle: '连珠、攻防与黑白落子', english: 'GOMOKU', players: '2 人', time: '20 分钟', tone: 'wood', description: '不设禁手，先在棋盘上连成五子。' },
+    checkers: { symbol: '✦', title: '跳棋', subtitle: '六角星、连续跳跃与目标角', english: 'CHINESE CHECKERS', players: '2–6 人', time: '30 分钟', tone: 'teal', description: '把十枚棋子跳进对角目标角。' },
+    aeroplane: { symbol: '✈', title: '飞行棋', subtitle: '起飞、跳跃与空中突袭', english: 'AEROPLANE CHESS', players: '2–4 人', time: '20 分钟', tone: 'blue', description: '掷出六点，带四架飞机飞回终点。' },
+    junqi: { symbol: '軍', title: '军棋', subtitle: '暗棋、军阶与夺旗', english: 'DARK CHESS', players: '2 人', time: '30 分钟', tone: 'forest', description: '隐藏你的军力，拆除地雷，夺下对方军旗。' },
+    takefive: { symbol: '牛', title: '牛头王', subtitle: '同时出牌与风险排队', english: 'TAKE FIVE', players: '2–10 人', time: '25 分钟', tone: 'gold', description: '猜对手的节奏，别成为第六张牌。' },
+    hanabi: { symbol: '✹', title: '花火', subtitle: '合作、提示与记忆', english: 'HANABI', players: '2–5 人', time: '25 分钟', tone: 'indigo', description: '看见队友的牌，一起点亮夜空。' },
+    splendor: { symbol: '◆', title: '璀璨宝石', subtitle: '宝石、贵族与永久折扣', english: 'SPLENDOR', players: '2–4 人', time: '30 分钟', tone: 'gem', description: '建立你的宝石商会，赢得贵族青睐。' },
+    kingdomino: { symbol: '♛', title: '多米诺王国', subtitle: '领地、王冠与拼图王国', english: 'KINGDOMINO', players: '2–4 人', time: '25 分钟', tone: 'kingdom', description: '把最好的领地拼进你的王国。' },
+    acquire: { symbol: '♜', title: '并购', subtitle: '60 周年城市视觉 · 经典并购规则', english: 'ACQUIRE', players: '2–6 人', time: '45 分钟', tone: 'acquire', description: '布局酒店集团，在并购浪潮中积累财富。' },
+    citadels: { symbol: '城', title: '富饶之城', subtitle: '选角、建城与暗杀', english: 'CITADELS', players: '2–7 人', time: '45 分钟', tone: 'gold', description: '秘密选择角色，建成最辉煌的城市。' },
+    witchtown: { symbol: '巫', title: '猎巫镇', subtitle: '身份、卡牌与昼夜审判', english: 'WITCH TOWN', players: '4–12 人', time: '35 分钟', tone: 'rose', description: '抽牌、指控并在夜色中保护镇民。' },
+    lasvegas: { symbol: '$', title: '拉斯维加斯', subtitle: '骰子、赌场与多数争夺', english: 'LAS VEGAS', players: '2–5 人', time: '30 分钟', tone: 'teal', description: '把骰子押在最值得争夺的赌场。' },
+    avalon: { symbol: '⚔', title: '阿瓦隆', subtitle: '封存身份，在真实圆桌前自由推理', english: 'AVALON', players: '5–10 人', time: '35 分钟', tone: 'violet', description: '页面保管秘密与规则，玩家在线下自由讨论、组队、投票并完成远征。' },
+    scout: { symbol: '★', title: '马戏星探', subtitle: '手牌顺序与马戏表演', english: 'SCOUT', players: '2–5 人', time: '20 分钟', tone: 'rose', description: '不能重排的手牌，也能拼出最强演出。' },
+    decrypto: { symbol: '⌁', title: '谍报风云', subtitle: '公共语音推演，逐轮破译密码', english: 'DECRYPTO', players: '3–8 人', time: '30 分钟', tone: 'blue', description: '页面保管关键词、密码和判定，双方可在同桌或公共语音中完整游玩。' },
+    manila: { symbol: '⚓', title: '马尼拉', subtitle: '货船、股份与港口投机', english: 'MANILA', players: '3–5 人', time: '60 分钟', tone: 'gold', description: '押注哪艘货船抵达港口，成为最富有的商人。' },
+    modernart: { symbol: '▧', title: '现代艺术', subtitle: '竞价、炒作与艺术市场', english: 'MODERN ART', players: '3–5 人', time: '45 分钟', tone: 'rose', description: '买下潜力艺术家，再把热度变成财富。' },
+    camelup: { symbol: '🐪', title: '狂野骆驼', subtitle: '骆驼赛跑与赔率下注', english: 'CAMEL UP', players: '3–8 人', time: '35 分钟', tone: 'sand', description: '猜谁会冲线，别让叠在一起的骆驼骗过你。' },
+    magicalathlete: { symbol: '⚡', title: '胡闹运动会', subtitle: '魔法运动员与四场竞速', english: 'MAGICAL ATHLETE', players: '2–6 人', time: '15 分钟', tone: 'violet', description: '选一个有怪招的运动员，跑完四场荒诞比赛。' },
+    werewolf: { symbol: '狼', title: '狼人杀 · 夜幕助手', subtitle: '无需主持人，也能沉浸地完成整局游戏', english: 'WEREWOLF NIGHT', players: '9 / 12 人', time: '30–60 分钟', tone: 'violet', description: '选择 9 人或 12 人局。玩家到齐后，夜幕助手将依次引导身份、夜间行动、发言与投票。' },
+};
+
+const GROUP_PRESENTATION = {
+    'social-assist': { name: '社交推理与流程辅助', description: '身份、沟通与自动流程' },
+    codebreaking: { name: '解密类', description: '密码、线索与逻辑破译' },
+    board: { name: '棋类与棋盘游戏', description: '棋盘对弈与路线竞赛' },
+    tabletop: { name: '卡牌与策略桌游', description: '卡牌、经营、竞价与策略' },
+};
+const PLAY_MODE_LABELS = {
+    online: '完整线上',
+    hybrid: '线上+队伍讨论',
+    'host-assist': '主持辅助',
+    'auto-assist': '自动流程辅助',
+    solo: '单人游戏',
+};
+const GAME_COVERS = {
+    werewolf: '/assets/covers/werewolf-v5.webp',
+    avalon: '/assets/covers/avalon-v4.webp',
+    decrypto: '/assets/covers/decrypto-v2.webp',
+    witchtown: '/assets/covers/witchtown.webp',
+    chess: '/assets/covers/chess-v6.webp',
+    xiangqi: '/assets/covers/xiangqi-v3.webp',
+    jungle: '/assets/covers/jungle.webp',
+    junqi: '/assets/covers/junqi-v10.webp',
+    aeroplane: '/assets/covers/aeroplane.webp',
+    gobang: '/assets/covers/gobang.webp',
+    checkers: '/assets/covers/checkers-v10.webp',
+    monopoly: '/assets/covers/monopoly.webp',
+    loveletter: '/assets/covers/loveletter.webp',
+    coup: '/assets/covers/coup.webp',
+    guessnumber: '/assets/covers/guessnumber.webp',
+    monopolydeal: '/assets/covers/monopolydeal.webp',
+    takefive: '/assets/covers/takefive-v3.webp',
+    hanabi: '/assets/covers/hanabi.webp',
+    splendor: '/assets/covers/splendor.webp',
+    kingdomino: '/assets/covers/kingdomino.webp',
+    acquire: '/assets/covers/acquire.webp',
+    citadels: '/assets/covers/citadels.webp',
+    lasvegas: '/assets/covers/lasvegas.webp',
+    scout: '/assets/covers/scout.webp',
+    manila: '/assets/covers/manila.webp',
+    modernart: '/assets/covers/modernart.webp',
+    camelup: '/assets/covers/camelup.webp',
+    magicalathlete: '/assets/covers/magicalathlete-v3.webp',
+};
+const GAME_COVER_THUMBS = Object.fromEntries(Object.entries(GAME_COVERS).map(([type, source]) => [type, source.replace('/assets/covers/', '/assets/covers/thumbs/')]));
+const BGG_ART = {
+    loveletter: '/assets/bgg/loveletter/cover.jpg',
+    coup: '/assets/bgg/coup/cover.jpg',
+    monopolydeal: '/assets/bgg/monopolydeal/cover.jpg',
+    monopoly: '/assets/bgg/monopoly/cover.jpg',
+    takefive: '/assets/bgg/takefive/cover.jpg',
+    hanabi: '/assets/bgg/hanabi/cover.jpg',
+    splendor: '/assets/bgg/splendor/original-cover.jpg',
+    kingdomino: '/assets/bgg/kingdomino/cover.png',
+    acquire: '/assets/bgg/acquire/cover.jpg',
+    citadels: '/assets/bgg/citadels/cover.jpg',
+    lasvegas: '/assets/bgg/lasvegas/cover.jpg',
+    avalon: '/assets/bgg/avalon/cover.jpg',
+    scout: '/assets/bgg/scout/cover.png',
+    decrypto: '/assets/bgg/decrypto/cover.jpg',
+    manila: '/assets/bgg/manila/cover.jpg',
+    modernart: '/assets/bgg/modernart/cover.png',
+    camelup: '/assets/bgg/camelup/cover.jpg',
+    magicalathlete: '/assets/bgg/magicalathlete/cover.png',
+};
+const SELF_STYLED_GAME_ART = new Set(['loveletter', 'coup', 'monopolydeal', 'takefive', 'hanabi', 'splendor', 'kingdomino', 'acquire', 'citadels', 'witchtown', 'lasvegas', 'scout', 'decrypto', 'manila', 'modernart', 'camelup', 'magicalathlete']);
+// 组件/牌面合照只供游戏自己按组件类型使用，不能默认铺成游戏背景。
+const BGG_BACKGROUND_ART = { ...BGG_ART };
+const BGG_COMPONENT_ART = {
+    loveletter: '/assets/bgg/loveletter/detail.jpg',
+    coup: '/assets/bgg/coup/modern-roles.jpg',
+    citadels: '/assets/bgg/citadels/detail.jpg',
+    lasvegas: '/assets/bgg/lasvegas/detail.jpg',
+    avalon: '/assets/bgg/avalon/detail.jpg',
+    scout: '/assets/bgg/scout/detail.jpg',
+    decrypto: '/assets/bgg/decrypto/detail.png',
+    manila: '/assets/bgg/manila/detail.jpg',
+    modernart: '/assets/bgg/modernart/detail.jpg',
+    camelup: '/assets/bgg/camelup/detail.jpg',
+    magicalathlete: '/assets/bgg/magicalathlete/detail.png',
+};
+// 仅覆盖此前确认有 BGG 组件/牌面资源的游戏；图片作为真实 <img> 牌面视觉，实时规则数据仍由各游戏客户端渲染。
+const BGG_COMPONENT_LABELS = {
+    loveletter: '角色牌裁切参考',
+    coup: '真实角色牌面与插画',
+    citadels: '角色牌参考',
+    lasvegas: '赌场与筹码参考',
+    avalon: '身份牌与任务组件参考',
+    scout: '数字牌与筹码参考',
+    decrypto: '密码板与提示组件参考',
+    manila: '港口与货船组件参考',
+    modernart: '艺术牌与拍卖组件参考',
+    camelup: '赛道与下注组件参考',
+    magicalathlete: '运动员能力牌参考',
+};
+export { GAME_PRESENTATION, GROUP_PRESENTATION, PLAY_MODE_LABELS, GAME_COVERS, GAME_COVER_THUMBS, BGG_ART, SELF_STYLED_GAME_ART, BGG_BACKGROUND_ART, BGG_COMPONENT_ART, BGG_COMPONENT_LABELS };

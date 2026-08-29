@@ -90,7 +90,7 @@
 - `Las Vegas publishes split dice and structured placement presentation events`
 - `Las Vegas preserves every casino settlement scene and uses banknote count as the final tiebreaker`
 - 既有回归中的完整牌组、两人中立骰、平票结算和五人四轮对局测试
-- 全项目 `npm test`：429/429 通过。
+- 当次全项目 `npm test`：429/429 通过（历史快照）。当前基线见 [`release-baseline.md`](./release-baseline.md)。
 
 ## 最终评分
 

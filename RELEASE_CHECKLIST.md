@@ -11,7 +11,7 @@
 
 ## 2. 本地门禁
 
-在项目根目录执行：
+在项目根目录执行。先执行一次 `npm ci`，然后选择逐项门禁或等价的聚合入口：
 
 ```bash
 npm ci
@@ -21,14 +21,24 @@ npm test
 npm run test:browser
 # 可选但建议：CHROMIUM_BIN=/path/to/chromium npm run test:browser:chromium
 npm run test:performance
+npm run test:reports
 npm run test:release
+npm run test:deploy
 git diff --check
+# 方式 B：上述本地门禁的可复现聚合入口（与方式 A 等价，不要重复执行）
+# npm run test:acceptance
 ```
+
+需要聚合执行时，取消最后一行注释并跳过其上的逐项命令。
 
 `test:browser` 需要 Firefox；没有图形环境时使用无头 Firefox，或通过 `FIREFOX_BIN` 指定路径。若浏览器不可用，应把门禁标记为“未执行”，不能写成通过。
 `test:browser:chromium` 使用 Chromium DevTools Protocol，复核模块导入、桌面/移动视口和隐私输入边界；通过 `CHROMIUM_BIN` 或 `CHROME_BIN` 指定可执行文件。它不能替代真实 Chromium/移动设备人工签字。
 `test:performance` 是本地有界压力和资源清理烟测：会检查首屏/主脚本/样式/Three.js 体积、静态请求并发、短时大厅连接并发，以及多房间创建/加入/离开后的连接和房间回收；它不是生产容量压测，生产容量仍需在预发布环境按真实规格执行。
 `test:release` 检查 `package.json` 与锁文件版本、必需发布脚本、systemd/Nginx 模板的本机反代与最小权限约束，以及 Git 跟踪文件中是否混入临时目录、环境变量或密钥/日志；它不能代替目标服务器上的 systemd、Nginx、HTTPS 和安全组实机检查。
+`test:deploy` 以 `NODE_ENV=production` 启动真实 `bin/www`，检查 `/healthz`、安全响应头、一次 WebSocket 建房和 SIGTERM 优雅退出；它不能代替目标服务器上的 systemd、Nginx、HTTPS、DNS 或安全组检查。
+`test:acceptance` 是本机最终验收聚合入口，会依次执行依赖、语法、回归、Firefox、性能/清理、报告、发布和生产形态部署门禁，并最后执行 `git diff --check`；它不自动执行 `npm ci`、Chromium 可选门禁或任何目标环境操作。
+
+生产启动前至少设置 `JSGAMES_ALLOWED_ORIGINS=https://你的域名`；保持默认的 WebSocket 负载、JSON 结构、消息/聊天限流、心跳和重连令牌策略。只有在受控本地兼容测试时才允许设置 `JSGAMES_REQUIRE_RECONNECT_TOKEN=false`，不得带入公网环境。
 
 ## 3. 发布前人工签字
 

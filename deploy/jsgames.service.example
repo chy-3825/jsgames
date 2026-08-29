@@ -10,6 +10,10 @@ Group=jsgames
 WorkingDirectory=/opt/jsgames
 Environment=NODE_ENV=production
 Environment=PORT=3000
+# Replace with the public HTTPS origin before enabling the service.
+# Environment=JSGAMES_ALLOWED_ORIGINS=https://table.example
+# Set true only when this process is reachable exclusively through the trusted Nginx proxy.
+# Environment=JSGAMES_TRUST_PROXY=true
 ExecStart=/usr/bin/node ./bin/www
 Restart=on-failure
 RestartSec=5

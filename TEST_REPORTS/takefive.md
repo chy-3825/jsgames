@@ -6,7 +6,7 @@
 - 支持人数：2–10 人；本轮按最大人数 10 人连续完整运行 3 局。
 - 专项测试：`node --test test/takefive-official.test.js`，4/4 通过。
 - 当前专项：`node --test test/takefive-official.test.js test/takefive-frontend.test.js`，9/9 通过。
-- 项目全量回归：396/396 通过。
+- 当次项目全量回归：396/396 通过（历史快照；当前基线见 [`release-baseline.md`](./release-baseline.md)）。
 - 规则依据：[AMIGO 6 nimmt! 官方规则 PDF](https://blog.amigo-spiele.de/content/ap/rule/02401-GB-AmigoRule.pdf)，其中明确了 104 张牌、四行、升序结算、第五张/低牌收行、66 分终局及 2–6 人专业变体。
 
 ## 官方基础规则逐条核对

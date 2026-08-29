@@ -24,6 +24,9 @@ sudo systemctl reload nginx
 
 `Upgrade`、`Connection` 和长连接超时配置是大厅 WebSocket 正常工作的必要条件。配置域名后应使用 HTTPS；证书可由 Certbot 或云平台证书服务托管。
 
+Node 服务启动前应通过 systemd 的环境文件或等效安全配置设置明确的来源白名单，例如
+`JSGAMES_ALLOWED_ORIGINS=https://table.example`。应用默认启用 256 KiB WebSocket 负载上限、JSON 结构检查、会话/IP/房间限流、聊天限制、心跳和重连令牌；不要在公网把 `JSGAMES_REQUIRE_RECONNECT_TOKEN` 设为 `false`。`/healthz` 返回进程版本、房间和连接计数，供反代或监控探活使用。
+
 ## 云平台安全组
 
 生产反代方案只需放行 TCP 80/443，并限制 TCP 3000 仅允许本机或内网访问。若暂时不使用 Nginx、直接对外测试 Node，则需要为实例安全组增加 IPv4 TCP 3000 入站规则；测试结束后应撤销该公网端口。
@@ -34,3 +37,4 @@ sudo systemctl reload nginx
 2. `ss -ltnp` 显示 Node 监听 3000，Nginx 监听 80/443。
 3. 浏览器可以创建房间、加入房间并保持 WebSocket 连接。
 4. 云安全组只保留实际需要的端口；服务器凭据已轮换并改用 SSH 密钥。
+5. `curl -fsS https://你的域名/healthz` 返回 `status: ok`，并确认响应包含 HSTS、CSP、`X-Content-Type-Options` 等安全头。

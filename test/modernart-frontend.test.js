@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const client = ['client.js', 'constants.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
     .map(file => fs.readFileSync(`public/games/modernart/${file}`, 'utf8')).join('\n');
 const style = fs.readFileSync('public/games/modernart/style.css', 'utf8');
-const fixture = fs.readFileSync('public/__game_shell_visual_test.html', 'utf8');
+const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 test('现代艺术提交后保留报价或作品方案并锁定全部控件', () => {
     assert.match(client, /if \(model\.actionPending \|\| model\.presentationPlaying\) return/);

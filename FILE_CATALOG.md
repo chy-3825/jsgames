@@ -1,8 +1,8 @@
 # jsgames 文件目录与用途
 
-> 盘点日期：2026-08-28
+> 盘点日期：2026-08-29
 > 盘点范围：`/home/chy/桌面/jsgames`，不包含可由 `npm install` 重新生成的 `node_modules/`，也不包含 `.git/`。  
-> 当前共有 606 个项目文件；另保留 1 份被 Git 忽略、正在使用的 `tmp/junqi-v5-final-prompts.md`。
+> 当前共有 676 个项目文件（不含 `node_modules/`、`.git/`、被忽略的 `tmp/` 和按需生成的 `TEST_REPORTS/artifacts/*.json`）；另保留 1 份正在使用的 `tmp/junqi-v5-final-prompts.md`。
 
 ## 1. 状态说明
 
@@ -20,13 +20,13 @@
 | `.gitignore` | 开发资料 | 排除依赖、日志、环境变量、构建产物和编辑器缓存。 |
 | `.vscode/launch.json` | 开发资料 | VS Code 中启动 Node 服务或浏览器调试的现行配置。 |
 | `FILE_CATALOG.md` | 开发资料 | 本文件；记录项目文件用途和清理边界。 |
-| `app.js` | 运行必需 | Express 静态站点和 WebSocket 总入口；维护玩家、会话、房间、聊天、断线恢复和状态广播。 |
+| `app.js` | 运行必需 | Express 静态站点和 WebSocket 兼容入口；默认实时服务由 `createRealtimeServer()` 提供。 |
 | `bin/www` | 运行必需 | `npm start` 启动脚本；创建 HTTP 服务、挂接 WebSocket 并监听 3000 端口。 |
 | `package.json` | 运行必需 | npm 元数据、`start`/`test` 命令和依赖声明。 |
 | `package-lock.json` | 运行必需 | 锁定依赖的确切版本，保证重新安装结果一致。 |
 | `README.md` | 开发资料 | 项目概览、游戏清单、启动方法和核心目录说明；测试数量文字需要随版本更新。 |
 | `PROJECT_REPORT.md` | 开发资料 | 新游戏接入教程；定义大厅消息、服务端会话接口和前端客户端接口。 |
-| `GAME_GROUPS.md` | 开发资料 | 大厅三大分组、`playMode` 和分类维护规范。 |
+| `GAME_GROUPS.md` | 开发资料 | 大厅四大分组、`playMode` 和分类维护规范。 |
 | `BGG_CARD_RESOURCES.md` | 开发资料 | 卡牌游戏的 BGG 美术资源选择、来源和使用记录。 |
 | `RELEASE_CHECKLIST.md` | 开发资料 | 发布前版本、自动化门禁、人工签字、预发布检查和回滚纪律。 |
 | `.github/workflows/verify.yml` | 开发资料 | 推送/合并请求的 Node 20/22 回归、性能/清理、发布元数据审计和 Firefox 浏览器烟测。 |
@@ -38,17 +38,30 @@
 | 文件 | 状态 | 用途 |
 | --- | --- | --- |
 | `public/index.html` | 运行必需 | 正式大厅 HTML；包含玩家名、游戏目录、房间、聊天和游戏挂载容器。 |
-| `public/script.js` | 运行必需 | 大厅浏览器逻辑；建立 WebSocket、恢复会话、管理房间、展示创建前规则与设置，并动态加载各游戏客户端和封面/组件图。 |
+| `public/script.js` | 运行必需 | 大厅组合入口；串联会话、房间协议、游戏加载和页面状态，不再承载目录、传输、弹层和等待桌的实现细节。 |
 | `public/game-details.js` | 运行必需 | 28 款游戏的玩家向规则摘要，供“规则说明 → 房间设置”双页创建浮窗使用。 |
 | `public/assets/covers/*.webp` | 运行必需 | 与注册表一一对应的 28 张现行高清横版封面，供创建房间规则浮窗使用。 |
 | `public/assets/covers/thumbs/*.webp` | 运行必需 | 与高清封面同名的 28 张大厅缩略图。 |
-| `public/style.css` | 运行必需 | 正式大厅、等待房间、游戏卡片、双页创建浮窗和响应式布局的全局样式。 |
+| `public/style.css` | 运行必需 | 正式大厅、游戏卡片、双页创建浮窗和通用游戏外壳的基础样式；等待房间层见 `public/lobby/waiting-room.css`。 |
+| `public/lobby/waiting-room.css` | 运行必需 | 等待房间控制、座位火焰、入场转场、魔法阵和移动端覆盖层；由大厅入口紧随全局样式加载。 |
+| `public/lobby/catalog-data.js` | 前端必需 | 大厅游戏、分组、模式与美术元数据的单一来源。 |
+| `public/lobby/catalog-view.js` | 前端必需 | 游戏目录、公开房间、筛选和卡片事件的视图层；通过状态访问器与协议解耦。 |
+| `public/lobby/game-loader.js` | 前端必需 | 游戏客户端与样式的懒加载、预加载、缓存和资源状态。 |
+| `public/lobby/transport.js` | 前端必需 | 大厅 WebSocket 生命周期、消息解码、发送和错误回调封装。 |
+| `public/lobby/artwork.js` | 前端必需 | 封面预加载、懒加载、卡片入场观察器和减少动效处理。 |
+| `public/lobby/room-dialog.js` | 前端必需 | 创建房间规则/设置双页弹层、元数据驱动选项和表单采集。 |
+| `public/lobby/waiting-room-scene.js` | 前端必需 | 等待房间状态派生、座位几何、准备状态和桌面魔法阵渲染。 |
+| `public/lobby/game-entry-transition.js` | 前端必需 | 等待桌到游戏桌的座位分组、能量汇聚和转场生命周期。 |
+| `public/lobby/study-controls.js` | 前端必需 | 棋谱模式的执棋方切换、公开摆棋和确认控件。 |
 
 ## 4. 通用服务端
 
 | 文件 | 状态 | 用途 |
 | --- | --- | --- |
 | `server/room.js` | 运行必需 | 通用房间生命周期；校验房间名称、可见性、人数上限与游戏专属设置，创建游戏会话、转发动作、系统 tick 和玩家视角状态。 |
+| `server/realtime/create-realtime-server.js` | 运行必需 | 可实例化的实时大厅服务；封装 WebSocket 协议、会话/重连、房间路由、广播和定时 tick，每个实例拥有独立状态。 |
+| `server/realtime/lan-ip.js` | 运行必需 | 局域网地址筛选与 `/api/ip` 使用的纯工具。 |
+| `server/realtime/security.js` | 运行必需 | WebSocket Origin、负载/JSON 结构、消息/聊天限流、IP 归一化和文本清洗策略。 |
 | `server/games/registry.js` | 运行必需 | 28 个正式游戏的唯一运行时注册表。 |
 | `server/games/groups.js` | 运行必需 | 为注册游戏附加大厅分组、排序和使用模式。 |
 
@@ -60,6 +73,8 @@
 - `public/games/<type>/style.css`：该游戏独立主题、组件和手机端样式。
 - `server/games/<type>/engine.js`：服务端权威规则、状态、合法性、隐私和胜负计算。
 - `server/games/<type>/index.js`：大厅适配层，导出 `metadata` 和 `create()`。
+
+复杂游戏的 `style.css` 只保留基础主题与外壳；版图、私有信息、交互、场景和响应式覆盖按需拆为同目录 CSS，并由 `public/games/common/game-manifest.js` 以固定顺序加载。拆分不改变选择器或客户端接口。
 
 | type | 中文名 | 四类文件的具体职责 |
 | --- | --- | --- |
@@ -103,6 +118,17 @@
 | `public/games/chess/chess3d.css` | 运行必需 | 国际象棋 2D/3D 棋室样式。 |
 | `public/games/chess/standalone.html` | 开发资料 | 不连接大厅的国际象棋独立视觉测试页。 |
 | `public/games/monopolydeal/choice.css` | 运行必需 | 大富翁纸牌颜色、支付和交换选择弹窗的补充样式。 |
+| `public/games/acquire/board.css` | 运行必需 | 并购地图、地块、集团标记和手牌层；按清单在基础样式后加载。 |
+| `public/games/acquire/rail.css` | 运行必需 | 并购股票、玩家侧栏和购买控件；按清单在版图层后加载。 |
+| `public/games/acquire/scenes.css` | 运行必需 | 并购规则弹层、行动演出和响应式覆盖；按清单最后加载。 |
+| `public/games/avalon/scenes.css` | 运行必需 | 阿瓦隆规则弹层、任务演出和响应式覆盖；按清单在基础样式后加载。 |
+| `public/games/citadels/roles.css` | 运行必需 | 富饶之城角色牌、角色艺术和身份焦点层。 |
+| `public/games/citadels/interactions.css` | 运行必需 | 富饶之城选角、回合行动和规则交互层。 |
+| `public/games/citadels/responsive.css` | 运行必需 | 富饶之城平板、手机和短横屏布局覆盖。 |
+| `public/games/citadels/scenes.css` | 运行必需 | 富饶之城行动确认、场景演出和减少动效覆盖。 |
+| `public/games/coup/private.css` | 运行必需 | 政变私有影响力、卡背和牌面控制层。 |
+| `public/games/coup/scenes.css` | 运行必需 | 政变行动控制台、质疑/阻挡演出和对话框。 |
+| `public/games/coup/responsive.css` | 运行必需 | 政变手机、平板和短横屏布局覆盖。 |
 
 ## 6. 飞行棋专用素材
 
@@ -140,12 +166,16 @@
 | `public/__monopoly_alignment_test.html` | 开发资料 | 环城大富翁 40 格点击层与底图对齐检查。 |
 | `public/__monopoly_skin_visual_test.html` | 开发资料 | 环城大富翁中央场景换肤检查。 |
 | `public/__remaining_cards_visual_test.html` | 开发资料 | 其余卡牌/凭证组件的集中视觉验收。 |
+| `public/__game_shell_visual_test.html` | 开发资料 | 统一游戏外壳视觉验收运行器；保留 `game` 与各游戏 `*State` URL 参数。 |
+| `public/visual-fixtures/fixture-state.js` | 开发资料 | 28 款游戏的基础视觉状态构造器。 |
+| `public/visual-fixtures/fixture-scenarios.js` | 开发资料 | URL 场景变体、演示事件和交互种子；由外壳运行器注入依赖调用。 |
 
 ## 9. 自动化测试
 
 | 文件 | 状态 | 用途 |
 | --- | --- | --- |
-| `test/regression.test.js` | 测试必需 | 全项目综合回归；覆盖注册表、房间协议、旧游戏规则和跨模块行为。 |
+| `test/regression/*.test.js` | 测试必需 | 按核心协议与游戏域拆分的全项目综合回归；保留原有测试标题与断言。 |
+| `test/support/regression.helper` | 测试必需 | 综合回归共享夹具、引擎导入和通用推进辅助；使用无扩展名避免被 Node 测试发现器误当成测试文件。 |
 | `test/acquire-official.test.js` | 测试必需 | 并购设置、集团、股票、合并、红利和完整对局。 |
 | `test/avalon-official.test.js` | 测试必需 | 阿瓦隆人数、任务配置、身份隐私、刺杀和完整对局。 |
 | `test/camelup-official.test.js` | 测试必需 | 狂野骆驼堆叠、观众板、腿赛/终局下注和完整对局。 |
@@ -179,7 +209,10 @@
 | `scripts/browser-runtime-smoke.js` | 测试必需 | 自启临时 HTTP/WebSocket 与 Firefox，导入 28 个客户端，执行公开/私密房间、核心落子、传输断线自动重连、刷新恢复和离场资源释放的双标签生命周期，复核花火/谍报风云隐私隔离与四款身份牌的键盘/触屏收束，并跑 24 款游戏四档视口运行时烟测。 |
 | `scripts/chromium-runtime-smoke.js` | 测试必需 | 使用 Chromium DevTools Protocol 复核 28 个客户端导入、72 个桌面/移动视口，以及四款身份牌、花火和谍报风云的隐私/输入收束；需通过 `CHROMIUM_BIN` 或 `CHROME_BIN` 提供浏览器。 |
 | `scripts/performance-smoke.js` | 测试必需 | 检查首方静态资源体积、本地静态请求并发，以及大厅连接和多房间创建/加入/离开后的 WebSocket/房间清理；这是有界烟测，不是生产容量压测。 |
+| `scripts/report-audit.js` | 测试必需 | 从运行时注册表核对 28 份游戏报告、当前报告入口和规则矩阵，并检查 JSON 工件边界。 |
 | `scripts/release-audit.js` | 测试必需 | 检查版本与锁文件同步、必需发布脚本、systemd/Nginx 部署模板、`.gitignore` 和 Git 跟踪文件卫生。 |
+| `scripts/deployment-smoke.js` | 测试必需 | 以生产环境变量启动真实 `bin/www`，检查健康检查、安全响应头、WebSocket 建房和 SIGTERM 优雅退出。 |
+| `scripts/acceptance-gate.js` | 测试必需 | 按固定顺序执行依赖、语法、回归、Firefox、性能/清理、报告、发布和生产形态部署门禁，最后检查 `git diff --check`。 |
 
 ## 11. 测试与验收报告
 
@@ -187,6 +220,13 @@
 | --- | --- | --- |
 | `TEST_REPORTS/README.md` | 开发资料 | 所有验收报告的总览和口径。 |
 | `TEST_REPORTS/lobby.md` | 开发资料 | 大厅、房间、注册表和多人协议验收。 |
+| `TEST_REPORTS/lobby-history.md` | 开发资料 | 大厅历次批次日志，仅用于历史追溯，不作为当前状态来源。 |
+| `TEST_REPORTS/phase4-runtime.md` | 开发资料 | 浏览器运行时、性能预算、清理门禁和发布模板验收。 |
+| `TEST_REPORTS/artifacts.md` | 开发资料 | 说明跳棋/五子棋 JSON 动作追踪的生成位置和保留策略。 |
+| `TEST_REPORTS/rule-acceptance-matrix.md` | 开发资料 | 28 款游戏的规则版本、状态分级和正式验收入口。 |
+| `TEST_REPORTS/security.md` | 开发资料 | WebSocket、会话、私密信息和公网发布前安全风险清单。 |
+| `TEST_REPORTS/asset-license-clearance.md` | 开发资料 | BGG、网易、字体和原创素材的授权签字清单。 |
+| `TEST_REPORTS/release-baseline.md` | 开发资料 | 版本、提交、门禁输出和发布前人工签字基线。 |
 | `TEST_REPORTS/acquire.md` | 开发资料 | 并购规则与完整对局报告。 |
 | `TEST_REPORTS/aeroplane.md` | 开发资料 | 飞行棋规则、已知变体和验收记录。 |
 | `TEST_REPORTS/avalon.md` | 开发资料 | 阿瓦隆身份、任务和刺杀流程报告。 |
@@ -215,8 +255,7 @@
 | `TEST_REPORTS/werewolf.md` | 开发资料 | 狼人杀自动流程、座位、断线和隐私报告。 |
 | `TEST_REPORTS/witchtown.md` | 开发资料 | 猎巫镇审判、夜间和终局报告。 |
 | `TEST_REPORTS/xiangqi.md` | 开发资料 | 中国象棋走法、将军和重复局面报告。 |
-| `TEST_REPORTS/checkers-acceptance-runs.json` | 测试必需 | 跳棋验收脚本生成的完整动作与复现数据。 |
-| `TEST_REPORTS/gobang-acceptance-runs.json` | 测试必需 | 五子棋验收脚本生成的完整动作与复现数据。 |
+| `TEST_REPORTS/artifacts/*.json` | 测试工件（不入 Git） | 跳棋/五子棋专项脚本按需生成的完整动作与复现数据。 |
 
 ## 12. BGG 资源总说明
 
@@ -341,17 +380,21 @@
 - `PROJECT_REPORT.md` — 新游戏接入协议和开发教程。
 - `README.md` — 项目概览、启动和开发说明。
 - `TEST_REPORTS/README.md` — 专项测试报告总览。
+- `TEST_REPORTS/artifacts.md` — 专项 JSON 工件的生成和归档说明。
+- `TEST_REPORTS/asset-license-clearance.md` — 美术与字体授权清单。
+- `TEST_REPORTS/lobby.md` — 大厅当前协议、权限、隐私和自动化基线。
+- `TEST_REPORTS/lobby-history.md` — 大厅历次批次日志，仅用于追溯。
+- `TEST_REPORTS/phase4-runtime.md` — 浏览器运行时、性能预算和清理门禁。
 - `TEST_REPORTS/acquire.md` — 并购的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/aeroplane.md` — 飞行棋的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/avalon.md` — 阿瓦隆的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/camelup.md` — 狂野骆驼的规则、隐私、完整对局或视觉验收报告。
-- `TEST_REPORTS/checkers-acceptance-runs.json` — 专项验收脚本生成的完整动作和可复现运行记录。
 - `TEST_REPORTS/checkers.md` — 中国跳棋的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/chess.md` — 国际象棋的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/citadels.md` — 富饶之城的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/coup.md` — 政变的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/decrypto.md` — 谍报风云的规则、隐私、完整对局或视觉验收报告。
-- `TEST_REPORTS/gobang-acceptance-runs.json` — 专项验收脚本生成的完整动作和可复现运行记录。
+- `TEST_REPORTS/release-baseline.md` — 发布基线、门禁结果和人工签字清单。
 - `TEST_REPORTS/gobang.md` — 五子棋的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/guessnumber.md` — 猜数字的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/hanabi.md` — 花火的规则、隐私、完整对局或视觉验收报告。
@@ -359,7 +402,6 @@
 - `TEST_REPORTS/junqi.md` — 军棋的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/kingdomino.md` — 多米诺王国的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/lasvegas.md` — 拉斯维加斯的规则、隐私、完整对局或视觉验收报告。
-- `TEST_REPORTS/lobby.md` — lobby的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/loveletter.md` — 情书的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/magicalathlete.md` — 胡闹运动会的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/manila.md` — 马尼拉的规则、隐私、完整对局或视觉验收报告。
@@ -372,6 +414,8 @@
 - `TEST_REPORTS/werewolf.md` — 狼人杀自动辅助的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/witchtown.md` — 猎巫镇的规则、隐私、完整对局或视觉验收报告。
 - `TEST_REPORTS/xiangqi.md` — 中国象棋的规则、隐私、完整对局或视觉验收报告。
+- `TEST_REPORTS/rule-acceptance-matrix.md` — 28 款游戏规则验收矩阵。
+- `TEST_REPORTS/security.md` — 应用层安全验收与发布前风险清单。
 - `app.js` — Express 静态站点、WebSocket、玩家会话和房间广播总入口。
 - `bin/www` — 创建 HTTP 服务并启动 app.js 的 npm start 入口。
 - `package-lock.json` — 锁定 npm 依赖版本。
@@ -500,7 +544,10 @@
 - `public/fonts/ZhiMangXing-OFL.txt` — Zhi Mang Xing 字体 OFL 许可。
 - `public/fonts/ZhiMangXing-Regular.ttf` — 中国象棋河界书法字体。
 - `public/games/acquire/client.js` — 并购的浏览器客户端、渲染和交互。
-- `public/games/acquire/style.css` — 并购的专用界面样式。
+- `public/games/acquire/style.css` — 并购基础主题、外壳和通用组件样式。
+- `public/games/acquire/board.css` — 并购地图、地块、集团标记和手牌层。
+- `public/games/acquire/rail.css` — 并购股票、玩家侧栏和购买控件层。
+- `public/games/acquire/scenes.css` — 并购规则弹层、行动演出和响应式覆盖层。
 - `public/games/aeroplane/assets/SOURCE.txt` — 飞行棋棋盘和棋子素材来源说明。
 - `public/games/aeroplane/assets/blue-plane.svg` — 飞行棋正式使用的矢量飞机棋子。
 - `public/games/aeroplane/assets/board-sharp.png` — 飞行棋正式使用的高清棋盘。
@@ -511,6 +558,7 @@
 - `public/games/aeroplane/style.css` — 飞行棋的专用界面样式。
 - `public/games/avalon/client.js` — 阿瓦隆的浏览器客户端、渲染和交互。
 - `public/games/avalon/style.css` — 阿瓦隆的专用界面样式。
+- `public/games/avalon/scenes.css` — 阿瓦隆规则弹层、任务演出和响应式覆盖层。
 - `public/games/camelup/client.js` — 狂野骆驼的浏览器客户端、渲染和交互。
 - `public/games/camelup/style.css` — 狂野骆驼的专用界面样式。
 - `public/games/checkers/client.js` — 中国跳棋的浏览器客户端、渲染和交互。
@@ -521,11 +569,18 @@
 - `public/games/chess/room-frame.html` — 国际象棋正式隔离运行文档。
 - `public/games/chess/standalone.html` — 国际象棋不联网独立视觉测试页。
 - `public/games/citadels/client.js` — 富饶之城的浏览器客户端、渲染和交互。
-- `public/games/citadels/style.css` — 富饶之城的专用界面样式。
+- `public/games/citadels/style.css` — 富饶之城基础主题、桌面和通用组件样式。
+- `public/games/citadels/roles.css` — 富饶之城角色牌、角色艺术和身份焦点层。
+- `public/games/citadels/interactions.css` — 富饶之城选角、回合行动和规则交互层。
+- `public/games/citadels/responsive.css` — 富饶之城平板、手机和短横屏覆盖层。
+- `public/games/citadels/scenes.css` — 富饶之城行动确认、场景演出和减少动效覆盖层。
 - `public/games/common/grid-client.css` — 通用网格棋盘组件样式。
 - `public/games/common/grid-client.js` — 规则网格游戏的通用浏览器棋盘组件。
 - `public/games/coup/client.js` — 政变的浏览器客户端、渲染和交互。
-- `public/games/coup/style.css` — 政变的专用界面样式。
+- `public/games/coup/style.css` — 政变基础主题、桌面和通用组件样式。
+- `public/games/coup/private.css` — 政变私有影响力、卡背和牌面控制层。
+- `public/games/coup/scenes.css` — 政变行动控制台、质疑/阻挡演出和对话框。
+- `public/games/coup/responsive.css` — 政变手机、平板和短横屏覆盖层。
 - `public/games/decrypto/client.js` — 谍报风云的浏览器客户端、渲染和交互。
 - `public/games/decrypto/style.css` — 谍报风云的专用界面样式。
 - `public/games/gobang/client.js` — 五子棋的浏览器客户端、渲染和交互。
@@ -541,7 +596,8 @@
 - `public/games/kingdomino/client.js` — 多米诺王国的浏览器客户端、渲染和交互。
 - `public/games/kingdomino/style.css` — 多米诺王国的专用界面样式。
 - `public/games/lasvegas/client.js` — 拉斯维加斯的浏览器客户端、渲染和交互。
-- `public/games/lasvegas/style.css` — 拉斯维加斯的专用界面样式。
+- `public/games/lasvegas/style.css` — 拉斯维加斯基础主题、赌场版图和操作区样式。
+- `public/games/lasvegas/scenes.css` — 拉斯维加斯演出、派奖结算和响应式后置覆盖；按资源清单在基础样式后加载。
 - `public/games/loveletter/client.js` — 情书的浏览器客户端、渲染和交互。
 - `public/games/loveletter/style.css` — 情书的专用界面样式。
 - `public/games/magicalathlete/client.js` — 胡闹运动会的浏览器客户端、渲染和交互。
@@ -564,18 +620,32 @@
 - `public/games/werewolf/client.js` — 狼人杀自动辅助的浏览器客户端、渲染和交互。
 - `public/games/werewolf/style.css` — 狼人杀自动辅助的专用界面样式。
 - `public/games/witchtown/client.js` — 猎巫镇的浏览器客户端、渲染和交互。
-- `public/games/witchtown/style.css` — 猎巫镇的专用界面样式。
+- `public/games/witchtown/style.css` — 猎巫镇基础主题、审判桌和档案操作样式。
+- `public/games/witchtown/scenes.css` — 猎巫镇视觉重写、演出、结算和响应式后置覆盖；按资源清单在基础样式后加载。
 - `public/games/xiangqi/client.js` — 中国象棋的浏览器客户端、渲染和交互。
 - `public/games/xiangqi/style.css` — 中国象棋的专用界面样式。
 - `public/index.html` — 正式大厅 HTML。
 - `public/game-details.js` — 28 款游戏在创建房间前展示的规则摘要。
-- `public/script.js` — 正式大厅 WebSocket、双页创建浮窗、房间和动态游戏加载逻辑。
-- `public/style.css` — 正式大厅全局样式。
+- `public/script.js` — 正式大厅组合入口，编排 WebSocket、双页创建浮窗、房间和动态游戏加载逻辑。
+- `public/style.css` — 正式大厅基础样式；等待房间覆盖层位于 `public/lobby/waiting-room.css`。
+- `public/lobby/waiting-room.css` — 等待房间专用控制、座位、转场和移动端样式。
+- `public/lobby/catalog-data.js` — 大厅游戏、分组、模式与美术元数据。
+- `public/lobby/catalog-view.js` — 游戏目录、公开房间和筛选视图。
+- `public/lobby/game-loader.js` — 游戏客户端与样式的懒加载和缓存。
+- `public/lobby/transport.js` — 大厅 WebSocket 生命周期和消息封装。
+- `public/lobby/artwork.js` — 封面懒加载、卡片观察器和动效处理。
+- `public/lobby/room-dialog.js` — 创建房间规则/设置双页弹层和表单采集。
+- `public/lobby/waiting-room-scene.js` — 等待房间状态、座位几何和魔法阵渲染。
+- `public/lobby/game-entry-transition.js` — 等待桌到游戏桌的入场转场。
+- `public/lobby/study-controls.js` — 棋谱模式执棋方和公开摆棋控件。
+- `test/realtime-isolation.test.js` — 两个实时服务实例的房间、会话、编号和清理隔离验收。
 - `scripts/checkers-acceptance.js` — 中国跳棋完整对局验收与复现数据生成脚本。
 - `scripts/gobang-acceptance.js` — 五子棋完整对局验收与复现数据生成脚本。
 - `scripts/chromium-runtime-smoke.js` — Chromium 模块、视口、隐私和输入收束烟测。
 - `scripts/performance-smoke.js` — 静态资源预算、并发请求和 WebSocket 房间/连接清理烟测。
 - `scripts/release-audit.js` — 版本、锁文件、部署模板和发布文件卫生审计。
+- `scripts/deployment-smoke.js` — 生产形态进程、健康检查、WebSocket 建房和优雅退出烟测。
+- `scripts/acceptance-gate.js` — 最终本机验收门禁聚合入口。
 - `server/games/acquire/engine.js` — 并购的服务端权威规则引擎。
 - `server/games/acquire/index.js` — 并购的大厅 metadata/create 适配层。
 - `server/games/aeroplane/engine.js` — 飞行棋的服务端权威规则引擎。
@@ -589,6 +659,8 @@
 - `server/games/chess/engine.js` — 国际象棋的服务端权威规则引擎。
 - `server/games/chess/index.js` — 国际象棋的大厅 metadata/create 适配层。
 - `server/games/citadels/engine.js` — 富饶之城的服务端权威规则引擎。
+- `server/games/citadels/constants.js` — 富饶之城角色、城区牌和紫区效果的纯规则数据。
+- `server/games/citadels/role-actions.js` — 富饶之城角色行动事务处理；引擎保留阶段推进与状态投影。
 - `server/games/citadels/index.js` — 富饶之城的大厅 metadata/create 适配层。
 - `server/games/coup/engine.js` — 政变的服务端权威规则引擎。
 - `server/games/coup/index.js` — 政变的大厅 metadata/create 适配层。
@@ -612,6 +684,10 @@
 - `server/games/loveletter/engine.js` — 情书的服务端权威规则引擎。
 - `server/games/loveletter/index.js` — 情书的大厅 metadata/create 适配层。
 - `server/games/magicalathlete/engine.js` — 胡闹运动会的服务端权威规则引擎。
+- `server/games/magicalathlete/constants.js` — 胡闹运动会 CMYK 版赛道、计分、特殊格和 36 名运动员数据。
+- `server/games/magicalathlete/turn-resolution.js` — 胡闹运动会回合阶段、掷骰、能力提示和终局结算。
+- `server/games/magicalathlete/movement.js` — 胡闹运动会赛道移动、越过、停靠和特殊格效果。
+- `server/games/magicalathlete/state.js` — 胡闹运动会公开/私有状态投影和赢家计算。
 - `server/games/magicalathlete/index.js` — 胡闹运动会的大厅 metadata/create 适配层。
 - `server/games/manila/engine.js` — 马尼拉的服务端权威规则引擎。
 - `server/games/manila/index.js` — 马尼拉的大厅 metadata/create 适配层。
@@ -653,7 +729,7 @@
 - `test/modernart-official.test.js` — 现代艺术专项自动化规则测试。
 - `test/monopoly-official.test.js` — 环城大富翁专项自动化规则测试。
 - `test/monopolydeal-official.test.js` — 大富翁纸牌专项自动化规则测试。
-- `test/regression.test.js` — 全项目注册表、房间协议和游戏规则综合回归测试。
+- `test/regression/*.test.js` — 按游戏域拆分的全项目注册表、房间协议和游戏规则综合回归测试；共享夹具位于 `test/support/regression.helper`。
 - `test/scout-official.test.js` — 马戏星探专项自动化规则测试。
 - `test/splendor-official.test.js` — 璀璨宝石专项自动化规则测试。
 - `test/takefive-official.test.js` — 牛头王专项自动化规则测试。

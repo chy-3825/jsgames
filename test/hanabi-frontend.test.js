@@ -9,7 +9,8 @@ const scene = fs.readFileSync('public/games/hanabi/scene.js', 'utf8');
 const state = fs.readFileSync('public/games/hanabi/state.js', 'utf8');
 const template = fs.readFileSync('public/games/hanabi/template.js', 'utf8');
 const style = fs.readFileSync('public/games/hanabi/style.css', 'utf8');
-const fixture = fs.readFileSync('public/__game_shell_visual_test.html', 'utf8');
+const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 test('花火提示提交期间锁定目标和发送按钮并在响应后恢复', () => {
     assert.match(state, /submittingClue: false/);

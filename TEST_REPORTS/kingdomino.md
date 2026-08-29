@@ -44,7 +44,7 @@
 
 - `test/kingdomino-official.test.js`：6/6 通过；规则与前端专项合计 11/11 通过。
 - 覆盖牌组与人数设置、王冠顺序、重复/越权操作、反向摆放、计分、越界/重叠/无匹配拒绝、合法弃置限制和四人三局完整流程。
-- 全项目 `npm test`：414/414 通过。
+- 当次全项目 `npm test`：414/414 通过（历史快照）。当前基线见 [`release-baseline.md`](./release-baseline.md)。
 
 ## 本次修复
 

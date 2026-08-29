@@ -1,0 +1,383 @@
+/* Tablet, phone, and short-landscape layout overrides. Loaded after interactions.css. */
+@media (max-width: 1180px) {
+    .citadels-topbar {
+        grid-template-columns: minmax(210px, 1fr) auto;
+    }
+
+    .citadels-top-stats {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: center;
+    }
+
+    .citadels-header-actions {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .citadels-role-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 920px) {
+    .citadels-shell,
+    .citadels-app.is-draft-phase .citadels-shell,
+    .citadels-app.is-ended-phase .citadels-shell {
+        grid-template-areas:
+            "command"
+            "stage"
+            "rail";
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .citadels-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .citadels-rail {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    .citadels-log-panel {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 620px) {
+    .citadels-app {
+        padding: 13px 10px 28px;
+    }
+
+    .citadels-topbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+    }
+
+    .citadels-brand h1 {
+        font-size: 21px;
+    }
+
+    .citadels-brand p {
+        display: none;
+    }
+
+    .citadels-brand-mark {
+        width: 45px;
+        height: 45px;
+        flex-basis: 45px;
+        padding: 8px 6px 6px;
+    }
+
+    .citadels-top-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .citadels-stat {
+        min-width: 0;
+        padding: 7px 9px;
+    }
+
+    .citadels-stat:nth-child(3) {
+        border-left: 1px solid var(--line-soft);
+    }
+
+    .citadels-current-stat {
+        min-width: 0;
+    }
+
+    .citadels-command,
+    .citadels-stage {
+        padding: 13px;
+    }
+
+    .citadels-command-head h2 {
+        font-size: 18px;
+    }
+
+    .citadels-command-head p {
+        font-size: 10px;
+    }
+
+    .citadels-command-head,
+    .citadels-draft-top,
+    .citadels-role-hero,
+    .citadels-reaction {
+        display: grid;
+    }
+
+    .citadels-draft-track {
+        display: grid;
+        grid-template-columns: auto auto;
+        justify-content: start;
+    }
+
+    .citadels-draft-track i { display: none; }
+    .citadels-draft-track strong {
+        grid-column: 1 / -1;
+    }
+
+    .citadels-command-status {
+        position: absolute;
+        right: 23px;
+        margin-top: -3px;
+    }
+
+    .citadels-stage-summary {
+        justify-content: flex-start;
+        margin-top: 8px;
+    }
+
+    .citadels-section-heading {
+        display: block;
+    }
+
+    .citadels-section-meta {
+        display: block;
+        margin-top: 5px;
+    }
+
+    .citadels-city-row {
+        display: block;
+        padding-inline: 9px;
+    }
+
+    .citadels-city-row header {
+        display: flex;
+        padding: 3px 0 8px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+    }
+
+    .citadels-city-count {
+        display: flex;
+        width: 86px;
+        margin-left: auto;
+    }
+
+    .citadels-city-count i { flex: 1; }
+
+    .citadels-city-cards {
+        display: flex;
+        flex-wrap: nowrap;
+        margin-top: 8px;
+        padding-left: 0;
+        padding-bottom: 3px;
+        overflow-x: auto;
+    }
+
+    .citadels-city-card {
+        flex: 0 0 105px;
+    }
+
+    .citadels-role-track {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .citadels-hand-panel {
+        padding: 12px;
+    }
+
+    .citadels-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+    }
+
+    .citadels-district-card {
+        min-height: 165px;
+        padding: 9px;
+    }
+
+    .citadels-card-main strong {
+        font-size: 15px;
+    }
+
+    .citadels-rail {
+        grid-template-columns: 1fr;
+    }
+
+    .citadels-log-panel {
+        grid-column: auto;
+    }
+
+    .citadels-role-grid {
+        grid-template-columns: 1fr;
+        max-height: 320px;
+        overflow-y: auto;
+        padding-right: 3px;
+        scrollbar-color: #9b7048 rgba(24, 12, 17, .52);
+        scrollbar-width: thin;
+    }
+
+    .citadels-app.is-draft-phase .citadels-role-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .citadels-role-hero {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .citadels-my-role-strip {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-items: start;
+        min-width: 0;
+        margin: 2px 0 0;
+        padding: 8px 0 0;
+        border-top: 1px solid var(--line-soft);
+        border-left: 0;
+        text-align: left;
+    }
+
+    .citadels-role-confirm,
+    .citadels-build-confirm {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .citadels-role-confirm {
+        position: sticky;
+        z-index: 5;
+        bottom: 8px;
+        background: #3a252d;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, .4);
+    }
+
+    .citadels-resource-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .citadels-utility-action,
+    .citadels-end-turn-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .citadels-action-row .citadels-button {
+        flex: 1 1 auto;
+    }
+
+    .citadels-rules-dialog {
+        display: block;
+    }
+
+    .citadels-rules-art,
+    .citadels-rules-art img {
+        min-height: 190px;
+        height: 190px;
+    }
+
+    .citadels-rules-copy {
+        padding: 25px 20px 22px;
+    }
+
+    .citadels-rules-copy h2 {
+        font-size: 20px;
+    }
+
+    .citadels-footer {
+        display: grid;
+        gap: 4px;
+        padding-top: 13px;
+    }
+}
+
+@media (max-width: 920px) and (orientation: landscape) and (max-height: 520px) {
+    body.is-citadels-view { overflow: hidden; }
+    .citadels-app {
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        padding: 6px 8px;
+        overflow: hidden;
+    }
+    .citadels-topbar {
+        grid-template-columns: minmax(150px, 1fr) auto auto;
+        min-height: 42px;
+        gap: 8px;
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+    }
+    .citadels-brand-mark, .citadels-brand p { display: none; }
+    .citadels-brand h1 { margin-top: 1px; font-size: 18px; }
+    .citadels-top-stats { grid-column: auto; grid-row: auto; display: flex; width: auto; }
+    .citadels-stat { min-width: 62px; padding: 4px 6px; }
+    .citadels-current-stat { min-width: 94px; }
+    .citadels-header-actions { grid-column: auto; grid-row: auto; }
+    .citadels-shell,
+    .citadels-app.is-draft-phase .citadels-shell,
+    .citadels-app.is-ended-phase .citadels-shell {
+        grid-template-areas: "command stage";
+        grid-template-columns: minmax(270px, 36%) minmax(480px, 1fr);
+        height: calc(100svh - var(--game-shell-offset, 48px) - 65px);
+        min-height: 0;
+        gap: 8px;
+    }
+    .citadels-workspace { display: contents; }
+    .citadels-command,
+    .citadels-stage {
+        height: 100%;
+        min-height: 0;
+        max-height: calc(100svh - var(--game-shell-offset, 48px) - 55px);
+        padding: 9px;
+        overflow: auto;
+    }
+    .citadels-command-head h2 { font-size: 15px; }
+    .citadels-command-head p { margin-top: 3px; font-size: 9px; line-height: 1.35; }
+    .citadels-command-body { margin-top: 7px; }
+    .citadels-role-hero { min-height: 96px; grid-template-columns: 58px minmax(0, 1fr); padding: 6px; }
+    .citadels-role-art { width: 52px; height: 74px; }
+    .citadels-my-role-strip { display: none; }
+    .citadels-role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; }
+    .citadels-role-option { min-height: 88px; }
+    .citadels-role-track { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+    .citadels-city-register { max-height: 90px; overflow: auto; }
+    .citadels-hand-panel { margin-top: 6px; padding: 7px; }
+    .citadels-hand-panel .citadels-section-heading { display: none; }
+    .citadels-hand { margin-top: 0; }
+    .citadels-card-grid { grid-template-columns: repeat(4, minmax(110px, 1fr)); gap: 5px; }
+    .citadels-district-card { min-height: 132px; padding: 6px; }
+    .citadels-rail, .citadels-footer { display: none; }
+    .citadels-rules-dialog { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); overflow: auto; }
+}
+
+@media (max-width: 360px) {
+    .citadels-brand h1 {
+        font-size: 18px;
+    }
+
+    .citadels-brand h1 small {
+        display: none;
+    }
+
+    .citadels-header-actions {
+        gap: 4px;
+    }
+
+    .citadels-quiet-button,
+    .citadels-leave-button {
+        padding-inline: 8px;
+    }
+
+    .citadels-command,
+    .citadels-stage {
+        padding: 10px;
+    }
+
+    .citadels-card-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .citadels-district-card {
+        min-height: 150px;
+    }
+
+    .citadels-draft-track {
+        justify-content: flex-start;
+    }
+}
+

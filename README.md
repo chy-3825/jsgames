@@ -41,9 +41,9 @@
 | 现代艺术 | `modernart` | 3–5 |
 | 狂野骆驼 | `camelup` | 3–8 |
 | 胡闹运动会 | `magicalathlete` | 2–6 |
-| 狼人杀线下辅助 | `werewolf` | 1–9 |
+| 狼人杀线下辅助 | `werewolf` | 9 或 12 |
 
-大厅当前展示 28 个项目，依次分为“社交推理与流程辅助”“解密类”“棋类与棋盘游戏”“卡牌与策略桌游”四组；“解密类”包含谍报风云和猜数字。狼人杀线下辅助支持每人用自己的手机加入；为便于开发测试，只有 1 名真实用户时也可开局，并可在 9 个座位间自由切换。情书默认使用 BGG 许可牌面，类型仍为 `loveletter`。
+大厅当前展示 28 个项目，依次分为“社交推理与流程辅助”“解密类”“棋类与棋盘游戏”“卡牌与策略桌游”四组；“解密类”包含谍报风云和猜数字。狼人杀线下辅助支持每人用自己的手机加入，房间必须明确选择 9 人或 12 人局；单人研究模式不属于该游戏的线上人数范围。情书默认使用 BGG 许可牌面，类型仍为 `loveletter`。
 
 ## 启动
 
@@ -60,7 +60,7 @@ npm start
 http://localhost:3000
 ```
 
-运行自动化回归测试（2026-08-28 当前 494 项全部通过）：
+运行自动化回归测试（2026-08-29 当前 505 项全部通过）：
 
 ```bash
 npm test
@@ -78,7 +78,7 @@ npm run test:audit
 npm run test:syntax
 ```
 
-运行浏览器模块、公开/私密房间、双标签对局恢复、传输断线自动重连、离场资源释放、隐藏信息和键盘/触屏输入烟测（需要 Firefox，2026-08-28 为 28 个模块导入通过、双标签生命周期通过、传输重连通过、隐私输入检查通过、96/96 个视口通过）：
+运行浏览器模块、公开/私密房间、双标签对局恢复、传输断线自动重连、离场资源释放、隐藏信息和键盘/触屏输入烟测（需要 Firefox，2026-08-29 为 28 个模块导入通过、双标签生命周期通过、传输重连通过、隐私输入检查通过、96/96 个视口通过）：
 
 ```bash
 npm run test:browser
@@ -96,19 +96,39 @@ CHROMIUM_BIN=/path/to/chromium npm run test:browser:chromium
 npm run test:performance
 ```
 
+检查运行时注册表、28 份游戏报告、当前报告入口、规则矩阵和验收 JSON 工件边界：
+
+```bash
+npm run test:reports
+```
+
 检查版本号、锁文件、部署模板和仓库发布卫生：
 
 ```bash
 npm run test:release
 ```
 
+以生产环境变量启动真实 `bin/www`，检查 `/healthz`、安全头、WebSocket 建房和 SIGTERM 优雅退出：
+
+```bash
+npm run test:deploy
+```
+
+执行最终验收的本机可复现聚合门禁（不包含 `npm ci`、Chromium 可选门禁和目标环境操作）：
+
+```bash
+npm run test:acceptance
+```
+
+服务探活地址为 `/healthz`；生产反代前请设置 `JSGAMES_ALLOWED_ORIGINS` 为实际 HTTPS Origin。默认 WebSocket 会话要求重连令牌，消息、聊天、负载和 JSON 结构均有服务端上限。
+
 完整记录见 [`TEST_REPORTS/phase4-runtime.md`](./TEST_REPORTS/phase4-runtime.md)。
 
 发布前按 [`RELEASE_CHECKLIST.md`](./RELEASE_CHECKLIST.md) 执行版本、门禁、人工签字和回滚准备。
 
-仓库的 `.github/workflows/verify.yml` 会在推送或合并请求时执行 Node 20/22 语法、依赖安全、性能/清理、发布元数据审计和回归门禁，并执行 Firefox 浏览器烟测。
+仓库的 `.github/workflows/verify.yml` 会在推送或合并请求时执行 Node 20/22 语法、依赖安全、性能/清理、报告目录、发布元数据、生产形态部署和回归门禁，并执行 Firefox 浏览器烟测与差异检查。
 
-大厅会为当前浏览器标签页保存短期会话令牌。网络短暂断开后，页面会在 30 秒宽限期内自动恢复原玩家、房间和游戏视角；复制窗口不会抢占已在线窗口，而是保留新的玩家身份。也可以使用 `/?room=000001` 邀请链接或大厅里的 6 位房间号输入框直达房间。主动点击“离开房间”会结束该玩家在本局的席位。
+大厅会为当前浏览器标签页保存短期会话令牌。网络短暂断开后，页面会在 30 秒宽限期内自动恢复原玩家、房间和游戏视角；复制窗口不会抢占已在线窗口，而是保留新的玩家身份。人工输入玩家 ID 重连时，服务端还会校验原会话令牌，避免仅凭可见 ID 接管席位。也可以使用 `/?room=000001` 邀请链接或大厅里的 6 位房间号输入框直达房间。主动点击“离开房间”会结束该玩家在本局的席位。
 
 点击游戏卡片会先打开完整的规则摘要，再进入房间属性设置。所有游戏都可设置房间名称、人数上限和公开/仅邀请；狼人杀另可设置 9/12 人、警长流程与胜利条件，谍报风云另可设置加密员产生方式。只有点击“确定创建”后，浏览器才会向服务器创建房间。
 
@@ -117,17 +137,19 @@ npm run test:release
 ## 目录结构
 
 ```text
-app.js                         # Express 静态资源和 WebSocket 入口
+app.js                         # Express 静态资源和实时服务兼容入口
+server/realtime/               # 可实例化实时服务、局域网地址工具与双实例隔离
 server/room.js                 # 通用房间生命周期
 server/games/registry.js       # 游戏注册表
 server/games/<game>/index.js   # 游戏大厅适配层
 server/games/<game>/engine.js  # 游戏规则引擎
 public/index.html              # 大厅页面
-public/script.js               # 大厅连接、房间和游戏加载逻辑
+public/script.js               # 大厅组合入口：连接、房间和游戏加载编排
 public/game-details.js         # 28 款游戏的创建前规则摘要
 public/assets/covers/          # 28 张高清横版封面与 thumbs/ 下的大厅缩略图
 deploy/                        # systemd、Nginx 与云安全组部署模板
-public/style.css               # 大厅样式
+public/style.css               # 大厅基础样式
+public/lobby/                  # 大厅目录、传输、加载器、视图、弹层、等待房间和转场模块
 public/games/<game>/           # 每款游戏的独立前端模块
   client.js                    # 协议入口与生命周期，导出 createGameClient
   state.js                     # 可变视图模型与派生状态
@@ -137,12 +159,16 @@ public/games/<game>/           # 每款游戏的独立前端模块
   actions.js                   # 输入、按钮和提交动作
   constants.js                 # 常量（可选；牛头王由 cards.js 集中维护）
   cards.js                     # 卡牌数据/牌面标记（卡牌游戏可选）
-  style.css                    # 游戏专用样式（可选）
+  style.css                    # 游戏基础样式（可选）
+  board.css / scenes.css       # 按职责拆出的版图、场景或响应式样式（可选）
 public/games/common/           # 可复用的网格游戏前端组件
-test/regression.test.js        # 规则和大厅协议回归测试
+test/regression/*.test.js      # 按域拆分的规则和大厅协议回归测试
+test/support/regression.helper # 综合回归共享夹具（不参与测试发现）
 test/*-official.test.js        # 各游戏官方规则专项测试
 PROJECT_REPORT.md              # 新游戏开发和大厅协议说明
 ```
+
+需要多层呈现的游戏会在 `game-manifest.js` 中按固定级联顺序加载基础、版图/私有信息、交互、场景和响应式样式；例如并购、富饶之城、政变和阿瓦隆的后置样式不会再塞回单一 `style.css`。胡闹运动会服务端还将常量、移动/特殊格、回合结算和状态投影分别放在同目录模块中，`engine.js` 只负责组装权威流程。
 
 国际象棋使用了额外的渲染隔离层：
 

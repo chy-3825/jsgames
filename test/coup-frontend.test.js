@@ -6,8 +6,10 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const client = ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
     .map(file => fs.readFileSync(path.join(root, 'public/games/coup', file), 'utf8')).join('\n');
-const css = fs.readFileSync(path.join(root, 'public/games/coup/style.css'), 'utf8');
-const visualFixture = fs.readFileSync(path.join(root, 'public/__game_shell_visual_test.html'), 'utf8');
+const css = ['style.css', 'private.css', 'scenes.css', 'responsive.css']
+    .map(file => fs.readFileSync(path.join(root, 'public/games/coup', file), 'utf8')).join('\n');
+const visualFixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
+    .map(file => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
 
 test('政变模态弹层具备焦点限定、恢复和背景隔离', () => {
     assert.match(client, /function trapOverlayFocus\(/);

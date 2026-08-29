@@ -9,7 +9,8 @@ const scene = fs.readFileSync('public/games/takefive/scene.js', 'utf8');
 const template = fs.readFileSync('public/games/takefive/template.js', 'utf8');
 const state = fs.readFileSync('public/games/takefive/state.js', 'utf8');
 const style = fs.readFileSync('public/games/takefive/style.css', 'utf8');
-const fixture = fs.readFileSync('public/__game_shell_visual_test.html', 'utf8');
+const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 test('牛头王选行失败后完整重绘并恢复确认操作', () => {
     assert.match(client, /if \(message\.type === 'error'\)[\s\S]*model\.rowChoiceSubmitting = false;[\s\S]*renderer\.render\(\);/);

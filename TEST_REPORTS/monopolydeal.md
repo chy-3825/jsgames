@@ -4,8 +4,8 @@
 
 - 状态：通过本轮正式规则验收，可进入下一款游戏。
 - 人数：2–5 人；本轮使用 5 人最大人数进行了 3 局完整流程测试。
-- 测试命令：`node --test test/monopolydeal-official.test.js`、`node --test test/regression.test.js`，随后执行项目全量 `npm test`。
-- 本轮专项：6/6 通过；项目回归：167/167 通过；与其他专项合并后的项目全量结果为 189/189 通过。
+- 测试命令：`node --test test/monopolydeal-official.test.js`、`node --test test/regression/monopolydeal.test.js`，随后执行项目全量 `npm test`。
+- 本轮专项：6/6 通过；当次项目回归：167/167 通过；与其他专项合并后的当次项目全量结果为 189/189 通过（历史快照）。
 - 规则依据：[Hasbro 游戏说明](https://instructions.hasbro.com/en-gb/instruction/monopoly-deal-card-game)、[Hasbro 牌组与起始流程 PDF](https://www.hasbro.com/common/documents/dad288661c4311ddbd0b0800200c9a66/6cde82515056900b10f41868ca079dc6.pdf)、[Hasbro 支付 FAQ](https://hasbro-new.custhelp.com/app/answers/detail/a_id/944/~/monopoly-deal---which-cards-can-i-use-to-pay-other-players%3F-%28e.g.-for-rent%2C)。
 
 ## 规则逐条核对
@@ -62,7 +62,7 @@
 
 - 现金、地产、万能地产和行动牌使用裁出的独立牌面，不再把整张组件合集当作卡面背景。
 - 银行账本、债务支付、回应和选择浮层仍显示实时名称、金额、颜色与可操作状态。
-- 原始 BGG 组件图保留在查看入口；来源与裁切记录见 `public/assets/bgg/SOURCES.md`。
+- 原始 BGG 组件图的来源与裁切记录保留在 `public/assets/bgg/SOURCES.md`；不参与运行的合集图片已按清理记录移至桌面归档。
 
 ## 第四批移动端验收（2026-08-27）
 

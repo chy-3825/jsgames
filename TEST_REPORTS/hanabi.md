@@ -3,7 +3,7 @@
 测试日期：2026-08-19  
 测试版本：五色基础版，不启用第六种多色牌或其他变体。  
 测试入口：大厅 `Room → HanabiSession → HanabiEngine`。  
-规则专项：[`test/hanabi-official.test.js`](../test/hanabi-official.test.js)，6/6 通过。规则与前端专项合计 10/10 通过。项目全量回归为 401/402；唯一失败是当前工作树中既有的狼人杀昼夜转场静态断言，与本轮花火文件无关。花火所属的短横屏统一回归单独运行通过。
+规则专项：[`test/hanabi-official.test.js`](../test/hanabi-official.test.js)，6/6 通过。规则与前端专项合计 10/10 通过。原报告中的 `401/402` 是当次历史运行快照；当前项目全量基线为 `505/505`，以 [`release-baseline.md`](./release-baseline.md) 为准。花火所属的短横屏统一回归单独运行通过。
 
 ## 结论
 

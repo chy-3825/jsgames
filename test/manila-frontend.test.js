@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const client = ['client.js', 'constants.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
     .map(file => fs.readFileSync(`public/games/manila/${file}`, 'utf8')).join('\n');
 const style = fs.readFileSync('public/games/manila/style.css', 'utf8');
-const fixture = fs.readFileSync('public/__game_shell_visual_test.html', 'utf8');
+const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 test('马尼拉提交后保留确认摘要并锁定全部表单控件', () => {
     assert.match(client, /if \(model\.actionPending \|\| model\.presentationPlaying\) return/);

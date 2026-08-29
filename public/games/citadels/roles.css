@@ -1,0 +1,288 @@
+/* Role art and role-card presentation. Loaded after style.css. */
+.citadels-role-hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: center;
+    min-height: 147px;
+    padding: 11px;
+    border: 1px solid rgba(211, 170, 92, .26);
+    border-left: 3px solid var(--role-color, var(--gold));
+    background: linear-gradient(145deg, rgba(26, 13, 19, .72), rgba(65, 34, 45, .35));
+}
+
+.citadels-role-hero-copy {
+    display: grid;
+    align-content: center;
+    min-width: 0;
+    gap: 5px;
+}
+
+.citadels-role-hero-copy strong {
+    color: var(--paper);
+    font-family: "Songti SC", "STSong", Georgia, serif;
+    font-size: 21px;
+}
+
+.citadels-role-hero-copy p {
+    max-width: 650px;
+    margin: 0;
+    color: var(--paper-muted);
+    font-size: 10px;
+    line-height: 1.55;
+}
+
+.citadels-role-hero-copy > small {
+    color: var(--role-color, var(--gold-bright));
+    font-size: 9px;
+}
+
+.citadels-my-role-strip {
+    display: grid;
+    grid-column: 1 / -1;
+    justify-items: start;
+    gap: 4px;
+    min-width: 0;
+    margin: 0;
+    padding: 8px 0 0;
+    border-top: 1px solid var(--line-soft);
+    color: var(--paper-muted);
+    font-size: 8px;
+    text-align: left;
+}
+
+.citadels-my-role-strip b {
+    color: var(--gold-bright);
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.citadels-role-placeholder {
+    display: grid;
+    width: 92px;
+    height: 125px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: Georgia, serif;
+    font-size: 32px;
+}
+
+.citadels-role-art {
+    position: relative;
+    display: block;
+    width: 92px;
+    height: 125px;
+    flex: 0 0 auto;
+    overflow: hidden;
+    border: 1px solid var(--role-color, var(--gold));
+    border-radius: 4px;
+    background: #2d1b23;
+    box-shadow: 5px 7px 13px rgba(0, 0, 0, .28);
+    isolation: isolate;
+}
+
+.citadels-role-art img {
+    position: absolute;
+    z-index: 0;
+    display: block;
+    width: 400%;
+    height: 200%;
+    max-width: none;
+    object-fit: fill;
+}
+
+.citadels-role-art::after {
+    position: absolute;
+    z-index: 1;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 32%;
+    background: linear-gradient(transparent 0, rgba(22, 10, 15, .92) 30%, #160b11 62%);
+    content: '';
+}
+
+.citadels-role-art-label {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 25px;
+    padding: 4px 6px;
+    border-bottom: 1px solid color-mix(in srgb, var(--role-color) 60%, transparent);
+    background: linear-gradient(90deg, rgba(30, 14, 21, .97), rgba(53, 28, 39, .9));
+    color: var(--paper);
+}
+
+.citadels-role-art-label b {
+    display: grid;
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--role-color, var(--gold));
+    border-radius: 50%;
+    color: var(--role-color, var(--gold));
+    font: 700 9px Georgia, serif;
+}
+
+.citadels-role-art-label strong {
+    overflow: hidden;
+    font-family: "Songti SC", "STSong", serif;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.citadels-role-art-mini {
+    width: 56px;
+    height: 80px;
+    border-color: color-mix(in srgb, var(--role-color) 55%, rgba(238, 229, 209, .35));
+    box-shadow: 3px 5px 9px rgba(0, 0, 0, .24);
+}
+
+.citadels-role-art-mini .citadels-role-art-label {
+    justify-content: center;
+    min-height: 18px;
+    padding: 2px;
+}
+
+.citadels-role-art-mini .citadels-role-art-label b { width: 14px; height: 14px; font-size: 7px; }
+.citadels-role-art-mini .citadels-role-art-label strong { display: none; }
+
+.citadels-role-art-draft {
+    width: 34px;
+    height: 49px;
+    border-color: rgba(238, 229, 209, .35);
+    border-radius: 3px;
+    box-shadow: 2px 3px 6px rgba(0, 0, 0, .22);
+}
+
+.citadels-role-art-draft .citadels-role-art-label {
+    justify-content: center;
+    min-height: 15px;
+    padding: 1px;
+}
+
+.citadels-role-art-draft .citadels-role-art-label b { width: 12px; height: 12px; font-size: 6px; }
+.citadels-role-art-draft .citadels-role-art-label strong { display: none; }
+
+.citadels-role-back {
+    position: relative;
+    display: block;
+    width: 42px;
+    height: 60px;
+    overflow: hidden;
+    border: 1px solid #b28a3f;
+    border-radius: 4px;
+    background: #152b39;
+    box-shadow: 3px 5px 9px rgba(0, 0, 0, .3);
+}
+
+.citadels-role-back img {
+    position: absolute;
+    left: -200%;
+    top: -131%;
+    display: block;
+    width: 495%;
+    height: 260%;
+    max-width: none;
+}
+
+.citadels-role-back::after {
+    position: absolute;
+    inset: 2px;
+    border: 1px solid rgba(239, 202, 105, .44);
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px rgba(4, 18, 27, .62);
+    content: '';
+}
+
+.citadels-role-back-draft {
+    width: 36px;
+    height: 51px;
+}
+
+.citadels-district-back {
+    position: relative;
+    display: inline-grid;
+    width: 38px;
+    height: 54px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid #bd9650;
+    border-radius: 4px;
+    background:
+        radial-gradient(circle at 50% 44%, rgba(95, 132, 151, .24), transparent 31%),
+        repeating-linear-gradient(45deg, transparent 0 5px, rgba(215, 175, 91, .08) 6px 7px),
+        linear-gradient(145deg, #183442, #281723 76%);
+    box-shadow: 2px 4px 7px rgba(0, 0, 0, .28), inset 0 0 0 3px #261825, inset 0 0 0 4px rgba(210, 169, 82, .58);
+}
+
+.citadels-district-back::before,
+.citadels-district-back::after {
+    position: absolute;
+    content: '';
+}
+
+.citadels-district-back::before {
+    inset: 5px;
+    border: 1px solid rgba(222, 185, 104, .55);
+    clip-path: polygon(0 7%, 7% 7%, 7% 0, 93% 0, 93% 7%, 100% 7%, 100% 93%, 93% 93%, 93% 100%, 7% 100%, 7% 93%, 0 93%);
+}
+
+.citadels-district-back::after {
+    right: 8px;
+    bottom: 10px;
+    left: 8px;
+    height: 18px;
+    background: #c69b4e;
+    clip-path: polygon(0 100%, 0 42%, 15% 42%, 15% 18%, 30% 18%, 30% 50%, 44% 50%, 44% 0, 58% 0, 58% 50%, 72% 50%, 72% 18%, 87% 18%, 87% 42%, 100% 42%, 100% 100%);
+    opacity: .72;
+}
+
+.citadels-district-back i {
+    position: absolute;
+    top: 10px;
+    width: 14px;
+    height: 14px;
+    border: 1px solid rgba(222, 185, 104, .62);
+    border-radius: 50%;
+}
+
+.citadels-district-back b {
+    z-index: 1;
+    margin-top: -13px;
+    color: #e1bd71;
+    font: 700 8px/1 Georgia, serif;
+}
+
+.citadels-district-back-micro {
+    width: 19px;
+    height: 27px;
+    flex: 0 0 19px;
+    border-radius: 2px;
+    box-shadow: 1px 2px 4px rgba(0, 0, 0, .28), inset 0 0 0 1px #261825, inset 0 0 0 2px rgba(210, 169, 82, .45);
+}
+
+.citadels-district-back-micro::before { inset: 3px; }
+.citadels-district-back-micro::after { right: 4px; bottom: 5px; left: 4px; height: 9px; }
+.citadels-district-back-micro i { top: 5px; width: 7px; height: 7px; }
+.citadels-district-back-micro b { display: none; }
+
+.citadels-role-art.role-art-1 img { left: 0; top: 0; }
+.citadels-role-art.role-art-2 img { left: -100%; top: 0; }
+.citadels-role-art.role-art-3 img { left: -200%; top: 0; }
+.citadels-role-art.role-art-4 img { left: -300%; top: 0; }
+.citadels-role-art.role-art-5 img { left: 0; top: -100%; }
+.citadels-role-art.role-art-6 img { left: -100%; top: -100%; }
+.citadels-role-art.role-art-7 img { left: -200%; top: -100%; }
+.citadels-role-art.role-art-8 img { left: -300%; top: -100%; }
+

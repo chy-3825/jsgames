@@ -159,7 +159,7 @@ async function closeServer(server, wss) {
 async function runHttpBurst(baseUrl) {
     const paths = [
         '/',
-        '/script.js?v=20260828-phase4-runtime-1',
+    '/script.js?v=20260829-architecture-1',
         '/style.css?v=20260827-seat-ring-v16',
         '/games/gobang/client.js?v=performance-smoke',
         '/games/junqi/client.js?v=performance-smoke',

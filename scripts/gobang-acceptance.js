@@ -136,7 +136,7 @@ function runSequence(roomId, sequence, checks = {}) {
         if (index < sequence.length - 1) assert.equal(result.ended, false, `${roomId}: 不应提前结束`);
     }
     assert.equal(session.engine.status, 'ended', `${roomId}: 完整对局必须自然结束`);
-    assertRejected(session, session.engine.winner?.id || 'black', { kind: 'place', x: 14, y: 14 }, /未开始/, `${roomId}: 终局后操作`);
+    assertRejected(session, session.engine.winner?.id || 'black', { kind: 'place', x: 14, y: 14 }, /已结束/, `${roomId}: 终局后操作`);
     if (checks.assertEnd) checks.assertEnd(session);
 
     const replayed = replay(roomId, moves);
@@ -278,7 +278,8 @@ function main() {
             explicitRestoreApi: typeof GobangEngine.prototype.restore === 'function',
         },
     };
-    const outputPath = path.join(__dirname, '..', 'TEST_REPORTS', 'gobang-acceptance-runs.json');
+    const outputPath = path.join(__dirname, '..', 'TEST_REPORTS', 'artifacts', 'gobang-acceptance-runs.json');
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`);
     console.log(JSON.stringify({
         completeGames: report.completeGames.map(game => ({ roomId: game.roomId, moves: game.moves.length, winner: game.winner, drawReason: game.drawReason })),

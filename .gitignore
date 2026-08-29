@@ -21,3 +21,6 @@ build/
 
 # Local cover-rendering drafts
 tmp/
+
+# Generated acceptance action traces; human-readable reports stay tracked.
+TEST_REPORTS/artifacts/*.json

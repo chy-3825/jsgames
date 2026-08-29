@@ -31,10 +31,16 @@ jobs:
         run: npm run test:audit
       - name: Performance and cleanup smoke
         run: npm run test:performance
+      - name: Report inventory and matrix audit
+        run: npm run test:reports
       - name: Release metadata and deployment audit
         run: npm run test:release
+      - name: Production-shaped deployment smoke
+        run: npm run test:deploy
       - name: Automated regression
         run: npm test
+      - name: Diff whitespace gate
+        run: git diff --check
 
   browser:
     name: Firefox browser smoke

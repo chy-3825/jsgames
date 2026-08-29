@@ -1,0 +1,143 @@
+const assert = require('node:assert/strict');
+const test = require('node:test');
+const fs = require('node:fs');
+const Room = require('../../server/room');
+const LoveLetter = require('../../server/games/loveletter');
+const LoveLetterEngine = require('../../server/games/loveletter/engine');
+const Coup = require('../../server/games/coup');
+const Chess = require('../../server/games/chess');
+const Xiangqi = require('../../server/games/xiangqi');
+const Jungle = require('../../server/games/jungle');
+const Gobang = require('../../server/games/gobang');
+const Checkers = require('../../server/games/checkers');
+const Monopoly = require('../../server/games/monopoly');
+const MonopolyDeal = require('../../server/games/monopolydeal');
+const MonopolyDealEngine = require('../../server/games/monopolydeal/engine');
+const GuessNumber = require('../../server/games/guessnumber');
+const Aeroplane = require('../../server/games/aeroplane');
+const Junqi = require('../../server/games/junqi');
+const TakeFive = require('../../server/games/takefive');
+const TakeFiveEngine = require('../../server/games/takefive/engine');
+const Splendor = require('../../server/games/splendor');
+const SplendorEngine = require('../../server/games/splendor/engine');
+const Hanabi = require('../../server/games/hanabi');
+const HanabiEngine = require('../../server/games/hanabi/engine');
+const Kingdomino = require('../../server/games/kingdomino');
+const KingdominoEngine = require('../../server/games/kingdomino/engine');
+const Acquire = require('../../server/games/acquire');
+const AcquireEngine = require('../../server/games/acquire/engine');
+const Citadels = require('../../server/games/citadels');
+const CitadelsEngine = require('../../server/games/citadels/engine');
+const Witchtown = require('../../server/games/witchtown');
+const WitchtownEngine = require('../../server/games/witchtown/engine');
+const LasVegas = require('../../server/games/lasvegas');
+const LasVegasEngine = require('../../server/games/lasvegas/engine');
+const Avalon = require('../../server/games/avalon');
+const AvalonEngine = require('../../server/games/avalon/engine');
+const Scout = require('../../server/games/scout');
+const ScoutEngine = require('../../server/games/scout/engine');
+const Decrypto = require('../../server/games/decrypto');
+const DecryptoEngine = require('../../server/games/decrypto/engine');
+const Manila = require('../../server/games/manila');
+const ManilaEngine = require('../../server/games/manila/engine');
+const ModernArt = require('../../server/games/modernart');
+const ModernArtEngine = require('../../server/games/modernart/engine');
+const CamelUp = require('../../server/games/camelup');
+const CamelUpEngine = require('../../server/games/camelup/engine');
+const MagicalAthlete = require('../../server/games/magicalathlete');
+const MagicalAthleteEngine = require('../../server/games/magicalathlete/engine');
+const Werewolf = require('../../server/games/werewolf');
+const WerewolfEngine = require('../../server/games/werewolf/engine');
+const registry = require('../../server/games/registry');
+const { GROUP_DEFINITIONS, GAME_GROUPS } = require('../../server/games/groups');
+
+const players = ids => ids.map(id => ({ id, name: id }));
+const readFrontendSource = game => ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+    .filter(file => fs.existsSync(`public/games/${game}/${file}`))
+    .map(file => fs.readFileSync(`public/games/${game}/${file}`, 'utf8')).join('\n');
+const readWitchtownClient = () => ['client.js', 'constants.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+    .map(file => fs.readFileSync(`public/games/witchtown/${file}`, 'utf8')).join('\n');
+const confirmAvalonRoles = game => {
+    if (game.phase !== 'roleReveal') return;
+    for (const player of game.players) assert.equal(game.handleAction(player.id, { kind: 'confirmRole' }).success, true);
+    assert.equal(game.phase, 'team');
+};
+const confirmDecryptoKeys = game => {
+    if (game.phase !== 'keycheck') return;
+    for (const player of game.players) if (!game.keyConfirmed[player.id]) assert.equal(game.handleAction(player.id, { kind: 'confirmKey' }).success, true);
+    assert.equal(game.phase, 'clue');
+};
+const confirmWitchtownDossiers = session => {
+    const game = session.engine;
+    if (game.phase !== 'dossier_review') return;
+    for (const player of game._alive()) if (!game.dossierReview.confirmations[player.id]) assert.equal(session.handleAction(player.id, { kind: 'confirmDossier' }).success, true);
+};
+const passWitchtownConfessions = session => {
+    const game = session.engine;
+    for (const player of game._alive().filter(item => !game.nightActions.confessions[item.id])) assert.equal(session.handleAction(player.id, { kind: 'passConfession' }).success, true);
+};
+const confirmedWerewolfNightAction = (game, playerId, action) => {
+    const staged = game.handleAction(playerId, { ...action, kind: 'stageNightAction' });
+    if (!staged.success) return staged;
+    const confirmed = game.handleAction(playerId, { kind: 'confirmNightAction' });
+    if (!confirmed.success) return confirmed;
+    if (game.getPlayerState(playerId).nightConfirmation?.stage === 'result') return game.handleAction(playerId, { kind: 'confirmSeerResult' });
+    return confirmed;
+};
+const chessEngine = () => {
+    const session = Chess.create('rules', players(['white', 'black']));
+    assert.equal(session.start().success, true);
+    return session.engine;
+};
+
+// --- Magical Athlete test helpers (official 2025 rules) ---
+const maAthlete = (game, index, id) => { const racer = game.racers[index]; racer.athleteId = id; racer.copiedPowers = []; return racer; };
+const maDraft = (game) => {
+    let guard = 0;
+    while (game.phase === 'draft' && guard++ < 300) {
+        const player = game.players[game.currentTurnIndex];
+        const result = game.handleAction(player.id, { kind: 'chooseAthlete', athleteId: game.draftPool[0].id });
+        assert.equal(result.success, true);
+    }
+};
+const maRaceSelect = (game) => {
+    let guard = 0;
+    while (game.phase === 'race_select' && guard++ < 300) {
+        const player = game.players[game.currentTurnIndex];
+        const picks = game.raceSelections[player.id] || [];
+        const card = player.team.find(item => !player.usedAthletes.includes(item.id) && !picks.includes(item.id));
+        assert.ok(card, 'race selection card exists');
+        const result = game.handleAction(player.id, { kind: 'selectRaceAthlete', athleteId: card.id });
+        assert.equal(result.success, true);
+    }
+};
+const maResolvePrompts = (game) => {
+    let guard = 0;
+    while (game.pending && guard++ < 40) {
+        const prompt = game.pending;
+        let result;
+        if (prompt.kind === 'eggPick') result = game.handleAction(prompt.playerId, { kind: 'eggPick', athleteId: prompt.pool[0] });
+        else if (prompt.kind === 'twinPick') result = game.handleAction(prompt.playerId, { kind: 'twinPick', athleteId: prompt.options[0] });
+        else if (prompt.kind === 'predict') { const target = game.racers.find(racer => racer.id !== prompt.racerId); result = game.handleAction(prompt.playerId, { kind: 'predict', targetRacerId: target.id }); }
+        else if (prompt.kind === 'copycatPick') result = game.handleAction(prompt.playerId, { kind: 'decide', targetRacerId: prompt.options[0] });
+        else if (prompt.kind === 'genius') result = game.handleAction(prompt.playerId, { kind: 'genius', guess: 3 });
+        else if (prompt.kind === 'magician' || prompt.kind === 'dicemongerReroll') result = game.handleAction(prompt.playerId, { kind: 'decide', reroll: false });
+        else result = game.handleAction(prompt.playerId, { kind: 'decide', use: false });
+        assert.equal(result.success, true, `${prompt.kind} resolves`);
+    }
+};
+const maAutoPlay = (game, maxSteps = 4000) => {
+    let guard = 0;
+    while (game.status === 'playing' && guard++ < maxSteps) {
+        if (game.pendingAcknowledgements?.length) { const acknowledgement = game.pendingAcknowledgements[0]; const result = game.handleAction(acknowledgement.playerId, { kind: 'acknowledgeElimination', acknowledgementId: acknowledgement.id }); assert.equal(result.success, true); }
+        else if (game.phase === 'draft') { const player = game.players[game.currentTurnIndex]; const result = game.handleAction(player.id, { kind: 'chooseAthlete', athleteId: game.draftPool[0].id }); assert.equal(result.success, true); }
+        else if (game.phase === 'race_select') { const player = game.players[game.currentTurnIndex]; const picks = game.raceSelections[player.id] || []; const card = player.team.find(item => !player.usedAthletes.includes(item.id) && !picks.includes(item.id)); const result = game.handleAction(player.id, { kind: 'selectRaceAthlete', athleteId: card.id }); assert.equal(result.success, true); }
+        else if (game.pending) maResolvePrompts(game);
+        else { const player = game.players[game.currentTurnIndex]; const racer = game.racers.find(item => item.playerId === player.id && item.finishOrder == null && !item.eliminated && !item.turnDoneThisRound); const result = game.handleAction(player.id, { kind: 'roll', athleteId: racer.athleteId }); assert.equal(result.success, true); }
+    }
+    return guard;
+};
+
+
+module.exports = { assert, test, fs, Room, LoveLetter, LoveLetterEngine, Coup, Chess, Xiangqi, Jungle, Gobang, Checkers, Monopoly, MonopolyDeal, MonopolyDealEngine, GuessNumber, Aeroplane, Junqi, TakeFive, TakeFiveEngine, Splendor, SplendorEngine, Hanabi, HanabiEngine, Kingdomino, KingdominoEngine, Acquire, AcquireEngine, Citadels, CitadelsEngine, Witchtown, WitchtownEngine, LasVegas, LasVegasEngine, Avalon, AvalonEngine, Scout, ScoutEngine, Decrypto, DecryptoEngine, Manila, ManilaEngine, ModernArt, ModernArtEngine, CamelUp, CamelUpEngine, MagicalAthlete, MagicalAthleteEngine, Werewolf, WerewolfEngine, registry, GROUP_DEFINITIONS, GAME_GROUPS, players, readFrontendSource, readWitchtownClient, confirmAvalonRoles, confirmDecryptoKeys, confirmWitchtownDossiers, passWitchtownConfessions, confirmedWerewolfNightAction, chessEngine, maAthlete, maDraft, maRaceSelect, maResolvePrompts, maAutoPlay };
+

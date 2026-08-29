@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#172b35">
     <title>桌游馆 · 在线游戏大厅</title>
     <link rel="stylesheet" href="style.css?v=20260827-seat-ring-v16">
+    <link rel="stylesheet" href="lobby/waiting-room.css?v=20260828-lobby-layer-1">
 </head>
 <body class="is-entry-view">
     <div id="app">
@@ -50,7 +51,7 @@
                         <div id="reconnectForm" class="reconnect-form" hidden>
                             <span class="reconnect-form-kicker">RECONNECT TEST</span>
                             <h3>这个房间已经开始了</h3>
-                            <p>如果你是刚刚断线的玩家，请输入进入房间时显示的玩家 ID，恢复原来的座位。</p>
+                            <p>如果你是刚刚断线的玩家，请输入进入房间时显示的玩家 ID；系统还会校验本浏览器的短期会话凭证，避免仅凭玩家 ID 接管座位。</p>
                             <label for="reconnectPlayerIdInput">玩家 ID</label>
                             <div class="join-lobby-code-row"><input id="reconnectPlayerIdInput" autocomplete="off" maxlength="24" placeholder="例如 P1A2B3C4"><button id="reconnectBtn" type="button">恢复座位 <span>→</span></button></div>
                             <p id="reconnectError" class="join-lobby-code-error" role="alert"></p>
@@ -138,6 +139,6 @@
 
         <div id="fatalErrorBox" class="fatal-error-box" style="display:none;"></div>
     </div>
-    <script type="module" src="script.js?v=20260828-phase4-runtime-1"></script>
+    <script type="module" src="script.js?v=20260829-architecture-1"></script>
 </body>
 </html>

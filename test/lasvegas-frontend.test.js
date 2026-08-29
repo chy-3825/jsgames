@@ -4,8 +4,10 @@ const fs = require('node:fs');
 
 const client = ['client.js', 'constants.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
     .map(file => fs.readFileSync(`public/games/lasvegas/${file}`, 'utf8')).join('\n');
-const style = fs.readFileSync('public/games/lasvegas/style.css', 'utf8');
-const fixture = fs.readFileSync('public/__game_shell_visual_test.html', 'utf8');
+const style = ['public/games/lasvegas/style.css', 'public/games/lasvegas/scenes.css']
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
+const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 test('拉斯维加斯掷骰与放置具备提交锁、处理中反馈和错误恢复', () => {
     assert.match(client, /model\.actionPending/);

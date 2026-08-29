@@ -18,7 +18,7 @@
 
 ## 三局完整对局
 
-三局都从正常创建 Room、加入两名玩家并调用 `Room.startGame()` 开始，所有成功动作都经由 `Room.handleGameAction()`，没有修改引擎棋盘或回合状态，并保存于 [`checkers-acceptance-runs.json`](./checkers-acceptance-runs.json)。
+三局都从正常创建 Room、加入两名玩家并调用 `Room.startGame()` 开始，所有成功动作都经由 `Room.handleGameAction()`，没有修改引擎棋盘或回合状态。完整动作序列由 [`scripts/checkers-acceptance.js`](../scripts/checkers-acceptance.js) 生成到未纳入 Git 的 [`artifacts/checkers-acceptance-runs.json`](./artifacts/checkers-acceptance-runs.json)；它是可选复现工件，不是运行时依赖。
 
 1. 正常局：134 个完整回合，乙方获胜；覆盖相邻移动、跳跃、目标角结算。
 2. 规则攻击局：127 个完整回合，甲方获胜；开局执行合法的两次连续跳跃并返回原位后主动结束，随后验证跳过对手棋子和终局。
@@ -64,4 +64,4 @@
 - 修正旧横屏公式中过度扣减高度的问题；844×390 下棋盘由约 140px 的不可用尺寸扩大为 260×300，六角星、121 个棋位和连续跳跃操作完整可见，文档尺寸严格为 844×390。
 - 667×375 更窄横屏仍保留 247×285 棋盘及连续跳跃按钮；非必要玩家摘要会自动隐藏。
 - 两档横屏规则卡均位于统一 48px 顶栏下方，关闭按钮为 44×44；三档视口运行时错误均为 0，且只有一个“回到大厅”。
-- 第三批完成后全项目 `npm test` 为 369/369 通过、0 失败。
+- 第三批完成后当次全项目 `npm test` 为 369/369 通过、0 失败（历史快照）。

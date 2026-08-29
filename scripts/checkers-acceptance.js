@@ -548,7 +548,8 @@ async function main() {
             reconnectRestored: protocol.reconnectRestored,
         },
     };
-    const outputPath = path.join(__dirname, '..', 'TEST_REPORTS', 'checkers-acceptance-runs.json');
+    const outputPath = path.join(__dirname, '..', 'TEST_REPORTS', 'artifacts', 'checkers-acceptance-runs.json');
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`);
     console.log(JSON.stringify({
         completeGames: report.completeGames.map(game => ({ roomId: game.roomId, moves: game.moves, winner: game.winner, metrics: game.metrics })),

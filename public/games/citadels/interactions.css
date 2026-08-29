@@ -1,0 +1,617 @@
+/* Turn actions, role choices, and rules overlay. Loaded after roles.css. */
+.citadels-action-section {
+    margin-top: 10px;
+    padding: 11px 12px;
+    border: 1px solid rgba(217, 206, 175, .13);
+    background: rgba(22, 10, 15, .34);
+}
+
+.citadels-action-section-head {
+    align-items: baseline;
+}
+
+.citadels-action-section-head span,
+.citadels-utility-action > div > span {
+    color: var(--gold);
+    font-size: 8px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.citadels-action-section-head strong,
+.citadels-utility-action strong {
+    color: var(--paper);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.citadels-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px;
+    margin-top: 9px;
+}
+
+.citadels-select {
+    display: grid;
+    flex: 1 1 180px;
+    gap: 4px;
+    min-width: 0;
+}
+
+.citadels-select span {
+    color: var(--paper-muted);
+    font-size: 8px;
+}
+
+.citadels-select select {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 9px;
+    border: 1px solid #725060;
+    border-radius: 3px;
+    outline: 0;
+    background: #301b24;
+    color: var(--paper);
+    font-size: 10px;
+}
+
+.citadels-select select:focus {
+    border-color: var(--gold);
+}
+
+.citadels-resource-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 9px;
+}
+
+.citadels-resource-grid .citadels-button {
+    min-width: 0;
+    padding-inline: 8px;
+}
+
+.citadels-action-copy,
+.citadels-utility-action small {
+    margin: 8px 0 0;
+    color: var(--paper-muted);
+    font-size: 9px;
+    line-height: 1.45;
+}
+
+.citadels-utility-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.citadels-utility-action > div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.citadels-utility-action small {
+    margin: 0;
+}
+
+.citadels-utility-action.is-warlord {
+    border-left: 2px solid var(--danger);
+}
+
+.citadels-end-turn-row {
+    align-items: center;
+    margin-top: 11px;
+    padding-top: 11px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.citadels-end-turn-row span {
+    color: var(--paper-muted);
+    font-size: 9px;
+}
+
+.citadels-draw-callout {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 10px;
+    padding: 9px 11px;
+    border-left: 2px solid var(--gold);
+    background: rgba(211, 170, 92, .08);
+}
+
+.citadels-draw-callout b {
+    color: var(--gold-bright);
+    font-size: 10px;
+}
+
+.citadels-reaction {
+    align-items: center;
+    margin-top: 10px;
+    padding: 11px;
+    border: 1px solid rgba(212, 132, 115, .42);
+    background: rgba(212, 132, 115, .08);
+}
+
+.citadels-reaction > div:nth-child(2) {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    margin-right: auto;
+}
+
+.citadels-reaction strong {
+    color: var(--paper);
+    font-size: 10px;
+}
+
+.citadels-reaction small {
+    color: var(--paper-muted);
+    font-size: 8px;
+}
+
+.citadels-waiting {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 53px;
+    padding: 11px 13px;
+    border: 1px solid rgba(217, 206, 175, .13);
+    background: rgba(22, 10, 15, .38);
+}
+
+.citadels-waiting > div {
+    display: grid;
+    gap: 4px;
+}
+
+.citadels-waiting strong {
+    color: var(--paper);
+    font-size: 10px;
+}
+
+.citadels-waiting small {
+    color: var(--paper-muted);
+    font-size: 9px;
+}
+
+.citadels-pulse {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 0 5px rgba(211, 170, 92, .12);
+}
+
+.citadels-draft-top {
+    align-items: center;
+    padding-bottom: 11px;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.citadels-draft-top > div {
+    display: grid;
+    gap: 5px;
+}
+
+.citadels-draft-top > .citadels-draft-track {
+    display: flex;
+}
+
+.citadels-draft-top > div strong {
+    color: var(--paper);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.citadels-draft-track {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    color: var(--paper-muted);
+    font-size: 8px;
+}
+
+.citadels-draft-component {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 8px 4px 5px;
+    border: 1px solid rgba(217, 206, 175, .13);
+    border-radius: 5px;
+    background: rgba(15, 9, 13, .36);
+}
+
+.citadels-draft-component > span:last-child {
+    display: grid;
+    gap: 2px;
+    min-width: 34px;
+}
+
+.citadels-draft-component b {
+    color: var(--gold-bright);
+    font: 700 16px/1 Georgia, serif;
+}
+
+.citadels-draft-component small {
+    color: var(--paper-muted);
+    font-size: 7px;
+    white-space: nowrap;
+}
+
+.citadels-role-stack {
+    position: relative;
+    display: block;
+    width: 40px;
+    height: 55px;
+    padding: 2px 0 0 2px;
+}
+
+.citadels-role-stack.is-pile::before,
+.citadels-role-stack.is-pile::after {
+    position: absolute;
+    width: 36px;
+    height: 51px;
+    border: 1px solid rgba(196, 153, 73, .58);
+    border-radius: 4px;
+    background: #1b3140;
+    content: '';
+}
+
+.citadels-role-stack.is-pile::before { top: 0; left: 4px; transform: rotate(3deg); }
+.citadels-role-stack.is-pile::after { top: 1px; left: 2px; transform: rotate(-2deg); }
+.citadels-role-stack .citadels-role-back { z-index: 1; }
+
+.citadels-draft-face-up {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 61px;
+    padding-left: 3px;
+}
+
+.citadels-draft-face-up > small {
+    margin-right: 2px;
+    color: var(--paper-muted);
+    font-size: 7px;
+    letter-spacing: .08em;
+    writing-mode: vertical-rl;
+}
+
+.citadels-draft-face-up > span {
+    display: block;
+}
+
+.citadels-role-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 11px;
+}
+
+.citadels-role-option {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 96px;
+    padding: 8px;
+    border: 1px solid rgba(217, 206, 175, .18);
+    border-left: 2px solid var(--role-color, var(--gold));
+    border-radius: 6px;
+    background: linear-gradient(130deg, rgba(67, 37, 49, .82), rgba(22, 10, 15, .72));
+    color: var(--paper);
+    text-align: left;
+    transition: background-color .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+.citadels-role-option:hover,
+.citadels-role-option:focus-visible {
+    border-color: var(--role-color, var(--gold));
+    background: rgba(255, 255, 255, .08);
+    transform: translateY(-1px);
+}
+
+.citadels-role-option.is-selected {
+    border-color: var(--role-color, var(--gold));
+    background: linear-gradient(130deg, rgba(92, 54, 67, .94), rgba(35, 17, 24, .92));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--role-color, var(--gold)) 14%, transparent), 0 10px 22px rgba(0, 0, 0, .2);
+    transform: translateY(-2px);
+}
+
+.citadels-role-option.is-discard {
+    border-left-color: var(--danger);
+}
+
+.citadels-role-option-copy {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+}
+
+.citadels-role-option-copy small {
+    overflow: hidden;
+    color: var(--role-color, var(--gold));
+    font-size: 7px;
+    letter-spacing: .08em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.citadels-role-option-copy strong {
+    overflow: hidden;
+    color: var(--paper);
+    font-family: "Songti SC", "STSong", Georgia, serif;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.citadels-role-option-copy em {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--paper-muted);
+    font-size: 8.5px;
+    font-style: normal;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.citadels-role-option-arrow {
+    color: var(--role-color, var(--gold));
+    font-family: Georgia, serif;
+    font-size: 20px;
+}
+
+.citadels-scoreboard {
+    display: grid;
+    gap: 5px;
+}
+
+.citadels-score-row {
+    display: grid;
+    grid-template-columns: 25px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(217, 206, 175, .12);
+    background: rgba(22, 10, 15, .38);
+}
+
+.citadels-score-row > b {
+    color: #7d8b82;
+    font-size: 9px;
+}
+
+.citadels-score-row > span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.citadels-score-row strong {
+    color: var(--paper);
+    font-size: 10px;
+}
+
+.citadels-score-row small {
+    color: var(--paper-muted);
+    font-size: 8px;
+}
+
+.citadels-score-row > em {
+    color: var(--gold-bright);
+    font-family: Georgia, serif;
+    font-size: 18px;
+    font-style: normal;
+}
+
+.citadels-score-row > em small {
+    margin-left: 2px;
+    color: var(--paper-muted);
+    font-family: inherit;
+}
+
+.citadels-score-row.is-winner {
+    border-color: rgba(211, 170, 92, .58);
+    background: rgba(211, 170, 92, .12);
+}
+
+.citadels-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    overflow: auto;
+    background: rgba(5, 9, 9, .8);
+    backdrop-filter: blur(8px);
+}
+
+.citadels-overlay.is-hidden {
+    display: none;
+}
+
+.citadels-rules-dialog {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(190px, .72fr) minmax(0, 1.28fr);
+    width: min(820px, 100%);
+    overflow: hidden;
+    border: 1px solid #aa8b4d;
+    border-radius: 6px;
+    background: var(--paper);
+    color: #332e2b;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .42);
+}
+
+.citadels-dialog-close {
+    position: absolute;
+    z-index: 1;
+    top: 10px;
+    right: 10px;
+    display: grid;
+    width: 29px;
+    height: 29px;
+    place-items: center;
+    border: 1px solid rgba(51, 46, 43, .35);
+    border-radius: 50%;
+    background: rgba(238, 229, 209, .72);
+    color: #332e2b;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.citadels-rules-art {
+    position: relative;
+    display: grid;
+    align-content: end;
+    min-height: 480px;
+    margin: 0;
+    background: #2a3732;
+}
+
+.citadels-rules-art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 480px;
+    object-fit: contain;
+    background: #2a3732;
+}
+
+.citadels-rules-art figcaption {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    align-self: end;
+    background: linear-gradient(transparent, rgba(20, 26, 24, .78));
+    padding: 8px 12px;
+    color: rgba(255, 255, 255, .78);
+    font-size: 8px;
+}
+
+.citadels-rules-copy {
+    padding: 34px 34px 29px;
+}
+
+.citadels-rules-copy .citadels-kicker {
+    color: #9b7a3e;
+}
+
+.citadels-rules-copy h2 {
+    margin-top: 8px;
+    color: #3a3430;
+    font-size: 23px;
+    line-height: 1.25;
+}
+
+.citadels-rules-copy ol {
+    display: grid;
+    gap: 11px;
+    margin: 20px 0 0;
+    padding-left: 22px;
+}
+
+.citadels-rules-copy li {
+    padding-left: 5px;
+    color: #655e58;
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.citadels-rules-copy li::marker {
+    color: #9b7a3e;
+    font-family: Georgia, serif;
+    font-size: 15px;
+}
+
+.citadels-rules-copy li b,
+.citadels-rules-copy li span {
+    display: block;
+}
+
+.citadels-rules-copy li b {
+    margin-bottom: 2px;
+    color: #3e3732;
+    font-size: 11px;
+}
+
+.citadels-rules-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 23px;
+    padding-top: 13px;
+    border-top: 1px solid #d0c2a9;
+    color: #82766a;
+    font-size: 8px;
+}
+
+.citadels-rules-facts span {
+    display: grid;
+    gap: 2px;
+}
+
+.citadels-rules-facts b {
+    color: #9b7a3e;
+    font-family: Georgia, serif;
+    font-size: 17px;
+}
+
+.role-rose { --role-color: #c27d72; }
+.role-amber { --role-color: #c59d55; }
+.role-violet { --role-color: #9a7ab0; }
+.role-gold { --role-color: #d3aa5c; }
+.role-blue { --role-color: #77a8b5; }
+.role-green { --role-color: #7bad88; }
+.role-sand { --role-color: #c6a16e; }
+.role-red { --role-color: #cf7667; }
+
+.color-noble { --city-color: #d2aa5e; }
+.color-religious { --city-color: #79a9b4; }
+.color-trade { --city-color: #78ae82; }
+.color-military { --city-color: #c97367; }
+.color-unique { --city-color: #987bb0; }
+.color-neutral { --city-color: #7d8b82; }
+
+.color-noble .citadels-card-top,
+.citadels-district-card.color-noble { --card-color: #d2aa5e; --card-line: rgba(210, 170, 94, .36); }
+.color-religious .citadels-card-top,
+.citadels-district-card.color-religious { --card-color: #79a9b4; --card-line: rgba(121, 169, 180, .36); }
+.color-trade .citadels-card-top,
+.citadels-district-card.color-trade { --card-color: #78ae82; --card-line: rgba(120, 174, 130, .36); }
+.color-military .citadels-card-top,
+.citadels-district-card.color-military { --card-color: #c97367; --card-line: rgba(201, 115, 103, .36); }
+.color-unique .citadels-card-top,
+.citadels-district-card.color-unique { --card-color: #987bb0; --card-line: rgba(152, 123, 176, .42); }
+
+.color-meter-noble { --city-color: #d2aa5e; }
+.color-meter-religious { --city-color: #79a9b4; }
+.color-meter-trade { --city-color: #78ae82; }
+.color-meter-military { --city-color: #c97367; }
+.color-meter-unique { --city-color: #987bb0; }
+
+.citadels-app.is-draft-phase .citadels-shell,
+.citadels-app.is-ended-phase .citadels-shell {
+    grid-template-areas:
+        "command command"
+        "stage rail";
+    grid-template-columns: minmax(0, 1fr) 330px;
+}
+
+.citadels-app.is-draft-phase .citadels-role-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+

@@ -58,7 +58,7 @@ function openClient(url) {
     });
 }
 
-test('断线玩家可按房间号和玩家 ID 恢复原座位，在线 ID 会被拒绝', async t => {
+test('断线玩家需凭房间号、玩家 ID 和会话令牌恢复原座位，在线 ID 会被拒绝', async t => {
     const server = http.createServer(app);
     const wss = app.startWebSocketServer(server);
     await waitForServer(server);
@@ -78,7 +78,7 @@ test('断线玩家可按房间号和玩家 ID 恢复原座位，在线 ID 会被
 
     const guest = await openClient(url);
     clients.push(guest);
-    await guest.waitFor(message => message.type === 'session');
+    const guestSession = await guest.waitFor(message => message.type === 'session');
     guest.sendJson({ type: 'joinRoom', roomId: created.roomId });
     const joined = await guest.waitFor(message => message.type === 'joinSuccess');
     assert.equal(created.room.players.length, 1);
@@ -118,6 +118,9 @@ test('断线玩家可按房间号和玩家 ID 恢复原座位，在线 ID 会被
     const required = await reconnecting.waitFor(message => message.type === 'reconnectRequired');
     assert.equal(required.roomId, created.roomId);
     reconnecting.sendJson({ type: 'reconnectRoom', roomId: created.roomId, playerId: hostSession.playerId });
+    const denied = await reconnecting.waitFor(message => message.type === 'reconnectFailed');
+    assert.match(denied.message, /重连凭证/);
+    reconnecting.sendJson({ type: 'reconnectRoom', roomId: created.roomId, playerId: hostSession.playerId, sessionToken: hostSession.sessionToken });
     const restored = await reconnecting.waitFor(message => message.type === 'reconnectSuccess');
     assert.equal(restored.playerId, hostSession.playerId);
     assert.equal(restored.room.players.find(player => player.id === hostSession.playerId).seatIndex, 0);
@@ -129,7 +132,7 @@ test('断线玩家可按房间号和玩家 ID 恢复原座位，在线 ID 会被
     const duplicate = await openClient(url);
     clients.push(duplicate);
     await duplicate.waitFor(message => message.type === 'session');
-    duplicate.sendJson({ type: 'reconnectRoom', roomId: created.roomId, playerId: joined.playerId });
+    duplicate.sendJson({ type: 'reconnectRoom', roomId: created.roomId, playerId: joined.playerId, sessionToken: guestSession.sessionToken });
     const duplicateResult = await duplicate.waitFor(message => message.type === 'reconnectFailed');
     assert.match(duplicateResult.message, /正在进行游戏/);
 });

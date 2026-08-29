@@ -8,7 +8,8 @@ const actions = fs.readFileSync('public/games/splendor/actions.js', 'utf8');
 const render = fs.readFileSync('public/games/splendor/render.js', 'utf8');
 const scene = fs.readFileSync('public/games/splendor/scene.js', 'utf8');
 const style = fs.readFileSync('public/games/splendor/style.css', 'utf8');
-const fixture = fs.readFileSync('public/__game_shell_visual_test.html', 'utf8');
+const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 test('璀璨宝石规则弹层隔离背景、限定焦点并归还焦点', () => {
     assert.match(actions, /rulesModal\.trapFocus/);

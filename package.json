@@ -10,7 +10,10 @@
     "test:browser:chromium": "node scripts/chromium-runtime-smoke.js",
     "test:performance": "node scripts/performance-smoke.js",
     "test:audit": "npm audit --omit=dev --audit-level=high",
-    "test:release": "node scripts/release-audit.js"
+    "test:reports": "node scripts/report-audit.js",
+    "test:release": "node scripts/release-audit.js",
+    "test:deploy": "node scripts/deployment-smoke.js",
+    "test:acceptance": "node scripts/acceptance-gate.js"
   },
   "dependencies": {
     "debug": "~2.6.9",

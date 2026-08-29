@@ -41,6 +41,12 @@ server/games/registry.js
 
 一般不需要修改 `app.js`、`server/room.js`、`public/script.js`。如果每加一个游戏都要改大厅主逻辑，说明游戏没有按协议接入。
 
+当前实现中，`app.js` 只保留 Express 静态资源和兼容组装；实时服务位于
+`server/realtime/create-realtime-server.js`，大厅目录、传输、加载器和视图位于
+`public/lobby/`。并购、阿瓦隆、富饶之城和政变的多层界面样式由
+`game-manifest.js` 按基础 → 专题 → 交互/场景 → 响应式顺序加载；胡闹运动会的
+规则数据、移动/特殊格、回合结算和状态投影也各自位于独立服务端模块。新增游戏仍只应接入注册表和自己的模块，不应把规则或界面重新堆回这些共享入口。
+
 ## 3. 大厅 WebSocket 消息
 
 前端大厅已经建立 WebSocket，游戏前端不需要也不应该再次 `new WebSocket()`。
@@ -63,7 +69,7 @@ server/games/registry.js
 { type: 'chat', message: '聊天内容' }
 { type: 'gameAction', action: { kind: '动作名' } }
 { type: 'resumeSession', sessionToken: '浏览器保存的会话令牌' }
-{ type: 'reconnectRoom', roomId: '123456', playerId: 'P1A2B3C4' }
+{ type: 'reconnectRoom', roomId: '123456', playerId: 'P1A2B3C4', sessionToken: '浏览器保存的会话令牌' }
 { type: 'gameAction', action: { kind: 'studySwitchSeat', seatIndex: 1 } }
 { type: 'gameAction', action: { kind: 'studySetup', op: 'place', x: 4, y: 4, pieceType: 'q', color: 'white' } }
 { type: 'gameAction', action: { kind: 'studyConfirmSetup' } }
@@ -71,7 +77,7 @@ server/games/registry.js
 
 服务器连接时会先发送 `session`。大厅把令牌保存到当前标签页的 `sessionStorage`；连接意外断开后，30 秒内可发送 `resumeSession` 恢复原玩家、房间和游戏状态。若另一个仍在线的窗口提交同一令牌，服务器拒绝接管并保留新窗口的临时身份。主动 `leaveRoom` 会结束席位，不应继续尝试恢复该房间。
 
-当前还提供一条便于无账号环境测试的手动重连链路：玩家进入房间后会看到服务端生成的访客 `playerId`。游戏开始后，普通 `joinRoom` 只返回 `reconnectRequired`，客户端再发送房间号和断线玩家 ID；服务端只允许恢复同一房间内已经断开的成员。在线 ID 会收到 `reconnectFailed`，不会顶掉原连接或产生重复玩家。非主动断线会保留座位并暂停房间动作与系统推进，恢复全部断线成员后广播 `roomResumed`。这条链路暂不执行强制认输；账号系统接入后可将 `playerId` 换成账号 ID。
+当前还提供一条便于无账号环境测试的手动重连链路：玩家进入房间后会看到服务端生成的访客 `playerId`。游戏开始后，普通 `joinRoom` 只返回 `reconnectRequired`，客户端再发送房间号、断线玩家 ID 和原浏览器会话令牌；服务端只允许恢复同一房间内已经断开的成员。在线 ID 会收到 `reconnectFailed`，不会顶掉原连接或产生重复玩家。非主动断线会保留座位并暂停房间动作与系统推进，恢复全部断线成员后广播 `roomResumed`。这条链路暂不执行强制认输；账号系统接入后可将 `playerId` 换成账号 ID。
 
 新游戏通常只需要发送 `gameAction`：
 
@@ -813,7 +819,7 @@ for f in public/games/*/*.js; do node --check "$f"; done
 node --check public/games/werewolf/client.js
 ```
 
-当前全量测试共 494 项，全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置、双页创建浮窗、移动端核心布局、封面懒加载、隐藏信息游戏离场收束、四款背牌身份严格按住查看、谍报风云推理笔记、解密类分组、棋谱模式、28 款游戏前端模块骨架审计、本地字体资源审计和璀璨宝石卡牌助手的显式依赖审计。`npm run test:audit` 提供高危依赖安全门禁（当前 0 vulnerabilities），`npm run test:syntax` 提供首方 JavaScript 语法门禁，`npm run test:browser` 提供 Firefox 浏览器模块/视口、双标签生命周期、传输断线自动重连、隐藏信息和键盘/触屏收束烟测，`npm run test:browser:chromium` 提供可选 Chromium 模块/视口和隐私输入收束烟测，`npm run test:performance` 提供静态资源预算、并发请求及 WebSocket 房间/连接清理烟测，`npm run test:release` 提供版本、部署模板和发布文件卫生审计。国际象棋另覆盖普通/棋谱模式隔离、房主鉴权、非法摆棋、状态重建、重复局面键、重复启动和玩家身份完整性。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js`、`test/*-frontend.test.js` 与 `test/regression.test.js` 持续验证。
+当前全量测试共 505 项，全部通过；其中包含房间名称、人数上限、公开/仅邀请、创建前特殊配置、双页创建浮窗、移动端核心布局、封面懒加载、隐藏信息游戏离场收束、四款背牌身份严格按住查看、谍报风云推理笔记、解密类分组、棋谱模式、28 款游戏前端模块骨架审计、拆分样式级联顺序、大厅组合入口边界、胡闹运动会领域模块边界、本地字体资源审计、璀璨宝石卡牌助手的显式依赖审计、实时服务双实例隔离和实时安全策略审计。`npm run test:audit` 提供高危依赖安全门禁（当前 0 vulnerabilities），`npm run test:syntax` 提供首方 JavaScript 语法门禁，`npm run test:browser` 提供 Firefox 浏览器模块/视口、双标签生命周期、传输断线自动重连、隐藏信息和键盘/触屏收束烟测，`npm run test:browser:chromium` 提供可选 Chromium 模块/视口和隐私输入收束烟测，`npm run test:performance` 提供静态资源预算、并发请求及 WebSocket 房间/连接清理烟测，`npm run test:reports` 提供注册表、报告集合和工件边界审计，`npm run test:release` 提供版本、部署模板和工作区文件卫生审计，`npm run test:deploy` 提供生产形态进程、健康检查、WebSocket 建房和 SIGTERM 收尾烟测，`npm run test:acceptance` 提供上述本机门禁的顺序化聚合入口。国际象棋另覆盖普通/棋谱模式隔离、房主鉴权、非法摆棋、状态重建、重复局面键、重复启动和玩家身份完整性。各游戏的官方规则专项、完整对局和隐私边界仍由对应 `test/*-official.test.js`、`test/*-frontend.test.js` 与 `test/regression/*.test.js` 持续验证，共享夹具位于 `test/support/regression.helper`。
 
 ## 15. BGG 美术资源接入
 

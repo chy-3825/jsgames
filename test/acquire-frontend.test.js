@@ -4,8 +4,10 @@ const fs = require('node:fs');
 
 const client = ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
     .map(file => fs.readFileSync(`public/games/acquire/${file}`, 'utf8')).join('\n');
-const style = fs.readFileSync('public/games/acquire/style.css', 'utf8');
-const fixture = fs.readFileSync('public/__game_shell_visual_test.html', 'utf8');
+const style = ['style.css', 'board.css', 'rail.css', 'scenes.css']
+    .map(file => fs.readFileSync(`public/games/acquire/${file}`, 'utf8')).join('\n');
+const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 test('并购所有行动具备提交锁和持久错误反馈', () => {
     assert.match(client, /actionPending: false/);

@@ -4,7 +4,7 @@
 
 - 状态：已完成 2–5 人正式规则化，包含 2 人特殊变体、官方牌组、起始标记、招募/招募并表演、轮次计分。
 - 标准局：3–5 人；2 人使用官方两轮变体。
-- `test/scout-official.test.js` 当前 7 项专项全部通过；`test/scout-frontend.test.js` 5 项全部通过；当前全量 `npm test` 共 435 项，435 项通过。
+- `test/scout-official.test.js` 当次 7 项专项全部通过；`test/scout-frontend.test.js` 5 项全部通过；当次全量 `npm test` 共 435 项，435 项通过。当前项目全量基线见 [`release-baseline.md`](./release-baseline.md)。
 - 最大人数 5 人独立完整对局 3 局全部从发牌、定向、五轮表演到最终计分结束；2 人特殊两轮变体也完成回归。
 - 规则依据：[Oink Games 官方 SCOUT 页面](https://oinkgames.com/en/games/analog/scout/)及[官方规则 PDF](https://www.hras.cz/user/related_files/new_edition_scout_rules_eng.pdf)。
 

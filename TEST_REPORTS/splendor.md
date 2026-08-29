@@ -3,7 +3,7 @@
 测试日期：2026-08-19  
 测试版本：官方基础版，不启用 Cities of Splendor、东方扩展、Marvel 或 Duel。  
 测试入口：大厅 `Room → SplendorSession → SplendorEngine`。  
-规则专项：[`test/splendor-official.test.js`](../test/splendor-official.test.js)，6/6 通过；规则与前端专项合计 11/11 通过。项目全量回归 408/408 通过。
+规则专项：[`test/splendor-official.test.js`](../test/splendor-official.test.js)，6/6 通过；规则与前端专项合计 11/11 通过。当次项目全量回归 408/408 通过；当前基线见 [`release-baseline.md`](./release-baseline.md)。
 
 ## 结论
 

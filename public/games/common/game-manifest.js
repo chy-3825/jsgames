@@ -15,14 +15,33 @@ const freezeAssets = assets => Object.freeze({
 const style = (path, version) => ({ path, version });
 
 export const GAME_ASSETS = Object.freeze({
-    acquire: freezeAssets({ clientPath: '/games/acquire/client.js', styles: [style('/games/acquire/style.css', '20260828-runtime-regression-1')] }),
+    acquire: freezeAssets({ clientPath: '/games/acquire/client.js', styles: [
+        style('/games/acquire/style.css', '20260828-runtime-regression-1'),
+        style('/games/acquire/board.css', '20260829-architecture-split-1'),
+        style('/games/acquire/rail.css', '20260829-architecture-split-1'),
+        style('/games/acquire/scenes.css', '20260829-architecture-split-1'),
+    ] }),
     aeroplane: freezeAssets({ clientPath: '/games/aeroplane/client.js', styles: [style('/games/aeroplane/style.css', '20260826-mobile-games-3')] }),
-    avalon: freezeAssets({ clientPath: '/games/avalon/client.js', styles: [style('/games/avalon/style.css', '20260827-hold-identity-2')] }),
+    avalon: freezeAssets({ clientPath: '/games/avalon/client.js', styles: [
+        style('/games/avalon/style.css', '20260827-hold-identity-2'),
+        style('/games/avalon/scenes.css', '20260829-architecture-split-1'),
+    ] }),
     camelup: freezeAssets({ clientPath: '/games/camelup/client.js', styles: [style('/games/camelup/style.css', '20260828-runtime-regression-1')] }),
     checkers: freezeAssets({ clientPath: '/games/checkers/client.js', styles: [style('/games/checkers/style.css', '20260826-mobile-games-3')] }),
     chess: freezeAssets({ clientPath: '/games/chess/lobby-client.js', styles: [style('/games/chess/chess3d.css', '20260826-mobile-games-2')] }),
-    citadels: freezeAssets({ clientPath: '/games/citadels/client.js', styles: [style('/games/citadels/style.css', '20260828-runtime-regression-1')] }),
-    coup: freezeAssets({ clientPath: '/games/coup/client.js', styles: [style('/games/coup/style.css', '20260827-settlement-scenes-1')] }),
+    citadels: freezeAssets({ clientPath: '/games/citadels/client.js', styles: [
+        style('/games/citadels/style.css', '20260828-runtime-regression-1'),
+        style('/games/citadels/roles.css', '20260829-architecture-split-1'),
+        style('/games/citadels/interactions.css', '20260829-architecture-split-1'),
+        style('/games/citadels/responsive.css', '20260829-architecture-split-1'),
+        style('/games/citadels/scenes.css', '20260829-architecture-split-1'),
+    ] }),
+    coup: freezeAssets({ clientPath: '/games/coup/client.js', styles: [
+        style('/games/coup/style.css', '20260827-settlement-scenes-1'),
+        style('/games/coup/private.css', '20260829-architecture-split-1'),
+        style('/games/coup/scenes.css', '20260829-architecture-split-1'),
+        style('/games/coup/responsive.css', '20260829-architecture-split-1'),
+    ] }),
     decrypto: freezeAssets({ clientPath: '/games/decrypto/client.js', styles: [style('/games/decrypto/style.css', '20260827-online-notebook-1')] }),
     gobang: freezeAssets({ clientPath: '/games/gobang/client.js', styles: [style('/games/gobang/style.css', '20260826-mobile-games-3')] }),
     guessnumber: freezeAssets({ clientPath: '/games/guessnumber/client.js', styles: [style('/games/guessnumber/style.css', '20260827-settlement-scene-1')] }),
@@ -30,7 +49,10 @@ export const GAME_ASSETS = Object.freeze({
     jungle: freezeAssets({ clientPath: '/games/jungle/client.js', styles: [style('/games/jungle/style.css', '20260826-mobile-games-3')] }),
     junqi: freezeAssets({ clientPath: '/games/junqi/client.js', styles: [style('/games/junqi/style.css', '20260826-mobile-games-2')] }),
     kingdomino: freezeAssets({ clientPath: '/games/kingdomino/client.js', styles: [style('/games/kingdomino/style.css', '20260827-kingdomino-mobile-1')] }),
-    lasvegas: freezeAssets({ clientPath: '/games/lasvegas/client.js', styles: [style('/games/lasvegas/style.css', '20260828-runtime-regression-1')] }),
+    lasvegas: freezeAssets({ clientPath: '/games/lasvegas/client.js', styles: [
+        style('/games/lasvegas/style.css', '20260828-runtime-regression-1'),
+        style('/games/lasvegas/scenes.css', '20260828-style-split-1'),
+    ] }),
     loveletter: freezeAssets({ clientPath: '/games/loveletter/client.js', styles: [style('/games/loveletter/style.css', '20260826-mobile-games-4')] }),
     magicalathlete: freezeAssets({ clientPath: '/games/magicalathlete/client.js', styles: [style('/games/magicalathlete/style.css', '20260828-runtime-regression-1')] }),
     manila: freezeAssets({ clientPath: '/games/manila/client.js', styles: [style('/games/manila/style.css', '20260828-runtime-regression-1')] }),
@@ -44,7 +66,10 @@ export const GAME_ASSETS = Object.freeze({
     splendor: freezeAssets({ clientPath: '/games/splendor/client.js', styles: [style('/games/splendor/style.css', '20260827-splendor-mobile-1')] }),
     takefive: freezeAssets({ clientPath: '/games/takefive/client.js', styles: [style('/games/takefive/style.css', '20260826-mobile-shell-1')] }),
     werewolf: freezeAssets({ clientPath: '/games/werewolf/client.js', styles: [style('/games/werewolf/style.css', '20260827-hold-identity-2')] }),
-    witchtown: freezeAssets({ clientPath: '/games/witchtown/client.js', styles: [style('/games/witchtown/style.css', '20260827-hold-identity-2')] }),
+    witchtown: freezeAssets({ clientPath: '/games/witchtown/client.js', styles: [
+        style('/games/witchtown/style.css', '20260827-hold-identity-2'),
+        style('/games/witchtown/scenes.css', '20260828-style-split-1'),
+    ] }),
     xiangqi: freezeAssets({ clientPath: '/games/xiangqi/client.js', styles: [style('/games/xiangqi/style.css', '20260826-mobile-games-2')] }),
 });
 
