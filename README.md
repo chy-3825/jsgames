@@ -96,6 +96,16 @@ CHROMIUM_BIN=/path/to/chromium npm run test:browser:chromium
 npm run test:performance
 ```
 
+执行工程质量门禁：
+
+```bash
+npm run test:lint
+npm run test:type
+npm run test:coverage
+```
+
+其中类型检查目前采用渐进式 `checkJs` 范围，覆盖实时安全策略和大厅目录数据；随着模块收口再扩大范围。
+
 检查运行时注册表、28 份游戏报告、当前报告入口、规则矩阵和验收 JSON 工件边界：
 
 ```bash
@@ -126,7 +136,7 @@ npm run test:acceptance
 
 发布前按 [`RELEASE_CHECKLIST.md`](./RELEASE_CHECKLIST.md) 执行版本、门禁、人工签字和回滚准备。
 
-仓库的 `.github/workflows/verify.yml` 会在推送或合并请求时执行 Node 20/22 语法、依赖安全、性能/清理、报告目录、发布元数据、生产形态部署和回归门禁，并执行 Firefox 浏览器烟测与差异检查。
+仓库的 `.github/workflows/verify.yml` 会在推送或合并请求时执行 Node 20/22 语法、ESLint、渐进式类型、依赖安全、覆盖率、性能/清理、报告目录、发布元数据、生产形态部署和回归门禁，并执行 Firefox、Chromium 浏览器烟测与差异检查。
 
 大厅会为当前浏览器标签页保存短期会话令牌。网络短暂断开后，页面会在 30 秒宽限期内自动恢复原玩家、房间和游戏视角；复制窗口不会抢占已在线窗口，而是保留新的玩家身份。人工输入玩家 ID 重连时，服务端还会校验原会话令牌，避免仅凭可见 ID 接管席位。也可以使用 `/?room=000001` 邀请链接或大厅里的 6 位房间号输入框直达房间。主动点击“离开房间”会结束该玩家在本局的席位。
 

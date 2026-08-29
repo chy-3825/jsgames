@@ -10,7 +10,10 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const gates = [
     ['dependency audit', ['run', 'test:audit']],
     ['syntax', ['run', 'test:syntax']],
+    ['lint', ['run', 'test:lint']],
+    ['type check', ['run', 'test:type']],
     ['regression', ['test']],
+    ['coverage', ['run', 'test:coverage']],
     ['Firefox browser smoke', ['run', 'test:browser']],
     ['performance and cleanup', ['run', 'test:performance']],
     ['report inventory', ['run', 'test:reports']],

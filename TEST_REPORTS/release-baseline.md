@@ -42,6 +42,9 @@ git diff --check
 - `npm run test:deploy`：通过；生产形态 `bin/www` 启动、`/healthz`、安全头、WebSocket 建房和 SIGTERM 优雅退出均通过。
 - `git diff --check`：通过。
 - `npm run test:acceptance`：通过；按固定顺序串联以上本机门禁并完成最终差异检查。
+- `npm run test:lint`：通过；ESLint 正确性基线无错误。
+- `npm run test:type`：通过；当前渐进式 `checkJs` 范围无错误。
+- `npm run test:coverage`：通过；语句/行 91.17%、分支 79.64%、函数 86.67%，高于当前门槛 60%/45%/60%。
 
 2026-08-29 第 2、3 批本机收口补充：新增 `npm run test:acceptance` 聚合入口；实时服务默认启用同源/显式 Origin 校验、256 KiB WebSocket `maxPayload`、JSON 深度/字段限制、会话/IP/房间消息限流、聊天长度/控制字符校验、30 秒心跳、健康检查和带令牌的人工重连。自动化新增跨 Origin、超大帧、聊天洪泛、健康头和策略单测；真实浏览器/设备、目标服务器 HTTPS/安全组和外部素材许可证仍需环境签字。
 

@@ -17,9 +17,12 @@
 npm ci
 npm run test:audit
 npm run test:syntax
+npm run test:lint
+npm run test:type
 npm test
+npm run test:coverage
 npm run test:browser
-# 可选但建议：CHROMIUM_BIN=/path/to/chromium npm run test:browser:chromium
+CHROMIUM_BIN=/path/to/chromium npm run test:browser:chromium
 npm run test:performance
 npm run test:reports
 npm run test:release
@@ -36,7 +39,8 @@ git diff --check
 `test:performance` 是本地有界压力和资源清理烟测：会检查首屏/主脚本/样式/Three.js 体积、静态请求并发、短时大厅连接并发，以及多房间创建/加入/离开后的连接和房间回收；它不是生产容量压测，生产容量仍需在预发布环境按真实规格执行。
 `test:release` 检查 `package.json` 与锁文件版本、必需发布脚本、systemd/Nginx 模板的本机反代与最小权限约束，以及 Git 跟踪文件中是否混入临时目录、环境变量或密钥/日志；它不能代替目标服务器上的 systemd、Nginx、HTTPS 和安全组实机检查。
 `test:deploy` 以 `NODE_ENV=production` 启动真实 `bin/www`，检查 `/healthz`、安全响应头、一次 WebSocket 建房和 SIGTERM 优雅退出；它不能代替目标服务器上的 systemd、Nginx、HTTPS、DNS 或安全组检查。
-`test:acceptance` 是本机最终验收聚合入口，会依次执行依赖、语法、回归、Firefox、性能/清理、报告、发布和生产形态部署门禁，并最后执行 `git diff --check`；它不自动执行 `npm ci`、Chromium 可选门禁或任何目标环境操作。
+`test:lint`、`test:type` 和 `test:coverage` 分别执行 ESLint 正确性检查、渐进式 JavaScript 类型检查和覆盖率阈值检查；类型范围会随模块完成度逐批扩大，不能把未纳入范围误写成全项目类型安全。
+`test:acceptance` 是本机最终验收聚合入口，会依次执行依赖、语法、lint、类型、回归、覆盖率、Firefox、性能/清理、报告、发布和生产形态部署门禁，并最后执行 `git diff --check`；它不自动执行 `npm ci`、Chromium 可选门禁或任何目标环境操作。
 
 生产启动前至少设置 `JSGAMES_ALLOWED_ORIGINS=https://你的域名`；保持默认的 WebSocket 负载、JSON 结构、消息/聊天限流、心跳和重连令牌策略。只有在受控本地兼容测试时才允许设置 `JSGAMES_REQUIRE_RECONNECT_TOKEN=false`，不得带入公网环境。
 

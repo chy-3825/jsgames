@@ -24,12 +24,14 @@
 | `bin/www` | 运行必需 | `npm start` 启动脚本；创建 HTTP 服务、挂接 WebSocket 并监听 3000 端口。 |
 | `package.json` | 运行必需 | npm 元数据、`start`/`test` 命令和依赖声明。 |
 | `package-lock.json` | 运行必需 | 锁定依赖的确切版本，保证重新安装结果一致。 |
+| `eslint.config.js` | 开发资料 | 混合 CommonJS/ES 模块的 JavaScript 正确性门禁配置。 |
+| `tsconfig.check.json` | 开发资料 | 渐进式 `checkJs` 类型检查范围；不产生构建输出。 |
 | `README.md` | 开发资料 | 项目概览、游戏清单、启动方法和核心目录说明；测试数量文字需要随版本更新。 |
 | `PROJECT_REPORT.md` | 开发资料 | 新游戏接入教程；定义大厅消息、服务端会话接口和前端客户端接口。 |
 | `GAME_GROUPS.md` | 开发资料 | 大厅四大分组、`playMode` 和分类维护规范。 |
 | `BGG_CARD_RESOURCES.md` | 开发资料 | 卡牌游戏的 BGG 美术资源选择、来源和使用记录。 |
 | `RELEASE_CHECKLIST.md` | 开发资料 | 发布前版本、自动化门禁、人工签字、预发布检查和回滚纪律。 |
-| `.github/workflows/verify.yml` | 开发资料 | 推送/合并请求的 Node 20/22 回归、性能/清理、发布元数据审计和 Firefox 浏览器烟测。 |
+| `.github/workflows/verify.yml` | 开发资料 | 推送/合并请求的 Node 20/22 质量、回归、性能/清理、发布元数据审计和 Firefox/Chromium 浏览器烟测。 |
 
 项目外还有 `/home/chy/桌面/jsgames综合开发与验收报告.md`，它是综合审计报告，不属于运行仓库。
 

@@ -27,6 +27,10 @@ jobs:
         run: npm ci
       - name: JavaScript syntax gate
         run: npm run test:syntax
+      - name: ESLint correctness gate
+        run: npm run test:lint
+      - name: JavaScript type gate
+        run: npm run test:type
       - name: Dependency security gate
         run: npm run test:audit
       - name: Performance and cleanup smoke
@@ -39,6 +43,8 @@ jobs:
         run: npm run test:deploy
       - name: Automated regression
         run: npm test
+      - name: Coverage threshold gate
+        run: npm run test:coverage
       - name: Diff whitespace gate
         run: git diff --check
 
@@ -64,3 +70,26 @@ jobs:
           fi
       - name: Browser module and viewport smoke
         run: npm run test:browser
+
+  chromium:
+    name: Chromium browser smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Ensure Chromium
+        run: |
+          if ! command -v chromium >/dev/null 2>&1 && ! command -v chromium-browser >/dev/null 2>&1 && ! command -v google-chrome >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y chromium
+          fi
+      - name: Browser module and viewport smoke
+        run: |
+          CHROMIUM_BIN="$(command -v chromium || command -v chromium-browser || command -v google-chrome)" npm run test:browser:chromium
