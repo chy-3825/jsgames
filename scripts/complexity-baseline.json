@@ -1,0 +1,9 @@
+{
+  "public/script.js": 1150,
+  "server/realtime/create-realtime-server.js": 1000,
+  "server/room.js": 750,
+  "public/games/witchtown/style.css": 1800,
+  "public/games/witchtown/scenes.css": 1600,
+  "public/games/lasvegas/style.css": 1700,
+  "public/games/lasvegas/scenes.css": 1650
+}

@@ -60,7 +60,7 @@ npm start
 http://localhost:3000
 ```
 
-运行自动化回归测试（2026-08-29 当前 505 项全部通过）：
+运行自动化回归测试（2026-08-29 当前 509 项全部通过）：
 
 ```bash
 npm test
@@ -102,6 +102,7 @@ npm run test:performance
 npm run test:lint
 npm run test:type
 npm run test:coverage
+npm run test:complexity
 ```
 
 其中类型检查目前采用渐进式 `checkJs` 范围，覆盖实时安全策略和大厅目录数据；随着模块收口再扩大范围。
@@ -149,6 +150,8 @@ npm run test:acceptance
 ```text
 app.js                         # Express 静态资源和实时服务兼容入口
 server/realtime/               # 可实例化实时服务、局域网地址工具与双实例隔离
+server/realtime/protocol.js    # 实时消息归一化与路由边界
+server/realtime/broadcast.js   # 大厅/房间广播边界
 server/room.js                 # 通用房间生命周期
 server/games/registry.js       # 游戏注册表
 server/games/<game>/index.js   # 游戏大厅适配层
@@ -158,6 +161,7 @@ public/script.js               # 大厅组合入口：连接、房间和游戏�
 public/game-details.js         # 28 款游戏的创建前规则摘要
 public/assets/covers/          # 28 张高清横版封面与 thumbs/ 下的大厅缩略图
 deploy/                        # systemd、Nginx 与云安全组部署模板
+scripts/complexity-audit.js    # 热点文件复杂度增长门禁
 public/style.css               # 大厅基础样式
 public/lobby/                  # 大厅目录、传输、加载器、视图、弹层、等待房间和转场模块
 public/games/<game>/           # 每款游戏的独立前端模块

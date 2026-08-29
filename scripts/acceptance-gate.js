@@ -12,6 +12,7 @@ const gates = [
     ['syntax', ['run', 'test:syntax']],
     ['lint', ['run', 'test:lint']],
     ['type check', ['run', 'test:type']],
+    ['complexity ratchet', ['run', 'test:complexity']],
     ['regression', ['test']],
     ['coverage', ['run', 'test:coverage']],
     ['Firefox browser smoke', ['run', 'test:browser']],

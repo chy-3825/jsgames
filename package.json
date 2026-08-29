@@ -13,6 +13,7 @@
     "test:lint": "eslint .",
     "test:type": "tsc -p tsconfig.check.json",
     "test:coverage": "c8 --reporter=text-summary --reporter=lcov --check-coverage --lines=60 --functions=60 --branches=45 --statements=60 npm test",
+    "test:complexity": "node scripts/complexity-audit.js",
     "test:reports": "node scripts/report-audit.js",
     "test:release": "node scripts/release-audit.js",
     "test:deploy": "node scripts/deployment-smoke.js",

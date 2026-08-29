@@ -31,6 +31,8 @@ jobs:
         run: npm run test:lint
       - name: JavaScript type gate
         run: npm run test:type
+      - name: Complexity ratchet gate
+        run: npm run test:complexity
       - name: Dependency security gate
         run: npm run test:audit
       - name: Performance and cleanup smoke

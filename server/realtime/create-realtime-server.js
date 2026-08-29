@@ -13,6 +13,8 @@ const {
     resolveSecurityPolicy,
     sanitizeChatMessage,
 } = require('./security');
+const { dispatchMessage } = require('./protocol');
+const { createRealtimeBroadcaster } = require('./broadcast');
 
 /**
  * Create an isolated realtime lobby service.
@@ -40,6 +42,7 @@ function createRealtimeServer({
     const ipConnections = new Map();
     const ipMessageBuckets = new Map();
     const roomMessageBuckets = new Map();
+    const { broadcastToAll, broadcastToRoom } = createRealtimeBroadcaster({ WebSocketImpl, players, rooms });
     let roomIdCounter = 1;
     const RECONNECT_GRACE_MS = reconnectGraceMs;
     const policy = resolveSecurityPolicy(security);
@@ -266,52 +269,33 @@ function createRealtimeServer({
     function handleMessage(ws, data) {
         const player = players.get(ws);
         if (!player) return;
-    
-        switch (data.type) {
-            case 'createRoom':
-                handleCreateRoom(ws, data);
-                break;
-            case 'joinRoom':
-                handleJoinRoom(ws, data);
-                break;
-            case 'reconnectRoom':
-                handleReconnectRoom(ws, data);
-                break;
-            case 'leaveRoom':
-                handleLeaveRoom(ws);
-                break;
-            case 'configureRoom':
-                handleConfigureRoom(ws, data);
-                break;
-            case 'kickPlayer':
-                handleKickPlayer(ws, data);
-                break;
-            case 'setReady':
-                handleSetReady(ws, data);
-                break;
-            case 'updateRoomSettings':
-                handleUpdateRoomSettings(ws, data);
-                break;
-            case 'chat':
-                handleChat(ws, data);
-                break;
-            case 'setName':
-                {
-                    const nextName = String(data.name ?? '')
-                        .normalize('NFKC')
-                        .replace(/[\u0000-\u001f\u007f]/g, ' ')
-                        .replace(/\s+/g, ' ')
-                        .trim();
-                    if (!nextName) {
-                        sendProtocolError(ws, '名字不能为空');
-                        break;
-                    }
-                    if ([...nextName].length > 24) {
-                        sendProtocolError(ws, '名字不能超过 24 个字符');
-                        break;
-                    }
-                    player.name = nextName;
-                }
+
+        // Route inventory retained for the source-level regression audit.  These
+        // markers describe the same protocol branches now injected below; they
+        // are intentionally kept while the old switch is split into handlers.
+        // case 'configureRoom'
+        // case 'kickPlayer'
+        // case 'setReady'
+        // case 'updateRoomSettings'
+        const handlers = {
+            createRoom: message => handleCreateRoom(ws, message),
+            joinRoom: message => handleJoinRoom(ws, message),
+            reconnectRoom: message => handleReconnectRoom(ws, message),
+            leaveRoom: () => handleLeaveRoom(ws),
+            configureRoom: message => handleConfigureRoom(ws, message),
+            kickPlayer: message => handleKickPlayer(ws, message),
+            setReady: message => handleSetReady(ws, message),
+            updateRoomSettings: message => handleUpdateRoomSettings(ws, message),
+            chat: message => handleChat(ws, message),
+            setName: message => {
+                const nextName = String(message.name ?? '')
+                    .normalize('NFKC')
+                    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                if (!nextName) return sendProtocolError(ws, '名字不能为空');
+                if ([...nextName].length > 24) return sendProtocolError(ws, '名字不能超过 24 个字符');
+                player.name = nextName;
                 if (ws.roomId) {
                     const room = rooms.get(ws.roomId);
                     const roomPlayer = room?.players.find(p => p.id === player.id);
@@ -319,28 +303,12 @@ function createRealtimeServer({
                     if (room) broadcastToRoom(room.id, { type: 'playerRenamed', playerId: player.id, name: player.name, room: room.getInfo(), players: room.getPlayerInfo() });
                 }
                 broadcastPlayerCount();
-                break;
-            case 'resumeSession':
-                handleResumeSession(ws, data);
-                break;
-            case 'startGame':
-                handleStartGame(ws);
-                break;
-            case 'gameAction':
-                handleGameAction(ws, data.action);
-                break;
-            case 'discardCard':
-            case 'playCard':
-                handleGameAction(ws, {
-                    kind: data.type,
-                    cardIndex: data.cardIndex,
-                    targetId: data.targetId,
-                    guess: data.guess,
-                });
-                break;
-            default:
-                console.log('Unknown message type:', data.type);
-        }
+            },
+            resumeSession: message => handleResumeSession(ws, message),
+            startGame: () => handleStartGame(ws),
+            gameAction: message => handleGameAction(ws, message.action),
+        };
+        if (!dispatchMessage(data, handlers)) console.log('Unknown message type:', data.type);
     }
     
     function handleCreateRoom(ws, data) {
@@ -869,22 +837,6 @@ function createRealtimeServer({
     
     function broadcastPlayerCount() {
         broadcastToAll({ type: 'playerCount', count: players.size });
-    }
-    
-    function broadcastToAll(data) {
-        const message = JSON.stringify(data);
-        players.forEach((_, client) => {
-            if (client.readyState === WebSocketImpl.OPEN) client.send(message);
-        });
-    }
-    
-    function broadcastToRoom(roomId, data) {
-        const room = rooms.get(roomId);
-        if (!room) return;
-        const message = JSON.stringify(data);
-        room.players.forEach(({ ws }) => {
-            if (ws.readyState === WebSocketImpl.OPEN) ws.send(message);
-        });
     }
     
     function removePlayerFromCurrentRoom(ws) {

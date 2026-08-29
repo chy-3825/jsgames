@@ -48,7 +48,7 @@ function main() {
     const lockRoot = packageLock.packages?.[''] || {};
     const requiredScripts = [
         'start', 'test', 'test:syntax', 'test:audit', 'test:browser',
-        'test:browser:chromium', 'test:performance', 'test:lint', 'test:type', 'test:coverage',
+        'test:browser:chromium', 'test:performance', 'test:lint', 'test:type', 'test:coverage', 'test:complexity',
         'test:reports', 'test:release', 'test:deploy', 'test:acceptance',
     ];
     const requiredFiles = [
@@ -56,6 +56,8 @@ function main() {
         'RELEASE_CHECKLIST.md', 'deploy/README.md', 'deploy/jsgames.service.example',
         'deploy/nginx-jsgames.conf.example', 'server/realtime/security.js', 'scripts/acceptance-gate.js', 'scripts/deployment-smoke.js',
         'eslint.config.js', 'tsconfig.check.json',
+        'server/realtime/protocol.js', 'server/realtime/broadcast.js',
+        'scripts/complexity-audit.js', 'scripts/complexity-baseline.json',
     ];
 
     check('package metadata', packageJson.name === 'jsgames' && packageJson.private === true, '项目必须保持私有发布包');

@@ -26,6 +26,8 @@
 | `package-lock.json` | 运行必需 | 锁定依赖的确切版本，保证重新安装结果一致。 |
 | `eslint.config.js` | 开发资料 | 混合 CommonJS/ES 模块的 JavaScript 正确性门禁配置。 |
 | `tsconfig.check.json` | 开发资料 | 渐进式 `checkJs` 类型检查范围；不产生构建输出。 |
+| `scripts/complexity-audit.js` | 测试必需 | 对已识别的大厅、实时服务、房间和高密度样式热点执行复杂度增长门禁。 |
+| `scripts/complexity-baseline.json` | 开发资料 | 复杂度棘轮的当前行数预算；只允许通过后续有证据的拆分降低或调整。 |
 | `README.md` | 开发资料 | 项目概览、游戏清单、启动方法和核心目录说明；测试数量文字需要随版本更新。 |
 | `PROJECT_REPORT.md` | 开发资料 | 新游戏接入教程；定义大厅消息、服务端会话接口和前端客户端接口。 |
 | `GAME_GROUPS.md` | 开发资料 | 大厅四大分组、`playMode` 和分类维护规范。 |
@@ -62,6 +64,8 @@
 | --- | --- | --- |
 | `server/room.js` | 运行必需 | 通用房间生命周期；校验房间名称、可见性、人数上限与游戏专属设置，创建游戏会话、转发动作、系统 tick 和玩家视角状态。 |
 | `server/realtime/create-realtime-server.js` | 运行必需 | 可实例化的实时大厅服务；封装 WebSocket 协议、会话/重连、房间路由、广播和定时 tick，每个实例拥有独立状态。 |
+| `server/realtime/protocol.js` | 运行必需 | 纯消息边界；归一化历史卡牌动作并把已验证的消息分派到实时服务处理器。 |
+| `server/realtime/broadcast.js` | 运行必需 | 实时广播边界；集中处理大厅/房间 JSON 编码和开放连接过滤。 |
 | `server/realtime/lan-ip.js` | 运行必需 | 局域网地址筛选与 `/api/ip` 使用的纯工具。 |
 | `server/realtime/security.js` | 运行必需 | WebSocket Origin、负载/JSON 结构、消息/聊天限流、IP 归一化和文本清洗策略。 |
 | `server/games/registry.js` | 运行必需 | 28 个正式游戏的唯一运行时注册表。 |
@@ -641,6 +645,8 @@
 - `public/lobby/game-entry-transition.js` — 等待桌到游戏桌的入场转场。
 - `public/lobby/study-controls.js` — 棋谱模式执棋方和公开摆棋控件。
 - `test/realtime-isolation.test.js` — 两个实时服务实例的房间、会话、编号和清理隔离验收。
+- `test/realtime-protocol.test.js` — 历史动作归一化和实时消息路由的纯单元验收。
+- `test/realtime-broadcast.test.js` — 大厅/房间广播的连接过滤和 JSON 编码验收。
 - `scripts/checkers-acceptance.js` — 中国跳棋完整对局验收与复现数据生成脚本。
 - `scripts/gobang-acceptance.js` — 五子棋完整对局验收与复现数据生成脚本。
 - `scripts/chromium-runtime-smoke.js` — Chromium 模块、视口、隐私和输入收束烟测。
