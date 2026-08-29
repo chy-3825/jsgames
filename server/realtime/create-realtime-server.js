@@ -15,6 +15,7 @@ const {
 } = require('./security');
 const { dispatchMessage } = require('./protocol');
 const { createRealtimeBroadcaster } = require('./broadcast');
+const { assertRoomStore, createMemoryRoomStore } = require('./room-store');
 
 /**
  * Create an isolated realtime lobby service.
@@ -32,12 +33,13 @@ function createRealtimeServer({
     trustProxy = process.env.JSGAMES_TRUST_PROXY === 'true',
     requireReconnectToken = process.env.JSGAMES_REQUIRE_RECONNECT_TOKEN !== 'false',
     security = {},
+    roomStore = createMemoryRoomStore(),
 } = {}) {
     let systemTick = null;
     let heartbeatTick = null;
     let wss = null;
     const players = new Map();
-    const rooms = new Map();
+    const rooms = assertRoomStore(roomStore);
     const sessions = new Map();
     const ipConnections = new Map();
     const ipMessageBuckets = new Map();

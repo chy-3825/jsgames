@@ -23,7 +23,7 @@
 | 重连凭证 | `reconnectRoom` 默认要求原 `sessionToken`，并使用常量时间比较；缺少令牌或令牌不匹配时拒绝。可用 `JSGAMES_REQUIRE_RECONNECT_TOKEN=false` 仅为受控本地兼容场景关闭 | 生产不得关闭令牌要求；评估升级为一次性短期令牌并避免在日志/截图中暴露令牌 |
 | HTTP 安全头 | 应用统一发送 CSP（当前为兼容视觉夹具保留 `unsafe-inline`）、`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`Permissions-Policy`；HTTPS 请求附加 HSTS，并禁用 `X-Powered-By` | 生产将视觉夹具脚本外置后移除 `unsafe-inline`；确认 Nginx HTTPS、HSTS 域名范围和 CSP 资源清单 |
 | 进程与状态 | 已补 `/healthz`、SIGTERM/SIGINT 收尾和 WebSocket 心跳；房间/会话仍为进程内存，重启会丢失对局 | 上线前决定“单实例可丢局”还是引入持久化；把健康结果接入监控并补空闲业务超时 |
-| 多实例 | 当前没有共享房间存储或粘性会话 | 禁止直接水平扩容，或先设计共享状态/路由与广播方案 |
+| 多实例 | 实时服务现通过 `server/realtime/room-store.js` 注入 Map 形状的房间存储；默认仍是进程内存，没有共享房间存储或粘性会话 | 禁止直接水平扩容；先选定 Redis/数据库等后端，补原子写入、快照版本、广播路由、RPO/RTO 和故障演练 |
 
 ## 验收方法
 

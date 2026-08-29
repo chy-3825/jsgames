@@ -10,6 +10,8 @@ Group=jsgames
 WorkingDirectory=/opt/jsgames
 Environment=NODE_ENV=production
 Environment=PORT=3000
+# Room state is process-local by default; do not run replicas until a durable
+# room-store adapter and shared realtime routing have been accepted.
 # Replace with the public HTTPS origin before enabling the service.
 # Environment=JSGAMES_ALLOWED_ORIGINS=https://table.example
 # Set true only when this process is reachable exclusively through the trusted Nginx proxy.

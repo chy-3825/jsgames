@@ -60,7 +60,7 @@ npm start
 http://localhost:3000
 ```
 
-运行自动化回归测试（2026-08-29 当前 509 项全部通过）：
+运行自动化回归测试（2026-08-29 当前 511 项全部通过）：
 
 ```bash
 npm test
@@ -149,7 +149,7 @@ npm run test:acceptance
 
 ```text
 app.js                         # Express 静态资源和实时服务兼容入口
-server/realtime/               # 可实例化实时服务、局域网地址工具与双实例隔离
+server/realtime/               # 可实例化实时服务、局域网地址工具、广播和存储边界
 server/realtime/protocol.js    # 实时消息归一化与路由边界
 server/realtime/broadcast.js   # 大厅/房间广播边界
 server/room.js                 # 通用房间生命周期

@@ -56,7 +56,7 @@ function main() {
         'RELEASE_CHECKLIST.md', 'deploy/README.md', 'deploy/jsgames.service.example',
         'deploy/nginx-jsgames.conf.example', 'server/realtime/security.js', 'scripts/acceptance-gate.js', 'scripts/deployment-smoke.js',
         'eslint.config.js', 'tsconfig.check.json',
-        'server/realtime/protocol.js', 'server/realtime/broadcast.js',
+        'server/realtime/protocol.js', 'server/realtime/broadcast.js', 'server/realtime/room-store.js',
         'scripts/complexity-audit.js', 'scripts/complexity-baseline.json',
     ];
 

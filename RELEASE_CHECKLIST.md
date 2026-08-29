@@ -60,6 +60,7 @@ git diff --check
 
 - [ ] 在预发布环境运行 `npm ci --omit=dev`（当前项目无运行时 dev 依赖，但保留该命令作为安装纪律）。
 - [ ] 按 [`deploy/README.md`](./deploy/README.md) 校验 systemd、Nginx WebSocket Upgrade、HTTPS 和安全组；应用端口只允许本机/内网访问。
+- [ ] 确认只运行单个实时进程；若要多实例，先完成 `room-store` 持久化、共享广播、粘性/路由策略和故障演练。
 - [ ] 通过 `systemctl is-active`、`ss -ltnp`、HTTP 首页和 WebSocket 创建房间四项检查后再切换流量。
 - [ ] 保留上一个可运行标签和数据库/配置备份；出现启动、WebSocket 或私密信息故障时回滚到上一标签并记录原因。
 

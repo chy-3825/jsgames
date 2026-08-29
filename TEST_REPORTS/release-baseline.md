@@ -45,6 +45,7 @@ git diff --check
 - `npm run test:lint`：通过；ESLint 正确性基线无错误。
 - `npm run test:type`：通过；当前渐进式 `checkJs` 范围无错误。
 - `npm run test:complexity`：通过；大厅入口、实时服务、通用房间和两款高密度样式均未超过当前行数棘轮预算。
+- 房间存储边界：`server/realtime/room-store.js` 的默认内存契约和注入校验通过；持久化后端、多实例广播和重启恢复仍未启用。
 - `npm run test:coverage`：通过；语句/行 91.34%、分支 79.71%、函数 86.41%，高于当前门槛 60%/45%/60%。
 
 2026-08-29 第 2、3 批本机收口补充：新增 `npm run test:acceptance` 聚合入口；实时服务默认启用同源/显式 Origin 校验、256 KiB WebSocket `maxPayload`、JSON 深度/字段限制、会话/IP/房间消息限流、聊天长度/控制字符校验、30 秒心跳、健康检查和带令牌的人工重连。自动化新增跨 Origin、超大帧、聊天洪泛、健康头和策略单测；真实浏览器/设备、目标服务器 HTTPS/安全组和外部素材许可证仍需环境签字。

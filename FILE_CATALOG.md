@@ -66,6 +66,7 @@
 | `server/realtime/create-realtime-server.js` | 运行必需 | 可实例化的实时大厅服务；封装 WebSocket 协议、会话/重连、房间路由、广播和定时 tick，每个实例拥有独立状态。 |
 | `server/realtime/protocol.js` | 运行必需 | 纯消息边界；归一化历史卡牌动作并把已验证的消息分派到实时服务处理器。 |
 | `server/realtime/broadcast.js` | 运行必需 | 实时广播边界；集中处理大厅/房间 JSON 编码和开放连接过滤。 |
+| `server/realtime/room-store.js` | 运行必需 | Map 形状的房间存储边界；默认进程内存实现，持久化/多实例适配器需另行满足原子写入和快照契约。 |
 | `server/realtime/lan-ip.js` | 运行必需 | 局域网地址筛选与 `/api/ip` 使用的纯工具。 |
 | `server/realtime/security.js` | 运行必需 | WebSocket Origin、负载/JSON 结构、消息/聊天限流、IP 归一化和文本清洗策略。 |
 | `server/games/registry.js` | 运行必需 | 28 个正式游戏的唯一运行时注册表。 |
@@ -647,6 +648,7 @@
 - `test/realtime-isolation.test.js` — 两个实时服务实例的房间、会话、编号和清理隔离验收。
 - `test/realtime-protocol.test.js` — 历史动作归一化和实时消息路由的纯单元验收。
 - `test/realtime-broadcast.test.js` — 大厅/房间广播的连接过滤和 JSON 编码验收。
+- `test/realtime-room-store.test.js` — 默认房间存储和未来持久化适配器契约验收。
 - `scripts/checkers-acceptance.js` — 中国跳棋完整对局验收与复现数据生成脚本。
 - `scripts/gobang-acceptance.js` — 五子棋完整对局验收与复现数据生成脚本。
 - `scripts/chromium-runtime-smoke.js` — Chromium 模块、视口、隐私和输入收束烟测。
