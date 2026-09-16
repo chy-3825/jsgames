@@ -4,7 +4,7 @@ import { createClientScope } from '../common/lifecycle.js';
 import { createModalController } from '../common/modal.js';
 import { loadStyles } from '../common/style-loader.js';
 import { createGuessNumberActions } from './actions.js';
-import { createGuessNumberModel } from './state.js';
+import { createGuessNumberModel, localizePresentation } from './state.js';
 import { createGuessNumberTemplate } from './template.js';
 import { createGuessNumberRenderer } from './render.js';
 import { createGuessNumberScene } from './scene.js';
@@ -23,7 +23,15 @@ export function createGameClient({ mount, send, addLog }) {
     const root = mount.querySelector('.gn-app');
     const rulesModal = createModalController({ root, overlay: getElement('rulesOverlay'), documentRef, windowRef, fallbackFocus: () => mount.querySelector('[data-ui="rules"]') });
     const renderer = createGuessNumberRenderer({ mount, model, getElement });
-    const scene = createGuessNumberScene({ mount, model, getElement, rulesModal, windowRef });
+    const scene = createGuessNumberScene({
+        mount,
+        model,
+        getElement,
+        rulesModal,
+        windowRef,
+        renderer,
+        onPresentationStart: () => rulesModal.setOpen(false),
+    });
     const actions = createGuessNumberActions({ mount, model, renderer, scene, rulesModal, send, addLog, windowRef });
     mount.addEventListener('click', actions.handleClick, { signal: scope.signal });
     windowRef.addEventListener('keydown', actions.handleKeydown, { signal: scope.signal });
@@ -35,8 +43,33 @@ export function createGameClient({ mount, send, addLog }) {
             model.actionLock.unlock();
             if (model.state.status === 'ended') model.guess = '';
             if (wasSubmitting) model.inputNotice = model.state.status === 'ended' ? '猜测正确，答案已解密' : '已收到反馈，可以继续输入下一次猜测';
+            const hasServerTimeline = Array.isArray(model.state.presentations) || Boolean(model.state.presentation);
+            if (hasServerTimeline) {
+                const presentation = model.state.presentation;
+                const presentations = model.state.presentations?.length
+                    ? model.state.presentations
+                    : presentation
+                        ? [presentation]
+                        : [];
+                const localNow = Date.now();
+                for (const batch of presentations.slice().sort((left, right) => Number(left.sequence) - Number(right.sequence))) {
+                    const sequence = Number(batch.sequence) || 0;
+                    if (sequence) model.lastPresentationSequence = Math.max(model.lastPresentationSequence, sequence);
+                    const localized = localizePresentation(batch, localNow);
+                    if (!localized) continue;
+                    const freshEvents = localized.events.filter(event => {
+                        const key = `${batch.transactionId ?? sequence}:${event.eventId ?? event.sequence ?? ''}:${event.kind}:${event.startedAt}`;
+                        if (model.presentationEventIds.has(key)) return false;
+                        model.presentationEventIds.add(key);
+                        return true;
+                    });
+                    if (freshEvents.length) scene.enqueuePresentation({ ...localized, events: freshEvents });
+                }
+            }
             renderer.render();
-            if (previousState?.status === 'playing' && model.state.status === 'ended') void scene.playEndScene(model.state);
+            // Keep the old state-diff scene only for servers that predate the
+            // authoritative presentation protocol.
+            if (!hasServerTimeline && previousState?.status === 'playing' && model.state.status === 'ended') void scene.playEndScene(model.state);
         }
         if (message.type === 'error') {
             model.actionLock.unlock();

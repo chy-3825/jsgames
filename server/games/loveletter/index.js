@@ -24,6 +24,7 @@ function sanitizeState(state, playerId, hand) {
             isCurrentTurn: player.isCurrentTurn,
         })),
         lastAction: sanitizeAction(state.lastAction, playerId),
+        seatReveals: (state.seatReveals || []).map(action => sanitizeAction(action, playerId)),
         myHand: hand || [],
         myId: playerId,
         myIsCurrentTurn: state.currentTurn === playerId,
@@ -33,7 +34,9 @@ function sanitizeState(state, playerId, hand) {
 function sanitizeAction(action, viewerId) {
     if (!action) return null;
     const privateFor = action.result?.privateFor;
-    if (!action.isPrivate && (!privateFor || privateFor === viewerId)) return action;
+    if (!action.isPrivate && (!privateFor || privateFor === viewerId)) {
+        return { ...action, result: sanitizeResult(action.result, true) };
+    }
     if (!action.isPrivate && privateFor && privateFor !== viewerId) {
         return { ...action, result: sanitizeResult(action.result, false) };
     }
@@ -50,12 +53,14 @@ function sanitizeAction(action, viewerId) {
 
 function sanitizeResult(result, owner = true) {
     if (!result) return result;
+    // Keep comparison/debug payloads out of the public action envelope.
+    const { revealedCards: _revealedCards, ...publicResult } = result;
     return {
-        ...result,
-        privateFor: owner ? result.privateFor : null,
-        privateMessage: owner ? result.privateMessage : null,
-        message: owner ? result.message : (result.publicMessage || '牧师查看了一张手牌'),
-        revealedCard: owner ? result.revealedCard : null,
+        ...publicResult,
+        privateFor: owner ? publicResult.privateFor : null,
+        privateMessage: owner ? publicResult.privateMessage : null,
+        message: owner ? publicResult.message : (publicResult.publicMessage || '牧师查看了手牌'),
+        revealedCard: owner ? publicResult.revealedCard : null,
     };
 }
 
@@ -77,6 +82,16 @@ class LoveLetterSession {
             return { success: false, message: '\u672a\u77e5\u7684\u60c5\u4e66\u52a8\u4f5c' };
         }
         return this.engine.playCard(playerId, action.cardIndex, action.targetId, action.guess);
+    }
+
+    handleSystemTick() {
+        const result = this.engine.handleSystemTick();
+        // Realtime ticks use the adapter-level `state` field as the signal
+        // that a room needs a broadcast.  Normal Love Letter actions expose
+        // `gameState` for historical compatibility, so mirror it here too;
+        // Room.getPlayerGameState still builds the viewer-specific payload.
+        if (result?.gameState && !result.state) result.state = result.gameState;
+        return result;
     }
 
     getPlayerState(playerId) {

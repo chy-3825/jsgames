@@ -77,7 +77,6 @@ export function createWitchTownRenderer({ mount, model, getElement }) {
         renderPrivate();
         renderPublicRole();
         renderHand();
-        renderPlayers();
         renderLog();
     }
 
@@ -203,7 +202,9 @@ export function createWitchTownRenderer({ mount, model, getElement }) {
             const health = Array.from({ length: 3 }, (_, index) => `<i class="${index < (player.health || 0) ? 'is-full' : ''}"></i>`).join('');
             const threshold = player.townHall?.id === 'george-burroughs' ? 8 : 7;
             const accusation = Math.min(threshold, player.redAccusations || 0);
-            return `<article class="witchtown-seat ${isCurrent ? 'is-current' : ''} ${isMe ? 'is-me' : ''} ${player.eliminated ? 'is-dead' : ''}"><div class="witchtown-seat-portrait"><span class="witchtown-seat-art" style="${townHallArtStyle(player.townHall)}" aria-hidden="true"></span><i>${String(player.seat || 0).padStart(2, '0')}</i>${player.id === state.blackCatOwnerId ? '<b class="witchtown-cat-mark" title="黑猫持有者">猫</b>' : ''}</div><div class="witchtown-seat-file"><header><div class="witchtown-seat-name"><strong>${esc(player.name)}${isMe ? '<em>我</em>' : ''}</strong><small>${isCurrent ? '正在受审' : player.eliminated ? '已离席' : player.isOnline === false ? '离线' : '等待证词'}</small></div>${identity}</header><div class="witchtown-seat-role" title="${esc(player.townHall?.description || '')}"><span>${esc(player.townHall?.name || '镇议会角色')}</span><b>${player.revealedTrialCount || 0} / ${player.trialCount || 0} 已揭示</b></div><div class="witchtown-public-trials">${revealedTrials || '<span>尚无公开审判牌</span>'}</div><div class="witchtown-accusation-line" style="--progress:${(accusation / threshold) * 100}%"><span><i></i></span><b>${player.redAccusations || 0}<small> / ${threshold} 指控</small></b></div><div class="witchtown-public-cards">${red}${blue}${exposed || ''}${!red && !blue && !exposed ? '<span class="witchtown-empty-chip">暂无公开附牌</span>' : ''}</div><div class="witchtown-seat-metrics"><span><span class="witchtown-health">${health}</span><small>生命</small></span><span><b>${player.trialCount || 0}</b><small>审判牌</small></span></div></div></article>`;
+            const status = isCurrent ? '正在受审' : player.eliminated ? '已离席' : player.isOnline === false ? '离线' : '';
+            const publicCards = `${red}${blue}${exposed || ''}`;
+            return `<article class="witchtown-seat ${isCurrent ? 'is-current' : ''} ${isMe ? 'is-me' : ''} ${player.eliminated ? 'is-dead' : ''}"><div class="witchtown-seat-file"><header><span class="witchtown-seat-number">${String(player.seat || 0).padStart(2, '0')}</span><div class="witchtown-seat-name"><strong>${esc(player.name)}${isMe ? '<em>我</em>' : ''}</strong>${status ? `<small>${status}</small>` : ''}</div><div class="witchtown-seat-flags">${player.id === state.blackCatOwnerId ? '<b class="witchtown-cat-mark" title="黑猫持有者">猫</b>' : ''}${identity}</div></header><div class="witchtown-seat-role" title="${esc(player.townHall?.description || '')}"><span>${esc(player.townHall?.name || '镇议会角色')}</span><b>${player.revealedTrialCount || 0}/${player.trialCount || 0} 已揭示</b></div>${revealedTrials ? `<div class="witchtown-public-trials">${revealedTrials}</div>` : ''}<div class="witchtown-seat-status"><span class="witchtown-health" title="生命值">${health}</span><div class="witchtown-accusation-line" style="--progress:${(accusation / threshold) * 100}%"><span><i></i></span><b>${player.redAccusations || 0}<small> / ${threshold} 指控</small></b></div></div>${publicCards ? `<div class="witchtown-public-cards">${publicCards}</div>` : ''}</div></article>`;
         }).join('');
     }
 
@@ -306,11 +307,6 @@ export function createWitchTownRenderer({ mount, model, getElement }) {
         const selected = model.pendingCardId === card.id;
         const button = canPlay ? actionButton(selected ? '已预选' : '预选此牌', 'selectCard', card.id, `is-card-action ${selected ? 'is-selected' : ''}`) : '';
         return `<article class="witchtown-card is-${esc(meta.tone)} is-kind-${esc(card.kind)} ${selected ? 'is-selected' : ''}"><div class="witchtown-card-top"><span>${cardType}</span>${card.value ? `<b>${esc(card.value)} 点</b>` : '<b>·</b>'}</div><div class="witchtown-card-main"><span class="witchtown-card-scene" aria-hidden="true"><i>${sigil}</i></span><strong>${esc(meta.label || card.name)}</strong><small>${esc(meta.copy)}</small></div>${button ? `<div class="witchtown-card-action">${button}</div>` : ''}</article>`;
-    }
-
-    function renderPlayers() {
-        const state = model.state;
-        $('players').innerHTML = (state.players || []).map(player => `<article class="witchtown-ledger-row ${player.id === state.currentTurnId ? 'is-current' : ''} ${player.eliminated ? 'is-dead' : ''}"><span class="witchtown-ledger-avatar">${esc(String(player.name || '?').slice(0, 1))}</span><div><strong>${esc(player.name)}${player.id === state.myId ? '<em>我</em>' : ''}</strong><small>${player.eliminated ? '已出局' : `${esc(player.townHall?.name || '镇议会角色')} · ${player.revealedTrialCount || 0}/${player.trialCount || 0}`}</small></div><b>${player.blueCards?.length || 0}<small> 蓝牌</small></b></article>`).join('');
     }
 
     function renderLog() {

@@ -1,5 +1,5 @@
 const MonopolyEngine = require('./engine');
-const metadata = { type: 'monopoly', name: '环城大富翁', minPlayers: 2, maxPlayers: 8 };
+const metadata = { type: 'monopoly', name: '环城大富翁', minPlayers: 2, maxPlayers: 6 };
 class MonopolySession {
     constructor(roomId, players, options = {}) {
         const random = typeof options === 'function' ? options : options?.random;

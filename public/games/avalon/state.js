@@ -9,13 +9,38 @@ export function createAvalonModel({ windowRef = globalThis.window || globalThis 
         hasViewedRole: false,
         roleRevealPointerId: null,
         roleRevealKey: null,
+        actionPending: false,
         sceneTimer: null,
         sceneSequence: 0,
         sceneQueue: [],
         scenePlaying: false,
+        sceneToken: 0,
+        sceneWaiters: new Set(),
+        presentationLockedUntil: 0,
+        lastPresentationSequence: 0,
+        presentationEventIds: new Set(),
         lastPublicEventId: null,
         lastWinnerKey: '',
         prefersReducedMotion: windowRef.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+    };
+}
+
+export function localizePresentation(batch, localNow = Date.now()) {
+    if (!batch?.events?.length) return null;
+    const serverNow = Number(batch.serverNow);
+    const batchEnd = Number(batch.endsAt);
+    if (!Number.isFinite(serverNow) || !Number.isFinite(batchEnd)) return batch;
+    if (batchEnd <= serverNow) return null;
+    const toLocalTime = value => localNow + (Number(value) - serverNow);
+    return {
+        ...batch,
+        startedAt: toLocalTime(batch.startedAt),
+        endsAt: toLocalTime(batch.endsAt),
+        events: batch.events.map(event => ({
+            ...event,
+            startedAt: toLocalTime(event.startedAt),
+            endsAt: toLocalTime(event.endsAt),
+        })),
     };
 }
 

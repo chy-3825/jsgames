@@ -3,7 +3,8 @@ const metadata = { type: 'witchtown', name: '猎巫镇', minPlayers: 4, maxPlaye
 class WitchTownSession {
     constructor(roomId, players, options = {}) {
         const random = typeof options === 'function' ? options : options?.random;
-        this.engine = new WitchTownEngine(roomId, players, random);
+        const now = typeof options === 'object' ? options?.now : undefined;
+        this.engine = new WitchTownEngine(roomId, players, random, now);
         this.started = false;
     }
     start() {
@@ -14,6 +15,8 @@ class WitchTownSession {
     }
     handleAction(id, action) { return this.started ? this.engine.handleAction(id, action) : { success: false, message: '游戏尚未开始' }; }
     handlePlayerLeave(id) { return this.engine.handlePlayerLeave(id); }
+    handlePlayerReconnect(id) { return this.engine.handlePlayerReconnect(id); }
+    handleSystemTick() { return this.started ? this.engine.handleSystemTick() : null; }
     getPlayerState(id) { return this.engine.getPlayerState(id); }
     getPlayerAction(action) { return action; }
     getWinner() { return this.engine.getWinner(); }

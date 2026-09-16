@@ -9,6 +9,7 @@ class MagicalAthleteSession {
     start() { const result = this.engine.start(); if (result.success) this.started = true; return result; }
     handleAction(playerId, action) { return this.started ? this.engine.handleAction(playerId, action) : { success: false, message: '游戏尚未开始' }; }
     handlePlayerLeave(playerId) { return this.engine.handlePlayerLeave(playerId); }
+    handleSystemTick() { return this.started ? this.engine.handleSystemTick() : null; }
     getPlayerState(playerId) { return this.engine.getPlayerState(playerId); }
     getPlayerAction(action) { return action; }
     getWinner() { return this.engine.getWinner(); }

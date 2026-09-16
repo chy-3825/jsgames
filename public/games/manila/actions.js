@@ -2,14 +2,16 @@ import { GOODS, GOOD_META, LOCATION_INFO } from './constants.js';
 import { getActions, getMyPlayer } from './state.js';
 
 /** User interaction and confirmation drafts for 马尼拉. */
-export function createManilaActions({ mount, model, renderer, scene, send, addLog }) {
+export function createManilaActions({ mount, model, renderer, scene, rulesModal = null, send, addLog }) {
     const state = () => model.state;
     const actions = () => getActions(state());
     const myPlayer = () => getMyPlayer(state());
     const $ = role => mount.querySelector(`[data-role="${role}"]`);
 
+    function presentationLocked() { return scene?.isPlaying?.() || model.presentationPlaying || Date.now() < Number(model.presentationLockedUntil || 0); }
     function gameAction(kind, extra = {}) {
         if (model.actionPending || model.presentationPlaying) return false;
+        if (presentationLocked()) return false;
         model.actionPending = true;
         renderer.clearError();
         send({ type: 'gameAction', action: { kind, ...extra } });
@@ -47,20 +49,30 @@ export function createManilaActions({ mount, model, renderer, scene, send, addLo
         else if (kind === 'plunder') model.pendingChoice = { kind: 'plunderDestination', destination: value };
         renderer.renderCommand();
     }
-    function openRules() { model.previousFocus = globalThis.document?.activeElement; const overlay = $('rulesOverlay'); overlay.classList.remove('is-hidden'); overlay.setAttribute('aria-hidden', 'false'); [...mount.querySelector('.manila-app').children].forEach(child => { child.inert = child !== overlay; }); overlay.querySelector('.mn-close')?.focus(); }
-    function closeRules() { const overlay = $('rulesOverlay'); overlay.classList.add('is-hidden'); overlay.setAttribute('aria-hidden', 'true'); [...mount.querySelector('.manila-app').children].forEach(child => { child.inert = false; }); model.previousFocus?.focus?.(); model.previousFocus = null; }
-    function trapRulesFocus(event) { const rules = $('rulesOverlay'); if (event.key !== 'Tab' || rules.classList.contains('is-hidden')) return false; const focusable = [...rules.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')].filter(element => !element.hidden && element.getClientRects().length); if (!focusable.length) return false; const first = focusable[0]; const last = focusable[focusable.length - 1]; if (event.shiftKey && (globalThis.document?.activeElement === first || !rules.contains(globalThis.document?.activeElement))) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && (globalThis.document?.activeElement === last || !rules.contains(globalThis.document?.activeElement))) { event.preventDefault(); first.focus(); } return true; }
+    function openRules() {
+        if (presentationLocked()) return;
+        if (rulesModal?.setOpen) { rulesModal.setOpen(true); return; }
+        model.previousFocus = globalThis.document?.activeElement; const overlay = $('rulesOverlay'); overlay.classList.remove('is-hidden'); overlay.setAttribute('aria-hidden', 'false'); [...mount.querySelector('.manila-app').children].forEach(child => { child.inert = child !== overlay; }); overlay.querySelector('.mn-close')?.focus();
+    }
+    function closeRules() {
+        if (rulesModal?.setOpen && rulesModal.isOpen?.()) { rulesModal.setOpen(false); return; }
+        const overlay = $('rulesOverlay'); overlay.classList.add('is-hidden'); overlay.setAttribute('aria-hidden', 'true'); [...mount.querySelector('.manila-app').children].forEach(child => { child.inert = false; }); model.previousFocus?.focus?.(); model.previousFocus = null;
+    }
+    function trapRulesFocus(event) {
+        if (rulesModal?.trapFocus && rulesModal.isOpen?.()) return rulesModal.trapFocus(event);
+        const rules = $('rulesOverlay'); if (event.key !== 'Tab' || rules.classList.contains('is-hidden')) return false; const focusable = [...rules.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')].filter(element => !element.hidden && element.getClientRects().length); if (!focusable.length) return false; const first = focusable[0]; const last = focusable[focusable.length - 1]; if (event.shiftKey && (globalThis.document?.activeElement === first || !rules.contains(globalThis.document?.activeElement))) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && (globalThis.document?.activeElement === last || !rules.contains(globalThis.document?.activeElement))) { event.preventDefault(); first.focus(); } return true;
+    }
 
     function handleClick(event) {
         const uiButton = event.target.closest('[data-ui]');
         if (uiButton) {
             const ui = uiButton.dataset.ui;
             if (ui === 'skipPresentation') { scene.skipPresentation(); return; }
-            if (model.presentationPlaying) return;
+            if (presentationLocked()) return;
             if (ui === 'rules') openRules(); else if (ui === 'closeRules') closeRules(); else if (ui === 'cancelChoice') { if (model.pendingChoice?.kind === 'sailBoats') model.sailOrder = []; model.pendingChoice = null; renderer.renderCommand(); } else if (ui === 'confirmChoice') confirmChoice(); else if (ui === 'resetSail') { model.sailOrder = []; model.pendingChoice = null; renderer.renderCommand(); } else if (ui === 'cancelFinance') { model.financeChoice = null; renderer.renderFinance(); } else if (ui === 'confirmFinance' && model.financeChoice) gameAction(model.financeChoice.kind, { shareIndex: model.financeChoice.index });
             return;
         }
-        if (model.presentationPlaying) return;
+        if (presentationLocked()) return;
         if (event.target === $('rulesOverlay')) { closeRules(); return; }
         const finance = event.target.closest('[data-finance-kind]'); if (finance) { model.financeChoice = { kind: finance.dataset.financeKind, index: Number(finance.dataset.index) }; renderer.renderFinance(); return; }
         const sailButton = event.target.closest('[data-sail-boat]'); if (sailButton && !sailButton.disabled) { const boatId = Number(sailButton.dataset.sailBoat); model.sailOrder = model.sailOrder.includes(boatId) ? model.sailOrder.filter(id => id !== boatId) : [...model.sailOrder, boatId]; const required = state().movementPlan?.rolls?.length || 0; model.pendingChoice = required && model.sailOrder.length === required ? { kind: 'sailBoats', order: model.sailOrder.slice() } : null; renderer.renderCommand(); return; }
@@ -71,7 +83,7 @@ export function createManilaActions({ mount, model, renderer, scene, send, addLo
         if (confirmation?.dataset.confirm === 'pilot') { const moves = [{ boatId: Number(model.pilotDraft.boat1), delta: Number(model.pilotDraft.delta1) }]; if (model.pilotDraft.mode === 'two') moves.push({ boatId: Number(model.pilotDraft.boat2), delta: Number(model.pilotDraft.delta2) }); gameAction('pilotMove', { moves }); }
     }
     function handleChange(event) {
-        if (model.presentationPlaying) return; const field = event.target.closest('[data-draft]'); if (!field) return; const type = field.dataset.draft;
+        if (presentationLocked()) return; const field = event.target.closest('[data-draft]'); if (!field) return; const type = field.dataset.draft;
         if (type === 'bid') { model.bidDraft = Number(field.value); return; }
         const index = Number(field.dataset.index); if (type === 'boat-good') model.boatDraft[index].good = field.value; if (type === 'boat-start') model.boatDraft[index].start = Number(field.value); if (type === 'pilot-boat1') { model.pilotDraft.boat1 = field.value; if (model.pilotDraft.boat2 === field.value) model.pilotDraft.boat2 = String((state().boats || []).find(boat => boat.fate === 'sailing' && String(boat.id) !== field.value)?.id ?? ''); } if (type === 'pilot-delta1') model.pilotDraft.delta1 = Number(field.value); if (type === 'pilot-boat2') model.pilotDraft.boat2 = field.value; if (type === 'pilot-delta2') model.pilotDraft.delta2 = Number(field.value); renderer.renderCommand();
     }

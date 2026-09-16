@@ -1,5 +1,5 @@
 import { ALL_TOKENS, COLORS, COLOR_GEMS, COLOR_LABELS, END_LABELS, TIER_LABELS } from './constants.js';
-import { cardArt, cardBackMarkup, escapeHtml, noblePortraitMarkup, tokenTotal } from './cards.js';
+import { cardArt, cardBackMarkup, cardFaceMarkup, escapeHtml, noblePortraitMarkup, tokenTotal } from './cards.js';
 import { affordableCount, choiceCounts, discounts, purchasePlan, returnState, takeHint, turnCopy } from './state.js';
 
 /** Dynamic market, command and scoreboard rendering for 璀璨宝石. */
@@ -18,6 +18,7 @@ export function createSplendorRenderer({ mount, model, getElement }) {
         app.classList.toggle('is-ended', state.status === 'ended');
         $('turn').innerHTML = `<span class="sp-live-dot ${state.status === 'ended' ? 'is-ended' : ''}"></span>${escapeHtml(turnCopy(state))}`;
         $('headerPoints').textContent = own?.points || 0;
+        renderQuickSummary();
         renderMarket();
         renderCommand();
         renderNobles();
@@ -26,17 +27,31 @@ export function createSplendorRenderer({ mount, model, getElement }) {
         renderLog();
     }
 
+    function renderQuickSummary() {
+        const state = currentState();
+        const own = (state.players || []).find(player => player.id === state.myId);
+        const ownedDiscounts = discounts(state);
+        $('quickSummary').innerHTML = `<span class="sp-summary-score"><b>${own?.points || 0}</b><small>声望</small></span><span class="sp-summary-discounts"><i class="sp-gem tone-white"></i><b>${ownedDiscounts.white}</b><i class="sp-gem tone-blue"></i><b>${ownedDiscounts.blue}</b><i class="sp-gem tone-green"></i><b>${ownedDiscounts.green}</b><i class="sp-gem tone-red"></i><b>${ownedDiscounts.red}</b><i class="sp-gem tone-black"></i><b>${ownedDiscounts.black}</b></span><span class="sp-summary-tokens"><b>${tokenTotal(state.myTokens)}</b><small>/ 10 筹码</small></span><span class="sp-summary-reserve"><b>${state.myReserved?.length || 0}</b><small>/ 3 预留</small></span>`;
+    }
+
+    function renderTierTabs() {
+        const tabs = $('tierTabs');
+        if (!tabs) return;
+        tabs.innerHTML = [3, 2, 1].map(tier => `<button class="sp-tier-tab ${model.activeTier === tier ? 'is-active' : ''}" id="sp-tier-tab-${tier}" data-tier-tab="${tier}" role="tab" type="button" aria-selected="${model.activeTier === tier}" aria-controls="sp-tier-panel-${tier}">${TIER_LABELS[tier]}<small>${tier === 3 ? '大师' : tier === 2 ? '行家' : '学徒'}</small></button>`).join('');
+    }
+
     function renderMarket() {
         const state = currentState();
         const canAct = Boolean(state.availableActions?.canAct && !model.actionPending);
         const reserveOpen = (state.myReserved?.length || 0) < 3;
+        renderTierTabs();
         $('marketHint').textContent = state.finalRoundStart !== null && state.finalRoundStart !== undefined
             ? '终局已触发 · 完成本轮'
             : `${(state.myCards || []).length} 张发展卡已加入商会`;
         $('market').innerHTML = [3, 2, 1].map(tier => {
             const cards = state.market?.[tier] || [];
             const reserveDeckDisabled = !canAct || !reserveOpen;
-            return `<section class="sp-tier sp-tier-${tier}" data-market-tier="${tier}">
+            return `<section class="sp-tier sp-tier-${tier} ${model.activeTier === tier ? 'is-active-tier' : ''}" id="sp-tier-panel-${tier}" data-market-tier="${tier}" role="tabpanel" aria-labelledby="sp-tier-tab-${tier}">
                 <header><span class="sp-tier-number">${TIER_LABELS[tier]}</span><div><small>第 ${tier} 级</small><h3>${tier === 3 ? '大师级' : tier === 2 ? '行家级' : '学徒级'}</h3></div>
                     <button class="sp-deck-reserve" data-action="reserveDeck" data-tier="${tier}" type="button" ${reserveDeckDisabled ? 'disabled' : ''} title="预留该等级牌库顶牌"><span class="sp-deck-stack" aria-hidden="true">${cardBackMarkup(tier, true)}${cardBackMarkup(tier, true)}${cardBackMarkup(tier, true)}</span><span>暗抽预留</span></button>
                 </header><div class="sp-market-cards">${cards.length ? cards.map(card => cardMarkup(card, 'market')).join('') : '<div class="sp-empty-market">该等级牌库已耗尽</div>'}</div></section>`;
@@ -44,24 +59,37 @@ export function createSplendorRenderer({ mount, model, getElement }) {
     }
 
     function cardMarkup(card, source) {
+        // Read-only cards expose data-read-only="true" through cardFaceMarkup.
         const state = currentState();
         const canAct = Boolean(state.availableActions?.canAct && !model.actionPending);
         const plan = purchasePlan(state, card);
-        const reserveOpen = (state.myReserved?.length || 0) < 3;
         const selected = model.selectedCard?.id === card.id && model.selectedCard?.source === source;
-        const buyEnabled = canAct && plan.affordable;
-        const reserveEnabled = source === 'market' && canAct && reserveOpen;
-        const costMarkup = COLORS.filter(color => Number(card.cost?.[color]) > 0).map(color => {
-            const cost = Number(card.cost[color]);
-            const covered = plan.costs[color].afterDiscount === 0;
-            return `<span class="sp-cost tone-${color} ${covered ? 'is-covered' : ''}" title="${COLOR_GEMS[color]}费用 ${cost}"><i></i><b>${cost}</b></span>`;
+        const stateLabel = !canAct ? '等待交易' : selected ? '已选择' : plan.affordable ? '可购买' : '可查看';
+        return `<article class="sp-dev-card tier-${card.tier} tone-${card.bonus} ${plan.affordable ? 'is-affordable' : ''} ${selected ? 'is-selected' : ''} ${source === 'reserved' ? 'is-reserved-card' : ''}" data-card-id="${escapeHtml(card.id)}" data-card-source="${escapeHtml(source)}" data-card-state="${stateLabel}" data-read-only="${!canAct}" aria-disabled="${!canAct}">${cardFaceMarkup(card, { source, selected, interactive: true, readOnly: !canAct })}<span class="sp-card-state" aria-hidden="true">${stateLabel}</span></article>`;
+    }
+
+    function selectedCardRecord() {
+        const selected = model.selectedCard;
+        if (!selected) return null;
+        const source = selected.source === 'reserved' ? currentState()?.myReserved || [] : [1, 2, 3].flatMap(tier => currentState()?.market?.[tier] || []);
+        const card = source.find(item => item.id === selected.id);
+        return card ? { card, source: selected.source } : null;
+    }
+
+    function selectedCardMarkup() {
+        const selected = selectedCardRecord();
+        if (!selected) return '';
+        const plan = purchasePlan(currentState(), selected.card);
+        const reserveOpen = (currentState().myReserved?.length || 0) < 3;
+        const canAct = Boolean(currentState().availableActions?.canAct && !model.actionPending);
+        const paymentCopy = plan.affordable
+            ? plan.goldNeeded ? `需使用 ${plan.goldNeeded} 枚黄金` : '现有筹码可直接支付'
+            : `还缺 ${plan.missing} 枚可替代资源`;
+        const costs = COLORS.filter(color => Number(selected.card.cost?.[color]) > 0).map(color => {
+            const detail = plan.costs[color];
+            return `<span class="sp-detail-cost tone-${color} ${detail.afterDiscount === 0 ? 'is-covered' : ''}"><i></i><b>${detail.afterDiscount}</b><small>${COLOR_LABELS[color]}${detail.discount ? ` · 折${detail.discount}` : ''}</small></span>`;
         }).join('');
-        const buyTitle = plan.affordable ? plan.goldNeeded > 0 ? `可购买，需使用 ${plan.goldNeeded} 枚黄金` : '可直接购买' : `还缺 ${plan.missing} 枚可替代资源`;
-        const prompt = !canAct ? '等待交易' : buyEnabled ? '可购入 · 点选卡面' : source === 'market' && reserveOpen ? '可预留 · 点选卡面' : '点选查看';
-        return `<article class="sp-dev-card tier-${card.tier} tone-${card.bonus} ${plan.affordable ? 'is-affordable' : ''} ${selected ? 'is-selected' : ''}" data-card-id="${escapeHtml(card.id)}">
-            <button class="sp-card-face" data-card-select="${escapeHtml(card.id)}" data-card-source="${source}" type="button" aria-pressed="${selected}" aria-disabled="${!canAct}" ${canAct ? '' : 'data-read-only="true"'} title="${canAct ? selected ? '取消选择' : '选择这张发展卡' : '查看发展卡费用与奖励'}"><img src="${cardArt(card)}" alt="璀璨宝石发展卡插画"><span class="sp-card-veil"></span><header><strong>${Number(card.points) || '·'}</strong><span class="sp-bonus-gem" title="永久${COLOR_LABELS[card.bonus]}色折扣"><i></i><small>+1</small></span></header><div class="sp-card-costs">${costMarkup || '<span class="sp-free-card">无费用</span>'}</div><span class="sp-card-level">${TIER_LABELS[card.tier] || card.tier}</span></button>
-            <footer class="${source === 'reserved' ? 'is-reserved' : ''}">${selected ? `<button class="sp-buy-button" data-action="buy" data-card-id="${escapeHtml(card.id)}" data-from-reserve="${source === 'reserved'}" type="button" ${buyEnabled ? '' : 'disabled'} title="${escapeHtml(buyTitle)}">确认购入</button>${source === 'market' ? `<button class="sp-reserve-button" data-action="reserve" data-card-id="${escapeHtml(card.id)}" type="button" ${reserveEnabled ? '' : 'disabled'} title="${reserveOpen ? '预留这张发展卡' : '预留区已满'}">确认预留</button>` : ''}` : `<span class="sp-card-prompt">${prompt}</span>`}</footer>
-        </article>`;
+        return `<section class="sp-selected-card" aria-live="polite"><div class="sp-selected-card-copy"><small>已选${selected.source === 'reserved' ? '预留' : '市场'}发展卡</small><strong>${Number(selected.card.points) || 0} 声望 · ${COLOR_LABELS[selected.card.bonus]}色折扣</strong><span>${paymentCopy}</span></div><div class="sp-detail-costs">${costs || '<span class="sp-free-card">免费</span>'}</div><div class="sp-selected-actions"><button data-action="showTokenAction" type="button">改拿筹码</button><button data-action="buy" data-card-id="${escapeHtml(selected.card.id)}" data-from-reserve="${selected.source === 'reserved'}" type="button" ${canAct && plan.affordable ? '' : 'disabled'}>购买</button>${selected.source === 'market' ? `<button data-action="reserve" data-card-id="${escapeHtml(selected.card.id)}" type="button" ${canAct && reserveOpen ? '' : 'disabled'}>预留</button>` : ''}</div></section>`;
     }
 
     function bankMarkup(interactive) {
@@ -105,12 +133,17 @@ export function createSplendorRenderer({ mount, model, getElement }) {
         const canAct = Boolean(state.availableActions?.canAct && !model.actionPending);
         command.className = `sp-command-panel ${canAct ? 'is-active' : 'is-waiting'}`;
         if (canAct) {
+            const selected = selectedCardMarkup();
+            if (selected && model.commandMode === 'card') {
+                command.innerHTML = `<header class="sp-command-heading"><div><small>当前选择</small><h2>处理发展卡</h2></div><button data-action="clearCard" type="button" title="取消选择发展卡" aria-label="取消选择发展卡">×</button></header>${walletStrip()}${selected}<button class="sp-action-secondary" data-action="showTokenAction" type="button">拿取公共宝石</button>`;
+                return;
+            }
             const valid = validTakeChoiceProxy();
-            command.innerHTML = `<header class="sp-command-heading"><div><small>选择行动</small><h2>拿取公共宝石</h2></div><button data-action="clearTokens" type="button" title="清除已选宝石" aria-label="清除已选宝石" ${model.tokenChoice.length ? '' : 'disabled'}>×</button></header>${walletStrip()}<div class="sp-bank-heading"><strong>公共库存</strong><span>${takeHint(state, model)}</span></div>${bankMarkup(true)}<button class="sp-primary" data-action="takeTokens" type="button" ${valid ? '' : 'disabled'}>确认拿取 <span>${model.tokenChoice.length || 0}</span></button><div class="sp-market-actions"><span><i class="is-buy"></i><strong>购入</strong><small>${affordableCount(state)} 张可负担</small></span><span><i class="is-reserve"></i><strong>预留</strong><small>${state.myReserved?.length || 0} / 3</small></span></div>`;
+            command.innerHTML = `<header class="sp-command-heading"><div><small>选择行动</small><h2>拿取公共宝石</h2></div><button data-action="clearTokens" type="button" title="清除已选宝石" aria-label="清除已选宝石" ${model.tokenChoice.length ? '' : 'disabled'}>×</button></header>${walletStrip()}<div class="sp-action-mode"><button class="is-active" data-action="showTokenAction" type="button" aria-pressed="true">拿筹码</button><button data-action="showCardAction" type="button" aria-pressed="false" ${selectedCardRecord() ? '' : 'disabled'}>已选发展卡</button></div><div class="sp-bank-heading"><strong>公共库存</strong><span>${takeHint(state, model)}</span></div>${bankMarkup(true)}<button class="sp-primary" data-action="takeTokens" type="button" ${valid ? '' : 'disabled'}>确认拿取 <span>${model.tokenChoice.length || 0}</span></button><div class="sp-market-actions"><span><i class="is-buy"></i><strong>购入</strong><small>${affordableCount(state)} 张可负担</small></span><span><i class="is-reserve"></i><strong>预留</strong><small>${state.myReserved?.length || 0} / 3</small></span></div>`;
             return;
         }
         const latest = state.actionLog?.at(-1) || '等待第一笔交易';
-        command.innerHTML = `<header><small>当前回合</small><h2>等待 ${escapeHtml(state.currentTurnName || '对手')}</h2></header>${walletStrip()}<div class="sp-bank-heading"><strong>公共库存</strong><span>市场实时库存</span></div>${bankMarkup(false)}<div class="sp-last-action"><small>上一笔交易</small><p>${escapeHtml(latest)}</p></div>`;
+        command.innerHTML = `<header><small>当前回合</small><h2>等待 ${escapeHtml(state.currentTurnName || '对手')}</h2></header>${walletStrip()}${selectedCardMarkup() || `<div class="sp-bank-heading"><strong>公共库存</strong><span>市场实时库存</span></div>${bankMarkup(false)}<div class="sp-last-action"><small>上一笔交易</small><p>${escapeHtml(latest)}</p></div>`}`;
     }
 
     function validTakeChoiceProxy() {
@@ -165,7 +198,7 @@ export function createSplendorRenderer({ mount, model, getElement }) {
         const state = currentState();
         $('players').innerHTML = (state.players || []).map((player, index) => {
             const total = tokenTotal(player.tokens);
-            return `<article class="sp-player ${player.isCurrentTurn ? 'is-current' : ''} ${player.id === state.myId ? 'is-me' : ''} ${player.isOnline === false ? 'is-offline' : ''}" data-player-id="${escapeHtml(player.id)}"><span class="sp-player-order">${String(index + 1).padStart(2, '0')}</span><span class="sp-avatar">${escapeHtml(player.name.slice(0, 1))}</span><span class="sp-player-copy"><strong>${escapeHtml(player.name)}${player.id === state.myId ? '<em>我</em>' : ''}</strong><small>${player.isOnline === false ? '离线' : player.isCurrentTurn ? '正在交易' : `${player.cardCount || 0} 卡 · ${player.reservedCount || 0} 预留`}</small></span><b>${player.points || 0}</b><div class="sp-player-assets"><span>${total} 筹码</span><i></i><span>${player.cardCount || 0} 折扣</span></div></article>`;
+            return `<article class="sp-player ${player.isCurrentTurn ? 'is-current' : ''} ${player.id === state.myId ? 'is-me' : ''} ${player.isOnline === false ? 'is-offline' : ''}" data-player-id="${escapeHtml(player.id)}"><span class="sp-player-order">${String(index + 1).padStart(2, '0')}</span><span class="sp-player-copy"><strong>${escapeHtml(player.name)}${player.id === state.myId ? '<em>我</em>' : ''}</strong><small>${player.isOnline === false ? '离线' : player.isCurrentTurn ? '正在交易' : `${player.cardCount || 0} 卡 · ${player.reservedCount || 0} 预留`}</small></span><b>${player.points || 0}</b><div class="sp-player-assets"><span>${total} 筹码</span><i></i><span>${player.cardCount || 0} 折扣</span></div></article>`;
         }).join('');
     }
 

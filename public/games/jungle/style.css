@@ -17,7 +17,7 @@
 .jungle-panel-title{display:flex;align-items:center;justify-content:space-between;padding:16px 15px;border-bottom:1px solid #465d4a22;color:#476054;font-size:13px;font-weight:900}
 .jungle-panel-title small{color:#8c9a8a;font-size:10px}
 .jungle-players>[data-role=players]{display:grid;gap:9px;padding:12px}
-.jungle-player{position:relative;display:grid;grid-template-columns:30px 36px minmax(0,1fr);align-items:center;gap:8px;min-height:62px;padding:8px;border:1px solid #47634b1d;border-radius:12px;background:#fffaf0b9}
+.jungle-player{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr);align-items:center;gap:8px;min-height:62px;padding:8px;border:1px solid #47634b1d;border-radius:12px;background:#fffaf0b9}
 .jungle-player::before{position:absolute;inset:0 auto 0 0;width:4px;border-radius:12px 0 0 12px;background:#999;content:""}
 .jungle-player.red::before{background:var(--red)}
 .jungle-player.blue::before{background:var(--blue)}
@@ -25,9 +25,6 @@
 .jungle-player-stamp{display:grid;place-items:center;width:27px;height:27px;border:1px solid currentColor;border-radius:8px;font-size:11px;font-weight:900}
 .jungle-player.red .jungle-player-stamp{color:var(--red)}
 .jungle-player.blue .jungle-player-stamp{color:var(--blue)}
-.jungle-player-avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#789080;color:#fff;font-size:13px;font-weight:900}
-.jungle-player.red .jungle-player-avatar{background:var(--red)}
-.jungle-player.blue .jungle-player-avatar{background:var(--blue)}
 .jungle-player>span:last-child{display:grid;gap:4px;min-width:0}
 .jungle-player strong{overflow:hidden;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
 .jungle-player small{color:#88978b;font-size:9px}
@@ -128,7 +125,6 @@
 .jungle-players>[data-role=players]{display:grid;gap:4px;padding:6px;overflow:visible}
 .jungle-player{grid-template-columns:23px minmax(0,1fr);gap:5px;min-height:43px;padding:5px}
 .jungle-player-stamp{width:22px;height:22px;font-size:9px}
-.jungle-player-avatar{display:none}
 .jungle-player strong{font-size:10px}
 .jungle-player small{font-size:8px}
 .jungle-rank-key{gap:3px;margin:2px 7px 7px;padding:7px 2px;font-size:8px;line-height:1.3}

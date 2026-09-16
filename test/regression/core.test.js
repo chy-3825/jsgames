@@ -76,11 +76,19 @@ function readGameStyles(game) {
         avalon: ['style.css', 'scenes.css'],
         citadels: ['style.css', 'roles.css', 'interactions.css', 'responsive.css', 'scenes.css'],
         coup: ['style.css', 'private.css', 'scenes.css', 'responsive.css'],
-        lasvegas: ['style.css', 'scenes.css'],
-        witchtown: ['style.css', 'scenes.css'],
+        hanabi: ['style.css', 'table.css', 'actions.css', 'responsive.css', 'scenes.css', 'responsive-scenes.css'],
+        lasvegas: ['style.css', 'board.css', 'responsive.css', 'scenes.css'],
+        monopolydeal: ['style.css', 'choice.css', 'assets.css', 'interactions.css', 'scenes.css', 'responsive-scenes.css', 'responsive.css', 'table.css', 'records.css', 'stage.css', 'seats.css'],
+        splendor: ['style.css', 'table.css', 'scenes.css', 'responsive.css'],
+        witchtown: ['style.css', 'table.css', 'dossier.css', 'scenes.css', 'responsive.css'],
     };
     const files = (splitStyles[game] || ['style.css']).map(file => `public/games/${game}/${file}`);
     return files.map(file => fs.readFileSync(file, 'utf8')).join('\n');
+}
+
+function readLobbyStyles() {
+    return ['public/style.css', 'public/lobby/game-shell.css', 'public/lobby/utilities.css', 'public/lobby/responsive.css', 'public/lobby/waiting-room.css', 'public/lobby/room-info.css']
+        .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 }
 
 test('lobby registry exposes every in-scope game and new presentation target', () => {
@@ -129,10 +137,10 @@ test('lobby registry classifies every registered game into one primary group', (
     const lobbyClient = ['public/script.js', 'public/lobby/catalog-data.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
     assert.equal(games.length, 28, '服务器应注册 28 个联机项目');
     assert.deepEqual(Object.values(GROUP_DEFINITIONS).map(({ id, name, order }) => ({ id, name, order })), [
-        { id: 'social-assist', name: '社交推理与流程辅助', order: 1 },
-        { id: 'codebreaking', name: '解密类', order: 2 },
-        { id: 'board', name: '棋类与棋盘游戏', order: 3 },
-        { id: 'tabletop', name: '卡牌与策略桌游', order: 4 },
+        { id: 'social-assist', name: '社交推理', order: 1 },
+        { id: 'codebreaking', name: '解谜与破译', order: 2 },
+        { id: 'board', name: '棋盘对弈', order: 3 },
+        { id: 'tabletop', name: '卡牌与策略', order: 4 },
     ]);
     assert.deepEqual(games.reduce((counts, game) => { counts[game.group] = (counts[game.group] || 0) + 1; return counts; }, {}), { 'social-assist': 3, codebreaking: 2, board: 8, tabletop: 15 });
     for (const game of games) {
@@ -144,7 +152,7 @@ test('lobby registry classifies every registered game into one primary group', (
     assert.deepEqual(GAME_GROUPS.werewolf, { group: 'social-assist', playMode: 'auto-assist', sortOrder: 1 });
     assert.deepEqual(GAME_GROUPS.decrypto, { group: 'codebreaking', playMode: 'online', sortOrder: 1 });
     assert.deepEqual(GAME_GROUPS.guessnumber, { group: 'codebreaking', playMode: 'solo', sortOrder: 2 });
-    assert.match(lobbyClient, /codebreaking: \{ name: '解密类', description: '密码、线索与逻辑破译' \}/);
+    assert.match(lobbyClient, /codebreaking: \{ name: '解谜与破译', description: '密码、线索与逻辑推理' \}/);
 });
 
 test('registry-backed games can start and expose player state', () => {
@@ -207,11 +215,12 @@ test('Waiting rooms expose authoritative readiness and shared in-room settings',
         winCondition: 'edge',
     }, { readyCheckEnabled: true });
     const info = werewolf.getInfo();
-    assert.deepEqual(info.roomSettings.map(setting => setting.key), ['playerCount', 'sheriffEnabled', 'winCondition']);
+    assert.deepEqual(info.roomSettings.map(setting => setting.key), ['playerCount', 'sheriffEnabled', 'winCondition', 'witchSelfSave']);
     assert.equal(werewolf.updateSettings('guest', { winCondition: 'parity' }).success, false);
-    assert.equal(werewolf.updateSettings('host', { sheriffEnabled: false, winCondition: 'parity' }).success, true);
+    assert.equal(werewolf.updateSettings('host', { sheriffEnabled: false, winCondition: 'parity', witchSelfSave: 'never' }).success, true);
     assert.equal(werewolf.getInfo().gameOptions.sheriffEnabled, false);
     assert.equal(werewolf.getInfo().gameOptions.winCondition, 'parity');
+    assert.equal(werewolf.getInfo().gameOptions.witchSelfSave, 'never');
 });
 
 test('Special games can be fully configured before the room is published', () => {
@@ -235,10 +244,10 @@ test('Special games can be fully configured before the room is published', () =>
 });
 
 test('Waiting room exposes host moderation, member readiness, and metadata-driven settings', () => {
-    const appServer = ['app.js', 'server/realtime/create-realtime-server.js']
+    const appServer = ['app.js', 'server/realtime/create-realtime-server.js', 'server/realtime/room-handlers.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const room = fs.readFileSync('server/room.js', 'utf8');
-    const lobby = ['public/script.js', 'public/lobby/catalog-data.js', 'public/lobby/catalog-view.js', 'public/lobby/artwork.js', 'public/lobby/room-dialog.js', 'public/lobby/waiting-room-scene.js']
+    const lobby = ['public/script.js', 'public/lobby/catalog-data.js', 'public/lobby/catalog-view.js', 'public/lobby/artwork.js', 'public/lobby/room-dialog.js', 'public/lobby/waiting-room-scene.js', 'public/lobby/event-bindings.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const werewolf = fs.readFileSync('server/games/werewolf/index.js', 'utf8');
     const decrypto = fs.readFileSync('server/games/decrypto/index.js', 'utf8');
@@ -255,7 +264,7 @@ test('Waiting room exposes host moderation, member readiness, and metadata-drive
     assert.match(lobby, /is-not-ready/);
     assert.match(lobby, /const becameReady = Boolean/);
     assert.match(lobby, /playerChanged \|\| becameReady/);
-    assert.match(lobby, /房主无需准备/);
+    assert.match(lobby, /等待其他玩家准备/);
     assert.match(room, /player\.id === this\.hostId\) return \{ success: false, message: '房主无需准备'/);
     assert.match(lobby, /function renderSharedRoomSettings/);
     assert.match(lobby, /type: 'updateRoomSettings'/);
@@ -264,7 +273,7 @@ test('Waiting room exposes host moderation, member readiness, and metadata-drive
 });
 
 test('Lobby uses a two-step rule and settings dialog before sending room creation', () => {
-    const appServer = ['app.js', 'server/realtime/create-realtime-server.js']
+    const appServer = ['app.js', 'server/realtime/create-realtime-server.js', 'server/realtime/room-handlers.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const lobby = ['public/script.js', 'public/lobby/catalog-view.js', 'public/lobby/room-dialog.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const page = fs.readFileSync('public/index.html', 'utf8');
@@ -287,8 +296,7 @@ test('Lobby enters a themed pregame room, preloads one game, and exposes mobile 
     const loader = fs.readFileSync('public/lobby/game-loader.js', 'utf8');
     const catalog = fs.readFileSync('public/lobby/catalog-data.js', 'utf8');
     const page = fs.readFileSync('public/index.html', 'utf8');
-    const styles = ['public/style.css', 'public/lobby/waiting-room.css']
-        .map(file => fs.readFileSync(file, 'utf8')).join('\n');
+    const styles = readLobbyStyles();
     const serviceTemplate = fs.readFileSync('deploy/jsgames.service.example', 'utf8');
     const nginxTemplate = fs.readFileSync('deploy/nginx-jsgames.conf.example', 'utf8');
     const deployGuide = fs.readFileSync('deploy/README.md', 'utf8');
@@ -302,8 +310,8 @@ test('Lobby enters a themed pregame room, preloads one game, and exposes mobile 
     assert.doesNotMatch(lobby, /pregame-table-mark/, '等待房间中心不应再插入游戏图标');
     assert.match(page, /id="roomFeedback"[^>]*role="status"/, '人数不足应使用站内状态浮窗');
     assert.match(lobby, /等待房主开始游戏/);
-    assert.match(lobby, /尚未达到开局人数/);
-    assert.match(lobby, /可以开始游戏了，请点击桌面魔法阵/);
+    assert.match(lobby, /未达到开始游戏所需人数/);
+    assert.match(lobby, /所有成员已准备/);
     assert.doesNotMatch(lobby, /魔法阵已充能/);
     assert.match(loader, /function preload\(/);
     assert.match(loader, /modulePromises/);
@@ -373,14 +381,19 @@ test('The shared game shell owns navigation and mobile viewport behavior', () =>
     const lobby = ['public/script.js', 'public/lobby/catalog-data.js', 'public/lobby/catalog-view.js', 'public/lobby/artwork.js', 'public/lobby/room-dialog.js', 'public/lobby/waiting-room-scene.js', 'public/lobby/game-entry-transition.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const page = fs.readFileSync('public/index.html', 'utf8');
-    const styles = ['public/style.css', 'public/lobby/waiting-room.css']
-        .map(file => fs.readFileSync(file, 'utf8')).join('\n');
+    const styles = readLobbyStyles();
     const gameDirectories = fs.readdirSync('public/games', { withFileTypes: true })
         .filter(entry => entry.isDirectory() && entry.name !== 'common');
 
     assert.equal(gameDirectories.filter(entry => fs.existsSync(`public/games/${entry.name}/client.js`)).length, 28);
     assert.equal((page.match(/id="leaveRoomBtn"/g) || []).length, 1, '游戏视图只能有一个大厅返回入口');
     assert.match(page, /aria-label="离开本局并回到大厅"/);
+    assert.match(page, /id="roomInfoBtn"[\s\S]*aria-controls="roomInfoDialog"/, '共享顶栏应只提供一个房间信息入口');
+    assert.match(page, /id="roomInfoDialog"[\s\S]*id="roomInfoName"[\s\S]*id="roomInfoCode"[\s\S]*data-copy-player-id/, '房间名、房间号和玩家 ID 应收进房间信息弹层');
+    assert.doesNotMatch(page, /id="roomPageCode"|id="roomPageIdentity"/, '共享顶栏不应常驻显示房间号或玩家 ID');
+    assert.match(lobby, /roomPageGame\.textContent = currentRoom\.gameName/, '共享顶栏只应显示当前游戏名');
+    assert.match(lobby, /createRoomInfoController[\s\S]*trapRoomInfoFocus/, '房间信息入口应使用可访问弹层并限定焦点');
+    assert.match(styles, /\.room-info-overlay/);
     assert.match(lobby, /gameMount\.dataset\.gameType = gameType/);
     assert.match(lobby, /createGameClient\(\{ mount: gameMount, send, addLog \}\)/);
     assert.doesNotMatch(lobby, /createGameClient\(\{ mount: gameMount, send, addLog, leaveRoom \}\)/);
@@ -548,7 +561,7 @@ test('Remaining board games keep their core turn controls inside short landscape
 
 test('Hand and response games keep the active decision inside short mobile viewports', () => {
     const games = ['loveletter', 'coup', 'monopolydeal', 'hanabi'];
-    const expectedAssetVersion = { loveletter: '20260826-mobile-games-4', coup: '20260827-settlement-scenes-1', monopolydeal: '20260827-settlement-scenes-1', hanabi: '20260827-hanabi-a11y-1' };
+    const expectedAssetVersion = { loveletter: '20260830-loveletter-flow-3', coup: '20260827-settlement-scenes-1', monopolydeal: '20260827-settlement-scenes-1', hanabi: '20260827-hanabi-a11y-1' };
     const manifest = fs.readFileSync('public/games/common/game-manifest.js', 'utf8');
     for (const game of games) {
         const client = fs.readFileSync(`public/games/${game}/client.js`, 'utf8');
@@ -571,11 +584,11 @@ test('Hand and response games keep the active decision inside short mobile viewp
     const coupClient = ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
         .map(file => fs.readFileSync(`public/games/coup/${file}`, 'utf8')).join('\n');
     const coupStyle = readGameStyles('coup');
-    const dealStyle = fs.readFileSync('public/games/monopolydeal/style.css', 'utf8');
+    const dealStyle = readGameStyles('monopolydeal');
     const dealChoiceStyle = fs.readFileSync('public/games/monopolydeal/choice.css', 'utf8');
     const hanabiClient = fs.readFileSync('public/games/hanabi/client.js', 'utf8');
     const hanabiRender = fs.readFileSync('public/games/hanabi/render.js', 'utf8');
-    const hanabiStyle = fs.readFileSync('public/games/hanabi/style.css', 'utf8');
+    const hanabiStyle = readGameStyles('hanabi');
     const visualFixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
@@ -583,8 +596,9 @@ test('Hand and response games keep the active decision inside short mobile viewp
     assert.match(coupClient, /is-influence-decision/);
     assert.match(coupClient, /is-exchange-decision/);
     assert.match(coupStyle, /\.cp-app\.is-challenge-decision \.cp-command\s*\{\s*display:\s*none/);
-    assert.match(dealStyle, /\.deal-hand\s*\{\s*order:\s*1/);
-    assert.match(dealStyle, /\.deal-command\s*\{\s*order:\s*2/);
+    assert.match(dealStyle, /grid-template-areas:\s*"hand action"/);
+    const dealTemplate = fs.readFileSync('public/games/monopolydeal/template.js', 'utf8');
+    assert.match(dealTemplate, /deal-command[\s\S]*deal-command-inner[\s\S]*deal-hand[\s\S]*deal-action-console/);
     assert.match(dealChoiceStyle, /orientation:\s*landscape/);
     assert.match(dealChoiceStyle, /inset:\s*var\(--game-shell-offset/);
     assert.match(hanabiRender, /is-clue-targeting/);
@@ -600,8 +614,8 @@ test('Hand and response games keep the active decision inside short mobile viewp
 test('Hidden-information games keep private decisions inside short landscape viewports', () => {
     const games = ['werewolf', 'avalon', 'decrypto', 'witchtown'];
     const expectedAssetVersion = {
-        werewolf: '20260827-hold-identity-2',
-        avalon: '20260827-hold-identity-2',
+        werewolf: '20260830-werewolf-presentation-5',
+        avalon: '20260829-avalon-role-privacy-1',
         decrypto: '20260827-online-notebook-1',
         witchtown: '20260827-hold-identity-2'
     };
@@ -689,30 +703,33 @@ test('Permanent departures do not leave hidden-information games waiting for an 
     assert.equal(fixed.phase, 'clue', '固定加密员投票应自动忽略离场席位');
 });
 
-test('Lobby starts from an explicit play-or-join gateway with a future account slot', () => {
-    const app = ['app.js', 'server/realtime/create-realtime-server.js']
+test('Lobby starts from a concise choose-or-join gateway', () => {
+    const app = ['app.js', 'server/realtime/create-realtime-server.js', 'server/realtime/room-handlers.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const lobby = ['public/script.js', 'public/lobby/catalog-view.js'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const page = fs.readFileSync('public/index.html', 'utf8');
-    const styles = ['public/style.css', 'public/lobby/waiting-room.css']
-        .map(file => fs.readFileSync(file, 'utf8')).join('\n');
+    const styles = readLobbyStyles();
     assert.match(page, /<body class="is-entry-view">/);
     assert.match(page, /id="lobbyEntry"/);
     assert.match(page, /id="entryStartBtn"[^>]*>[\s\S]*?开始游戏/);
     assert.match(page, /id="entryJoinBtn"[^>]*>[\s\S]*?加入房间/);
     assert.match(page, /id="joinLobbyView"[^>]*hidden/);
     assert.match(page, /id="joinLobbyCodeInput"/);
-    assert.match(page, /使用房间号进入游戏/);
+    assert.match(page, /输入房间号/);
     assert.match(page, /id="joinLobbyRoomList"/);
     assert.match(page, /id="joinLobbyGameFilter"/);
     assert.match(page, /data-auth-slot/);
-    assert.match(page, /账号、密码与个人资料将在此处接入/);
+    assert.match(page, /玩家昵称/);
+    assert.doesNotMatch(page, /账号系统接入|宣传语征集|RECONNECT TEST/);
     assert.match(lobby, /function enterGameCatalog/);
     assert.match(lobby, /function showJoinLobby/);
     assert.match(lobby, /function returnHomeFromBrand/);
     assert.match(lobby, /history\.replaceState\(null, '', location\.pathname\)/);
     assert.match(lobby, /showEntryGateway\(\{ replayAnimation: false, animateReturn: true \}\)/);
     assert.match(lobby, /function joinFromJoinLobby/);
+    assert.match(lobby, /pendingUrlInviteToken/);
+    assert.match(lobby, /params\.set\('invite', currentRoom\.inviteToken\)/);
+    assert.match(lobby, /inviteToken = pendingUrlRoom === roomId \? pendingUrlInviteToken : ''/);
     assert.match(lobby, /function renderJoinLobbyRooms/);
     assert.match(lobby, /if \(pendingUrlRoom\) \{ showJoinLobby\(\{ focusCode: false \}\); joinLobbyCodeInput\.value = pendingUrlRoom; \}/);
     assert.doesNotMatch(lobby, /if \(pendingUrlRoom\) \{ send\(\{ type: 'joinRoom'/, '邀请链接也应先进入找房大厅并让玩家确认加入');
@@ -763,7 +780,7 @@ test('Social deduction games share a prominent responsive identity focus and Ava
     const werewolfClient = readFrontendSource('werewolf');
     const werewolfStyle = fs.readFileSync('public/games/werewolf/style.css', 'utf8');
     const witchtownClient = readWitchtownClient();
-    const witchtownStyle = ['public/games/witchtown/style.css', 'public/games/witchtown/scenes.css']
+    const witchtownStyle = ['public/games/witchtown/style.css', 'public/games/witchtown/table.css', 'public/games/witchtown/dossier.css', 'public/games/witchtown/scenes.css', 'public/games/witchtown/responsive.css']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const sources = fs.readFileSync('public/assets/bgg/SOURCES.md', 'utf8');
     const roles = ['loyal', 'merlin', 'percival', 'minion', 'assassin', 'morgana', 'mordred', 'oberon'];
@@ -783,7 +800,7 @@ test('Social deduction games share a prominent responsive identity focus and Ava
     }
     assert.match(avalonClient, /roleArtPreloads/);
     assert.match(avalonClient, /av-role-art social-role-focus-art/);
-    assert.match(avalonStyle, /grid-template-columns:\s*minmax\(286px/);
+    assert.match(avalonClient, /<aside class="av-role-column"><section class="av-role social-role-focus" data-role="role"><\/section><\/aside>/);
     assert.match(avalonStyle, /\.av-role-art\s*\{/);
     assert.match(werewolfStyle, /\.ww-role\s*\{[\s\S]*?min-height:\s*360px/);
     assert.match(witchtownStyle, /\.witchtown-hall\s*\{[\s\S]*?min-height:\s*220px/);
@@ -792,25 +809,21 @@ test('Social deduction games share a prominent responsive identity focus and Ava
     assert.match(sources, /1453075/);
 });
 
-test('Four identity-card games require hold-to-reveal and reseal on privacy loss', () => {
+test('Social identity-card games require hold-to-reveal while Coup keeps its online hand visible', () => {
     const clients = {
         werewolf: readFrontendSource('werewolf'),
         avalon: readFrontendSource('avalon'),
         witchtown: readWitchtownClient(),
-        coup: ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
-            .map(file => fs.readFileSync(`public/games/coup/${file}`, 'utf8')).join('\n'),
     };
     const styles = {
         werewolf: fs.readFileSync('public/games/werewolf/style.css', 'utf8'),
         avalon: readGameStyles('avalon'),
-        witchtown: ['public/games/witchtown/style.css', 'public/games/witchtown/scenes.css']
+        witchtown: ['public/games/witchtown/style.css', 'public/games/witchtown/table.css', 'public/games/witchtown/dossier.css', 'public/games/witchtown/scenes.css', 'public/games/witchtown/responsive.css']
             .map(file => fs.readFileSync(file, 'utf8')).join('\n'),
-        coup: readGameStyles('coup'),
     };
     assert.match(clients.werewolf, /data-role-hold/);
     assert.match(clients.avalon, /data-role-hold/);
     assert.match(clients.witchtown, /data-dossier-hold/);
-    assert.match(clients.coup, /data-identity-hold/);
     for (const [game, client] of Object.entries(clients)) {
         assert.match(client, /pointerdown/, `${game} 缺少按住开始事件`);
         assert.match(client, /pointerup/, `${game} 缺少松手封存事件`);
@@ -820,12 +833,15 @@ test('Four identity-card games require hold-to-reveal and reseal on privacy loss
         assert.match(client, /blur/, `${game} 窗口失焦时不会封存身份`);
     }
     assert.match(clients.witchtown, /镇议会角色从开局起始终公开，不属于密封档案/);
-    assert.match(clients.coup, /privateIdentity: true/);
-    assert.match(clients.coup, /card\?\.revealed === true/);
+    const coup = ['client.js', 'constants.js', 'cards.js', 'state.js', 'template.js', 'render.js', 'scene.js', 'actions.js']
+        .map(file => fs.readFileSync(`public/games/coup/${file}`, 'utf8')).join('\n');
+    assert.doesNotMatch(coup, /data-identity-hold/);
+    assert.doesNotMatch(coup, /privateIdentityVisible/);
+    assert.match(coup, /lossIndex: !card\.revealed && ready \? index : undefined/);
+    assert.match(coup, /exchangeIndex: optionIndex/);
     assert.match(styles.werewolf, /\.ww-role-secret\s*\{[\s\S]*?transition:\s*none/);
     assert.match(styles.avalon, /\.av-role-secret\s*\{[\s\S]*?transition:\s*none/);
     assert.match(styles.witchtown, /\.witchtown-dossier\s*\{[\s\S]*?transition:\s*none/);
-    assert.match(styles.coup, /\.cp-private-card-cover\s*\{[\s\S]*?transition:\s*none/);
 });
 
 test('Study mode creates a one-person research table and switches the controlled perspective', () => {

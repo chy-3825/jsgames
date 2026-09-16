@@ -1,0 +1,290 @@
+/* Casino board breakpoint layout overrides. Loaded before scenes.css. */
+
+@media (max-width: 1120px) {
+    .lv-layout {
+        grid-template-columns: 226px minmax(0, 1fr);
+    }
+
+    .lv-casinos {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .lv-casino {
+        padding: 10px;
+    }
+
+    .lv-bill {
+        width: 34px;
+    }
+}
+
+@media (max-width: 980px) {
+    .lv-layout {
+        display: flex;
+    }
+
+    .lv-table { order: 1; }
+    .lv-seats { order: 2; }
+    .lv-log-panel { order: 3; }
+
+    .lv-casinos {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .lv-seats-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .lasvegas-app::before {
+        width: auto;
+        height: 160px;
+        opacity: .38;
+    }
+
+    .lv-brand-art {
+        width: 48px;
+        height: 42px;
+    }
+
+    .lv-brand-art::before {
+        font-size: 23px;
+    }
+
+    .lv-command {
+        grid-template-columns: 1fr;
+        margin-top: 10px;
+        padding: 10px;
+    }
+
+    .lv-action-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .lv-place-confirm {
+        grid-template-columns: 31px minmax(0, 1fr) auto;
+    }
+
+    .lv-casinos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+        margin-top: 10px;
+    }
+
+    .lv-casino {
+        min-height: 190px;
+        padding: 9px;
+    }
+
+    .lv-casino-head {
+        grid-template-columns: 34px minmax(0, 1fr);
+    }
+
+    .lv-casino-number {
+        width: 32px;
+        height: 32px;
+    }
+
+    .lv-sign-die {
+        width: 31px;
+        height: 31px;
+        grid-template-columns: repeat(3, 4px);
+        grid-template-rows: repeat(3, 4px);
+    }
+
+    .lv-sign-die i {
+        width: 4px;
+        height: 4px;
+    }
+
+    .lv-money-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .lv-money-total strong {
+        font-size: 18px;
+    }
+
+    .lv-casino-dice {
+        overflow-x: auto;
+    }
+
+    .lv-place-confirm > button {
+        padding-inline: 9px;
+    }
+
+    .lv-seats-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 430px) {
+    .lv-brand-copy p {
+        max-width: 175px;
+    }
+
+    .lv-header-actions .lv-leave-button {
+        font-size: 0;
+    }
+
+    .lv-header-actions .lv-leave-button::after {
+        content: '←';
+        font-size: 15px;
+    }
+
+    .lv-face-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .lv-face-actions button {
+        min-height: 62px;
+        -webkit-appearance: none;
+        appearance: none;
+        forced-color-adjust: none;
+        border-color: rgba(224, 195, 255, .18);
+        background: #21182e;
+        color: #c7b9ce;
+    }
+
+    .lasvegas-app .lv-face-actions button.is-available {
+        border-color: rgba(88, 199, 237, .62);
+        background: #162c40;
+        color: #e9e0cd;
+    }
+
+    .lasvegas-app .lv-face-actions button.is-selected {
+        border-color: #ffce6b;
+        background: #47332b;
+        color: #ffdc85;
+    }
+
+    .lasvegas-app .lv-face-actions button:disabled {
+        background: #17111f;
+        color: #776d7f;
+        opacity: .68;
+    }
+
+    .lv-roll,
+    .lv-casino-pick,
+    .lv-place-confirm > button {
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .lv-place-confirm {
+        grid-template-columns: 31px minmax(0, 1fr);
+    }
+
+    .lv-place-confirm > button {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .lv-place-confirm small {
+        white-space: normal;
+    }
+
+    .lv-casino-head strong {
+        font-size: 10px;
+    }
+
+    .lv-casino-head small {
+        font-size: 7px;
+    }
+
+    .lv-bills {
+        overflow: hidden;
+    }
+
+    .lv-bill {
+        width: 37px;
+        height: 25px;
+        padding-inline: 3px;
+        font-size: 8px;
+    }
+
+    .lv-bill > span { font-size: 9px; }
+    .lv-bill > em { font-size: 4.5px; }
+
+    .lv-dice-stack {
+        min-width: 39px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lv-seat,
+    .lv-casino,
+    .lv-face-actions button,
+    .lv-roll {
+        transition: none;
+    }
+}
+
+@media (max-width: 980px) and (orientation: landscape) and (max-height: 520px) {
+    body { overflow: hidden; }
+    .lasvegas-app {
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        padding: 6px 8px;
+        overflow: hidden;
+    }
+    .lv-header {
+        grid-template-columns: minmax(155px, 1fr) auto auto;
+        min-height: 42px;
+        gap: 8px;
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+    }
+    .lv-brand-art, .lv-brand-copy p { display: none; }
+    .lv-brand-copy h1 { font-size: 18px; }
+    .lv-round-block { grid-column: auto; grid-row: auto; min-width: 165px; padding: 0; }
+    .lv-header-actions { grid-column: auto; grid-row: auto; }
+    .lv-layout {
+        display: grid;
+        grid-template-areas: "table";
+        grid-template-columns: minmax(0, 1fr);
+        height: calc(100svh - var(--game-shell-offset, 48px) - 55px);
+        gap: 0;
+    }
+    .lv-seats, .lv-log-panel { display: none; }
+    .lv-table {
+        width: 100%;
+        height: 100%;
+        padding: 7px;
+        overflow: auto;
+    }
+    .lv-table-head h2 { font-size: 15px; }
+    .lv-table-subline { display: none; }
+    .lv-command {
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 7px;
+        margin-top: 5px;
+        padding: 6px;
+    }
+    .lv-roll-panel { padding-right: 6px; }
+    .lv-dice { min-height: 35px; }
+    .lv-action-panel { grid-template-columns: minmax(0, 1fr) 92px; gap: 6px; }
+    .lv-face-actions { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
+    .lv-face-actions button { min-height: 48px; padding: 3px; }
+    .lv-roll { width: 92px; min-height: 48px; }
+    .lv-place-confirm { grid-column: 1 / -1; min-height: 34px; padding: 4px 7px; }
+    .lv-casinos { grid-template-columns: repeat(6, minmax(115px, 1fr)); grid-auto-rows: minmax(0, 1fr); height: clamp(56px, calc(100svh - var(--game-shell-offset, 48px) - 264px), 78px); min-height: 0; gap: 5px; margin-top: 5px; overflow: hidden; }
+    .lv-casino { grid-template-rows: auto auto minmax(0, 1fr) auto; height: 100%; min-height: 0; padding: 4px; }
+    .lv-casino-head { grid-template-columns: 26px minmax(0, 1fr); }
+    .lv-casino-number { width: 25px; height: 25px; }
+    .lv-sign-die { width: 23px; height: 23px; grid-template-columns: repeat(3, 4px); grid-template-rows: repeat(3, 4px); gap: 1px; }
+    .lv-sign-die i { width: 4px; height: 4px; }
+    .lv-casino-mark { display: none; }
+    .lv-casino-head strong { font-size: 9px; }
+    .lv-casino-head small { font-size: 6px; }
+    .lv-money-row { min-height: 20px; gap: 3px; }
+    .lv-money-total strong { font-size: 13px; }
+    .lv-money-total small { font-size: 6px; }
+    .lv-casino-dice { min-height: 20px; overflow: hidden; }
+    .lv-casino-dice-label { font-size: 6px; }
+    .lv-payout-strip { display: none; }
+    .lv-rules-dialog { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); overflow: auto; }
+}

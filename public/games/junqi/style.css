@@ -58,8 +58,6 @@
 .junqi3d-player-color { color: #d7c189; font-family: "Songti SC", SimSun, serif; font-size: 12px; letter-spacing: .16em; }
 .junqi3d-player-heading small { color: #8fa299; font-size: 10px; }
 .junqi3d-player-main { display: flex; align-items: center; gap: 11px; }
-.junqi3d-avatar { display: grid; width: 46px; height: 46px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(226, 219, 195, .32); border-radius: 7px; background: #36574f; box-shadow: inset 0 0 0 3px rgba(10, 24, 19, .25); color: #f7edda; font-family: "Songti SC", SimSun, serif; font-size: 19px; }
-.junqi3d-player-card.red .junqi3d-avatar { background: #754441; }
 .junqi3d-player-main > div:last-child { display: grid; gap: 4px; min-width: 0; }
 .junqi3d-player-main strong { overflow: hidden; color: #f0e4ce; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .junqi3d-player-main small { color: #9cad9f; font-size: 11px; }
@@ -226,7 +224,7 @@
     .junqi3d-side.red { grid-row: 1; grid-column: 2; }
     .junqi3d-player-card { align-content: center; gap: 3px; height: 58px; min-height: 0; padding: 6px 8px; border-radius: 8px; }
     .junqi3d-player-heading { justify-content: center; }
-    .junqi3d-player-heading small, .junqi3d-avatar, .junqi3d-strength { display: none; }
+    .junqi3d-player-heading small, .junqi3d-strength { display: none; }
     .junqi3d-player-color { font-size: 9px; }
     .junqi3d-player-main { justify-content: center; gap: 0; text-align: center; }
     .junqi3d-player-main > div:last-child { gap: 1px; }

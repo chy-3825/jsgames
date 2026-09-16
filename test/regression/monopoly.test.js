@@ -77,8 +77,8 @@ test('Monopoly uses a 40-space fold-board route', () => {
     assert.equal(session.engine.getPublicState().board[30].type, 'go_to_jail');
 });
 
-test('Monopoly keeps the official board spaces tied to their board rules and supports eight seats', () => {
-    const session = Monopoly.create('classic-board-eight', players(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']));
+test('Monopoly keeps the C1009 board spaces tied to their board rules and supports six seats', () => {
+    const session = Monopoly.create('classic-board-six', players(['a', 'b', 'c', 'd', 'e', 'f']));
     assert.equal(session.start().success, true);
     const state = session.engine.getPublicState();
     assert.equal(state.board.length, 40);
@@ -115,19 +115,35 @@ test('Monopoly builds houses evenly across a completed color group', () => {
 });
 
 test('Monopoly auctions an unpurchased property when the landing player declines', () => {
-    const session = Monopoly.create('monopoly-auction', players(['a', 'b', 'c'])); session.start(); const game = session.engine; const player = game.players[0];
+    const session = Monopoly.create('monopoly-auction', players(['a', 'b', 'c'])); session.start(); const game = session.engine; const player = game.players[0]; game.currentTurnIndex = 0;
     player.position = 1; game._resolveLanding(player);
     assert.equal(game.phase, 'property_decision');
     assert.equal(session.handleAction('a', { kind: 'passProperty' }).success, true);
     assert.equal(game.phase, 'auction');
+    assert.equal(session.handleAction('a', { kind: 'bidProperty', amount: 10 }).success, true);
     assert.equal(session.handleAction('b', { kind: 'bidProperty', amount: 75 }).success, true);
     assert.equal(session.handleAction('c', { kind: 'passAuction' }).success, true);
+    assert.equal(session.handleAction('a', { kind: 'passAuction' }).success, true);
     assert.equal(game.board[1].ownerId, 'b');
     assert.equal(game.players[1].cash, 1425);
 });
 
+test('Monopoly allows a property trade while an auction is in progress', () => {
+    const session = Monopoly.create('monopoly-trade-auction', players(['a', 'b', 'c']));
+    assert.equal(session.start().success, true);
+    const game = session.engine;
+    game.currentTurnIndex = 0;
+    game.phase = 'property_decision';
+    game.pendingPurchase = { playerId: 'a', tileIndex: 1 };
+    assert.equal(session.handleAction('a', { kind: 'passProperty' }).success, true);
+    game.board[3].ownerId = 'b';
+    assert.equal(session.handleAction('b', { kind: 'proposeTrade', targetPlayerId: 'c', propertyOffer: [3], cashOffer: 0, cashRequest: 0, propertyRequest: [] }).success, true);
+    assert.equal(game.tradeOffers.size, 1);
+    assert.equal(game.phase, 'auction');
+});
+
 test('Monopoly uses the official third-jail-roll payment and movement rule', () => {
-    const session = Monopoly.create('monopoly-jail', players(['a', 'b'])); session.start(); const game = session.engine;
+    const session = Monopoly.create('monopoly-jail', players(['a', 'b'])); session.start(); const game = session.engine; game.currentTurnIndex = 0;
     const player = game.players[0]; player.inJail = true; player.position = 10; player.jailTurns = 2; player.cash = 100;
     game.phase = 'jail_decision'; game._rollDice = () => [1, 2];
     assert.equal(session.handleAction('a', { kind: 'rollForDoubles' }).success, true);
@@ -143,13 +159,13 @@ test('Monopoly supports the complete chance/community decks and hotel upgrade', 
     game.board[1].ownerId = 'a'; game.board[3].ownerId = 'a'; game.board[1].houses = 4; game.board[3].houses = 4; game.players[0].cash = 500;
     game.phase = 'turn_complete';
     assert.equal(session.handleAction('a', { kind: 'buildHouse', tileIndex: 1 }).success, true);
-    assert.equal(game.board[1].houses, 5); assert.equal(game._calculateRent(game.board[1]), 400);
+    assert.equal(game.board[1].houses, 5); assert.equal(game._calculateRent(game.board[1]), 250);
 });
 
 test('Monopoly pays the start reward when an advance-to-start card is drawn at start', () => {
     const session = Monopoly.create('monopoly-start-card', players(['a', 'b'])); session.start(); const game = session.engine;
     const player = game.players[0]; player.position = 0; player.cash = 1500;
-    game.chanceDeck = [{ title: '前进到起点', text: '前进到起点并领取 ¥200', kind: 'advance', target: 0 }];
+    game.chanceDeck = [{ title: '前进到起点', text: '前进到起点并领取 M200', kind: 'advance', target: 0 }];
     game._drawEvent(player, 0, 'chance');
     assert.equal(player.cash, 1700);
     assert.equal(player.position, 0);
@@ -157,7 +173,7 @@ test('Monopoly pays the start reward when an advance-to-start card is drawn at s
 
 test('Monopoly returns a used get-out-of-jail card to its original deck', () => {
     const session = Monopoly.create('monopoly-jail-card', players(['a', 'b'])); session.start(); const game = session.engine;
-    const player = game.players[0]; player.position = 2; game.communityChestDeck = [{ title: '出狱卡', text: '保留此卡，可免费离开拘留所', kind: 'get_out_of_jail' }];
+    const player = game.players[0]; game.currentTurnIndex = 0; player.position = 2; game.communityChestDeck = [{ title: '免费出狱卡', text: '保留此卡，可免费离开监狱', kind: 'get_out_of_jail' }];
     game._resolveLanding(player); assert.equal(player.jailCardCount, 1); assert.equal(game.communityChestDeck.length, 0);
     player.inJail = true; game.phase = 'jail_decision';
     assert.equal(session.handleAction('a', { kind: 'useJailCard' }).success, true);
@@ -166,10 +182,10 @@ test('Monopoly returns a used get-out-of-jail card to its original deck', () => 
 
 test('Monopoly completes a deterministic two-player game through bankruptcy', () => {
     const session = Monopoly.create('monopoly-full', players(['a', 'b'])); session.start(); const game = session.engine;
-    const debtor = game.players[0]; const creditor = game.players[1];
-    debtor.position = 39; debtor.cash = 100; game.board[1].ownerId = creditor.id; game.board[1].houses = 5;
+    const debtor = game.players[0]; const creditor = game.players[1]; game.currentTurnIndex = 0;
+    debtor.position = 39; debtor.cash = 0; game.board[1].ownerId = creditor.id; game.board[1].houses = 5;
     game._rollDice = () => [1, 1];
     assert.equal(session.handleAction('a', { kind: 'rollDice' }).success, true);
+    assert.equal(session.handleAction('a', { kind: 'declareBankruptcy' }).success, true);
     assert.equal(debtor.position, 1); assert.equal(debtor.isBankrupt, true); assert.equal(game.status, 'ended'); assert.equal(game.winner.id, creditor.id);
 });
-

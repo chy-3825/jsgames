@@ -4,6 +4,7 @@ export function createAcquireModel() {
     return {
         state: null,
         pendingTileId: null,
+        pendingTileOrigin: null,
         previousFocus: null,
         pendingConfirmation: null,
         actionPending: false,
@@ -12,6 +13,27 @@ export function createAcquireModel() {
         presentationQueue: [],
         presentationToken: 0,
         presentationWaiters: new Set(),
+        presentationLockedUntil: 0,
+    };
+}
+
+export function localizePresentation(batch, localNow = Date.now()) {
+    if (!batch?.events?.length) return null;
+    const serverNow = Number(batch.serverNow);
+    const batchEnd = Number(batch.endsAt);
+    if (!Number.isFinite(serverNow) || !Number.isFinite(batchEnd)) return batch;
+    if (batchEnd <= serverNow) return null;
+    const toLocalTime = value => localNow + (Number(value) - serverNow);
+    return {
+        ...batch,
+        startedAt: toLocalTime(batch.startedAt),
+        endsAt: toLocalTime(batch.endsAt),
+        events: batch.events.map(event => ({
+            ...event,
+            startedAt: toLocalTime(event.startedAt),
+            endsAt: toLocalTime(event.endsAt),
+            segments: event.segments?.map(segment => ({ ...segment, startedAt: toLocalTime(segment.startedAt), endsAt: toLocalTime(segment.endsAt) })),
+        })),
     };
 }
 

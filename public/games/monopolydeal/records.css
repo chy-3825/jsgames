@@ -1,0 +1,182 @@
+/* Public record rail, draw zone and archive details. */
+/* Love Letter record rail, using the same flat rows and typographic rhythm. */
+.deal-intel {
+    display: grid;
+    align-content: start;
+    min-width: 0;
+    gap: 8px;
+    padding: 10px 0 8px 14px;
+    border-left: 1px solid rgba(220, 187, 126, .12);
+}
+.deal-record-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    padding: 0 0 8px;
+    border: 0;
+    border-bottom: 1px solid rgba(217, 183, 118, .12);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.deal-record-header:hover,
+.deal-record-retired:hover { background: rgba(224, 199, 144, .055); }
+.deal-record-header:focus-visible,
+.deal-record-retired:focus-visible { outline: 2px solid #d6ae67; outline-offset: 2px; }
+.deal-record-header > span { display: grid; gap: 1px; text-align: left; }
+.deal-record-header strong { color: #dfc58f; font: 600 11px "Noto Serif SC", serif; }
+.deal-record-header small { color: #8f827a; font-size: 9px; }
+.deal-record-header > i { width: 24px; height: 1px; background: #b99560; }
+.deal-record-retired,
+.deal-record-history {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid rgba(217, 183, 118, .09);
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+}
+.deal-record-retired { cursor: pointer; }
+.deal-record-retired { display: grid; grid-template-columns: 8px minmax(0, 1fr); align-items: start; gap: 8px; padding: 8px 4px; }
+.deal-record-retired > i,
+.deal-record-history > i { width: 5px; height: 5px; margin-top: 5px; border-radius: 50%; background: #b99560; }
+.deal-record-retired > span,
+.deal-record-copy { display: grid; min-width: 0; gap: 2px; }
+.deal-record-retired strong { color: #e3cc9d; font-size: 10px; }
+.deal-record-retired small { color: #9f9187; font-size: 8px; line-height: 1.4; }
+.deal-record-retired small b { color: #e2be74; }
+.deal-record-history { display: grid; grid-template-columns: 8px minmax(0, 1fr) 40px; align-items: start; gap: 8px; padding: 8px 4px; }
+.deal-record-copy small { color: #9b8d83; font-size: 8px; }
+.deal-record-copy strong { color: #ead19c; font: 500 12px "Noto Serif SC", serif; }
+.deal-record-copy strong b { font-size: 17px; }
+.deal-record-copy em { overflow: hidden; color: #8f827a; font-size: 8px; font-style: normal; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.deal-record-card { display: block; width: 40px; }
+.deal-record-card .deal-record-card-face { width: 40px; height: 58px; min-width: 40px; margin: 0; border-radius: 3px; pointer-events: none; transform: none; }
+.deal-record-card-empty { display: grid; width: 40px; aspect-ratio: 234 / 340; place-items: center; border: 1px solid rgba(217, 183, 118, .2); border-radius: 3px; background: #351923; color: #b99560; font: 700 12px "Noto Serif SC", serif; }
+
+/* One large Love Letter-style draw zone, with the card back itself as the
+   control. The zone is framed; the card does not sit inside another box. */
+.deal-supply {
+    display: grid;
+    align-content: stretch;
+    min-width: 0;
+    margin: 6px 0;
+    padding: 8px;
+    border: 1px solid rgba(220, 187, 126, .14);
+    border-radius: 5px;
+    background: rgba(22, 10, 15, .28);
+}
+.deal-court-deck { width: 100%; height: 100%; min-height: 172px; place-items: center; padding: 0; }
+.deal-deck-stack {
+    width: 80px;
+    aspect-ratio: 370 / 588;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    appearance: none;
+    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+    line-height: 0;
+}
+.deal-deck-stack img {
+    position: absolute;
+    top: -2.9%;
+    left: -4.35%;
+    width: 108.7%;
+    height: 105.4%;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    outline: 0;
+    object-fit: fill;
+    box-shadow: none;
+}
+.deal-card.is-selected::after { display: none; content: none; }
+.deal-choice-card.is-selected::after { display: none; content: none; }
+
+@media (max-width: 900px) {
+    .deal-court-deck { min-height: 150px; }
+    .deal-deck-stack { width: 68px; }
+}
+@media (max-width: 760px) {
+    .deal-supply { margin: 2px 0; padding: 5px; }
+    .deal-court-deck { min-height: 130px; }
+    .deal-deck-stack { width: 52px; }
+    .deal-intel { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 4px; padding: 4px 0 0; border-top: 1px solid rgba(220, 187, 126, .12); border-left: 0; }
+    .deal-record-header { padding-bottom: 3px; }
+    .deal-record-retired,
+    .deal-record-history { padding: 4px; }
+    .deal-record-history { grid-template-columns: 7px minmax(0, 1fr) 28px; }
+    .deal-record-card,
+    .deal-record-card .deal-record-card-face,
+    .deal-record-card-empty { width: 28px; min-width: 28px; }
+    .deal-record-card .deal-record-card-face { height: 41px; }
+    .deal-record-copy em { display: none; }
+}
+
+
+/* Archive entries keep Love Letter's compact card-first rhythm while still
+   showing the real public card face when the record is opened. */
+.deal-archive-entry {
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    min-width: 0;
+    gap: 9px;
+}
+.deal-archive-entry > .deal-archive-card-face {
+    display: block;
+    width: 42px;
+    min-width: 42px;
+}
+.deal-archive-entry .deal-archive-card-art {
+    width: 42px;
+    min-width: 42px;
+    height: 61px;
+    margin: 0;
+    pointer-events: none;
+    transform: none;
+}
+.deal-archive-entry .deal-archive-entry-mark {
+    display: grid;
+    width: 30px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid rgba(106, 91, 61, .22);
+    border-radius: 4px;
+    background: linear-gradient(145deg, #31584e, #172e29);
+    color: #f1d18b;
+    font-size: 9px;
+    font-style: normal;
+}
+.deal-archive-entry > div { display: grid; min-width: 0; gap: 2px; }
+.deal-archive-entry > div > strong { overflow: hidden; color: #3e4b43; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.deal-archive-entry > div > small,
+.deal-archive-entry > div > span { overflow-wrap: anywhere; color: #746b5d; font-size: 9px; line-height: 1.4; }
+.deal-archive-card { grid-template-columns: 42px minmax(0, 1fr) auto; }
+.deal-archive-card > b { color: #9b6635; font: 700 13px Georgia, serif; }
+@media (max-width: 760px) {
+    .deal-archive-entry { grid-template-columns: 34px minmax(0, 1fr); gap: 7px; }
+    .deal-archive-entry > .deal-archive-card-face,
+    .deal-archive-entry .deal-archive-card-art { width: 34px; min-width: 34px; }
+    .deal-archive-entry .deal-archive-card-art { height: 49px; }
+    .deal-archive-card { grid-template-columns: 34px minmax(0, 1fr) auto; }
+}
+
+/* The base table rules use a more specific direct-child selector. Repeat the
+   short-landscape placement at the same specificity so the compact two-column
+   dock cannot fall into an implicit fourth grid row. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .deal-game > .deal-council { grid-column: 1; grid-row: 2; }
+    .deal-game > .deal-table { display: none; }
+    .deal-game > .deal-command {
+        grid-column: 2;
+        grid-row: 2;
+        width: auto;
+        height: 100%;
+        min-height: 0;
+    }
+}

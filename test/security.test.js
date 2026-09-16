@@ -229,6 +229,15 @@ test('HTTP health endpoint exposes service state and baseline security headers',
     assert.equal(body.status, 'ok');
     assert.equal(body.service, 'jsgames');
     assert.equal(body.realtime.players, 0);
+
+    const staticResponse = await new Promise((resolve, reject) => {
+        http.get(`http://127.0.0.1:${server.address().port}/script.js`, result => {
+            result.resume();
+            result.on('end', () => resolve(result));
+        }).on('error', reject);
+    });
+    assert.equal(staticResponse.statusCode, 200);
+    assert.equal(staticResponse.headers['cache-control'], 'no-store');
 });
 
 test('same-origin policy accepts the HTTP request origin and rejects a foreign one', () => {

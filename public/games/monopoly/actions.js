@@ -2,7 +2,7 @@ import { BOARD_CENTER_SKINS, PLAYER_TOKEN_ART, PLAYER_TOKEN_NAMES } from './cons
 import { storeBoardSkin, storeTokenStyle } from './state.js';
 
 /** User interaction and action submission handlers for 环城大富翁. */
-export function createMonopolyActions({ mount, model, renderer, scene, send, rulesModal, documentRef = globalThis.document, windowRef = globalThis.window || globalThis }) {
+export function createMonopolyActions({ mount, model, renderer, scene, send, rulesModal, tradeModal, documentRef = globalThis.document, windowRef = globalThis.window || globalThis }) {
     const $ = role => mount.querySelector(`[data-role="${role}"]`);
     const state = () => model.state;
     const animationLocked = () => model.isDiceAnimating || model.isMoveAnimating || model.isRollPending;
@@ -109,12 +109,61 @@ export function createMonopolyActions({ mount, model, renderer, scene, send, rul
             model.isRollPending = true;
             scene.beginDiceAnimation();
         }
+        $('landingDialog')?.close();
         send({ type: 'gameAction', action });
+    }
+
+    function submitTrade() {
+        const target = $('tradeTarget')?.value;
+        if (!target) return;
+        const checked = role => Array.from(mount.querySelectorAll(`[data-role="${role}"]:checked`)).map(input => Number.isInteger(Number(input.value)) ? Number(input.value) : input.value);
+        const amount = role => Math.max(0, Math.floor(Number($(role)?.value || 0)));
+        sendAction({
+            kind: 'proposeTrade',
+            targetPlayerId: target,
+            cashOffer: amount('tradeCashOffer'),
+            cashRequest: amount('tradeCashRequest'),
+            propertyOffer: checked('tradeOfferProperty'),
+            propertyRequest: checked('tradeRequestProperty'),
+            jailCardOffer: checked('tradeOfferCard'),
+        });
+        tradeModal?.setOpen(false);
     }
 
     function handleClick(event) {
         const uiButton = event.target.closest('[data-ui]');
         const ui = uiButton?.dataset.ui;
+        if (ui === 'rollDice') {
+            const available = state()?.availableActions || {};
+            if (available.canRoll || available.canRollForDoubles) sendAction({ kind: available.canRoll ? 'rollDice' : 'rollForDoubles' });
+            return;
+        }
+        if (ui === 'openAssets') {
+            model.assetPlayerId = uiButton.dataset.playerId;
+            renderer.renderAssets();
+            if (!$('assetsDialog').open) $('assetsDialog').showModal();
+            return;
+        }
+        if (ui === 'closeAssets') {
+            $('assetsDialog').close();
+            return;
+        }
+        if (ui === 'assetProperty') {
+            model.selectedTile = Number(uiButton.dataset.tileIndex);
+            model.followPlayerPosition = false;
+            renderer.render();
+            if (!$('propertyDialog').open) $('propertyDialog').showModal();
+            return;
+        }
+        if (ui === 'closeProperty') {
+            $('propertyDialog').close();
+            return;
+        }
+        if (ui === 'closeLanding') {
+            $('landingDialog').close();
+            renderer.render();
+            return;
+        }
         if (ui === 'selectTokenStyle') {
             selectTokenStyle(uiButton.dataset.tokenStyle);
             return;
@@ -145,6 +194,19 @@ export function createMonopolyActions({ mount, model, renderer, scene, send, rul
             rulesModal.setOpen(true);
             return;
         }
+        if (ui === 'trade') {
+            tradeModal?.setOpen(true);
+            renderer.renderTrade?.();
+            return;
+        }
+        if (ui === 'closeTrade') {
+            tradeModal?.setOpen(false);
+            return;
+        }
+        if (ui === 'submitTrade') {
+            submitTrade();
+            return;
+        }
         if (ui === 'closeRules') {
             rulesModal.setOpen(false);
             return;
@@ -171,6 +233,7 @@ export function createMonopolyActions({ mount, model, renderer, scene, send, rul
             model.selectedTile = Number(tile.dataset.index);
             model.followPlayerPosition = false;
             renderer.render();
+            if (!$('propertyDialog').open) $('propertyDialog').showModal();
             return;
         }
 
@@ -178,9 +241,19 @@ export function createMonopolyActions({ mount, model, renderer, scene, send, rul
         if (actionButton) {
             const action = actionButton.dataset.action;
             if (animationLocked() || actionButton.disabled) return;
+            if (action === 'trade') {
+                tradeModal?.setOpen(true);
+                renderer.renderTrade?.();
+                return;
+            }
             const payload = { kind: action };
             if (['buildHouse', 'sellBuilding', 'mortgageProperty', 'unmortgageProperty'].includes(action)) payload.tileIndex = Number(actionButton.dataset.tileIndex);
             if (action === 'bidProperty') payload.amount = Number(mount.querySelector('[data-auction-amount]')?.value || 0);
+            if (action === 'bidBuilding') {
+                payload.amount = Number(mount.querySelector('[data-auction-amount]')?.value || 0);
+                payload.tileIndex = Number(actionButton.dataset.tileIndex || state()?.auction?.tileIndex);
+            }
+            if (['acceptTrade', 'rejectTrade', 'cancelTrade'].includes(action)) payload.tradeId = actionButton.dataset.tradeId;
             sendAction(payload);
             return;
         }
@@ -195,6 +268,10 @@ export function createMonopolyActions({ mount, model, renderer, scene, send, rul
             renderer.render();
             return;
         }
+        if (event.target === $('tradeTarget')) {
+            renderer.renderTrade?.();
+            return;
+        }
         if (!event.target.matches('[data-role="skinUpload"]')) return;
         selectLocalSkin(event.target.files?.[0]);
         event.target.value = '';
@@ -202,6 +279,7 @@ export function createMonopolyActions({ mount, model, renderer, scene, send, rul
 
     function handleKeydown(event) {
         if (rulesModal.trapFocus(event)) return;
+        if (tradeModal?.trapFocus(event)) return;
         if (event.key === 'Escape' && model.skinMenuOpen) {
             setSkinMenu(false, true);
             return;
@@ -212,6 +290,10 @@ export function createMonopolyActions({ mount, model, renderer, scene, send, rul
         }
         if (event.key === 'Escape' && rulesModal.isOpen()) {
             rulesModal.setOpen(false);
+            return;
+        }
+        if (event.key === 'Escape' && tradeModal?.isOpen()) {
+            tradeModal.setOpen(false);
             return;
         }
         if (event.key === 'Enter' && event.target.matches('[data-auction-amount]')) {

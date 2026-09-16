@@ -97,6 +97,41 @@ test('重复提交同一张手牌不会误打后方卡牌或虚增出牌数', ()
     assert.deepEqual(game.players[0].hand.map(card => card.id), ['stable-3']);
 });
 
+test('中央牌区在后续摸牌后仍保留最近出牌', () => {
+    const game = fresh(['a', 'b'], 109).engine;
+    setPlay(game, 'a', [money('recent-money', 3)]);
+
+    assert.equal(game.handleAction('a', { kind: 'playCard', cardId: 'recent-money', zone: 'bank' }).success, true);
+    assert.equal(game.getPublicState().lastPlayedCard.card.id, 'recent-money');
+    assert.equal(game.getPublicState().lastPlayedCard.playerId, 'a');
+
+    assert.equal(game.handleAction('a', { kind: 'endTurn' }).success, true);
+    assert.equal(game.handleAction('b', { kind: 'drawCards' }).success, true);
+    assert.equal(game.interaction, null);
+    assert.equal(game.getPublicState().lastPlayedCard.card.id, 'recent-money');
+});
+
+test('牌库和弃牌不足时按实际摸牌数记录', () => {
+    const game = fresh(['a', 'b'], 110).engine;
+    game.currentTurnIndex = 0;
+    game.phase = 'draw';
+    game.players[0].hand = [money('kept-money', 1)];
+    game.deck = [];
+    game.discard = [money('only-drawable', 2)];
+
+    assert.equal(game.handleAction('a', { kind: 'drawCards' }).success, true);
+    assert.equal(game.lastAction.message, 'a 摸了 1 张牌');
+    assert.equal(game.actionLog.at(-1), 'a 摸了 1 张牌');
+
+    const passGo = { id: 'last-pass-go', kind: 'action', action: 'passGo', name: '通行证', value: 1 };
+    setPlay(game, 'a', [passGo]);
+    game.deck = [];
+    game.discard = [];
+    assert.equal(game.handleAction('a', { kind: 'playCard', cardId: passGo.id }).success, true);
+    assert.equal(game.lastAction.message, 'a 使用通行证，摸了 1 张牌');
+    assert.equal(game.interaction.amount, 1);
+});
+
 test('客户端用卡牌 ID 提交、锁定重复操作并在销毁时移除牌桌监听', () => {
     const clientSource = fs.readFileSync('public/games/monopolydeal/client.js', 'utf8');
     const actionsSource = fs.readFileSync('public/games/monopolydeal/actions.js', 'utf8');
@@ -130,6 +165,9 @@ test('每回合摸牌、空手摸五张、最多三张和七张手牌上限正�
     assert.equal(game.phase, 'discard');
     assert.equal(session.handleAction('a', { kind: 'discardCard', cardIndex: 0 }).success, true);
     assert.equal(game.phase, 'draw');
+    assert.ok(game.actionLog.some(message => message.includes('弃掉') && message.includes('1 张')), '超出手牌上限的弃牌应写入公开历史');
+    assert.equal(game.getPublicState().lastPlayedCard.zone, 'discard');
+    assert.equal(game.getPublicState().lastPlayedCard.cards.length, 1);
 
     const empty = game.getCurrentPlayer();
     empty.hand = [];
@@ -350,4 +388,36 @@ test('五人最大人数局可从发牌、轮转到三组胜利完整结束（�
     runFivePlayerFullGame(201, 'a');
     runFivePlayerFullGame(202, 'c');
     runFivePlayerFullGame(203, 'e');
+});
+
+test('行动记录保留完整结构化牌面且银行牌不会进入弃牌循环', () => {
+    const game = fresh(['a', 'b'], 204).engine;
+    setPlay(game, 'a', [{ id: 'history-money', kind: 'money', value: 5, name: '5M 现金' }]);
+    assert.equal(game.handleAction('a', { kind: 'playCard', cardId: 'history-money', zone: 'bank' }).success, true);
+    const state = game.getPublicState();
+    assert.ok(Array.isArray(state.actionHistory));
+    const entry = state.actionHistory.find(item => item.card?.id === 'history-money');
+    assert.equal(entry.playerId, 'a');
+    assert.equal(entry.card.name, '5M 现金');
+    assert.equal(entry.zone, 'bank');
+    assert.equal(game.discard.some(card => card.id === 'history-money'), false);
+    assert.equal(game._draw(1).length, 1, '银行牌不应被重洗进牌库');
+});
+
+test('弃牌必须一次选满，失败不改变手牌，五张同时公开', () => {
+    const session = fresh(); const game = session.engine;
+    game.phase = 'discard'; game.currentTurnIndex = 0;
+    const player = game.players[0];
+    player.hand = Array.from({ length: 12 }, (_, i) => money(`batch-${i}`, 1));
+    const before = JSON.stringify(player.hand);
+    for (const cardIds of [['batch-0'], ['batch-0','batch-0','batch-1','batch-2','batch-3'], ['batch-0','batch-1','batch-2','batch-3','missing']]) {
+        assert.equal(session.handleAction('a', { kind: 'discardCard', cardIds }).success, false);
+        assert.equal(JSON.stringify(player.hand), before);
+    }
+    const ids = player.hand.slice(0, 5).map(card => card.id);
+    assert.equal(session.handleAction('a', { kind: 'discardCard', cardIds: ids }).success, true);
+    assert.equal(player.hand.length, 7);
+    assert.deepEqual(game.getPublicState().lastPlayedCard.cards.map(card => card.id), ids);
+    assert.equal(game.getPublicState().lastPlayedCard.zone, 'discard');
+    assert.equal(game.phase, 'draw');
 });

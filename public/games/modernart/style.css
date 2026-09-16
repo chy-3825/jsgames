@@ -331,9 +331,9 @@
 .art-wallet > div strong { color: #f2c158; font: 900 32px Georgia, serif; }
 .art-wallet > div small { margin-left: 5px; color: #b9b0a7; font-size: 8px; }
 .art-wallet > p { position: relative; z-index: 1; margin: 5px 0 0; color: #888284; font-size: 6px; }
-.art-player { position: relative; z-index: 1; display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 7px; min-width: 0; padding: 7px 3px; border-bottom: 1px solid #dad3c8; }
+.art-player { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px; min-width: 0; padding: 7px 3px 7px 8px; border-bottom: 1px solid #dad3c8; }
 .art-player:last-child { border: 0; }
-.art-player > i { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 50%; color: #fff; background: var(--player); font-size: 8px; font-style: normal; font-weight: 900; box-shadow: inset 0 0 0 2px rgba(255,255,255,.42); }
+.art-player::before { position: absolute; inset: 7px auto 7px 0; width: 3px; border-radius: 2px; background: var(--player); content: ""; }
 .art-player strong, .art-player small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .art-player strong { font-size: 8px; }
 .art-player strong em { margin-left: 4px; padding: 1px 4px; color: #fff; background: #df4d40; font-size: 5px; font-style: normal; }
@@ -388,8 +388,7 @@
 .art-event-card footer { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; padding: 6px 3px 2px; }
 .art-event-card footer b { color: var(--artist); font: 900 9px "Songti SC", SimSun, serif; }
 .art-event-card footer span { color: #aaa19c; font-size: 6px; }
-.art-event-player { display: inline-grid; grid-template-columns: 32px auto; grid-template-rows: auto auto; align-items: center; gap: 1px 7px; min-width: 112px; padding: 7px 9px; border: 1px solid #5b575b; background: #242326; }
-.art-event-player > i { grid-row: 1 / 3; display: grid; width: 31px; height: 31px; place-items: center; border-radius: 50%; color: #fff; background: var(--player); font-size: 9px; font-style: normal; font-weight: 900; }
+.art-event-player { display: inline-grid; grid-template-columns: auto; grid-template-rows: auto auto; align-items: center; gap: 1px; min-width: 112px; padding: 7px 9px 7px 11px; border-left: 3px solid var(--player); border-top: 1px solid #5b575b; border-right: 1px solid #5b575b; border-bottom: 1px solid #5b575b; background: #242326; }
 .art-event-player > b { font-size: 9px; }
 .art-event-player > small { color: #96908f; font-size: 6px; }
 .art-event-transaction { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 13px; }

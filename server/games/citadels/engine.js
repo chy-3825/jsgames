@@ -1,6 +1,45 @@
 const { COLORS, ROLES, DISTRICT_TYPES, EFFECT_NAMES } = require('./constants');
 const { handleRoleAction } = require('./role-actions');
 
+// All Citadels presentations are scheduled on the server.  Clients only
+// translate this timeline to their local clock, so a late/reconnected player
+// can catch up without making the rest of the room wait for them.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    roleDraftStart: 1050,
+    roleDraftProgress: 620,
+    roleSummoningStart: 760,
+    roleUnanswered: 820,
+    roleCall: 880,
+    crownAcquired: 950,
+    assassinationDeclared: 1070,
+    robberyDeclared: 1070,
+    assassinationResolved: 1410,
+    robberyResolved: 930,
+    magicianExchange: 1120,
+    magicianSwap: 1120,
+    takeGold: 670,
+    drawDistrict: 670,
+    keepDistrict: 670,
+    incomeCollected: 670,
+    smithy: 670,
+    buildDistrict: 980,
+    finalRoundTriggered: 1250,
+    buildPhaseClosed: 760,
+    turnEnded: 640,
+    laboratory: 820,
+    destroyDistrict: 1120,
+    graveyardRecovered: 1070,
+    graveyardDeclined: 1070,
+    roundTransition: 850,
+    finalSettlement: 2800,
+};
+
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'destroyDistrict' && data.graveyardPending) return 1370;
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 1000;
+}
+
 function shuffle(values, random = Math.random) {
     const source = typeof random === 'function' ? random : Math.random;
     for (let i = values.length - 1; i > 0; i -= 1) {
@@ -53,6 +92,7 @@ class CitadelsEngine {
         this.transactionSequence = 0;
         this.eventSequence = 0;
         this.presentation = null;
+        this.presentationQueue = [];
     }
 
     static buildDistrictDeck(random = Math.random) {
@@ -74,6 +114,11 @@ class CitadelsEngine {
         this.drawPile = CitadelsEngine.buildDistrictDeck(this.random);
         this.players.forEach(player => { player.hand = this._draw(4); });
         this.round = 1;
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.transactionSequence = 0;
+        this.eventSequence = 0;
         this._prepareRoleDraft();
         return this._success('富饶之城开始');
     }
@@ -410,9 +455,7 @@ class CitadelsEngine {
         return false;
     }
 
-    _finish() {
-        this.status = 'ended';
-        this.phase = 'ended';
+    _scoreResults() {
         const results = this.players.map(player => {
             const districtSum = player.city.reduce((sum, card) => sum + card.points, 0);
             const firstBonus = player.id === this.firstFinisherId ? 4 : 0;
@@ -423,10 +466,21 @@ class CitadelsEngine {
             return { player, districtSum, firstFinisherBonus: firstBonus, eightCityBonus: eightBonus, colorBonus, treasuryBonus: treasury, mapRoomBonus: mapRoom, score: districtSum + firstBonus + eightBonus + colorBonus + treasury + mapRoom, gold: player.gold };
         });
         results.sort((a, b) => b.score - a.score || b.districtSum - a.districtSum || b.gold - a.gold);
+        return results;
+    }
+
+    _scoreBreakdown(results = this._scoreResults()) {
+        return results.map(item => ({ id: item.player.id, name: item.player.name, score: item.score, districtSum: item.districtSum, firstFinisherBonus: item.firstFinisherBonus, eightCityBonus: item.eightCityBonus, colorBonus: item.colorBonus, treasuryBonus: item.treasuryBonus, mapRoomBonus: item.mapRoomBonus, gold: item.gold }));
+    }
+
+    _finish() {
+        this.status = 'ended';
+        this.phase = 'ended';
+        const results = this._scoreResults();
         const top = results[0];
         this.winner = top?.player || null;
         this.winners = results.filter(item => top && item.score === top.score && item.districtSum === top.districtSum && item.gold === top.gold).map(item => item.player);
-        this.scores = results.map(item => ({ id: item.player.id, name: item.player.name, score: item.score, districtSum: item.districtSum, firstFinisherBonus: item.firstFinisherBonus, eightCityBonus: item.eightCityBonus, colorBonus: item.colorBonus, treasuryBonus: item.treasuryBonus, mapRoomBonus: item.mapRoomBonus, gold: item.gold }));
+        this.scores = this._scoreBreakdown(results);
         this.actionLog.push(this.winners.length > 1 ? `终局并列冠军：${this.winners.map(player => player.name).join('、')}` : `终局：${this.winner?.name || '无人'} 建成最辉煌的城市`);
         this._appendPresentationEvent(this.winner, 'finalSettlement', { standings: this.scores, winners: this.winners.map(player => ({ id: player.id, name: player.name })) });
         this._updatePresentation({ resolved: true, ended: true, standings: this.scores, winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null });
@@ -434,35 +488,114 @@ class CitadelsEngine {
 
     // ============ 对外接口 ============
     _success(message) {
+        this._finishPresentation();
         this.lastAction = { message, sequence: this.presentation?.sequence || 0 };
         return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null };
     }
 
     _startPresentation(player, kind, data = {}) {
+        // Close the previous transaction before opening a new one. Its events
+        // remain in presentationQueue until their deadlines expire.
+        if (this.presentation && !this.presentation.resolved) {
+            this._updatePresentation({
+                resolved: true,
+                ended: this.status === 'ended',
+                nextPhase: this.phase,
+                nextPlayerId: this.phase === 'role_selection' ? this.draftSteps[this.draftIndex]?.playerId || null : this.currentPlayerId,
+            });
+        }
+        const now = Date.now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
         this.presentation = {
             sequence: ++this.presentationSequence,
             transactionId: ++this.transactionSequence,
+            actorId: player?.id || null,
+            action: kind,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
             events: [],
             resolved: false,
             ended: false,
+            nextPhase: null,
+            nextPlayerId: null,
+            winner: null,
         };
+        this.presentationQueue.push(this.presentation);
         return this._appendPresentationEvent(player, kind, data);
     }
 
     _appendPresentationEvent(player, kind, data = {}) {
-        if (!this.presentation) return this._startPresentation(player, kind, data);
-        this.presentation.events.push({
-            eventId: ++this.eventSequence,
+        if (!this.presentation || this.presentation.resolved) return this._startPresentation(player, kind, data);
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || Date.now();
+        const startedAt = Math.max(Date.now(), previousEnd);
+        const contentDurationMs = presentationContentDuration(kind, data);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const eventId = ++this.eventSequence;
+        const event = {
+            sequence: eventId,
+            eventId,
             kind,
             playerId: player?.id || null,
             playerName: player?.name || null,
             ...clone(data),
-        });
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
+        this.presentation.events.push(event);
+        this.presentation.endsAt = event.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
         return this.presentation;
+    }
+
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this._updatePresentation({
+            resolved: true,
+            ended: this.status === 'ended',
+            nextPhase: this.phase,
+            nextPlayerId: this.status === 'playing'
+                ? (this.phase === 'role_selection' ? this.draftSteps[this.draftIndex]?.playerId || null : this.currentPlayerId)
+                : null,
+            winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null,
+        });
     }
 
     _updatePresentation(values = {}) {
         if (this.presentation) Object.assign(this.presentation, clone(values));
+    }
+
+    _presentationBatches(serverNow = Date.now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        if (event.kind === 'finalSettlement' && (event.winners || []).some(item => String(item.id) === String(player?.id))) {
+            projected.viewerVariant = 'personalVictory';
+            projected.title = '您已获胜';
+            projected.detail = '您建成了最辉煌的城市，终局账本已经结算。';
+        }
+        if (event.kind === 'assassinationResolved' && String(event.playerId) === String(player?.id)) {
+            projected.viewerVariant = 'personalElimination';
+            projected.title = '您已出局';
+            projected.detail = `您的${event.role?.name || '角色'}本轮被刺杀，将跳过本轮行动。`;
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
     }
 
     handleAction(playerId, action = {}) {
@@ -475,6 +608,9 @@ class CitadelsEngine {
 
     getPublicState() {
         const currentRole = this._activeRole();
+        const serverNow = Date.now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         return {
             roomId: this.roomId,
             status: this.status,
@@ -512,7 +648,9 @@ class CitadelsEngine {
             pendingGraveyard: this.pendingGraveyard ? { ownerId: this.pendingGraveyard.ownerId, attackerId: this.pendingGraveyard.attackerId, cardId: this.pendingGraveyard.card.id, cardName: this.pendingGraveyard.card.name, card: this._publicCard(this.pendingGraveyard.card), cost: this.pendingGraveyard.cost } : null,
             lastAction: this.lastAction,
             actionLog: this.actionLog.slice(-18),
-            presentation: this.presentation ? clone(this.presentation) : null,
+            serverNow,
+            presentations,
+            presentation,
             winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null,
             winners: this.winners.map(player => ({ id: player.id, name: player.name })),
             scores: this.scores,
@@ -536,6 +674,8 @@ class CitadelsEngine {
         state.discardOptions = this.draftDiscarding && this.draftSteps[this.draftIndex]?.playerId === playerId ? this.discardOptions.map(id => this._role(id)) : null;
         state.availableActions = this._availableActions(playerId);
         state.destroyTargets = this._destroyTargets(playerId);
+        state.presentation = this._projectPresentation(state.presentation, player);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, player));
         return state;
     }
 
@@ -597,7 +737,26 @@ class CitadelsEngine {
         player.isOnline = false;
         if (this.status === 'playing') {
             this.status = 'ended';
+            this.phase = 'ended';
             this.winner = this.players.find(other => other.id !== playerId && other.isOnline) || null;
+            this.winners = this.winner ? [this.winner] : [];
+            this.scores = this._scoreBreakdown(this._scoreResults());
+            this.actionLog.push(`${player.name} 离开后，${this.winner?.name || '无人'}结束本局`);
+            this._startPresentation(this.winner, 'finalSettlement', {
+                standings: this.scores,
+                winners: this.winners.map(item => ({ id: item.id, name: item.name })),
+                reason: 'playerLeave',
+                endedByPlayerId: playerId,
+                endedByPlayerName: player.name,
+            });
+            this._updatePresentation({
+                resolved: true,
+                ended: true,
+                standings: this.scores,
+                winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null,
+                nextPhase: 'ended',
+                nextPlayerId: null,
+            });
         }
         return this._success(`${player.name} 离开了游戏`);
     }

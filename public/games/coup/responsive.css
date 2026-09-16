@@ -6,7 +6,7 @@
  */
 @media (max-width: 1100px) {
     .cp-statusbar {
-        grid-template-columns: minmax(170px, 1fr) minmax(190px, auto) auto 38px;
+        grid-template-columns: minmax(0, 1fr) auto 38px;
     }
 
     .cp-public-stats > div:first-child {
@@ -18,13 +18,17 @@
     }
 
     .cp-command-inner {
-        grid-template-columns: 300px minmax(0, 1fr);
+        grid-template-columns: minmax(460px, 500px) minmax(0, 1fr);
         gap: 18px;
     }
 
     .cp-private {
-        padding-right: 18px;
+        grid-template-columns: 202px minmax(0, 1fr);
+        gap: 20px;
+        padding-right: 0;
     }
+
+    .cp-private > header.cp-self-summary { width: 190px; }
 
     .cp-influence {
         width: 116px;
@@ -40,13 +44,31 @@
     }
 }
 
+/* Give small councils some breathing room without stretching seats to the
+   edges of a wide display. Larger tables retain the compact scrolling row. */
+@media (min-width: 901px) {
+    .cp-players[data-seat-count="1"] {
+        width: 210px;
+    }
+
+    .cp-players[data-seat-count="2"] {
+        justify-content: space-between;
+        width: min(570px, calc(100% - 32px));
+    }
+
+    .cp-players[data-seat-count="3"] {
+        justify-content: space-between;
+        width: min(800px, calc(100% - 32px));
+    }
+}
+
 @media (max-width: 900px) {
     .cp-app {
         grid-template-rows: auto auto auto auto;
     }
 
     .cp-statusbar {
-        grid-template-columns: minmax(145px, 1fr) minmax(180px, auto) auto 38px;
+        grid-template-columns: minmax(0, 1fr) auto 38px;
         gap: 10px;
         padding-right: 14px;
         padding-left: 14px;
@@ -55,13 +77,13 @@
     .cp-players {
         display: flex;
         justify-content: flex-start;
+        gap: 12px;
         padding: 1px 2px 5px;
         overflow: auto hidden;
     }
 
     .cp-seat {
-        flex: 0 0 220px;
-        border-right: 1px solid rgba(224, 204, 162, .14);
+        flex: 0 0 210px;
     }
 
     .cp-table {
@@ -91,7 +113,7 @@
     }
 
     .cp-private {
-        grid-template-columns: 170px minmax(0, 1fr);
+        grid-template-columns: 210px minmax(0, 1fr);
         grid-template-rows: auto;
         align-items: center;
         padding: 0 0 13px;
@@ -105,6 +127,8 @@
         margin: 0;
         padding-right: 16px;
     }
+
+    .cp-private > header.cp-self-summary { width: 210px; padding: 7px 9px; }
 
     .cp-self-cards {
         justify-content: flex-start;
@@ -125,7 +149,7 @@
 
 @media (max-width: 680px) {
     .cp-statusbar {
-        grid-template-columns: auto minmax(0, 1fr) auto 36px;
+        grid-template-columns: minmax(0, 1fr) auto 36px;
         min-height: 58px;
         gap: 8px;
         padding: 7px 10px;
@@ -138,14 +162,6 @@
 
     .cp-brand h1 {
         font-size: 17px;
-    }
-
-    .cp-turn-status {
-        justify-self: stretch;
-    }
-
-    .cp-turn-status strong {
-        font-size: 13px;
     }
 
     .cp-public-stats > div {
@@ -171,16 +187,11 @@
     }
 
     .cp-seat {
-        grid-template-columns: 34px minmax(52px, 1fr) 58px;
+        grid-template-columns: minmax(52px, 1fr) 58px;
         flex-basis: 184px;
         gap: 7px;
         min-height: 76px;
         padding: 7px 9px;
-    }
-
-    .cp-avatar {
-        width: 34px;
-        height: 34px;
     }
 
     .cp-seat-cards {
@@ -206,24 +217,20 @@
     }
 
     .cp-stage-core {
-        grid-template-columns: 52px minmax(0, 1fr) 52px;
+        grid-template-columns: 108px minmax(0, 1fr);
         gap: 8px;
         min-height: 138px;
     }
 
+    .cp-supply { grid-template-rows: repeat(2, 68px); gap: 5px; margin: 4px 2px; padding: 0; }
+    .cp-court-deck, .cp-treasury { grid-template-columns: 1fr; gap: 2px; padding: 3px 2px; }
+
     .cp-deck-stack {
-        width: 38px;
+        width: 34px;
     }
 
-    .cp-treasury > span {
-        width: 45px;
-        height: 48px;
-    }
-
-    .cp-treasury i {
-        width: 28px;
-        height: 28px;
-    }
+    .cp-treasury > span { width: 45px; height: 48px; }
+    .cp-treasury i { width: 28px; height: 28px; }
 
     .cp-court-deck > strong,
     .cp-treasury > strong {
@@ -244,6 +251,19 @@
         width: 54px;
     }
 
+    .cp-event.is-selection-preview {
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .cp-event.is-selection-preview .cp-event-card {
+        width: 72px;
+    }
+
+    .cp-event.is-selection-preview .cp-event-copy {
+        padding: 7px 8px;
+    }
+
     .cp-event-copy {
         gap: 3px;
         padding-left: 9px;
@@ -258,7 +278,7 @@
     }
 
     .cp-public-interaction {
-        grid-template-columns: minmax(62px, .72fr) 70px minmax(92px, 1.2fr);
+        grid-template-columns: 88px minmax(0, 1fr);
         gap: 7px;
         min-height: 148px;
     }
@@ -270,7 +290,7 @@
 
     .cp-interaction-route > span {
         display: grid;
-        justify-items: end;
+        justify-items: start;
         gap: 1px;
     }
 
@@ -466,23 +486,15 @@
 
 @media (max-width: 420px) {
     .cp-statusbar {
-        grid-template-columns: auto minmax(0, 1fr) 34px;
+        grid-template-columns: minmax(0, 1fr) 34px;
     }
 
     .cp-public-stats {
         display: none;
     }
 
-    .cp-turn-status small {
-        font-size: 9px;
-    }
-
-    .cp-turn-status strong {
-        font-size: 12px;
-    }
-
     .cp-stage-core {
-        grid-template-columns: 43px minmax(0, 1fr) 43px;
+        grid-template-columns: 88px minmax(0, 1fr);
         gap: 5px;
     }
 
@@ -491,13 +503,10 @@
         display: none;
     }
 
-    .cp-deck-stack {
-        width: 34px;
-    }
+    .cp-treasury > span { width: 39px; transform: scale(.88); }
 
-    .cp-treasury > span {
-        width: 39px;
-        transform: scale(.88);
+    .cp-deck-stack {
+        width: 31px;
     }
 
     .cp-event-sigil {
@@ -507,6 +516,19 @@
 
     .cp-event-card {
         width: 48px;
+    }
+
+    .cp-event.is-selection-preview {
+        grid-template-columns: 62px minmax(0, 1fr);
+        gap: 5px;
+    }
+
+    .cp-event.is-selection-preview .cp-event-card {
+        width: 48px;
+    }
+
+    .cp-event.is-selection-preview .cp-event-copy {
+        padding: 5px 6px;
     }
 
     .cp-event-copy > strong {
@@ -578,12 +600,11 @@
         grid-template-rows: auto 1fr;
         gap: 5px;
         padding: 0 7px 0 0;
-        border-right: 1px solid rgba(222, 198, 151, .18);
+        border-right: 0;
         border-bottom: 0;
     }
     .cp-private > header { display: grid; gap: 4px; margin: 0; padding: 0; }
     .cp-private header strong { font-size: 12px; }
-    .cp-private header small { display: none; }
     .cp-wallet { justify-self: start; }
     .cp-self-cards { gap: 4px; }
     .cp-self-cards .cp-influence { width: 46px; }
@@ -644,14 +665,12 @@
         top: auto;
         grid-column: 1 / -1;
         grid-row: 1;
-        grid-template-columns: auto minmax(0, 1fr) 34px;
+        grid-template-columns: minmax(0, 1fr) 34px;
         min-height: 42px;
         height: 42px;
         padding: 3px 8px;
     }
     .cp-brand h1 { font-size: 14px; }
-    .cp-turn-status { justify-self: stretch; }
-    .cp-turn-status small { display: none; }
     .cp-public-stats { display: none; }
 
     .cp-council {
@@ -673,7 +692,7 @@
         overflow: hidden auto;
     }
     .cp-seat {
-        grid-template-columns: 28px minmax(0, 1fr) 42px;
+        grid-template-columns: minmax(0, 1fr) 42px;
         flex: 1 1 48px;
         width: 100%;
         min-height: 45px;
@@ -682,9 +701,7 @@
         border: 0;
         border-bottom: 1px solid rgba(224, 204, 162, .12);
     }
-    .cp-avatar { width: 27px; height: 27px; font-size: 11px; }
     .cp-seat-copy > strong { font-size: 9px; }
-    .cp-seat-copy > small { display: none; }
     .cp-seat-coins { font-size: 7px; }
     .cp-seat-coins b { font-size: 10px; }
     .cp-seat-cards { width: 42px; }
@@ -715,12 +732,11 @@
         align-content: center;
         gap: 5px;
         padding: 0 7px 0 0;
-        border-right: 1px solid rgba(222, 198, 151, .18);
+        border-right: 0;
         border-bottom: 0;
     }
     .cp-private > header { display: grid; gap: 3px; margin: 0; padding: 0; }
     .cp-private header strong { font-size: 11px; }
-    .cp-private header small { display: none; }
     .cp-wallet { justify-self: start; }
     .cp-self-cards { gap: 4px; }
     .cp-self-cards .cp-influence { width: min(7.5vw, 58px); }
@@ -838,7 +854,7 @@
         overflow: hidden;
     }
     .cp-app.is-challenge-decision .cp-stage-core { min-height: 126px; }
-    .cp-app.is-challenge-decision .cp-challenge { margin-top: 6px; padding-top: 6px; }
+    .cp-app.is-challenge-decision .cp-challenge { padding-top: 6px; }
     .cp-app.is-challenge-decision .cp-decision-actions button { min-height: 38px; }
 
     .cp-overlay,
@@ -850,6 +866,38 @@
     .cp-role-entry { grid-template-columns: 45px minmax(0, 1fr); gap: 6px; padding-top: 4px; }
     .cp-role-entry > img { width: 45px; }
     .cp-role-entry p { font-size: 8px; }
+}
+
+/* Seat borders communicate the current decision without adding a hard outer ring. */
+@media (min-width: 1101px) {
+    .cp-private {
+        grid-template-columns: 210px max-content;
+        justify-content: center;
+        gap: 32px;
+        padding-inline: 0;
+    }
+}
+
+@media (min-width: 901px) and (max-width: 1100px) {
+    .cp-private {
+        grid-template-columns: 190px max-content;
+        justify-content: center;
+        gap: 26px;
+        padding-inline: 0;
+    }
+}
+
+.cp-seat.is-responding,
+.cp-private > .cp-self-summary.is-responding {
+    border-color: #78aebb;
+    background: rgba(45, 83, 91, .28);
+    box-shadow: 0 0 12px rgba(94, 185, 191, .12);
+}
+
+.cp-seat.is-turn:not(.is-responding):not(.is-targetable):not(.is-selected):not(.is-action-target):not(.is-out),
+.cp-private > .cp-self-summary.is-turn:not(.is-responding) {
+    border-color: #d9b66f;
+    box-shadow: 0 0 12px rgba(217, 182, 111, .12);
 }
 
 @media (prefers-reduced-motion: reduce) {

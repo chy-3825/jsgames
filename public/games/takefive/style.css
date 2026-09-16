@@ -260,7 +260,7 @@ html:has(body.is-takefive-view) { background: #17130e; scrollbar-color: #6f6757 
 }
 .tf-player {
     display: grid;
-    grid-template-columns: 23px 31px minmax(0, 1fr) auto;
+    grid-template-columns: 23px minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
     min-height: 48px;
@@ -273,19 +273,6 @@ html:has(body.is-takefive-view) { background: #17130e; scrollbar-color: #6f6757 
 .tf-player.is-me { box-shadow: inset 3px 0 var(--tf-yellow); background: rgba(243, 206, 54, .07); }
 .tf-player.is-offline { opacity: .48; }
 .tf-player-index { color: #5e6259; font: 700 8px Georgia, serif; }
-.tf-avatar {
-    display: grid;
-    width: 30px;
-    height: 30px;
-    place-items: center;
-    border: 1px solid #55594f;
-    border-radius: 50%;
-    background: #34382f;
-    color: var(--tf-paper);
-    font-size: 11px;
-    font-weight: 900;
-}
-.tf-player.is-me .tf-avatar { border-color: var(--tf-yellow); background: var(--tf-yellow); color: var(--tf-black); }
 .tf-player-copy { display: grid; min-width: 0; gap: 2px; }
 .tf-player-copy strong,
 .tf-player-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -984,7 +971,6 @@ button.tf-row { cursor: pointer; }
     background: rgba(227, 177, 61, .14);
     box-shadow: inset 4px 0 var(--tf-yellow), 0 0 22px rgba(227, 177, 61, .13);
 }
-.tf-player.is-resolving .tf-avatar { border-color: var(--tf-yellow); color: var(--tf-yellow); }
 .tf-row { position: relative; }
 .tf-row.is-resolution-target {
     z-index: 62;
@@ -1264,9 +1250,8 @@ button.tf-row { cursor: pointer; }
     .tf-hand-confirm { flex-wrap: wrap; justify-content: stretch; }
     .tf-confirm-button { min-width: 0; flex: 1 1 170px; }
     .tf-players { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .tf-player { grid-template-columns: 25px minmax(0, 1fr) auto; gap: 6px; min-height: 46px; }
+    .tf-player { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; min-height: 46px; }
     .tf-player-index { display: none; }
-    .tf-avatar { width: 25px; height: 25px; }
     .tf-player-score b { font-size: 14px; }
     .tf-table-rail { display: grid; grid-template-columns: minmax(0, 1fr); }
     .tf-target-panel { grid-column: auto; }

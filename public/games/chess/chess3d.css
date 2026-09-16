@@ -138,8 +138,6 @@
 .chess3d-player-card.is-current { border-color: rgba(216, 170, 89, .78); box-shadow: 0 0 0 1px rgba(216, 170, 89, .18), 0 20px 45px rgba(0, 0, 0, .28); }
 .chess3d-player-card.white { order: 2; }
 .chess3d-player-color { color: #aa9278; font-family: "Songti SC", SimSun, serif; font-size: 9px; letter-spacing: .18em; }
-.chess3d-avatar { display: grid; width: 43px; height: 43px; place-items: center; border: 1px solid rgba(230, 208, 172, .16); border-radius: 50%; background: #211713; color: #f2e5cc; font-family: "Songti SC", SimSun, serif; font-size: 18px; }
-.chess3d-player-card.white .chess3d-avatar { border-color: rgba(255, 250, 229, .36); background: #e7d9bc; color: #37251a; }
 .chess3d-player-card strong { color: #f0dfc2; font-size: 12px; }
 .chess3d-player-card small { color: #b19d85; font-size: 9px; }
 .chess3d-captured { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 25px; color: rgba(205, 185, 155, .66); font-family: Georgia, serif; font-size: 9px; letter-spacing: .08em; }
@@ -259,8 +257,6 @@
 .chess3d-app[data-skin="slate"] .chess3d-player-card { border-color: rgba(223, 215, 188, .17); background: linear-gradient(145deg, rgba(34, 54, 61, .62), rgba(9, 20, 27, .72)); }
 .chess3d-app[data-skin="slate"] .chess3d-player-card.is-current { border-color: rgba(229, 189, 104, .72); box-shadow: 0 0 0 1px rgba(229, 189, 104, .18), 0 20px 45px rgba(0, 0, 0, .24); }
 .chess3d-app[data-skin="slate"] .chess3d-player-color { color: #82959a; }
-.chess3d-app[data-skin="slate"] .chess3d-avatar { border-color: transparent; background: #1f2930; color: #f2e7ce; }
-.chess3d-app[data-skin="slate"] .chess3d-player-card.white .chess3d-avatar { background: #ded5c0; color: #293238; }
 .chess3d-app[data-skin="slate"] .chess3d-player-card strong { color: #ecdfc2; }
 .chess3d-app[data-skin="slate"] .chess3d-player-card small { color: #91a2a3; }
 .chess3d-app[data-skin="slate"] .chess3d-captured { color: rgba(194, 199, 191, .6); }
@@ -324,7 +320,6 @@
     }
     .chess3d-player-card.black { grid-row: 2; grid-column: 1; }
     .chess3d-player-card.white { grid-row: 2; grid-column: 2; order: 0; }
-    .chess3d-player-card .chess3d-avatar { display: none; }
     .chess3d-player-color { font-size: 8px; }
     .chess3d-player-card strong { overflow: hidden; max-width: 48%; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
     .chess3d-player-card small { overflow: hidden; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }

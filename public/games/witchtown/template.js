@@ -31,7 +31,7 @@ export function createWitchTownTemplate() {
 
                 <div class="witchtown-workspace">
                     <section class="witchtown-panel witchtown-table-panel">
-                        <div class="witchtown-section-heading"><div><span class="witchtown-kicker">公开审判席</span><h2>镇民与嫌疑人</h2></div><div class="witchtown-section-meta" data-role="table-summary">—</div></div>
+                        <div class="witchtown-section-heading"><div><span class="witchtown-kicker">公开审判席</span><h2>镇民状态</h2></div><div class="witchtown-section-meta" data-role="table-summary">—</div></div>
                         <div class="witchtown-tribunal-line" aria-hidden="true"><span></span><i></i><span></span></div>
                         <div class="witchtown-player-grid" data-role="table"></div>
                     </section>
@@ -50,11 +50,6 @@ export function createWitchTownTemplate() {
                         <div class="witchtown-section-heading"><div><span class="witchtown-kicker">证词与行动牌</span><h2>我的手牌</h2></div><div class="witchtown-section-meta" data-role="hand-summary">—</div></div>
                         <div data-role="hand"></div>
                     </section>
-
-                    <aside class="witchtown-panel witchtown-players-panel">
-                        <div class="witchtown-section-heading"><div><span class="witchtown-kicker">公开名册</span><h2>镇民状态</h2></div></div>
-                        <div class="witchtown-ledger" data-role="players"></div>
-                    </aside>
 
                     <aside class="witchtown-panel witchtown-log-panel">
                         <div class="witchtown-section-heading"><div><span class="witchtown-kicker">审判记录</span><h2>事件记录</h2></div></div>

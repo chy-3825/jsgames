@@ -1,10 +1,17 @@
 # 游戏大厅专项验收报告
 
-更新日期：2026-08-29；适用版本：`2.1.0`
+更新日期：2026-09-15；适用版本：`2.1.0`（当前工作树复测，未发布）
 
 本文件只记录大厅当前可维护的验收结论。按批次追加的旧日志已移至
 [`lobby-history.md`](./lobby-history.md)，其中的测试数量、缓存版本和云端快照均属于当时运行记录，不能覆盖本文件或
 [`phase4-runtime.md`](./phase4-runtime.md) 的当前基线。
+
+## 2026-09-15 本机复测补充
+
+- `npm run test:acceptance` 通过，聚合门禁现包含展示层事件审计。
+- `npm test` 为 733/733；`npm run test:syntax` 为 423 个文件；类型、lint、复杂度、报告、发布元数据、生产部署和 `git diff --check` 均通过。
+- `npm run test:browser` 的 Firefox 模块导入与视觉夹具为 28/28、96/96；性能烟测的 40/40 请求、20 个连接、6 个房间/12 名玩家清理通过。
+- 该结果只覆盖本机工作树；Chromium、真实移动设备、目标服务器、HTTPS/安全组、弱网和多实例仍未签字。
 
 ## 当前结论
 
@@ -21,7 +28,7 @@
 
 | 能力 | 当前验收结果 | 证据 |
 | --- | --- | --- |
-| 创建/加入/公开列表 | 28 款游戏均可经 `registry → Room` 创建；仅邀请房间不出现在公开列表，但可按房间号加入 | `npm test`、`npm run test:browser` |
+| 创建/加入/公开列表 | 28 款游戏均可经 `registry → Room` 创建；仅邀请房间不出现在公开列表，猜房间号会被拒绝，带随机令牌的邀请链接可以加入 | `npm test`、`npm run test:browser` |
 | 配置与准备 | 房主可设置有效人数/专属选项；设置变更会清除成员准备；未满足人数或准备条件时服务端拒绝开局 | `test/room*.test.js`、全量回归 |
 | 身份与座位 | WebSocket 首次分配唯一 `playerId`/`sessionToken`；同标签会话不会抢占仍在线的连接；加入/离开不重排既有座位 | `npm run test:browser` |
 | 断线恢复 | 房间暂停、会话令牌重连、原座位/玩家状态恢复、全部断线成员回来后恢复；在线玩家 ID 会被拒绝重复使用 | `npm run test:browser` |
@@ -40,16 +47,17 @@
 
 | 门禁 | 当前结果 | 说明 |
 | --- | --- | --- |
-| `npm test` | 512/512 通过 | 已编写的单元、协议、规则、前端契约、架构边界和实时安全策略全部通过；不等同于 28 款游戏全部官方规则 1:1 签署 |
-| `npm run test:syntax` | 383 个文件通过 | 覆盖当前 JavaScript 模块与测试脚本 |
+| `npm test` | 733/733 通过（2026-09-15） | 已编写的单元、协议、规则、前端契约、架构边界和实时安全策略全部通过；不等同于 28 款游戏全部官方规则 1:1 签署 |
+| `npm run test:syntax` | 423 个文件通过（2026-09-15） | 覆盖当前 JavaScript 模块与测试脚本 |
 | `npm run test:complexity` | 通过 | 热点文件均未超过行数预算；门禁用于阻止大厅/实时服务/高密度样式重新膨胀 |
 | `npm run test:browser` | Firefox 通过 | 28/28 模块导入、96/96 视觉夹具、房间生命周期、重连、隐私/输入边界 |
+| `npm run test:presentation` | 通过 | 17 个游戏展示事件审计及通用回退路径通过；已接入聚合验收与 CI |
 | `npm run test:performance` | 通过 | 资源预算、40 次静态请求、20 连接回收、6 房间/12 玩家回收；不是生产容量压测 |
 | `npm run test:reports` | 通过 | 注册表、28 份游戏报告、当前报告入口、规则矩阵和生成物边界一致 |
 | `npm run test:release` | 通过 | 版本/锁文件、发布脚本、systemd/Nginx 模板、Git 跟踪文件卫生 |
 | `npm run test:deploy` | 通过 | 生产形态 `bin/www` 启动、`/healthz`、安全头、WebSocket 建房和 SIGTERM 收尾；不替代目标服务器验收 |
 | `npm run test:audit` | 0 vulnerabilities | 仅表示依赖审计通过，不代替应用层安全检查 |
-| `npm run test:acceptance` | 本地聚合入口已接入 | 顺序执行上述可复现门禁（含生产形态部署烟测）并最后运行 `git diff --check`；不包含 `npm ci`、Chromium 可选门禁和目标环境操作 |
+| `npm run test:acceptance` | 通过（2026-09-15） | 顺序执行上述可复现门禁（含展示层事件审计和生产形态部署烟测）并最后运行 `git diff --check`；不包含 `npm ci`、Chromium 可选门禁和目标环境操作 |
 
 详细运行时、性能和发布证据见 [`phase4-runtime.md`](./phase4-runtime.md)；规则是否正式签署见
 [`rule-acceptance-matrix.md`](./rule-acceptance-matrix.md)。
@@ -62,10 +70,11 @@
 
 ## 架构收尾（2026-08-29）
 
-- `public/script.js` 现在约 1100 行的组合入口；目录、传输、加载器、封面/组件图、创建弹层、等待桌、入场转场和棋谱控件分别位于 `public/lobby/`，入口只保留状态编排和协议路由。
-- 并购、阿瓦隆、富饶之城、政变的长样式已拆成基础与版图/私有信息/交互/场景/响应式层，并由 `public/games/common/game-manifest.js` 按固定顺序加载；四个静态视觉页同步使用同一层级。
+- `public/script.js` 当前为 **890 行**组合入口；WebSocket 消息路由和大厅 DOM 事件分别位于 `public/lobby/message-handler.js`、`public/lobby/event-bindings.js`，入口只保留状态编排和协议装配。
+- 猎巫镇、拉斯维加斯的重复/高密度样式已按基础、版图/私有信息、场景和响应式层拆出，并由 `public/games/common/game-manifest.js` 按固定顺序加载；大厅全局 CSS 也拆成基础、游戏壳层、共享原语、响应式和等待房间层，静态视觉验收页同步使用同一层级。
+- 花火和大富翁纸牌的超长样式已完成下一层职责拆分：花火使用基础/牌桌/操作/基础响应式/演出/演出后响应式六层；大富翁纸牌使用基础/选择弹窗/交互/演出/响应式五层，均由同一资源清单加载并纳入架构回归。
 - 胡闹运动会引擎已拆出 `constants.js`、`movement.js`、`turn-resolution.js` 和 `state.js`，引擎本体保留生命周期编排；新增架构回归会阻止入口重新膨胀或样式脱离资源清单。
-- 架构与实时安全回归、全量 `npm test` 均为 **512/512**；Firefox **28/28 模块、96/96 视觉夹具**和 Chromium **28/28 模块、72/72 视觉夹具**均通过。
+- 架构与实时安全回归、全量 `npm test` 均为 **512/512**；Firefox **28/28 模块、96/96 视觉夹具**通过，当前本机未发现 Chromium 可执行文件，未运行可选 Chromium 门禁。
 
 ## 历史记录
 

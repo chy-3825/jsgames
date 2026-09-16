@@ -1,10 +1,10 @@
 const COLORS = [
     // Keep player order aligned with the authorized classic board artwork:
     // top-left blue, top-right green, bottom-right red, bottom-left yellow.
-    { id: 'blue', name: '蓝方', start: 0, symbol: '●' },
-    { id: 'green', name: '绿方', start: 13, symbol: '✚' },
-    { id: 'red', name: '红方', start: 26, symbol: '◆' },
-    { id: 'yellow', name: '黄方', start: 39, symbol: '★' },
+    { id: 'blue', name: '蓝方', start: 0 },
+    { id: 'green', name: '绿方', start: 13 },
+    { id: 'red', name: '红方', start: 26 },
+    { id: 'yellow', name: '黄方', start: 39 },
 ];
 
 const TRACK_LENGTH = 52;
@@ -29,10 +29,7 @@ class AeroplaneEngine {
     constructor(roomId, players, random = Math.random) {
         this.roomId = roomId; this.random = random;
         // 不在构造阶段静默截断玩家；由 start() 统一校验 2–4 人，便于大厅和测试发现人数配置错误。
-        this.players = players.map((player, index) => {
-            const color = COLORS[index];
-            return { id: player.id, name: player.name, color: color?.id || null, colorName: color?.name || '未分配', isOnline: true };
-        });
+        this.players = players.map(player => ({ id: player.id, name: player.name, color: null, colorName: '未选择', isOnline: true }));
         this.playerMap = Object.fromEntries(this.players.map(player => [player.id, player]));
         this.status = 'waiting';
         this.currentTurnIndex = 0;
@@ -58,17 +55,18 @@ class AeroplaneEngine {
     start() {
         if (this.status !== 'waiting') return { success: false, message: '飞行棋已经开始或已经结束' };
         if (this.players.length < 2 || this.players.length > 4) return { success: false, message: '飞行棋需要 2 至 4 名玩家' };
-        this.status = 'playing';
-        this.phase = 'await_roll';
+        this.status = 'selecting_color';
+        this.phase = 'select_color';
         this.currentTurnIndex = 0;
-        this._log(`${this.players[0].name} 执${this.players[0].colorName}，请掷骰子`);
-        return this._success('飞行棋开始');
+        this._log('请每位玩家选择一个颜色');
+        return this._success('请选择颜色');
     }
 
     handleAction(playerId, action = {}) {
-        if (this.status !== 'playing') return { success: false, message: '棋局尚未开始或已结束' };
         const player = this.playerMap[playerId];
         if (!player || !player.isOnline) return { success: false, message: '玩家不存在或已离线' };
+        if (action.kind === 'selectColor') return this._selectColor(player, action.color);
+        if (this.status !== 'playing') return { success: false, message: '请等待所有玩家选好颜色' };
         const current = this.getCurrentPlayer();
         if (!current || current.id !== playerId) return { success: false, message: '还没轮到你', state: this.getPlayerState(playerId) };
 
@@ -76,6 +74,30 @@ class AeroplaneEngine {
         if (kind === 'rollDice') return this._rollDice(player);
         if (kind === 'movePlane') return this._movePlane(player, action.planeId);
         return { success: false, message: '未知操作', state: this.getPlayerState(playerId) };
+    }
+
+    _selectColor(player, colorId) {
+        if (this.status !== 'selecting_color') return { success: false, message: '选色阶段已经结束' };
+        const color = COLORS.find(item => item.id === colorId);
+        if (!color) return { success: false, message: '请选择有效颜色' };
+        const occupied = this.players.find(item => item.id !== player.id && item.color === color.id);
+        if (occupied) return { success: false, message: `${color.name}已被 ${occupied.name} 选择`, state: this.getPlayerState(player.id) };
+        player.color = color.id;
+        player.colorName = color.name;
+        this.planes.filter(plane => plane.playerId === player.id).forEach(plane => { plane.color = color.id; });
+        this._log(`${player.name} 选择了${color.name}`);
+        this._beginPlayWhenColorsReady();
+        return this._success(`${player.name} 已选择${color.name}`);
+    }
+
+    _beginPlayWhenColorsReady() {
+        const active = this.players.filter(player => player.isOnline);
+        if (this.status !== 'selecting_color' || active.length < 2 || !active.every(player => player.color)) return false;
+        this.status = 'playing';
+        this.phase = 'await_roll';
+        this.currentTurnIndex = this.players.findIndex(player => player.isOnline);
+        this._log(`${this.getCurrentPlayer().name} 先手，请掷骰子`);
+        return true;
     }
 
     _rollDice(player) {
@@ -267,7 +289,6 @@ class AeroplaneEngine {
                 colorName: player.colorName,
                 isOnline: player.isOnline,
                 isCurrentTurn: player.id === current?.id,
-                finishedCount: this.planes.filter(plane => plane.playerId === player.id && plane.status === 'finished').length,
             })),
             planes: clone(this.planes),
             movablePlaneIds: this.movablePlaneIds.slice(),
@@ -275,6 +296,7 @@ class AeroplaneEngine {
             lastAction: clone(this.lastAction),
             actionLog: this.actionLog.slice(-18),
             winner: this.winner ? { id: this.winner.id, name: this.winner.name, color: this.winner.color } : null,
+            availableColors: COLORS.map(color => ({ id: color.id, name: color.name, occupiedBy: this.players.find(player => player.color === color.id)?.id || null })),
             rules: {
                 trackLength: TRACK_LENGTH,
                 sharedRouteSteps: SHARED_ROUTE_STEPS,
@@ -307,11 +329,22 @@ class AeroplaneEngine {
     handlePlayerLeave(playerId) {
         const player = this.playerMap[playerId];
         if (!player) return { success: false, message: '玩家不存在' };
+        const wasPlaying = this.status === 'playing';
         player.isOnline = false;
-        if (this.status === 'playing' && this.players.filter(item => item.isOnline).length <= 1) {
+        const activePlayers = this.players.filter(item => item.isOnline);
+        if (this.status === 'selecting_color') {
+            player.color = null; player.colorName = '未选择';
+            this.planes.filter(plane => plane.playerId === playerId).forEach(plane => { plane.color = null; });
+            if (activePlayers.length <= 1) {
+                this.status = 'ended'; this.phase = 'ended'; this.winner = activePlayers[0] || null;
+            } else {
+                this._log(`${player.name} 离开，颜色已释放`);
+                this._beginPlayWhenColorsReady();
+            }
+        } else if (this.status === 'playing' && activePlayers.length <= 1) {
             this.status = 'ended'; this.phase = 'ended'; this.winner = this.players.find(item => item.isOnline) || null;
         } else if (this.status === 'playing' && this.getCurrentPlayer()?.id === playerId) this._advanceTurn();
-        if (this.status === 'playing') this._log(`${player.name} 离开了飞行棋`);
+        if (wasPlaying && this.status === 'playing') this._log(`${player.name} 离开了飞行棋`);
         return this._success(`${player.name} 离开棋局`);
     }
 

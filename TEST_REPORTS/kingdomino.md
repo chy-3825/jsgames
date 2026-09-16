@@ -36,13 +36,26 @@
 - 若公开区确有无人认领的领地，会明确播放该编号领地移出本轮；官方三人局本来只公开三块，因此不会虚构第四块落选牌。
 - 终局标题直接宣布“玩家名成为王国霸主”，并继续展示完整排名、总分、最大连续领地与王冠数。
 
+## 服务器权威播报时间线（2026-08-30）
+
+- 服务器为每个播报批次和事件生成 `serverNow`、`startedAt`、`endsAt` 与 `durationMs`；同批事件严格串行，连续行动也会按上一批的 `endsAt` 跨批 FIFO 排期。
+- 开局批次固定为 `gameStart → roundReveal`；最后认领可在一批内依次包含 `selectDomino → unclaimedDomino → placementPhase`；最后摆放后同批进入下轮 `roundReveal` 或 `finalSettlement`。
+- 自然终局统一使用 `reason/endReason: 'points'`；人数不足收束使用 `reason: 'players'` 与 `outcome: 'lastPlayerStanding'`。
+- Room 在当前公共播报截止前拒绝下一步游戏操作。前端按服务器时钟差本地化截止时间，重连会接入仍在播放的事件并忽略过期批次，跳过动画不会提前解除公共时间槽。
+- `finalSettlement` 按玩家视角投影：单独胜者看到“您已获胜”，完全同分的每位并列胜者看到“您已并列获胜”；个人版本与公共结算保持完全相同的开始、结束时间。
+- 永久离场生成公共 `playerLeft`，离场席位会从当前队列、后续选择顺序和未结算领地中清理，在房玩家可继续沿用同一条公共时间线。Kingdomino 没有局内淘汰机制，因此本轮没有为正常败者虚构“您已出局”。
+
 ### 两人基础局与 Mighty Duel 专项
 
 另行运行两人基础完整对局：使用 24 块牌、6 轮、5×5 棋盘，48 个动作完成，a=33、b=19，a 获胜。Mighty Duel 变体也以独立设置运行：使用全部 48 块、12 轮、7×7 棋盘，96 个动作完成，a=53、b=63，b 获胜；两种配置不能混用。
 
 ## 自动化结果
 
-- `test/kingdomino-official.test.js`：6/6 通过；规则与前端专项合计 11/11 通过。
+- `test/kingdomino-presentation.test.js`：10/10 通过，覆盖绝对时间、开局/最后认领复合批、换轮/终局顺序、跨批 FIFO、Room gate、重连本地化、单胜/三人完全并列个人投影，以及选牌和摆放阶段的永久离场。
+- `test/kingdomino-client-presentation.test.js`：5/5 通过；用可控时钟实际运行客户端场景，验证绝对时间 FIFO 不重叠、只跳当前项、服务器截止锁、减少动态不缩时、过期事件跳过和销毁竞态安全。
+- `scripts/presentation-event-audit.js` 与 `test/presentation-event-contract.test.js` 通过；Kingdomino 服务器发布的 9 种播报事件均有前端场景处理器。
+- `test/kingdomino-official.test.js`：7/7；`test/kingdomino-frontend.test.js`：6/6；`test/regression/kingdomino.test.js`：4/4。Kingdomino 定向联合验收共 32/32 通过。
+- `npm run test:acceptance`：PASS；其中全项目回归 612/612，语句/行覆盖率 90.05%，浏览器模块导入 28/28、视觉夹具 96/96，依赖、语法、lint、类型、复杂度、性能清理、报告、发布、部署与 diff 门禁全部通过。
 - 覆盖牌组与人数设置、王冠顺序、重复/越权操作、反向摆放、计分、越界/重叠/无匹配拒绝、合法弃置限制和四人三局完整流程。
 - 当次全项目 `npm test`：414/414 通过（历史快照）。当前基线见 [`release-baseline.md`](./release-baseline.md)。
 

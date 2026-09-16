@@ -1,10 +1,10 @@
 # 狂野骆驼（Camel Up 2014 基础版）
 
-最近复验：2026-08-26
+最近复验：2026-08-30
 
 ## 当前验收状态
 
-2014 基础版 3–8 人规则已通过服务端状态机和自动化回归验收，10/10。实现包括 5 匹骆驼、16 格赛道、40 张终局下注牌、15 张赛段下注牌、5 张金字塔牌和 8 个可移动沙漠板块；未加入 Second Edition 的 Crazy Camels、伙伴牌或其他扩展。
+2014 基础版 3–8 人规则已通过服务端状态机和自动化回归验收；当前规则专项 15/15、前端契约 8/8。实现包括 5 匹骆驼、16 格赛道、40 张终局下注牌、15 张赛段下注牌、5 张金字塔牌和 8 个可移动沙漠板块；未加入 Second Edition 的 Crazy Camels、伙伴牌或其他扩展。
 
 ## 规则核对
 
@@ -22,7 +22,7 @@
 - **下注牌隐私**：每位玩家初始有 5 张私密终局牌；公共视角只显示已放置数量和金币，不会泄露未使用的骆驼颜色；同一张牌重复提交会被拒绝。
 - **板块边界**：不能放在 1 号格、骆驼所在格、已有板块格或相邻格；自己的板块可以移动，移动前的格会释放。
 - **结算边界**：赛段牌数量有限；错误全场下注扣 1；多个错误牌不会挤占正确牌的 8/5/3/2/1 奖励位；最终赛段结算不清空未结束比赛的状态。
-- **房间边界**：人数严格限制为 3–8，不再静默截断第 9 名玩家；当前玩家离线时顺时针跳过，避免赛局卡死。
+- **房间边界**：人数严格限制为 3–8，不再静默截断第 9 名玩家；当前玩家离线时顺时针跳过，避免赛局卡死；公共播报未结束时房间拒绝下一步动作。
 
 ## 自动化验收
 
@@ -37,8 +37,18 @@
 - `Camel Up settles overall winner/loser cards in placement order and shares tied victories`
 - `Camel Up allows a desert tile on any empty track space except space 1`
 - `Camel Up completes three independent maximum-player races from start to shared end scoring`
+- `Camel Up publishes the die, carried stack and desert-tile movement in order`
+- `Camel Up keeps an overall bet face down until the race is finished`
+- `Camel Up publishes a complete leg settlement and the next-leg curtain`
+- `Camel Up reveals terminal bets in placement order before publishing final standings`
+- `Camel Up schedules public presentations on one absolute server timeline`
+- `Camel Up room gate rejects actions until the authoritative presentation deadline`
+- `Camel Up projects sole and tied winners into the same final presentation slot`
+- `Camel Up retains private overall bets in every queued batch`
+- `Camel Up converts server presentation timestamps for a late or reconnecting viewer`
+- `Camel Up ends the public race on departure and keeps the winner in the shared final slot`
 
-本轮专项测试扩充为 9 项；既有回归中的 6 项 Camel Up 测试也全部通过。三局 8 人最大人数对局均从开局、连续赛段、骆驼堆叠和终局下注推进到最终结算，没有卡在无效回合或幽灵赛段。新增覆盖骰子揭晓、整叠骆驼移动、沙漠板块二段移动、终局暗注隐私、赛段结算事件与终局翻牌顺序。
+本轮专项测试扩充为 15 项，前端契约测试 8 项；既有回归中的 6 项 Camel Up 测试也全部通过。三局 8 人最大人数对局均从开局、连续赛段、骆驼堆叠和终局下注推进到最终结算，没有卡在无效回合或幽灵赛段。新增覆盖骰子揭晓、整叠骆驼移动、沙漠板块二段移动、终局暗注隐私、赛段结算事件、终局翻牌顺序、服务端绝对时间轴、房间播报锁、重连追赶、离场终局和个人胜利视角。
 
 ## 本轮修复
 
@@ -59,7 +69,11 @@
 - 放置或移动沙漠板块时，玩家席位与目标赛道格连线，板块实体飞入目标格。
 - 普通行动只使用局部、轻量演出；第五枚骰子后的赛段闭幕才使用全屏模糊，展示驼队顺位、赛段牌奖惩、金字塔奖励和每位玩家的金币变化。
 - 冲线后先播放最后赛段结算，再按实际入堆顺序逐张翻开冠军与垫底暗注，显示命中/失败及 `+8/+5/+3/+2/+1/−1`；最后的全屏结算直接宣布单独赢家或全部共享冠军，并显示支持并列冠军的金币排名。
-- 演出期间锁定下一步操作，支持跳过演出和系统“减少动画”设置；首次进入或重连只记录已见序号，不重播旧事件。
+- 所有公共批次由服务端排定统一的 `startedAt`/`endsAt`，事件带有 `durationMs`、`contentDurationMs`、`blocking` 和全局序号；同一动作与连续动作都进入串行队列，房间在最后一个批次结束前拒绝新操作。
+- 客户端接收 `presentations` 队列并将服务端时钟映射到本地时钟；迟到或重连只播放仍在有效时隙内的剩余内容，不因本地重绘、网络延迟或“减少动画”缩短公共结束时间。
+- “跳过演出”只隐藏本机画面，仍保留服务端截止锁；规则弹层会在公共演出开始时关闭，演出层位于规则层之上，避免连线和全屏播报被遮挡。
+- 终局赢家在同一 `finalSettlement` 时隙看到“您已获胜”，其他玩家看到公开赢家；个人投影与公共事件保持完全一致的开始/结束时间。狂野骆驼没有角色出局阶段，离场导致的终局同样生成共享终局批次。
+- 终局暗注的私密牌面按事件序号保留在每个排队批次中，只发送给对应持牌者；公共视角和其他玩家不会因队列扩展而泄露颜色。
 
 规则依据：[Camel Up Official Rules](https://images-cdn.zmangames.com/us-east-1/filer_public/88/09/8809b7bb-3a30-44ea-88db-a4683056794c/zm7480_camel_up_rules.pdf) 与 [Camel Up 规则汇总](https://cdn.ultraboardgames.com/camel-up/game-rules.php)。
 
@@ -83,7 +97,7 @@
 - 大厅将 `camelup` 纳入自绘游戏视觉名单，不再把竖版 BGG 封面强行裁成横幅；实体组件照仅保留在规则浮层中作为参考。
 - 新增 `__camelup_visual_test.html`。浏览器实测 `1440×900`、`1366×768`、`390×844` 三种视口均无页面横向溢出；16 个赛道格和 9 张当前可见下注牌均完整渲染。
 - 新增短横屏固定视口布局，同屏保留当前状态、16 格赛道和策略帐篷；玩家账簿和上赛段摘要在该极端高度下收起。
-- 统一视觉夹具新增待选择、摇骰、赛段注、冠军/垫底暗注、绿洲/海市蜃楼、骰子揭晓、骆驼移动、暗注入堆、赛段结算、终局翻牌和最终排名共 13 种状态，并新增 5 项前端回归测试。
-- 浏览器交互验收已覆盖四种动作的确认载荷及规则浮层键盘关闭；5 项狂野骆驼专项规则测试、6 项既有 Camel Up 回归和 BGG 资源边界测试均通过。
+- 统一视觉夹具新增待选择、摇骰、赛段注、冠军/垫底暗注、绿洲/海市蜃楼、骰子揭晓、骆驼移动、暗注入堆、赛段结算、终局翻牌和最终排名共 13 种状态，并持续补充前端播报契约测试。
+- 浏览器交互验收已覆盖四种动作的确认载荷及规则浮层键盘关闭；15 项狂野骆驼专项规则测试、8 项前端契约、6 项既有 Camel Up 回归和 BGG 资源边界测试均通过。
 - 2026-08-26 新增 Firefox 演出验收场景：骰塔揭晓、骆驼移动、终局暗注入堆、赛段闭幕、终局翻牌和最终排名。桌面端及 390×844 手机端均无 JavaScript 错误和页面横向溢出，赛段、翻牌与排名主体无需内部滚动。
-- `node --test test/camelup-frontend.test.js test/camelup-official.test.js`：14/14 通过；当次最终全量回归 451/451 通过（历史快照）。该结果代表本轮自动化与既有浏览器验收通过，不扩大表述为所有未覆盖的官方规则情形都已经 100% 人工验收；当前统一回归基线见 [`release-baseline.md`](./release-baseline.md)。
+- `node --test test/camelup-frontend.test.js test/camelup-official.test.js test/regression/camelup.test.js`：29/29 通过；`npm run test:syntax`：396 个文件通过；`npm run test:presentation`：PASS。当前工作区全量门禁仍有既有问题：串行 `node --test --test-concurrency=1` 为 558/559 通过，唯一失败是 `test/regression/core.test.js` 对狼人杀旧资源版本的断言；并行 `npm test` 还会叠加该工作区既有改动造成的时序失败。这些失败不属于本轮狂野骆驼改造，故不将全量结果误报为通过。该结果代表狂野骆驼专项自动化与既有浏览器验收通过，不扩大表述为所有未覆盖的官方规则情形都已经 100% 人工验收；当前统一回归基线见 [`release-baseline.md`](./release-baseline.md)。

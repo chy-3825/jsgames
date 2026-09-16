@@ -70,7 +70,7 @@ export function createHanabiTemplate() {
                 <path data-role="actionPath"></path>
             </svg>
             <div class="hb-action-stage" data-role="actionStage" role="status" aria-live="assertive"></div>
-            <button class="hb-presentation-skip" data-action="skipPresentation" type="button">跳过</button>
+            <button class="hb-presentation-skip" data-action="skipPresentation" type="button" aria-label="跳过当前播报">跳过</button>
         </div>
 
         <div class="hb-overlay is-hidden" data-role="rules" role="presentation" aria-hidden="true">

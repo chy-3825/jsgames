@@ -3,20 +3,23 @@ import { canMove } from './state.js';
 
 export function createAeroplaneActions({ mount, model, renderer, scene, actionLock, rulesModal, overlay, send, addLog }) {
     const rollButton = mount.querySelector('[data-ui="roll"]');
+    function submitPlane(plane) {
+        if (!canMove(model, plane, actionLock) || !actionLock.lock()) return;
+        model.selectedPlaneId = null;
+        renderer.render();
+        try { send({ type: 'gameAction', action: { kind: 'movePlane', planeId: plane.id } }); } catch (error) { actionLock.unlock(); addLog?.(error?.message || '操作发送失败', 'error'); renderer.render(); }
+    }
     function handleClick(event) {
         const ui = event.target.closest('[data-ui]')?.dataset.ui;
         if (ui === 'roll' && !rollButton.disabled) { model.isRollPending = true; scene.beginDiceAnimation(); send({ type: 'gameAction', action: { kind: 'rollDice' } }); }
+        if (ui === 'selectColor') { model.selectedColor = event.target.closest('[data-color]')?.dataset.color || null; renderer.render(); }
+        if (ui === 'confirmColor' && model.selectedColor) send({ type: 'gameAction', action: { kind: 'selectColor', color: model.selectedColor } });
         if (ui === 'rules') rulesModal.setOpen(true);
         if (ui === 'closeRules' || event.target === overlay) rulesModal.setOpen(false);
         const confirmTarget = event.target.closest('[data-move-confirm]');
         if (confirmTarget) {
             const plane = model.state?.planes?.find(item => item.id === confirmTarget.dataset.moveConfirm);
-            if (canMove(model, plane, actionLock)) {
-                if (!actionLock.lock()) return;
-                model.selectedPlaneId = null;
-                renderer.render();
-                try { send({ type: 'gameAction', action: { kind: 'movePlane', planeId: plane.id } }); } catch (error) { actionLock.unlock(); addLog?.(error?.message || '操作发送失败', 'error'); renderer.render(); }
-            }
+            submitPlane(plane);
             return;
         }
         const planeButton = event.target.closest('[data-plane-id]');
@@ -28,6 +31,7 @@ export function createAeroplaneActions({ mount, model, renderer, scene, actionLo
         if (message.type === 'error') actionLock.unlock();
         if (message.state) {
             const previous = model.state; model.state = message.state;
+            const me = model.state.players?.find(player => player.id === model.state.myId); const pendingColor = model.state.availableColors?.find(color => color.id === model.selectedColor); if (me?.color || model.state.status !== 'selecting_color' || (pendingColor?.occupiedBy && pendingColor.occupiedBy !== model.state.myId)) model.selectedColor = null;
             const rollAction = model.state.lastAction?.kind === 'rollDice' ? model.state.lastAction : null; const rollValue = Number(rollAction?.dice) || 0; const rollKey = rollValue ? String(rollAction.rollId || `${rollAction.playerId || ''}:${rollValue}:${model.state.actionLog?.join('|') || ''}`) : '';
             if (rollValue && model.isRollPending && rollAction.playerId === model.state.myId && model.isDiceAnimating) { model.isRollPending = false; model.latestRollKey = rollKey; model.diceAnimationFinalValue = rollValue; } else if (rollValue) scene.beginDiceAnimation(rollValue, rollKey);
             const move = model.state.lastMove; const moveKey = move ? `${move.planeId}:${move.from?.progress}:${move.to?.progress}` : '';

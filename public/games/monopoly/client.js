@@ -4,7 +4,7 @@ import { createModalController } from '../common/modal.js';
 import { loadStyles } from '../common/style-loader.js';
 import { BOARD_CENTER_SKINS, randomSumSevenDice } from './constants.js';
 import { createMonopolyActions } from './actions.js';
-import { createMonopolyModel, normalizeDice } from './state.js';
+import { createMonopolyModel, normalizeDice, rollAnimationKey } from './state.js';
 import { createMonopolyTemplate } from './template.js';
 import { createMonopolyRenderer } from './render.js';
 import { createMonopolyScene } from './scene.js';
@@ -24,7 +24,8 @@ export function createGameClient({ mount, send, addLog }) {
     const renderer = createMonopolyRenderer({ mount, model, getElement });
     const scene = createMonopolyScene({ model, renderer, windowRef });
     const rulesModal = createModalController({ root: mount.querySelector('.mono-game'), overlay: getElement('rulesOverlay'), documentRef, windowRef, fallbackFocus: () => mount.querySelector('[data-ui="rules"]') });
-    const actions = createMonopolyActions({ mount, model, renderer, scene, send, rulesModal, documentRef, windowRef });
+    const tradeModal = createModalController({ root: mount.querySelector('.mono-game'), overlay: getElement('tradeOverlay'), documentRef, windowRef, fallbackFocus: () => mount.querySelector('[data-ui="trade"]') });
+    const actions = createMonopolyActions({ mount, model, renderer, scene, send, rulesModal, tradeModal, documentRef, windowRef });
 
     mount.addEventListener('click', actions.handleClick, { signal: scope.signal });
     mount.addEventListener('change', actions.handleChange, { signal: scope.signal });
@@ -33,6 +34,7 @@ export function createGameClient({ mount, send, addLog }) {
     function handleMessage(message) {
         if (message.type === 'error' && model.isRollPending) scene.cancelDiceAnimation();
         if (message.state) {
+            model.isReceivingState = true;
             const previousState = model.state;
             const nextState = message.state;
             if (previousState && normalizeDice(previousState.dice) && !normalizeDice(nextState.dice)) model.idleDice = randomSumSevenDice();
@@ -42,7 +44,7 @@ export function createGameClient({ mount, send, addLog }) {
             const rollAction = ['rollDice', 'rollForDoubles'].includes(model.state.lastAction?.kind) ? model.state.lastAction : null;
             const rollValues = normalizeDice(rollAction?.dice) || (rollAction?.kind === 'rollForDoubles' ? normalizeDice(model.state.dice) : null);
             const rollKey = rollValues
-                ? String(rollAction?.rollId || `${rollAction?.kind || 'roll'}:${rollAction?.playerId || ''}:${rollValues.join('-')}:${model.state.turnNumber || 0}:${model.state.actionLog?.join('|') || ''}`)
+                ? rollAnimationKey(rollAction, rollValues)
                 : '';
             if (rollValues && !previousState) {
                 model.visibleDice = rollValues;
@@ -61,6 +63,7 @@ export function createGameClient({ mount, send, addLog }) {
                 if (model.isDiceAnimating) model.pendingMovement = movement;
                 else scene.startMovementAnimation(movement);
             }
+            model.isReceivingState = false;
             renderer.render();
         }
         if (message.type === 'error') addLog?.(message.message || '操作失败', 'error');
@@ -73,6 +76,7 @@ export function createGameClient({ mount, send, addLog }) {
             scene.stop();
             actions.destroy();
             rulesModal.destroy();
+            tradeModal.destroy();
             scope.destroy();
             documentRef.body.classList.remove('is-monopoly-view');
             styleHandle.release();

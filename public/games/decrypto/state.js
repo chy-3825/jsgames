@@ -20,6 +20,39 @@ export function createDecryptoModel({ windowRef = globalThis.window || globalThi
         codeRevealKey: null,
         sceneTimer: null,
         sceneSequence: 0,
+        // Server-timed public broadcasts.  The legacy scene fields remain
+        // available for compatibility with older room snapshots.
+        presentationQueue: [],
+        presentationPlaying: false,
+        presentationToken: 0,
+        lastPresentationSequence: 0,
+        presentationEventIds: new Set(),
+        presentationWaiters: new Set(),
+        presentationLockedUntil: 0,
+        presentationSkipCurrent: false,
+        presentationEvent: null,
+    };
+}
+
+/** Translate server absolute deadlines to this browser's clock. */
+export function localizePresentation(batch, localNow = Date.now()) {
+    if (!batch?.events?.length) return null;
+    const serverNow = Number(batch.serverNow);
+    const batchEnd = Number(batch.endsAt);
+    if (!Number.isFinite(serverNow) || !Number.isFinite(batchEnd)) return batch;
+    if (batchEnd <= serverNow) return null;
+    const toLocalTime = value => Number.isFinite(Number(value))
+        ? localNow + (Number(value) - serverNow)
+        : value;
+    return {
+        ...batch,
+        startedAt: toLocalTime(batch.startedAt),
+        endsAt: toLocalTime(batch.endsAt),
+        events: batch.events.map(event => ({
+            ...event,
+            startedAt: toLocalTime(event.startedAt),
+            endsAt: toLocalTime(event.endsAt),
+        })),
     };
 }
 

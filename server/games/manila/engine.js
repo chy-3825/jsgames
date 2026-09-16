@@ -20,6 +20,67 @@ const LOCATIONS = [
 ];
 const LOCATION_ALIASES = { pilot: 'pilot-small', shipyard: 'shipyard-a' };
 
+// The browser renders these scenes, but the server owns their time slots so
+// every connected viewer enters and leaves a scene together.  The common fade
+// is part of the slot rather than an optional local delay.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    voyageStarted: 850,
+    voyageStartedOpening: 1100,
+    auctionBid: 650,
+    auctionPassed: 420,
+    harborMasterAppointed: 1100,
+    sharePurchased: 650,
+    sharePurchaseSkipped: 430,
+    fleetPlanned: 1200,
+    accomplicePlaced: 650,
+    placementPassed: 420,
+    sailingRolled: 1050,
+    placementResumed: 520,
+    pilotPhaseStarted: 950,
+    pilotSkipped: 460,
+    pirateAlert: 1100,
+    pirateBoarded: 1050,
+    pirateStayed: 520,
+    plunderPhaseStarted: 1000,
+    plunderResolved: 1150,
+    loanTaken: 800,
+    loanRepaid: 800,
+    marketThresholdReached: 1250,
+    finalSettlement: 2600,
+    playerLeft: 900,
+};
+
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'boatsSailed' || kind === 'pilotMoved') {
+        return 420 + (data.moves || []).length * 620 + 300;
+    }
+    if (kind === 'voyageSettlement') {
+        return 650 + Math.min(6, (data.payoutDetails || []).filter(detail => detail.amount).length) * 420 + 700;
+    }
+    if (kind === 'voyageStarted' && data.seasonOpening) return PRESENTATION_CONTENT_DURATIONS.voyageStartedOpening;
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 820;
+}
+
+function presentationSegments(kind, data, startedAt) {
+    if (kind === 'voyageSettlement') {
+        const segments = [{ kind: 'review', startedAt, endsAt: startedAt + 650 }];
+        let cursor = startedAt + 650;
+        for (const [index] of (data.payoutDetails || []).filter(detail => detail.amount).slice(0, 6).entries()) { segments.push({ kind: 'payout', index, startedAt: cursor, endsAt: cursor + 420 }); cursor += 420; }
+        segments.push({ kind: 'archive', startedAt: cursor, endsAt: cursor + 700 });
+        return segments;
+    }
+    if (kind !== 'boatsSailed' && kind !== 'pilotMoved') return null;
+    const segments = [];
+    let cursor = startedAt + 420;
+    for (const [index, move] of (data.moves || []).entries()) {
+        segments.push({ kind: 'move', index, boatId: move.boatId, startedAt: cursor, endsAt: cursor + 620 });
+        cursor += 620;
+    }
+    segments.push({ kind: 'settle', startedAt: cursor, endsAt: cursor + 300 });
+    return segments;
+}
+
 function clone(value) { return value == null ? value : JSON.parse(JSON.stringify(value)); }
 
 function shuffle(values, random = Math.random) {
@@ -35,9 +96,13 @@ function shuffle(values, random = Math.random) {
 function locationId(id) { return LOCATION_ALIASES[id] || id; }
 
 class ManilaEngine {
-    constructor(roomId, players, random = Math.random) {
+    constructor(roomId, players, randomOrOptions = Math.random, extraOptions = {}) {
+        const suppliedOptions = typeof randomOrOptions === 'function' ? extraOptions : (randomOrOptions || {});
+        const random = typeof randomOrOptions === 'function' ? randomOrOptions : (suppliedOptions.random || Math.random);
         this.roomId = roomId;
-        this.random = random;
+        this.random = typeof random === 'function' ? random : Math.random;
+        this.options = { ...suppliedOptions };
+        this.now = typeof suppliedOptions.now === 'function' ? suppliedOptions.now : () => Date.now();
         const input = Array.isArray(players) ? players : [];
         this.players = input.map((player, index) => ({ id: player.id, name: player.name, color: COLORS[index], cash: 30, shares: [], encumberedShares: [], accomplices: 3, placed: [], isOnline: true }));
         this.playerMap = Object.fromEntries(this.players.map(player => [player.id, player]));
@@ -54,6 +119,7 @@ class ManilaEngine {
         this.placementRound = 0;
         this.placementRounds = 3;
         this.placementTurnIndex = 0;
+        this.placementPending = new Set();
         this.passed = new Set();
         this.locations = {};
         this.actionLog = [];
@@ -73,6 +139,7 @@ class ManilaEngine {
         this.voyageHistory = [];
         this.winners = [];
         this.presentation = null;
+        this.presentationQueue = [];
         this.presentationSequence = 0;
         this.presentationEventSequence = 0;
     }
@@ -91,7 +158,7 @@ class ManilaEngine {
         this.status = 'playing';
         this.phase = 'waiting';
         this.actionLog = ['马尼拉商人们领取资本、股份和帮手'];
-        this.lastVoyage = null; this.voyageHistory = []; this.winner = null; this.winners = []; this.finalFortunes = null; this.presentation = null; this.presentationSequence = 0; this.presentationEventSequence = 0;
+        this.lastVoyage = null; this.voyageHistory = []; this.winner = null; this.winners = []; this.finalFortunes = null; this.presentation = null; this.presentationQueue = []; this.presentationSequence = 0; this.presentationEventSequence = 0;
         this._beginAuction();
         this._appendPresentationEvent({
             kind: 'voyageStarted',
@@ -107,7 +174,44 @@ class ManilaEngine {
         return this._success('马尼拉开始');
     }
 
-    _beginAuction() { this.phase = 'auction'; this.auction = { currentIndex: this.players.findIndex(player => player.id === this.harborMasterId), highestBid: 0, highestBidder: null, passed: new Set(), bids: {} }; this._log(`第 ${this.voyage} 次航行：竞选港务长`); }
+    _beginAuction() { this.phase = 'auction'; const startIndex = this.players.findIndex(player => player.id === this.harborMasterId); this.auction = { currentIndex: this._nextOnlineIndex(startIndex >= 0 ? startIndex : 0), highestBid: 0, highestBidder: null, passed: new Set(), bids: {} }; this._log(`第 ${this.voyage} 次航行：竞选港务长`); }
+
+    _now() {
+        const value = Number(this.now?.());
+        return Number.isFinite(value) ? value : Date.now();
+    }
+
+    _activePlayers() { return this.players.filter(player => player.isOnline); }
+
+    _nextOnlineIndex(index, options = {}) {
+        if (!this.players.length) return -1;
+        const skipPassed = options.skipPassed === true;
+        const passedSet = options.passedSet || this.passed;
+        const allowedIds = options.allowedIds instanceof Set ? options.allowedIds : null;
+        const start = ((Number(index) || 0) % this.players.length + this.players.length) % this.players.length;
+        for (let offset = 0; offset < this.players.length; offset += 1) {
+            const candidateIndex = (start + offset) % this.players.length;
+            const candidate = this.players[candidateIndex];
+            if (candidate?.isOnline && (!allowedIds || allowedIds.has(candidate.id)) && (!skipPassed || !passedSet.has(candidate.id))) return candidateIndex;
+        }
+        return -1;
+    }
+
+    _onlinePlayerAtOrAfter(index) {
+        const next = this._nextOnlineIndex(index);
+        return next < 0 ? null : this.players[next];
+    }
+
+    _currentPlayerForPhase() {
+        if (this.phase === 'auction') return this.players[this.auction?.currentIndex] || null;
+        if (this.phase === 'master') return this.playerMap[this.harborMasterId] || null;
+        if (this.phase === 'placement') return this.players[this.placementTurnIndex] || null;
+        if (this.phase === 'sailing') return this.playerMap[this.harborMasterId] || null;
+        if (this.phase === 'pilot') return this.playerMap[this.pilotQueue[this.pilotIndex]?.playerId] || null;
+        if (this.phase === 'pirateBoard') return this.playerMap[this.pirateQueue[this.pirateIndex]?.playerId] || null;
+        if (this.phase === 'plunder') return this.playerMap[this.plunderQueue[this.plunderIndex]?.playerId] || null;
+        return null;
+    }
 
     handleAction(playerId, action = {}) {
         if (this.status !== 'playing') return { success: false, message: '游戏尚未开始或已结束', state: this.getPlayerState(playerId) };
@@ -182,14 +286,16 @@ class ManilaEngine {
     }
 
     _advanceAuction() {
-        const eligible = this.players.filter(player => !this.auction.passed.has(player.id));
+        const eligible = this._activePlayers().filter(player => !this.auction.passed.has(player.id));
         if (eligible.length <= 1) {
             const previousMasterId = this.harborMasterId;
-            const winner = this.auction.highestBidder ? this.playerMap[this.auction.highestBidder] : this.playerMap[this.harborMasterId];
+            const highest = eligible.find(player => player.id === this.auction.highestBidder) || null;
+            const winner = highest || this.playerMap[this.harborMasterId]?.isOnline && this.playerMap[this.harborMasterId] || eligible[0] || this._activePlayers()[0];
+            if (!winner) return;
             const cashBefore = winner.cash;
             const mortgagesBefore = winner.encumberedShares.length;
             const winningBid = this.auction.highestBid;
-            if (this.auction.highestBidder) {
+            if (this.auction.highestBidder && highest) {
                 if (!this._raiseFunds(winner, this.auction.highestBid)) {
                     // This can only happen if the winner spent money after
                     // bidding; reject the auction rather than creating debt.
@@ -201,14 +307,18 @@ class ManilaEngine {
                     this._log(`${winner.name} 支付 ${this.auction.highestBid} 比索成为港务长`);
                     this.harborMasterId = winner.id;
                 }
-            } else this.harborMasterId = winner.id;
+            } else {
+                this.auction.highestBid = 0;
+                this.auction.highestBidder = null;
+                this.harborMasterId = winner.id;
+            }
             this._appendPresentationEvent({ kind: 'harborMasterAppointed', playerId: this.harborMasterId, playerName: this.playerMap[this.harborMasterId]?.name || '', previousMasterId, winningBid: this.auction.highestBidder ? winningBid : 0, cashBefore, cashAfter: winner.cash, mortgagesAdded: Math.max(0, winner.encumberedShares.length - mortgagesBefore) });
             this._beginMaster(); return;
         }
-        do this.auction.currentIndex = (this.auction.currentIndex + 1) % this.players.length; while (this.auction.passed.has(this.players[this.auction.currentIndex].id));
+        this.auction.currentIndex = this._nextOnlineIndex(this.auction.currentIndex + 1, { skipPassed: true, passedSet: this.auction.passed });
     }
 
-    _beginMaster() { this.phase = 'master'; this.masterStep = 'buyShare'; this.boats = []; this._log(`${this.playerMap[this.harborMasterId].name} 成为港务长，可买一张股份后安排三艘船`); }
+    _beginMaster() { this.phase = 'master'; this.masterStep = 'buyShare'; this.boats = []; const master = this.playerMap[this.harborMasterId]; if (!master?.isOnline) { const next = this._onlinePlayerAtOrAfter(this.players.findIndex(player => player.id === this.harborMasterId)); if (next) this.harborMasterId = next.id; } this._log(`${this.playerMap[this.harborMasterId]?.name || '在线商人'} 成为港务长，可买一张股份后安排三艘船`); }
 
     _masterAction(player, action) {
         if (player.id !== this.harborMasterId) return { success: false, message: '只有港务长能安排航行', state: this.getPlayerState(player.id) };
@@ -237,7 +347,7 @@ class ManilaEngine {
     }
 
     _beginPlacement() {
-        this.phase = 'placement'; this.placementRound = 1; this.placementRounds = this.players.length === 3 ? 4 : 3; this.placementTurnIndex = this.players.findIndex(player => player.id === this.harborMasterId); this.passed = new Set(); this.locations = Object.fromEntries(LOCATIONS.map(location => [location.id, []])); this.movementRound = 0; this.movementPlan = null; this.movementAfter = null; this.lastMovement = null; this.arrivalCounter = 0; this._log(`商人们开始安插帮手，共 ${this.placementRounds} 轮`);
+        this.phase = 'placement'; this.placementRound = 1; this.placementRounds = this.players.length === 3 ? 4 : 3; const masterIndex = this.players.findIndex(player => player.id === this.harborMasterId); this.placementTurnIndex = this._nextOnlineIndex(masterIndex >= 0 ? masterIndex : 0); this.passed = new Set(); this.placementPending = new Set(this._activePlayers().map(player => player.id)); this.locations = Object.fromEntries(LOCATIONS.map(location => [location.id, []])); this.movementRound = 0; this.movementPlan = null; this.movementAfter = null; this.lastMovement = null; this.arrivalCounter = 0; this._log(`商人们开始安插帮手，共 ${this.placementRounds} 轮`);
     }
 
     _location(id) { return LOCATIONS.find(location => location.id === locationId(id)); }
@@ -273,23 +383,26 @@ class ManilaEngine {
             if (boat) boat.placements.push({ playerId: player.id, fee });
             this._startPresentation(player.id, 'placement', { kind: 'accomplicePlaced', actorId: player.id, actorName: player.name, locationId: id, locationName: location.name, locationKind: location.kind, good: location.good || null, boatId: boat?.id || null, fee, cashBefore, cashAfter: player.cash, mortgagesAdded: Math.max(0, player.encumberedShares.length - mortgagesBefore), blindPassenger: location.kind === 'good' && fee < (location.fees[stake.slot - 1] ?? fee), insuranceAdvance: location.kind === 'insurance' ? 10 : 0, slot: stake.slot, capacity: location.capacity, accomplicesBefore, accomplicesAfter: player.accomplices });
         } else return { success: false, message: '请选择安插位置或跳过', state: this.getPlayerState(player.id) };
+        this.placementPending.delete(player.id);
         this._advancePlacement();
         this._finishPresentation();
         return this._success('安插行动完成');
     }
 
     _advancePlacement() {
-        this.placementTurnIndex = (this.placementTurnIndex + 1) % this.players.length;
-        if (this.placementTurnIndex !== this.players.findIndex(player => player.id === this.harborMasterId)) return;
+        if (this.placementPending.size) {
+            this.placementTurnIndex = this._nextOnlineIndex(this.placementTurnIndex + 1, { allowedIds: this.placementPending });
+            return;
+        }
         const firstMovementRound = this.players.length === 3 ? 2 : 1;
-        if (this.placementRound < firstMovementRound) { this.placementRound += 1; this.passed = new Set(); this._log(`第 ${this.placementRound} 轮安插开始`); return; }
+        if (this.placementRound < firstMovementRound) { this.placementRound += 1; this.passed = new Set(); this.placementPending = new Set(this._activePlayers().map(player => player.id)); this.placementTurnIndex = this._nextOnlineIndex(this.placementTurnIndex + 1, { allowedIds: this.placementPending }); this._log(`第 ${this.placementRound} 轮安插开始`); return; }
         if (this.placementRound === this.placementRounds) { this._beginPilots(); return; }
         this._beginSailing('nextPlacement');
     }
 
     _beginPilots() {
         this.pilotQueue = [];
-        for (const id of ['pilot-small', 'pilot-large']) { const stake = this.locations[id]?.[0]; if (stake) this.pilotQueue.push({ ...stake, location: id, pilotSize: id === 'pilot-small' ? 'small' : 'large' }); }
+        for (const id of ['pilot-small', 'pilot-large']) { const stake = this.locations[id]?.find(item => this.playerMap[item.playerId]?.isOnline); if (stake) this.pilotQueue.push({ ...stake, location: id, pilotSize: id === 'pilot-small' ? 'small' : 'large' }); }
         this.pilotIndex = 0;
         if (!this.pilotQueue.length) { this._beginSailing('finishMovement'); return; }
         this.phase = 'pilot'; this._appendPresentationEvent({ kind: 'pilotPhaseStarted', pilots: this.pilotQueue.map(pilot => ({ playerId: pilot.playerId, playerName: this.playerMap[pilot.playerId]?.name || '', size: pilot.pilotSize })) }); this._log('领航员在第三次掷骰前决定是否影响航线');
@@ -320,7 +433,7 @@ class ManilaEngine {
 
     _pilotMoveBoat(boatId, delta) { const boat = this.boats.find(candidate => candidate.id === boatId); if (!boat || boat.fate !== 'sailing') return; boat.position += delta; if (boat.position > 13) this._arriveBoat(boat); }
 
-    _advancePilot() { this.pilotIndex += 1; if (this.pilotIndex < this.pilotQueue.length) return this._success('领航员行动完成，等待下一位领航员'); this._beginSailing('finishMovement'); return this._success('领航员行动完成，等待港务长行船'); }
+    _advancePilot() { do this.pilotIndex += 1; while (this.pilotIndex < this.pilotQueue.length && !this.playerMap[this.pilotQueue[this.pilotIndex]?.playerId]?.isOnline); if (this.pilotIndex < this.pilotQueue.length) return this._success('领航员行动完成，等待下一位领航员'); this._beginSailing('finishMovement'); return this._success('领航员行动完成，等待港务长行船'); }
 
     _arriveBoat(boat) { if (boat.fate !== 'sailing') return; boat.fate = 'port'; boat.arrived = true; boat.position = 14; boat.finishOrder = ++this.arrivalCounter; }
 
@@ -374,11 +487,11 @@ class ManilaEngine {
     }
 
     _completeMovement(after) {
-        if (after === 'nextPlacement') { this.phase = 'placement'; this.placementRound += 1; this.passed = new Set(); this._appendPresentationEvent({ kind: 'placementResumed', placementRound: this.placementRound }); this._log(`第 ${this.placementRound} 轮安插开始`); return; }
+        if (after === 'nextPlacement') { this.phase = 'placement'; this.placementRound += 1; this.passed = new Set(); this.placementPending = new Set(this._activePlayers().map(player => player.id)); this.placementTurnIndex = this._nextOnlineIndex(this.placementTurnIndex + 1, { allowedIds: this.placementPending }); this._appendPresentationEvent({ kind: 'placementResumed', placementRound: this.placementRound }); this._log(`第 ${this.placementRound} 轮安插开始`); return; }
         this._finishMovement();
     }
 
-    _beginPirateBoard(boats, after) { this.pirateQueue = this.locations.pirate.map(stake => ({ ...stake, boats: boats.map(boat => boat.id) })); this.pirateIndex = 0; this.pirateAfter = after; if (!this.pirateQueue.length) return this._completeMovement(after); this.phase = 'pirateBoard'; this._appendPresentationEvent({ kind: 'pirateAlert', boats: boats.map(boat => ({ id: boat.id, good: boat.good, position: boat.position })), pirates: this.pirateQueue.map(pirate => ({ playerId: pirate.playerId, playerName: this.playerMap[pirate.playerId]?.name || '' })) }); this._log('海盗可以登上停在 13 格的船'); }
+    _beginPirateBoard(boats, after) { this.pirateQueue = this.locations.pirate.filter(stake => this.playerMap[stake.playerId]?.isOnline).map(stake => ({ ...stake, boats: boats.map(boat => boat.id) })); this.pirateIndex = 0; this.pirateAfter = after; if (!this.pirateQueue.length) return this._completeMovement(after); this.phase = 'pirateBoard'; this._appendPresentationEvent({ kind: 'pirateAlert', boats: boats.map(boat => ({ id: boat.id, good: boat.good, position: boat.position })), pirates: this.pirateQueue.map(pirate => ({ playerId: pirate.playerId, playerName: this.playerMap[pirate.playerId]?.name || '' })) }); this._log('海盗可以登上停在 13 格的船'); }
 
     _pirateBoardAction(player, action) {
         const pirate = this.pirateQueue[this.pirateIndex];
@@ -407,7 +520,7 @@ class ManilaEngine {
             }
         }
         for (const boat of this.boats) if (boat.fate === 'sailing') { boat.fate = 'shipyard'; boat.finishOrder = ++this.arrivalCounter; }
-        this.plunderQueue = candidates.map(boat => ({ boatId: boat.id, playerId: (boat.pirates[0] || this.locations.pirate?.[0])?.playerId })).filter(item => item.playerId);
+        this.plunderQueue = candidates.map(boat => ({ boatId: boat.id, playerId: (boat.pirates.find(stake => this.playerMap[stake.playerId]?.isOnline) || this.locations.pirate?.find(stake => this.playerMap[stake.playerId]?.isOnline))?.playerId })).filter(item => item.playerId);
         this.plunderIndex = 0;
         if (this.plunderQueue.length) { this.phase = 'plunder'; this._appendPresentationEvent({ kind: 'plunderPhaseStarted', boats: this.plunderQueue.map(item => { const boat = this.boats.find(candidate => candidate.id === item.boatId); return { boatId: item.boatId, good: boat?.good || '', captainId: item.playerId, captainName: this.playerMap[item.playerId]?.name || '' }; }) }); this._log('海盗船长决定被掠夺船只的去向'); return; }
         this._settleVoyage();
@@ -475,28 +588,65 @@ class ManilaEngine {
         this.voyage += 1; this._beginAuction(); this._appendPresentationEvent({ kind: 'voyageStarted', voyage: this.voyage, harborMasterId: this.harborMasterId, harborMasterName: this.playerMap[this.harborMasterId]?.name || '' }); this._finishPresentation();
     }
 
+    _fortune(player) { return player.cash + player.shares.reduce((sum, good) => sum + (this.market[good] || 0), 0) - player.encumberedShares.length * 15; }
+
+    _rankedPlayers(players = this._activePlayers()) {
+        return players.map(player => {
+            const shareValue = player.shares.reduce((sum, good) => sum + (this.market[good] || 0), 0);
+            return { player, fortune: player.cash + shareValue - player.encumberedShares.length * 15, shareValue, loanPenalty: player.encumberedShares.length * 15 };
+        }).sort((a, b) => b.fortune - a.fortune || b.player.cash - a.player.cash || a.player.id.localeCompare(b.player.id));
+    }
+
+    _finalSettlementEvent(ranked, extra = {}) {
+        return {
+            kind: 'finalSettlement',
+            ...extra,
+            standings: ranked.map(item => ({ id: item.player.id, name: item.player.name, color: item.player.color, cash: item.player.cash, shareValue: item.shareValue, loanPenalty: item.loanPenalty, fortune: item.fortune })),
+            winnerIds: this.winners.map(player => player.id),
+            market: { ...this.market },
+            voyageHistory: this.voyageHistory.map(entry => ({ voyage: entry.voyage, players: entry.players.map(player => ({ ...player })) })),
+        };
+    }
+
     _finish() {
-        this.status = 'ended'; this.phase = 'ended';
-        const ranked = this.players.map(player => ({ player, fortune: player.cash + player.shares.reduce((sum, good) => sum + this.market[good], 0) - player.encumberedShares.length * 15 })).sort((a, b) => b.fortune - a.fortune);
-        this.winner = ranked[0]?.player || null; this.winners = ranked.filter(item => item.fortune === (ranked[0]?.fortune ?? 0)).map(item => item.player); this.finalFortunes = Object.fromEntries(ranked.map(item => [item.player.id, item.fortune]));
-        this._appendPresentationEvent({ kind: 'finalSettlement', standings: ranked.map(item => ({ id: item.player.id, name: item.player.name, color: item.player.color, cash: item.player.cash, shareValue: item.player.shares.reduce((sum, good) => sum + this.market[good], 0), loanPenalty: item.player.encumberedShares.length * 15, fortune: item.fortune })), winnerIds: this.winners.map(player => player.id), market: { ...this.market }, voyageHistory: this.voyageHistory.map(entry => ({ voyage: entry.voyage, players: entry.players.map(player => ({ ...player })) })) }); this._finishPresentation();
+        if (this.status === 'ended') return;
+        this.status = 'ended'; this.phase = 'ended'; this.endReason = 'market'; this.outcome = 'thresholdReached';
+        const ranked = this._rankedPlayers();
+        this.winner = ranked[0]?.player || null;
+        this.winners = ranked.length ? ranked.filter(item => item.fortune === ranked[0].fortune).map(item => item.player) : [];
+        this.finalFortunes = Object.fromEntries(ranked.map(item => [item.player.id, item.fortune]));
+        this._appendPresentationEvent(this._finalSettlementEvent(ranked, { reason: 'market', outcome: 'thresholdReached' })); this._finishPresentation();
         this._log(`${this.winner?.name || '无人'} 以 ${ranked[0]?.fortune || 0} 财富获胜`);
     }
 
+    _finishByDeparture() {
+        if (this.status === 'ended') return;
+        this.status = 'ended'; this.phase = 'ended'; this.endReason = 'players'; this.outcome = 'lastPlayerStanding';
+        const ranked = this._rankedPlayers();
+        this.winner = ranked[0]?.player || null;
+        this.winners = ranked.length ? ranked.filter(item => item.fortune === ranked[0].fortune).map(item => item.player) : [];
+        this.finalFortunes = Object.fromEntries(ranked.map(item => [item.player.id, item.fortune]));
+        this._appendPresentationEvent(this._finalSettlementEvent(ranked, { forced: true, reason: 'players', outcome: 'lastPlayerStanding' })); this._finishPresentation();
+        this._log(`${this.winners.map(player => player.name).join('、') || '无人'} 在离场收束中获胜`);
+    }
+
     getPublicState() {
-        let current = null;
-        if (this.phase === 'auction') current = this.players[this.auction.currentIndex];
-        if (this.phase === 'placement') current = this.players[this.placementTurnIndex];
-        if (this.phase === 'sailing') current = this.playerMap[this.harborMasterId];
-        if (this.phase === 'pilot') current = this.playerMap[this.pilotQueue[this.pilotIndex]?.playerId];
-        if (this.phase === 'pirateBoard') current = this.playerMap[this.pirateQueue[this.pirateIndex]?.playerId];
-        if (this.phase === 'plunder') current = this.playerMap[this.plunderQueue[this.plunderIndex]?.playerId];
+        const currentCandidate = this._currentPlayerForPhase();
+        // The master is the acting owner of the phase, but the existing
+        // public contract keeps `currentTurn` for turn-based phases only and
+        // exposes the master through `harborMasterId`/`masterStep`.
+        const current = this.phase !== 'master' && currentCandidate?.isOnline ? currentCandidate : null;
+        const harborMaster = this.playerMap[this.harborMasterId];
+        const publicHarborMaster = harborMaster?.isOnline ? harborMaster : null;
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         const pendingPlunderEntry = this.phase === 'plunder' ? this.plunderQueue[this.plunderIndex] : null;
         const pendingPlunderBoat = pendingPlunderEntry ? this.boats.find(boat => boat.id === pendingPlunderEntry.boatId) : null;
         return {
             roomId: this.roomId, status: this.status, phase: this.phase, voyage: this.voyage, maxVoyages: null,
             rules: { players: '3–5', startingCash: 30, sharesEach: 2, accomplices: this.players.length === 3 ? 4 : 3, placementRounds: this.players.length === 3 ? 4 : 3, movementRounds: 3, startSum: 9, finishAtMarket: 30, loans: 12, repayment: 15 },
-            harborMasterId: this.harborMasterId, harborMasterName: this.playerMap[this.harborMasterId]?.name || null, masterStep: this.masterStep,
+            harborMasterId: publicHarborMaster?.id || null, harborMasterName: publicHarborMaster?.name || null, masterStep: this.masterStep,
             shareMarket: { ...this.shareMarket }, market: { ...this.market }, currentTurn: current?.id || null, currentTurnName: current?.name || null, movementRound: this.movementRound,
             movementPlan: this.movementPlan ? { round: this.movementPlan.round, rolls: this.movementPlan.rolls.map(item => ({ ...item })) } : null,
             lastMovement: this.lastMovement ? { round: this.lastMovement.round, moves: this.lastMovement.moves.map(item => ({ ...item })) } : null,
@@ -505,7 +655,7 @@ class ManilaEngine {
             pendingPlunder: pendingPlunderBoat ? { boatId: pendingPlunderBoat.id, good: pendingPlunderBoat.good, captainId: pendingPlunderEntry.playerId, captainName: this.playerMap[pendingPlunderEntry.playerId]?.name || '', cargoAccomplices: pendingPlunderBoat.placements.length, pirates: (this.locations.pirate?.length || 0) + (pendingPlunderBoat.pirates?.length || 0) } : null,
             locations: Object.fromEntries(Object.entries(this.locations).map(([id, stakes]) => [id, stakes.map(stake => ({ playerId: stake.playerId, playerName: this.playerMap[stake.playerId]?.name, fee: stake.fee, slot: stake.slot }))])),
             players: this.players.map(player => ({ id: player.id, name: player.name, color: player.color, cash: player.cash, sharesCount: player.shares.length, encumberedShares: player.encumberedShares.length, accomplices: player.accomplices, isOnline: player.isOnline, fortune: this.finalFortunes?.[player.id] ?? null })),
-            lastVoyage: clone(this.lastVoyage), voyageHistory: this.voyageHistory.map(entry => ({ voyage: entry.voyage, players: entry.players.map(player => ({ ...player })), marketAfter: { ...entry.marketAfter } })), presentation: clone(this.presentation), actionLog: this.actionLog.slice(-20), winner: this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash, fortune: this.finalFortunes?.[this.winner.id] ?? null } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, fortune: this.finalFortunes?.[player.id] ?? null })),
+            lastVoyage: clone(this.lastVoyage), voyageHistory: this.voyageHistory.map(entry => ({ voyage: entry.voyage, players: entry.players.map(player => ({ ...player })), marketAfter: { ...entry.marketAfter } })), serverNow, presentation, presentations, actionLog: this.actionLog.slice(-20), winner: this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash, fortune: this.finalFortunes?.[this.winner.id] ?? null } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, fortune: this.finalFortunes?.[player.id] ?? null })),
         };
     }
 
@@ -515,19 +665,174 @@ class ManilaEngine {
         state.availableActions = {
             bid: this.phase === 'auction' && ownTurn && !this.auction.passed.has(playerId), passBid: this.phase === 'auction' && ownTurn && !this.auction.passed.has(playerId), buyShare: this.phase === 'master' && this.harborMasterId === playerId && this.masterStep === 'buyShare', skipShare: this.phase === 'master' && this.harborMasterId === playerId && this.masterStep === 'buyShare', setBoats: this.phase === 'master' && this.harborMasterId === playerId && this.masterStep === 'plan', placeAccomplice: this.phase === 'placement' && ownTurn && !this.passed.has(playerId), passPlacement: this.phase === 'placement' && ownTurn && !this.passed.has(playerId), sailBoats: this.phase === 'sailing' && this.harborMasterId === playerId, pilotMove: this.phase === 'pilot' && ownTurn, skipPilot: this.phase === 'pilot' && ownTurn, boardPirate: this.phase === 'pirateBoard' && ownTurn, skipPirate: this.phase === 'pirateBoard' && ownTurn, plunderDestination: this.phase === 'plunder' && ownTurn, takeLoan: this.status === 'playing' && player ? this._availableLoans(player) > 0 : false, repayLoan: this.status === 'playing' && player ? player.encumberedShares.length > 0 && player.cash >= 15 : false,
         };
+        state.presentation = this._projectPresentation(state.presentation, player);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, player));
         return state;
     }
 
-    handlePlayerLeave(playerId) { const player = this.playerMap[playerId]; if (!player || !player.isOnline) return { success: false, message: '玩家不存在' }; player.isOnline = false; this._log(`${player.name} 离开了马尼拉商会`); if (this.players.filter(item => item.isOnline).length < 3) { this.status = 'ended'; this.phase = 'ended'; this.winner = this.players.find(item => item.isOnline) || null; } return this._success(`${player.name} 已离开`); }
-    _startPresentation(actorId, action, firstEvent) { this.presentation = { sequence: ++this.presentationSequence, actorId, action, resolved: false, events: [] }; if (firstEvent) this._appendPresentationEvent(firstEvent); }
-    _appendPresentationEvent(event) { if (!this.presentation || this.presentation.resolved) this._startPresentation(event.actorId || null, event.kind || 'system'); this.presentation.events.push({ sequence: ++this.presentationEventSequence, ...clone(event) }); }
-    _finishPresentation() { if (this.presentation) this.presentation.resolved = true; }
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        const viewerId = String(player?.id ?? '');
+        if (event.kind === 'playerLeft' && String(event.playerId) === viewerId) {
+            projected.viewerVariant = 'personalDeparture';
+            projected.title = '您已离开本局';
+            projected.detail = '您的座位已退出，其他玩家将继续完成结算。';
+        }
+        if (event.kind === 'finalSettlement' && (event.winnerIds || []).map(String).includes(viewerId)) {
+            const tied = (event.winnerIds || []).length > 1;
+            projected.viewerVariant = 'personalVictory';
+            projected.title = tied ? '您已并列获胜' : '您已获胜';
+            projected.detail = tied ? '您与其他玩家共享本局最终胜利。' : '您以最高财富完成了马尼拉航运季。';
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
+    }
+
+    _removePlayerFromStructures(playerId) {
+        for (const id of Object.keys(this.locations || {})) this.locations[id] = (this.locations[id] || []).filter(stake => stake.playerId !== playerId);
+        for (const boat of this.boats) { boat.placements = (boat.placements || []).filter(stake => stake.playerId !== playerId); boat.pirates = (boat.pirates || []).filter(stake => stake.playerId !== playerId); }
+        if (this.auction) { delete this.auction.bids[playerId]; this.auction.passed.delete(playerId); }
+        const player = this.playerMap[playerId]; if (player) player.placed = [];
+    }
+
+    _recomputeAuction() {
+        if (!this.auction) return;
+        const bids = Object.entries(this.auction.bids || {}).filter(([id, bid]) => this.playerMap[id]?.isOnline && !this.auction.passed.has(id) && Number.isInteger(Number(bid)));
+        bids.sort((left, right) => Number(right[1]) - Number(left[1]));
+        this.auction.highestBidder = bids[0]?.[0] || null;
+        this.auction.highestBid = bids[0] ? Number(bids[0][1]) : 0;
+    }
+
+    _setDefaultPlunder(entry, reason = 'playerLeft') {
+        const boat = this.boats.find(candidate => candidate.id === entry.boatId);
+        if (!boat || boat.fate !== 'pirated') return;
+        boat.fate = 'port'; boat.plundered = true; boat.finishOrder = ++this.arrivalCounter;
+        this._appendPresentationEvent({ kind: 'plunderResolved', actorId: null, actorName: '系统', boatId: boat.id, good: boat.good, destination: 'port', cargoAccomplices: boat.placements.map(stake => ({ playerId: stake.playerId, playerName: this.playerMap[stake.playerId]?.name || '' })), pirates: (boat.pirates || []).map(stake => ({ playerId: stake.playerId, playerName: this.playerMap[stake.playerId]?.name || '' })), estimatedShare: 0, reason });
+    }
+
+    _continueAfterPlayerLeave(playerId, phaseBefore, wasCurrent) {
+        // The harbor master's seat is needed again when pilot/pirate/plunder
+        // resolution returns to sailing or the next voyage.  Transfer it
+        // before handling the phase-specific queue so a departing master can
+        // never leave a future sailing action without an online owner.
+        if (this.harborMasterId === playerId) {
+            const oldIndex = this.players.findIndex(player => player.id === playerId);
+            const next = this._onlinePlayerAtOrAfter(oldIndex + 1);
+            if (next) this.harborMasterId = next.id;
+        }
+        if (phaseBefore === 'auction' && this.auction) {
+            this._recomputeAuction();
+            const current = this.players[this.auction.currentIndex];
+            if (!current?.isOnline || this.auction.passed.has(current.id)) this.auction.currentIndex = this._nextOnlineIndex(this.auction.currentIndex + 1, { skipPassed: true, passedSet: this.auction.passed });
+            if (this._activePlayers().filter(player => !this.auction.passed.has(player.id)).length <= 1) this._advanceAuction();
+            return;
+        }
+        if (phaseBefore === 'master' && this.harborMasterId === playerId) {
+            const oldIndex = this.players.findIndex(player => player.id === playerId);
+            const next = this._onlinePlayerAtOrAfter(oldIndex + 1);
+            if (next) this.harborMasterId = next.id;
+            return;
+        }
+        if (phaseBefore === 'placement') {
+            this.placementPending.delete(playerId);
+            if (wasCurrent) this._advancePlacement();
+            return;
+        }
+        if (phaseBefore === 'pilot' && this.pilotQueue.length) {
+            const removedIndex = this.pilotQueue.findIndex(entry => entry.playerId === playerId);
+            if (removedIndex >= 0) { this.pilotQueue.splice(removedIndex, 1); if (removedIndex < this.pilotIndex) this.pilotIndex -= 1; }
+            if (this.pilotIndex >= this.pilotQueue.length) this._beginSailing('finishMovement');
+            return;
+        }
+        if (phaseBefore === 'pirateBoard' && this.pirateQueue.length) {
+            const removedIndex = this.pirateQueue.findIndex(entry => entry.playerId === playerId);
+            if (removedIndex >= 0) { this.pirateQueue.splice(removedIndex, 1); if (removedIndex < this.pirateIndex) this.pirateIndex -= 1; }
+            if (this.pirateIndex >= this.pirateQueue.length) { const after = this.pirateAfter; this.pirateAfter = null; this._completeMovement(after); }
+            return;
+        }
+        if (phaseBefore === 'plunder' && this.plunderQueue.length) {
+            for (const entry of this.plunderQueue.filter(item => item.playerId === playerId)) this._setDefaultPlunder(entry);
+            const removedBefore = this.plunderQueue.slice(0, this.plunderIndex).filter(item => item.playerId === playerId).length;
+            this.plunderQueue = this.plunderQueue.filter(item => item.playerId !== playerId);
+            this.plunderIndex = Math.max(0, this.plunderIndex - removedBefore);
+            if (this.plunderIndex >= this.plunderQueue.length) this._settleVoyage();
+        }
+    }
+
+    handlePlayerLeave(playerId) {
+        const player = this.playerMap[playerId];
+        if (!player || !player.isOnline) return { success: false, message: '玩家不存在' };
+        const phaseBefore = this.phase;
+        const wasCurrent = this._currentPlayerForPhase()?.id === playerId;
+        player.isOnline = false;
+        this._removePlayerFromStructures(playerId);
+        this._log(`${player.name} 离开了马尼拉商会`);
+        if (this.status !== 'playing') return this._success(`${player.name} 已离开`);
+        this._startPresentation(player.id, 'playerLeave');
+        this._appendPresentationEvent({ kind: 'playerLeft', playerId: player.id, playerName: player.name, phase: phaseBefore, wasCurrent, remainingPlayerCount: this._activePlayers().length });
+        if (this._activePlayers().length < 3) { this._finishByDeparture(); return this._success(`${player.name} 离开后，马尼拉商会结束营业`); }
+        this._continueAfterPlayerLeave(playerId, phaseBefore, wasCurrent);
+        this._finishPresentation();
+        return this._success(`${player.name} 已离开`);
+    }
+
+    _startPresentation(actorId, action, firstEvent = null) {
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
+        this.presentation = { sequence: ++this.presentationSequence, transactionId: this.presentationSequence, actorId, action, startedAt, endsAt: startedAt, durationMs: 0, blocking: true, events: [], resolved: false, ended: false, endReason: null, outcome: null, nextPhase: null, nextPlayerId: null, winner: null };
+        this.presentationQueue.push(this.presentation);
+        if (firstEvent) this._appendPresentationEvent(firstEvent);
+        return this.presentation;
+    }
+
+    _appendPresentationEvent(event) {
+        if (!this.presentation || this.presentation.resolved) this._startPresentation(event.actorId || null, event.kind || 'system');
+        const now = this._now();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.startedAt) || now;
+        const startedAt = Math.max(now, previousEnd);
+        const segments = presentationSegments(event.kind, event, startedAt);
+        const contentDurationMs = segments?.length ? segments.at(-1).endsAt - startedAt : presentationContentDuration(event.kind, event);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const sequence = ++this.presentationEventSequence;
+        const entry = { ...clone(event), sequence, eventId: sequence, startedAt, endsAt: startedAt + durationMs, durationMs, contentDurationMs };
+        if (segments?.length) entry.segments = segments;
+        this.presentation.events.push(entry);
+        this.presentation.endsAt = entry.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        return entry;
+    }
+
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this.presentation.resolved = true;
+        this.presentation.ended = this.status === 'ended';
+        this.presentation.endReason = this.endReason || null;
+        this.presentation.outcome = this.outcome || null;
+        this.presentation.nextPhase = this.phase;
+        const nextPlayer = this._currentPlayerForPhase();
+        this.presentation.nextPlayerId = this.status === 'playing' && nextPlayer?.isOnline ? nextPlayer.id : null;
+        this.presentation.winner = this.winner ? { id: this.winner.id, name: this.winner.name, fortune: this.finalFortunes?.[this.winner.id] ?? null } : null;
+    }
+
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue.filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length).map(batch => ({ ...clone(batch), serverNow }));
+    }
     _log(message) { this.actionLog.push(message); }
-    _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null }; }
-    getWinner() { return this.winner ? { id: this.winner.id, name: this.winner.name, fortune: this.finalFortunes?.[this.winner.id] ?? null } : null; }
+    _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name, fortune: this.finalFortunes?.[this.winner.id] ?? null } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, fortune: this.finalFortunes?.[player.id] ?? null })) }; }
+    getWinner() { return this.winner ? { id: this.winner.id, name: this.winner.name, fortune: this.finalFortunes?.[this.winner.id] ?? null, shared: this.winners.length > 1, winners: this.winners.map(player => ({ id: player.id, name: player.name, fortune: this.finalFortunes?.[player.id] ?? null })) } : null; }
 }
 
 module.exports = ManilaEngine;
 module.exports.GOODS = GOODS;
 module.exports.WARE_PROFITS = WARE_PROFITS;
 module.exports.LOCATIONS = LOCATIONS;
+module.exports.PRESENTATION_FADE_MS = PRESENTATION_FADE_MS;
+module.exports.PRESENTATION_CONTENT_DURATIONS = PRESENTATION_CONTENT_DURATIONS;

@@ -1,0 +1,23 @@
+/* Presentation layer follows the same portrait-card language as the table. */
+
+.sp-event-card {
+    width: min(180px, 22vw);
+    height: auto;
+    aspect-ratio: 5 / 7;
+    grid-template-rows: minmax(0, 1fr);
+    border-radius: 11px;
+}
+
+.sp-event-card .sp-card-face > img { width: 100%; }
+.sp-event-card .sp-card-face > header { padding: 9px; }
+.sp-event-card .sp-card-costs { right: 9px; bottom: 9px; left: 9px; }
+.sp-event-card .sp-card-level { right: 9px; bottom: 9px; }
+
+.sp-token-event,
+.sp-reserve-event,
+.sp-buy-event,
+.sp-noble-event { max-width: min(680px, calc(100vw - 28px)); }
+
+@media (max-width: 520px) {
+    .sp-event-card { width: 128px; }
+}

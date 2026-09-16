@@ -110,3 +110,38 @@ test('realtime server factories keep rooms, sessions, IDs, and ticks isolated', 
     assert.equal(rightRoom.room.roomName, '右侧房间');
 });
 
+test('online player names are unique after normalization', async t => {
+    const realtime = createRealtimeServer({ reconnectGraceMs: 20 });
+    const server = http.createServer();
+    realtime.startWebSocketServer(server);
+    await listen(server);
+    const clients = [];
+    t.after(async () => {
+        await Promise.all(clients.map(client => client.closeCleanly()));
+        await realtime.close();
+        await closeHttp(server);
+    });
+
+    const [first, second] = await Promise.all([
+        openClient(server.address().port),
+        openClient(server.address().port),
+    ]);
+    clients.push(first, second);
+    const [firstSession, secondSession] = await Promise.all([
+        first.waitFor(message => message.type === 'session'),
+        second.waitFor(message => message.type === 'session'),
+    ]);
+
+    first.sendJson({ type: 'setName', name: 'Alice' });
+    assert.equal((await first.waitFor(message => message.type === 'nameChanged')).name, 'Alice');
+    second.sendJson({ type: 'setName', name: 'ＡＬＩＣＥ' });
+    const rejected = await second.waitFor(message => message.type === 'nameRejected');
+    assert.equal(rejected.name, secondSession.playerName);
+    assert.match(rejected.message, /用户名已存在/);
+
+    first.sendJson({ type: 'setName', name: 'Alice' });
+    assert.equal((await first.waitFor(message => message.type === 'nameChanged')).name, 'Alice');
+    second.sendJson({ type: 'setName', name: 'Alice 2' });
+    assert.equal((await second.waitFor(message => message.type === 'nameChanged')).name, 'Alice 2');
+    assert.notEqual(firstSession.playerId, secondSession.playerId);
+});

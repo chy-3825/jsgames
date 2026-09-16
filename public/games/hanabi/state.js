@@ -10,6 +10,39 @@ export function createHanabiModel() {
         submittingCardAction: null,
         submittingClue: false,
         lastPresentedActionId: 0,
+        // Server-timed presentation state.  The scene keeps visuals local,
+        // while these fields preserve the shared absolute deadline across
+        // refresh, reconnect, skip and reduced-motion modes.
+        presentationQueue: [],
+        presentationPlaying: false,
+        presentationToken: 0,
+        presentationEventIds: new Set(),
+        presentationWaiters: new Set(),
+        presentationLockedUntil: 0,
+        presentationSkipCurrent: false,
+        presentationEvent: null,
+    };
+}
+
+/** Translate server timestamps to this browser's clock and drop expired work. */
+export function localizePresentation(batch, localNow = Date.now()) {
+    if (!batch?.events?.length) return null;
+    const serverNow = Number(batch.serverNow);
+    const batchEnd = Number(batch.endsAt);
+    if (!Number.isFinite(serverNow) || !Number.isFinite(batchEnd)) return batch;
+    if (batchEnd <= serverNow) return null;
+    const toLocalTime = value => Number.isFinite(Number(value))
+        ? localNow + (Number(value) - serverNow)
+        : value;
+    return {
+        ...batch,
+        startedAt: toLocalTime(batch.startedAt),
+        endsAt: toLocalTime(batch.endsAt),
+        events: batch.events.map(event => ({
+            ...event,
+            startedAt: toLocalTime(event.startedAt),
+            endsAt: toLocalTime(event.endsAt),
+        })),
     };
 }
 

@@ -3,6 +3,7 @@ const COLS = 12;
 const STARTING_CASH = 6000;
 const HAND_SIZE = 6;
 const MAX_BUY = 3;
+const PRESENTATION_FADE_MS = 360;
 const CHAINS = [
     { id: 'sackson', name: '萨克森', short: 'S', color: '#d26a5d' },
     { id: 'imperial', name: '帝国', short: 'I', color: '#d5a84d' },
@@ -24,6 +25,22 @@ function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function tileId(row, col) { return `${String.fromCharCode(65 + row)}${col + 1}`; }
 function parseTile(id) { const match = /^([A-I])(1[0-2]|[1-9])$/.exec(String(id)); return match ? { row: match[1].charCodeAt(0) - 65, col: Number(match[2]) - 1 } : null; }
 function buildTiles() { return Array.from({ length: ROWS * COLS }, (_, index) => ({ id: tileId(Math.floor(index / COLS), index % COLS), row: Math.floor(index / COLS), col: index % COLS })); }
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'startSetup') return 1100;
+    if (kind === 'placeTile') return 390 + (data.resultKind === 'merger' ? 760 : 560);
+    if (kind === 'discardTile') return 840;
+    if (kind === 'skipPlacement' || kind === 'skipFoundation') return 650;
+    if (kind === 'foundChain') return 1140;
+    if (kind === 'safeChain') return 1000;
+    if (kind === 'merger') return 1770;
+    if (kind === 'mergerBonuses') return 1150;
+    if (kind === 'settleShares') return 950;
+    if (kind === 'mergerComplete') return 820;
+    if (kind === 'buyShares') return (data.orders || []).length ? 1050 : 480;
+    if (kind === 'endGameDeclared') return 1450;
+    if (kind === 'finalSettlement') return (data.chainSettlements || []).length * (850 + PRESENTATION_FADE_MS) + 3000;
+    return 650;
+}
 
 class AcquireEngine {
     constructor(roomId, players, random = Math.random) {
@@ -50,6 +67,7 @@ class AcquireEngine {
         this.transactionSequence = 0;
         this.eventSequence = 0;
         this.presentation = null;
+        this.presentationQueue = [];
     }
 
     start() {
@@ -69,6 +87,7 @@ class AcquireEngine {
         this.transactionSequence = 0;
         this.eventSequence = 0;
         this.presentation = null;
+        this.presentationQueue = [];
         this.phase = 'place'; this.status = 'playing'; this.endGamePending = false; this.actionLog = [`${this.playerMap[first?.playerId]?.name || this.players[0].name} 按起始地块顺序先手`];
         this._startPresentation(null, 'startSetup', {
             startingTiles: this.startingTiles
@@ -538,17 +557,17 @@ class AcquireEngine {
         };
     }
     _startPresentation(player, kind, data = {}) {
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > Date.now());
+        const startedAt = Math.max(Date.now(), Number(this.presentationQueue.at(-1)?.endsAt) || 0);
+        const event = this._presentationEvent(player, kind, data, startedAt);
         this.presentation = {
             sequence: ++this.presentationSequence,
             transactionId: ++this.transactionSequence,
-            events: [{
-                eventId: ++this.eventSequence,
-                kind,
-                playerId: player?.id || null,
-                playerName: player?.name || null,
-                playerColor: player?.color || null,
-                ...clone(data),
-            }],
+            startedAt,
+            endsAt: event.endsAt,
+            durationMs: event.durationMs,
+            blocking: true,
+            events: [event],
             pending: null,
             resolved: false,
             nextPhase: null,
@@ -557,19 +576,43 @@ class AcquireEngine {
             standings: null,
             winner: null,
         };
+        this.presentationQueue.push(this.presentation);
         return this.presentation;
     }
     _appendPresentationEvent(player, kind, data = {}) {
         if (!this.presentation) return this._startPresentation(player, kind, data);
-        this.presentation.events.push({
+        const previousEnd = this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt || Date.now();
+        const event = this._presentationEvent(player, kind, data, Math.max(Date.now(), previousEnd));
+        this.presentation.events.push(event);
+        this.presentation.endsAt = event.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        return this.presentation;
+    }
+    _presentationEvent(player, kind, data, startedAt) {
+        const contentDurationMs = presentationContentDuration(kind, data);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const entry = {
             eventId: ++this.eventSequence,
             kind,
             playerId: player?.id || null,
             playerName: player?.name || null,
             playerColor: player?.color || null,
             ...clone(data),
-        });
-        return this.presentation;
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
+        if (kind === 'finalSettlement') {
+            let cursor = startedAt;
+            entry.segments = (data.chainSettlements || []).map((settlement, index) => {
+                const segment = { kind: 'finalChainSettlement', index, startedAt: cursor, endsAt: cursor + 850 + PRESENTATION_FADE_MS, durationMs: 850 + PRESENTATION_FADE_MS };
+                cursor = segment.endsAt;
+                return segment;
+            });
+            entry.segments.push({ kind: 'finalOutcome', startedAt: cursor, endsAt: cursor + 3000 + PRESENTATION_FADE_MS, durationMs: 3000 + PRESENTATION_FADE_MS });
+        }
+        return entry;
     }
     _updatePresentation(values = {}) {
         if (this.presentation) Object.assign(this.presentation, clone(values));
@@ -578,7 +621,7 @@ class AcquireEngine {
     _draw() { return this.deck.pop() || null; }
     _shuffle(values) { const result = values.slice(); for (let index = result.length - 1; index > 0; index -= 1) { const other = Math.floor(this.random() * (index + 1)); [result[index], result[other]] = [result[other], result[index]]; } return result; }
     _publicCell(cell) { return { id: cell.id, row: cell.row, col: cell.col, chain: cell.chain || null }; }
-    getPublicState() { const settlementTurnId = this.phase === 'merger_settlement' ? this.pendingMerger?.queue?.[this.pendingMerger.queueIndex] : null; const current = settlementTurnId ? this.playerMap[settlementTurnId] : this.players[this.currentTurnIndex]; return { roomId: this.roomId, status: this.status, phase: this.phase, currentTurn: current?.id || null, currentTurnName: current?.name || null, deckCount: this.deck.length, endGamePending: this.endGamePending, rules: { boardRows: ROWS, boardCols: COLS, startingCash: STARTING_CASH, handSize: HAND_SIZE, maxBuy: MAX_BUY, safeChainSize: 11, endChainSize: 41, maxSharesPerChain: 25 }, board: Object.fromEntries(Object.entries(this.board).map(([id, cell]) => [id, this._publicCell(cell)])), corporations: Object.fromEntries(CHAINS.map(chain => { const corporation = this.corporations[chain.id]; return [chain.id, { id: chain.id, name: chain.name, short: chain.short, color: chain.color, active: corporation?.active || false, size: corporation?.tiles.length || 0, sharesAvailable: corporation?.sharesAvailable ?? 25, sharePrice: this._sharePrice(chain.id) }]; })), players: this.players.map(player => ({ id: player.id, name: player.name, color: player.color, cash: player.cash, shares: { ...player.shares }, handCount: player.hand.length, isOnline: player.isOnline, isCurrentTurn: player.id === current?.id })), pendingFoundation: this.pendingFoundation ? { playerId: this.pendingFoundation.playerId } : null, pendingMerger: this.pendingMerger ? { playerId: this.pendingMerger.playerId, chains: this.pendingMerger.chains || [] } : null, mergerSettlement: this.pendingMerger?.queueChainId ? { chainId: this.pendingMerger.queueChainId, currentPlayerId: this.pendingMerger.queue?.[this.pendingMerger.queueIndex] || null, survivingId: this.pendingMerger.survivingId } : null, lastAction: this.lastAction ? clone(this.lastAction) : null, actionLog: this.actionLog.slice(-18), presentation: this.presentation ? clone(this.presentation) : null, winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null }; }
+    getPublicState() { const settlementTurnId = this.phase === 'merger_settlement' ? this.pendingMerger?.queue?.[this.pendingMerger.queueIndex] : null; const current = settlementTurnId ? this.playerMap[settlementTurnId] : this.players[this.currentTurnIndex]; const serverNow = Date.now(); const presentations = this.presentationQueue.filter(batch => Number(batch.endsAt) > serverNow).map(batch => ({ ...clone(batch), serverNow })); const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null); return { roomId: this.roomId, status: this.status, phase: this.phase, currentTurn: current?.id || null, currentTurnName: current?.name || null, deckCount: this.deck.length, endGamePending: this.endGamePending, rules: { boardRows: ROWS, boardCols: COLS, startingCash: STARTING_CASH, handSize: HAND_SIZE, maxBuy: MAX_BUY, safeChainSize: 11, endChainSize: 41, maxSharesPerChain: 25 }, board: Object.fromEntries(Object.entries(this.board).map(([id, cell]) => [id, this._publicCell(cell)])), corporations: Object.fromEntries(CHAINS.map(chain => { const corporation = this.corporations[chain.id]; return [chain.id, { id: chain.id, name: chain.name, short: chain.short, color: chain.color, active: corporation?.active || false, size: corporation?.tiles.length || 0, sharesAvailable: corporation?.sharesAvailable ?? 25, sharePrice: this._sharePrice(chain.id) }]; })), players: this.players.map(player => ({ id: player.id, name: player.name, color: player.color, cash: player.cash, shares: { ...player.shares }, handCount: player.hand.length, isOnline: player.isOnline, isCurrentTurn: player.id === current?.id })), pendingFoundation: this.pendingFoundation ? { playerId: this.pendingFoundation.playerId } : null, pendingMerger: this.pendingMerger ? { playerId: this.pendingMerger.playerId, chains: this.pendingMerger.chains || [] } : null, mergerSettlement: this.pendingMerger?.queueChainId ? { chainId: this.pendingMerger.queueChainId, currentPlayerId: this.pendingMerger.queue?.[this.pendingMerger.queueIndex] || null, survivingId: this.pendingMerger.survivingId } : null, lastAction: this.lastAction ? clone(this.lastAction) : null, actionLog: this.actionLog.slice(-18), presentation, presentations, winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null }; }
     getPlayerState(playerId) { const state = this.getPublicState(); const player = this.playerMap[playerId]; const settlement = state.mergerSettlement?.currentPlayerId === playerId ? this.pendingMerger : null; state.myId = playerId; state.myHand = player?.hand.map(tile => ({ ...tile, permanentlyUnplayable: this._isPermanentlyUnplayable(tile) })) || []; state.myShares = player ? { ...player.shares } : {}; state.mergerSettlement = settlement ? { chainId: settlement.queueChainId, survivingId: settlement.survivingId, holding: player.shares[settlement.queueChainId] || 0 } : null; state.availableActions = { canPlace: Boolean(player?.isOnline && this.phase === 'place' && player.id === this.players[this.currentTurnIndex]?.id), canDiscard: Boolean(player?.isOnline && this.phase === 'place' && player.id === this.players[this.currentTurnIndex]?.id), canSkipPlacement: Boolean(player?.isOnline && this.phase === 'place' && player.id === this.players[this.currentTurnIndex]?.id && player.hand.every(tile => !this._isTilePlayable(tile))), canFound: Boolean(player?.isOnline && this.phase === 'foundation' && this.pendingFoundation?.playerId === playerId), canChooseMerger: Boolean(player?.isOnline && this.phase === 'merger' && this.pendingMerger?.playerId === playerId), canSettleMerger: Boolean(player?.isOnline && this.phase === 'merger_settlement' && this.pendingMerger?.queue?.[this.pendingMerger.queueIndex] === playerId), canBuy: Boolean(player?.isOnline && this.phase === 'buy' && player.id === this.players[this.currentTurnIndex]?.id), canEndGame: Boolean(player?.isOnline && this.phase === 'buy' && player.id === this.players[this.currentTurnIndex]?.id && !this.endGamePending && this._canEndGame()) }; return state; }
     handlePlayerLeave(playerId) {
         const player = this.playerMap[playerId];

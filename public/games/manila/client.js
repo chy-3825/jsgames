@@ -3,7 +3,7 @@ import { createClientScope } from '../common/lifecycle.js';
 import { createModalController } from '../common/modal.js';
 import { loadStyles } from '../common/style-loader.js';
 import { createManilaActions } from './actions.js';
-import { createManilaModel, resetDrafts, stateSignature } from './state.js';
+import { createManilaModel, localizePresentation, resetDrafts, stateSignature } from './state.js';
 import { createManilaTemplate } from './template.js';
 import { createManilaRenderer } from './render.js';
 import { createManilaScene } from './scene.js';
@@ -21,8 +21,10 @@ export function createGameClient({ mount, send, addLog }) {
     const app = mount.querySelector('.manila-app');
     const rulesModal = createModalController({ root: app, overlay: getElement('rulesOverlay'), documentRef, windowRef, fallbackFocus: () => mount.querySelector('[data-ui="rules"]') });
     const renderer = createManilaRenderer({ mount, model, getElement });
-    const scene = createManilaScene({ mount, model, getElement, windowRef, renderCommand: renderer.renderCommand });
-    const actions = createManilaActions({ mount, model, renderer, scene, send, addLog });
+    let closeRulesForPresentation = () => {};
+    const scene = createManilaScene({ mount, model, getElement, windowRef, renderCommand: renderer.renderCommand, renderer, onPresentationStart: () => closeRulesForPresentation() });
+    const actions = createManilaActions({ mount, model, renderer, scene, rulesModal, send, addLog });
+    closeRulesForPresentation = actions.closeRules;
 
     mount.addEventListener('click', actions.handleClick, { signal: scope.signal });
     mount.addEventListener('change', actions.handleChange, { signal: scope.signal });
@@ -31,17 +33,34 @@ export function createGameClient({ mount, send, addLog }) {
     function handleMessage(message) {
         if (message.state) {
             const nextSignature = stateSignature(message.state);
-            const firstState = !model.state;
             model.state = message.state;
             model.actionPending = false;
             renderer.clearError();
             if (nextSignature !== model.interactionSignature) { model.interactionSignature = nextSignature; resetDrafts(model); }
             renderer.render();
             const presentation = message.state.presentation;
-            if (!firstState && presentation?.resolved && presentation.sequence !== model.lastPresentationSequence && presentation.events?.length) {
-                model.lastPresentationSequence = presentation.sequence;
-                scene.enqueuePresentation(presentation);
-            } else if (firstState && presentation?.resolved) model.lastPresentationSequence = presentation.sequence;
+            const hasServerTimeline = Array.isArray(message.state.presentations) || Boolean(presentation);
+            const presentations = message.state.presentations?.length ? message.state.presentations : (presentation ? [presentation] : []);
+            if (hasServerTimeline) {
+                const localNow = Date.now();
+                for (const sourceBatch of presentations.slice().sort((left, right) => Number(left.sequence) - Number(right.sequence))) {
+                    const sequence = Number(sourceBatch.sequence) || 0;
+                    if (sequence) model.lastPresentationSequence = Math.max(model.lastPresentationSequence, sequence);
+                    const localized = localizePresentation({ ...sourceBatch, serverNow: sourceBatch.serverNow ?? message.state.serverNow }, localNow);
+                    if (!localized) continue;
+                    const freshEvents = localized.events.filter((event, index) => {
+                        if (Number.isFinite(Number(event.endsAt)) && Number(event.endsAt) <= localNow) return false;
+                        const sourceEvent = sourceBatch.events?.[index] || event;
+                        const key = `${sourceBatch.transactionId ?? sourceBatch.sequence ?? ''}:${sourceEvent.eventId ?? sourceEvent.sequence ?? index}:${sourceEvent.kind}`;
+                        if (model.presentationEventIds.has(key)) return false;
+                        model.presentationEventIds.add(key);
+                        return true;
+                    });
+                    if (!freshEvents.length) continue;
+                    model.selectedFace = null;
+                    scene.enqueuePresentation({ ...localized, events: freshEvents });
+                }
+            }
         }
         if (message.type === 'error') {
             model.actionPending = false;

@@ -5,9 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>七款卡牌视觉验收</title>
     <link rel="stylesheet" href="/games/scout/style.css">
-    <link rel="stylesheet" href="/games/hanabi/style.css">
+    <link rel="stylesheet" href="/games/hanabi/style.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/table.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/actions.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/responsive.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/scenes.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/responsive-scenes.css?v=20260829-priority34-split-1">
     <link rel="stylesheet" href="/games/modernart/style.css">
-    <link rel="stylesheet" href="/games/monopolydeal/style.css">
+    <link rel="stylesheet" href="/games/monopolydeal/style.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/choice.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/assets.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/interactions.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/scenes.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/responsive-scenes.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/responsive.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/table.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/records.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/stage.css?v=20260901-code-health-1">
+    <link rel="stylesheet" href="/games/monopolydeal/seats.css?v=20260901-code-health-1">
     <link rel="stylesheet" href="/games/citadels/style.css">
     <link rel="stylesheet" href="/games/citadels/roles.css?v=20260829-architecture-split-1">
     <link rel="stylesheet" href="/games/citadels/interactions.css?v=20260829-architecture-split-1">
@@ -15,7 +30,10 @@
     <link rel="stylesheet" href="/games/citadels/scenes.css?v=20260829-architecture-split-1">
     <link rel="stylesheet" href="/games/magicalathlete/style.css">
     <link rel="stylesheet" href="/games/witchtown/style.css">
-    <link rel="stylesheet" href="/games/witchtown/scenes.css?v=20260828-style-split-1">
+    <link rel="stylesheet" href="/games/witchtown/table.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/witchtown/dossier.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/witchtown/scenes.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/witchtown/responsive.css?v=20260829-architecture-split-2">
     <style>
         * { box-sizing: border-box; }
         html, body { margin: 0; background: #171918; }
@@ -27,7 +45,7 @@
         .scout-app .review-grid .sc-card { flex: 0 0 72px; }
         .hb-app .review-grid { min-height: 185px; }
         .art-app .review-grid .art-card { flex: 0 0 126px; }
-        .deal-game .review-grid .deal-card { flex: 0 0 132px; }
+        .deal-game .review-grid .deal-card { position: relative; flex: 0 0 132px; width: 132px; height: 198px; max-height: none; }
         .citadels-app .review-grid .citadels-district-card { flex: 0 0 190px; }
         .ma-app .review-grid .ma-card-face { flex: 0 0 185px; }
         .witchtown-app .review-grid .witchtown-card { flex: 0 0 160px; }
@@ -62,9 +80,18 @@
     const artists = ['matisse','cassat','yoshida','bruegel','clyfford'];
     document.querySelector('#modernart').innerHTML = artists.flatMap((artist, artistIndex) => [1,2,3].map(variant => `<button class="art-card" data-artist="${artist}" style="--artist:${['#d95f59','#d69c4d','#6287b3','#6d9872','#8c6a9c'][artistIndex]}"><i class="art-canvas" data-variant="${variant}"></i><span>${['马蒂斯','卡萨特','吉田','勃鲁盖尔','克里福特'][artistIndex]}</span><small>构图 ${variant}</small></button>`)).join('');
 
-    const actionCards = [['dealBreaker','SET','交易破坏者'],['justSayNo','NO!','说不'],['passGo','GO','通过起点'],['doubleRent','×2','双倍租金'],['debtCollector','5M','收取债务'],['birthday','+2','生日收礼'],['slyDeal','1↗','偷偷交易'],['forcedDeal','⇄','强制交换'],['house','⌂','房屋'],['hotel','H','酒店']];
-    const dealCard = ([kind, mark, name]) => `<button class="deal-card card-action action-${kind}"><span class="deal-card-visual is-action"><span class="deal-action-motif"><b></b><b></b><b></b></span><i>${mark}</i><em>${name}</em></span><span class="deal-card-wash"></span><small>行动牌</small><strong>${name}</strong><b>3M</b></button>`;
-    document.querySelector('#deal').innerHTML = `<button class="deal-card card-money"><span class="deal-card-visual is-money"><i>5</i><em>MONOPOLY MONEY</em></span><span class="deal-card-wash"></span><small>现金</small><strong>5M 现金</strong><b>5M</b></button><button class="deal-card card-property"><span class="deal-card-visual is-property" style="--property-color:#c6423b"><em>TITLE DEED</em><span class="deal-rent-ladder"><i><span>1</span><b>2M</b></i><i><span>2</span><b>3M</b></i><i><span>3</span><b>6M</b></i></span></span><span class="deal-card-wash"></span><small>红色地产</small><strong>肯塔基大道</strong><b>3M</b></button><button class="deal-card card-property_wild"><span class="deal-card-visual is-wild"><i>W</i><em>WILD PROPERTY</em></span><span class="deal-card-wash"></span><small>万能地产</small><strong>十色地产万能牌</strong><b>0M</b></button><button class="deal-card card-rent"><span class="deal-card-visual is-rent"><i>R</i><em>COLLECT RENT</em></span><span class="deal-card-wash"></span><small>收租牌</small><strong>红色/黄色收租</strong><b>1M</b></button>${actionCards.map(dealCard).join('')}`;
+    import('/games/monopolydeal/cards.js').then(async ({ publicCardMarkup }) => {
+        const { ACTION_LABELS } = await import('/games/monopolydeal/constants.js');
+        const values = { dealBreaker: 5, justSayNo: 4, passGo: 1, doubleRent: 1, debtCollector: 3, birthday: 2, slyDeal: 3, forcedDeal: 3, house: 3, hotel: 4 };
+        const cards = [
+            { kind: 'money', value: 5, name: '5M 现金' },
+            { kind: 'property', color: 'red', name: '肯塔基大道', value: 3, rent: [2, 3, 6] },
+            { kind: 'property_wild', allColor: true, value: 0, name: '十色万能地产' },
+            { kind: 'rent', colors: ['red', 'yellow'], value: 1, name: '红色/黄色租金' },
+            ...Object.entries(ACTION_LABELS).map(([action, name]) => ({ kind: 'action', action, name, value: values[action] })),
+        ];
+        document.querySelector('#deal').innerHTML = cards.map(card => publicCardMarkup(card, 'deal-review-card')).join('');
+    });
     document.querySelector('#deal-backs').innerHTML = `<span class="deal-hidden-hand" aria-label="4 张隐藏手牌"><i style="--deal-card-order:0"></i><i style="--deal-card-order:1"></i><i style="--deal-card-order:2"></i><i style="--deal-card-order:3"></i><b>4</b></span><div class="deal-draw"><small>牌库</small><b>58</b><button data-action="drawCards" type="button">摸牌</button><button class="deal-discard-button" type="button">弃牌堆 <b>7</b></button></div>`;
 
     const districts = [['noble','宫殿','贵族区'],['religious','大教堂','宗教区'],['trade','港口','商业区'],['military','要塞','军事区'],['unique','天文台','独特区']];

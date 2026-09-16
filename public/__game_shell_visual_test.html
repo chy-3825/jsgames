@@ -4,18 +4,49 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>游戏统一外壳移动端验收</title>
-    <link rel="stylesheet" href="/style.css?v=20260827-seat-ring-v15">
+    <link rel="stylesheet" href="/style.css?v=20260827-seat-ring-v16">
+    <link rel="stylesheet" href="/lobby/game-shell.css?v=20260831-room-info-1">
+    <link rel="stylesheet" href="/lobby/utilities.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/lobby/responsive.css?v=20260829-architecture-split-2">
     <link rel="stylesheet" href="/lobby/waiting-room.css?v=20260828-lobby-layer-1">
-    <!-- Load the four batch-5 game styles before the module so Firefox's
+    <link rel="stylesheet" href="/lobby/room-info.css?v=20260831-room-info-1">
+    <!-- Load representative game styles before the module so Firefox's
          command-line screenshot mode measures the final mobile layout. -->
-    <link rel="stylesheet" href="/games/werewolf/style.css?v=20260827-hold-identity-2">
-    <link rel="stylesheet" href="/games/avalon/style.css?v=20260827-hold-identity-2">
-    <link rel="stylesheet" href="/games/avalon/scenes.css?v=20260829-architecture-split-1">
+    <link rel="stylesheet" href="/games/werewolf/style.css?v=20260830-werewolf-presentation-5">
+    <link rel="stylesheet" href="/games/avalon/style.css?v=20260829-avalon-role-privacy-1">
+    <link rel="stylesheet" href="/games/avalon/scenes.css?v=20260829-avalon-role-privacy-1">
+    <link rel="stylesheet" href="/games/loveletter/style.css?v=20260830-loveletter-flow-3">
     <link rel="stylesheet" href="/games/decrypto/style.css?v=20260827-online-notebook-1">
     <link rel="stylesheet" href="/games/witchtown/style.css?v=20260827-hold-identity-2">
-    <link rel="stylesheet" href="/games/witchtown/scenes.css?v=20260828-style-split-1">
-    <link rel="stylesheet" href="/games/hanabi/style.css?v=20260827-hanabi-a11y-1">
-    <link rel="stylesheet" href="/games/splendor/style.css?v=20260827-splendor-mobile-1">
+    <link rel="stylesheet" href="/games/witchtown/table.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/witchtown/dossier.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/witchtown/scenes.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/witchtown/responsive.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/lasvegas/style.css?v=20260828-runtime-regression-1">
+    <link rel="stylesheet" href="/games/lasvegas/board.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/lasvegas/responsive.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/lasvegas/scenes.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="/games/hanabi/style.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/table.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/actions.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/responsive.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/scenes.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/hanabi/responsive-scenes.css?v=20260829-priority34-split-1">
+    <link rel="stylesheet" href="/games/monopolydeal/style.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/choice.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/assets.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/interactions.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/scenes.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/responsive-scenes.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/responsive.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/table.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/records.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/stage.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/monopolydeal/seats.css?v=20260910-game-feedback-1">
+    <link rel="stylesheet" href="/games/splendor/style.css?v=20260901-card-spacing-1">
+    <link rel="stylesheet" href="/games/splendor/table.css?v=20260901-card-spacing-1">
+    <link rel="stylesheet" href="/games/splendor/scenes.css?v=20260901-card-spacing-1">
+    <link rel="stylesheet" href="/games/splendor/responsive.css?v=20260901-card-spacing-1">
     <link rel="stylesheet" href="/games/kingdomino/style.css?v=20260827-kingdomino-mobile-1">
     <link rel="stylesheet" href="/games/common/hidden-role-focus.css?v=20260827-hidden-role-focus-1">
     <style>
@@ -41,8 +72,8 @@
         <section id="roomView" class="room-view" style="display:block">
             <header class="room-page-header" aria-label="游戏房间导航">
                 <button id="leaveRoomBtn" class="back-button" type="button" aria-label="离开本局并回到大厅"><span aria-hidden="true">←</span><span>回到大厅</span></button>
-                <div class="room-page-title"><span id="roomPageGame">移动端外壳验收</span><small id="roomPageCode">房间 123456</small></div>
-                <button id="startGameBtn" class="primary-button" style="display:none" type="button">开始游戏</button>
+                <div class="room-page-title"><span id="roomPageGame">移动端外壳验收</span></div>
+                <div class="room-page-actions"><button id="startGameBtn" class="primary-button" style="display:none" type="button">开始游戏</button><button class="room-info-button" type="button" aria-label="房间信息"><span aria-hidden="true">ⓘ</span><b>房间信息</b></button></div>
             </header>
             <div id="gameMount" style="display:block"></div>
         </section>
@@ -80,7 +111,7 @@
 
         try {
             const clientPath = type === 'chess' ? '/games/chess/lobby-client.js' : `/games/${type}/client.js`;
-            const module = await import(`${clientPath}?v=20260829-architecture-1`);
+            const module = await import(`${clientPath}?v=20260901-code-health-1`);
             window.shellTestClient = module.createGameClient({ mount, send() {}, addLog() {} });
             const state = fixtureState(type);
             await applyFixtureScenario({ type, state, params, mount, client: window.shellTestClient });
@@ -113,7 +144,7 @@
                 guessnumber: ['.gn-secret-zone', '.gn-input-slots', '.gn-keypad'],
                 coup: ['.cp-council', '.cp-private', '.cp-action-console'],
                 takefive: ['.tf-board', '.tf-hand-panel'],
-                monopolydeal: ['.deal-hand', '.deal-command'],
+                monopolydeal: ['.deal-hand', '.deal-command', '.deal-action-console', '.deal-command-body'],
                 hanabi: ['.hb-command-panel', '.hb-teammates-section', '.hb-my-hand', '.hb-hand-action-bar'],
                 splendor: ['.sp-market-stage', '.sp-command-panel'],
                 kingdomino: ['.kd-command-column', '.kd-kingdom-stage'],
@@ -126,7 +157,7 @@
                 camelup: ['.cm-status', '.cm-track', '.cm-command'],
                 magicalathlete: ['.ma-status', '.ma-race', '.ma-command'],
                 werewolf: ['.ww-role', '.ww-action'],
-                avalon: ['.av-status', '.av-mission-board', '.av-private-action'],
+                avalon: ['.av-mission-board', '.av-action-panel', '.av-private-action'],
                 decrypto: ['.dc-status', '.dc-signal-grid', '.dc-command'],
                 witchtown: ['.witchtown-command', '.witchtown-table-panel', '.witchtown-role-panel', '.witchtown-private-panel'],
             };
@@ -141,6 +172,29 @@
                 const rect = element.getBoundingClientRect();
                 return rect.left >= -2 && rect.right <= viewportWidth + 2 && rect.top >= headerHeight - 2 && rect.bottom <= viewportHeight + 2;
             });
+            const dealCard = type === 'monopolydeal' ? mount.querySelector('.deal-event .deal-preview-card, .deal-event .deal-main-public-card') : null;
+            const dealCopy = type === 'monopolydeal' ? mount.querySelector('.deal-event .deal-preview-copy, .deal-event .deal-public-copy') : null;
+            const dealCore = type === 'monopolydeal' ? mount.querySelector('.deal-stage-core') : null;
+            const dealSupply = type === 'monopolydeal' ? mount.querySelector('.deal-supply') : null;
+            const dealStageRect = type === 'monopolydeal' ? mount.querySelector('.deal-event')?.getBoundingClientRect() : null;
+            const dealCoreRect = dealCore?.getBoundingClientRect();
+            const dealSupplyRect = dealSupply?.getBoundingClientRect();
+            const dealCentralAlignment = !dealCard || !dealCopy || !dealStageRect
+                || !dealCoreRect || !dealSupplyRect || dealCoreRect.width === 0 || dealStageRect.width === 0
+                || (() => {
+                    const coreStyle = getComputedStyle(dealCore);
+                    const gap = parseFloat(coreStyle.columnGap) || 0;
+                    const borderRight = parseFloat(coreStyle.borderRightWidth) || 0;
+                    const paddingRight = parseFloat(coreStyle.paddingRight) || 0;
+                    const cardRect = dealCard.getBoundingClientRect();
+                    const copyRect = dealCopy.getBoundingClientRect();
+                    const expectedLeft = dealSupplyRect.right + gap;
+                    const expectedRight = dealCoreRect.right - borderRight - paddingRight;
+                    return Math.abs(dealStageRect.left - expectedLeft) <= 2
+                        && Math.abs(dealStageRect.right - expectedRight) <= 2
+                        && cardRect.left >= dealStageRect.left - 2
+                        && copyRect.left - cardRect.right <= 14;
+                })();
             const boardCoreFits = Boolean(boardRect && actionRect && boardRect.left >= -1 && boardRect.right <= viewportWidth + 1 && boardRect.top >= headerHeight - 1 && boardRect.bottom <= viewportHeight + 1 && actionRect.bottom <= viewportHeight + 1 && (!optionalActionRect || optionalActionRect.bottom <= viewportHeight + 1));
             const coreFits = board ? boardCoreFits : cardCoreFits;
             const landscapeHeightFits = !shortLandscape || type === 'coup' || scrollHeight <= viewportHeight + 1;
@@ -155,7 +209,7 @@
             const coupScenario = type === 'coup' ? params.get('coupState') || 'turn' : '';
             const coupScenarioTargets = {
                 challenge: ['.cp-challenge .cp-danger', '.cp-challenge .cp-secondary'],
-                loss: ['.cp-loss-panel > .cp-private-choice-row [data-loss-index]'],
+                loss: ['.cp-loss-cards [data-loss-index]'],
                 exchange: ['.cp-exchange-dialog'],
             };
             const coupScenarioElements = (coupScenarioTargets[coupScenario] || []).map(selector => mount.querySelector(selector)).filter(Boolean);
@@ -163,13 +217,13 @@
                 const rect = element.getBoundingClientRect();
                 return rect.left >= -2 && rect.right <= viewportWidth + 2 && rect.top >= headerHeight - 2 && rect.bottom <= viewportHeight + 2;
             });
-            const passed = scrollWidth <= viewportWidth && landscapeHeightFits && visibleLeaves === 1 && headerHeight >= 44 && headerHeight <= 64 && (!shortLandscape || coreFits) && coupScenarioFits && witchImageRatiosValid && witchPublicFieldsVisible && roleFocusVisible && roleArtReady && runtimeErrors.length === 0;
+            const passed = scrollWidth <= viewportWidth && landscapeHeightFits && visibleLeaves === 1 && headerHeight >= 44 && headerHeight <= 64 && (!shortLandscape || coreFits) && coupScenarioFits && witchImageRatiosValid && witchPublicFieldsVisible && roleFocusVisible && roleArtReady && dealCentralAlignment && runtimeErrors.length === 0;
             const boardSize = boardRect ? `${Math.round(boardRect.width)}×${Math.round(boardRect.height)}` : 'missing';
             const coreLabel = shortLandscape ? (coreFits ? 'fit' : 'clipped') : 'portrait-only';
             const diagnostic = params.get('debug') === '1'
                 ? ` · ${[mount.firstElementChild, ...cardCore, ...mount.querySelectorAll('.witchtown-shell,.witchtown-workspace')].filter(Boolean).map(element => { const rect = element.getBoundingClientRect(); return `${element.className.split(' ')[0]}:${Math.round(rect.left)}-${Math.round(rect.right)}×${Math.round(rect.top)}-${Math.round(rect.bottom)}`; }).join(',')}`
                 : '';
-            metrics.textContent = `${passed ? 'PASS' : 'FAIL'} · ${type}${coupScenario ? `:${coupScenario}` : ''} · ${viewportWidth}×${viewportHeight} · scroll ${scrollWidth}×${scrollHeight}px · board ${boardSize} · core ${coreLabel} · scenario ${coupScenarioFits ? 'fit' : 'clipped'} · art ${roleArtDeferred ? 'deferred' : witchImageRatiosValid && roleArtReady ? 'ready' : 'invalid'} · role ${roleFocusVisible ? 'visible' : 'hidden'} · public ${witchPublicFieldsVisible ? 'visible' : 'hidden'} · exits ${visibleLeaves}${diagnostic}`;
+            metrics.textContent = `${passed ? 'PASS' : 'FAIL'} · ${type}${coupScenario ? `:${coupScenario}` : ''} · ${viewportWidth}×${viewportHeight} · scroll ${scrollWidth}×${scrollHeight}px · board ${boardSize} · core ${coreLabel} · central ${dealCentralAlignment ? 'aligned' : 'drifted'} · scenario ${coupScenarioFits ? 'fit' : 'clipped'} · art ${roleArtDeferred ? 'deferred' : witchImageRatiosValid && roleArtReady ? 'ready' : 'invalid'} · role ${roleFocusVisible ? 'visible' : 'hidden'} · public ${witchPublicFieldsVisible ? 'visible' : 'hidden'} · exits ${visibleLeaves}${diagnostic}`;
             metrics.classList.toggle('is-failed', !passed);
             document.documentElement.dataset.shellTest = passed ? 'passed' : 'failed';
         } catch (error) {

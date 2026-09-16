@@ -202,7 +202,7 @@ export function createRoomDialogController({
         const isPending = getRequestPending();
         if (confirmButton) {
             confirmButton.disabled = isPending;
-            confirmButton.innerHTML = isPending ? '正在创建…' : '确定创建 <span>→</span>';
+            confirmButton.innerHTML = isPending ? '正在创建…' : '创建房间 <span>→</span>';
         }
         if (backButton) backButton.disabled = isPending;
         if (cancelButton) cancelButton.disabled = isPending;

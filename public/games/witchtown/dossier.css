@@ -1,0 +1,226 @@
+/* Secret dossiers and public evidence layer. Loaded after table.css. */
+
+/* Secret dossiers, public Trial evidence, and moderator-free scene changes. */
+.witchtown-app {
+    transition: background-color 1.6s ease, color 1.1s ease, filter 1.1s ease;
+}
+
+.witchtown-app.is-night-phase {
+    background-color: #080a11;
+}
+
+.witchtown-app.is-conspiracy-phase {
+    background-color: #16101d;
+}
+
+.witchtown-app.is-night-phase .witchtown-topbar,
+.witchtown-app.is-night-phase .witchtown-panel,
+.witchtown-app.is-night-phase .witchtown-command,
+.witchtown-app.is-night-phase .witchtown-footer {
+    transition: background-color 1.4s ease, border-color 1.4s ease, color 1.4s ease, filter 1.4s ease;
+}
+
+.witchtown-public-trials {
+    display: flex;
+    min-height: 22px;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 7px;
+}
+
+.witchtown-public-trials > span {
+    align-self: center;
+    color: #7f7468;
+    font-size: 7px;
+}
+
+.witchtown-revealed-trial {
+    padding: 3px 6px;
+    border: 1px solid currentColor;
+    background: rgba(238, 221, 181, .08);
+    font-size: 7px;
+}
+
+.witchtown-revealed-trial.is-town { color: #9ebb9a; }
+.witchtown-revealed-trial.is-constable { color: #92bbcc; }
+.witchtown-revealed-trial.is-witch { color: #df8a7d; }
+
+.witchtown-dossier,
+.witchtown-dossier-cover {
+    min-width: 0;
+    border: 1px solid rgba(199, 157, 88, .5);
+    border-radius: 2px;
+    background:
+        linear-gradient(135deg, rgba(236, 202, 133, .08), transparent 30%),
+        repeating-linear-gradient(4deg, transparent 0 10px, rgba(255, 245, 213, .018) 11px 12px),
+        #281b17;
+    box-shadow: inset 0 0 0 5px rgba(13, 9, 8, .34), 0 10px 24px rgba(0, 0, 0, .27);
+}
+
+.witchtown-dossier-stack {
+    display: grid;
+    min-width: 0;
+}
+
+.witchtown-dossier-stack > .witchtown-dossier,
+.witchtown-dossier-stack > .witchtown-dossier-cover {
+    grid-area: 1 / 1;
+}
+
+.witchtown-dossier {
+    padding: 14px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: none;
+}
+
+.witchtown-dossier-stack.is-revealed > .witchtown-dossier {
+    opacity: 1;
+    visibility: visible;
+}
+
+.witchtown-dossier-cover {
+    position: relative;
+    display: grid;
+    width: 100%;
+    min-height: 248px;
+    align-content: center;
+    justify-items: center;
+    gap: 9px;
+    overflow: hidden;
+    padding: 23px;
+    color: var(--paper);
+    text-align: center;
+    user-select: none;
+    transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease;
+}
+
+.witchtown-dossier-stack.is-revealed > .witchtown-dossier-cover {
+    opacity: 0;
+    transform: none;
+}
+
+.witchtown-dossier-cover::before,
+.witchtown-dossier-cover::after {
+    position: absolute;
+    content: '';
+    pointer-events: none;
+}
+
+.witchtown-dossier-cover::before {
+    inset: 11px;
+    border: 1px double rgba(224, 192, 127, .25);
+}
+
+.witchtown-dossier-cover::after {
+    right: -36px;
+    bottom: -44px;
+    width: 140px;
+    height: 140px;
+    border: 2px solid rgba(154, 65, 56, .32);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 8px rgba(154, 65, 56, .08);
+}
+
+.witchtown-dossier-cover:hover,
+.witchtown-dossier-cover:focus-visible {
+    border-color: var(--gold-bright);
+    box-shadow: inset 0 0 0 5px rgba(13, 9, 8, .34), 0 14px 30px rgba(0, 0, 0, .34), 0 0 22px rgba(196, 154, 85, .12);
+    transform: translateY(-2px);
+}
+
+.witchtown-dossier-cover > span,
+.witchtown-dossier-ribbon span {
+    color: var(--gold);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .22em;
+}
+
+.witchtown-dossier-cover > i {
+    display: grid;
+    width: 58px;
+    height: 58px;
+    place-items: center;
+    border: 1px solid #be7162;
+    border-radius: 50%;
+    background: #6f302b;
+    color: #f1c9a8;
+    font: 600 23px "Songti SC", serif;
+    font-style: normal;
+    box-shadow: inset 0 0 0 7px rgba(42, 15, 14, .34), 0 5px 14px rgba(0, 0, 0, .34);
+}
+
+.witchtown-dossier-cover > strong {
+    color: #eeddbb;
+    font: 600 20px "Songti SC", serif;
+    letter-spacing: .08em;
+}
+
+.witchtown-dossier-cover > small {
+    max-width: 300px;
+    color: var(--paper-muted);
+    font-size: 9px;
+    line-height: 1.65;
+}
+
+.witchtown-dossier-cover > b {
+    margin-top: 5px;
+    color: var(--gold-bright);
+    font-size: 9px;
+    font-weight: 500;
+}
+
+.witchtown-dossier-ribbon {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 11px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid rgba(224, 192, 127, .2);
+}
+
+.witchtown-dossier-ribbon small {
+    color: var(--paper-muted);
+    font-size: 8px;
+    line-height: 1.5;
+    text-align: right;
+}
+
+.witchtown-dossier-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 11px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.witchtown-public-hall {
+    min-width: 0;
+}
+
+.witchtown-special-choice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 13px;
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.witchtown-special-choice > span {
+    display: grid;
+    gap: 4px;
+}
+
+.witchtown-special-choice b { color: var(--paper); font-size: 10px; }
+.witchtown-special-choice small { color: var(--paper-muted); font-size: 8px; line-height: 1.5; }
+
+@media (min-width: 821px) {
+    .witchtown-private-panel > [data-role="private"] {
+        display: block;
+    }
+}

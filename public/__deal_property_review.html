@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>地产原图与手牌检查</title>
+<link rel="stylesheet" href="/games/monopolydeal/style.css">
+<link rel="stylesheet" href="/games/monopolydeal/assets.css">
+<link rel="stylesheet" href="/games/monopolydeal/table.css">
+<style>
+body { margin: 0; padding: 20px; background: #e5e6e0; font-family: system-ui, sans-serif; }
+h2 { font-size: 16px; color: #344538; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; }
+.row .deal-card { position: relative; width: 140px; height: 212px; max-height: none; flex: 0 0 140px; }
+#hand .deal-card { width: 80px; height: 116px; flex-basis: 80px; }
+</style>
+<h2>中央／资产区：BGG 原图，只替换文字</h2><div class="row" id="full"></div>
+<h2>万能地产原图</h2><div class="row" id="wild"></div>
+<h2>补齐地产原图</h2><div class="row" id="missing"></div>
+<h2>手牌：原卡面简化信息</h2><div class="row" id="hand"></div>
+<script type="module">
+import { publicCardMarkup, handCardMarkup } from '/games/monopolydeal/cards.js';
+const names = ['地中海大道','康涅狄格大道','圣查尔斯广场','圣詹姆斯广场','雷丁铁路','肯塔基大道','大西洋大道','北卡罗来纳大道','木板路','自来水厂'];
+const colors = ['brown','lightblue','pink','orange','railroad','red','yellow','green','blue','utility'];
+const values = [1,1,2,2,2,3,3,4,4,2];
+const cards = names.map((name,i)=>({kind:'property',name,color:colors[i],value:values[i]}));
+const wilds = [ [['brown','lightblue'],1], [['pink','orange'],2], [['red','yellow'],3], [['blue','green'],4], [['railroad','utility'],2] ].map(([colors,value])=>({kind:'property_wild',colors,value,name:'双色万能地产'}));
+wilds.push({kind:'property_wild',allColor:true,value:0,name:'十色万能地产'});
+const missing = [{kind:'property',name:'电力公司',color:'utility',value:2},{kind:'property_wild',colors:['green','railroad'],value:4,name:'绿色／铁路万能地产'},{kind:'property',name:'波罗的海大道',color:'brown',value:1},{kind:'property_wild',colors:['lightblue','railroad'],value:4,name:'浅蓝／铁路万能地产'}];
+document.querySelector('#full').innerHTML = cards.map(c=>publicCardMarkup(c)).join('');
+document.querySelector('#wild').innerHTML = wilds.map(c=>publicCardMarkup(c)).join('');
+document.querySelector('#missing').innerHTML = missing.map(c=>publicCardMarkup(c)).join('');
+document.querySelector('#hand').innerHTML = [...cards.slice(0,2), ...wilds.slice(0,1),wilds.at(-1)].map(c=>`<button class="deal-card deal-hand-card-face">${handCardMarkup(c)}</button>`).join('');
+</script>
+</html>

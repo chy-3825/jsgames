@@ -1,0 +1,87 @@
+/* Compact presentation and modal adjustments that belong to scenes rather
+   than to the table shell. */
+@media (max-width: 780px) {
+    .deal-event.is-public-stage { min-height: 176px; padding: 9px; }
+    .deal-public-interaction { grid-template-columns: minmax(66px, .72fr) 84px minmax(104px, 1.25fr); gap: 7px; min-height: 158px; }
+    .deal-public-route { gap: 3px; font-size: 6px; }
+    .deal-public-route > span { display: grid; justify-items: end; gap: 1px; }
+    .deal-public-route strong { font-size: 9px; }
+    .deal-public-card-stack { min-height: 122px; }
+    .deal-public-card { width: 68px; height: 98px; }
+    .deal-no-card { width: 44px; height: 64px; transform: translate(calc(25px + var(--no-index) * 6px), calc(20px - var(--no-index) * 3px)) rotate(calc(7deg + var(--no-index) * 3deg)); }
+    .deal-support-card.is-support-1 { transform: translate(-16px, -4px) rotate(-8deg); }
+    .deal-support-card.is-support-2 { transform: translate(16px, -4px) rotate(8deg); }
+    .deal-public-copy { gap: 2px; padding-left: 8px; }
+    .deal-public-copy > strong { font-size: 14px; }
+    .deal-public-copy > p { font-size: 6px; }
+    .deal-public-copy > small { font-size: 6px; }
+    .deal-target-queue { justify-content: flex-start; overflow-x: auto; }
+    .deal-target-queue > span { flex: 0 0 auto; padding: 2px 5px; font-size: 6px; }
+    .deal-transfer-badge { right: -13px; padding: 3px 5px; font-size: 5px; }
+    .deal-victory-layer { padding: 34px 10px 26px; }
+    .deal-victory-groups { gap: 5px; }
+    .deal-victory-groups article { padding: 9px 5px; }
+}
+
+@media (max-width: 430px) {
+    .deal-event.is-public-stage { padding: 8px; }
+    .deal-public-interaction { grid-template-columns: minmax(55px, .65fr) 72px minmax(94px, 1.2fr); gap: 5px; }
+    .deal-public-card { width: 61px; height: 88px; }
+    .deal-public-card-stack { min-height: 108px; }
+    .deal-public-copy { padding-left: 6px; }
+    .deal-public-copy > strong { font-size: 12px; }
+    .deal-public-route i { font-size: 9px; }
+    .deal-target-queue { grid-column: 1 / -1; }
+    .deal-victory-seal { width: 68px; height: 68px; font-size: 30px; }
+    .deal-victory-scene h2 { font-size: 30px; }
+    .deal-victory-groups { grid-template-columns: repeat(3, minmax(82px, 1fr)); }
+    .deal-victory-groups strong { font-size: 11px; }
+    .deal-victory-skip { right: 10px; bottom: 10px; }
+}
+
+
+@media (max-width: 780px) {
+    .deal-overlay,
+    .deal-victory-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .deal-rules { max-height: calc(100dvh - var(--game-shell-offset, 48px) - 20px); }
+    .deal-rules > button { width: 44px; height: 44px; }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .deal-header {
+        position: relative;
+        top: auto;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        min-height: 42px;
+        height: 42px;
+        gap: 8px;
+        padding: 3px 8px;
+    }
+    .deal-brand-mark,
+    .deal-brand small { display: none; }
+    .deal-brand h1 { font-size: 14px; }
+    .deal-turn {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        width: auto;
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+    .deal-turn small { display: inline; margin: 0 0 0 6px; }
+    .deal-header-actions { grid-column: 3; grid-row: 1; }
+    .deal-overlay,
+    .deal-victory-layer { inset: var(--game-shell-offset, 48px) 0 0; }
+    .deal-overlay { padding: 6px; }
+    .deal-rules { max-height: calc(100svh - var(--game-shell-offset, 48px) - 12px); padding: 15px 12px 10px; }
+    .deal-rules > button { width: 44px; height: 44px; }
+    .deal-rules > h2 { margin-bottom: 8px; font-size: 18px; }
+    .deal-rules-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .deal-rules-sections section { padding: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .deal-game *,
+    .deal-game *::before,
+    .deal-game *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

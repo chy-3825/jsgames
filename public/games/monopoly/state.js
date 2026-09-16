@@ -137,3 +137,9 @@ export function syncVisualPositions(model, nextState) {
 export function tokenStyleFor(player) {
     return PLAYER_TOKEN_ART[player?.tokenStyle] ? player.tokenStyle : '3d';
 }
+
+// Identify the roll itself, never the surrounding turn or activity log.
+export function rollAnimationKey(action, dice) {
+    if (action?.rollId != null) return String(action.rollId);
+    return JSON.stringify([action?.kind, action?.playerId, dice, action?.from, action?.to, action?.message]);
+}

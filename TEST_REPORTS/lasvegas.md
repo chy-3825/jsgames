@@ -4,7 +4,7 @@
 
 本轮按 Ravensburger/Alea 2012 基础版规则复核，覆盖 2–5 人设置、54 张钞票、六家赌场、每轮 8 枚自有骰子、2–4 人中立骰子变体、四轮多数分配、平票、钞票回收和终局同分裁定。
 
-结论：**通过，10/10**。规则专项 5/5、前端专项 4/4 通过，现有拉斯维加斯回归测试全部通过；最大人数 5 人连续完成 3 局。
+结论：**通过，10/10**。规则专项、同步播报专项、前端专项和全量回归均通过；最大人数 5 人连续完成 3 局。
 
 规则依据：[Ravensburger 官方 Las Vegas 规则书](https://www.ravensburger.org/spielanleitungen/ecm/Spielanleitungen/26938_Vegas_EN.pdf)和[Ravensburger 产品页](https://www.ravensburger.us/en-US/products/games/family-games/las-vegas-24903)。官方规则明确 6 家赌场、54 张钞票、每局 4 轮，以及 2–4 人中立骰子变体。
 
@@ -37,6 +37,21 @@
 
 - 第一轮与后续轮次统一播放开桌动画，展示六家赌场奖池、先手玩家，以及本局是否启用 8 枚中立骰。
 - 最终标题直接宣布“玩家名成为今晚的赌场之王”；多人完全同分时列出全部姓名并宣布并列称霸。
+
+## 同步播报工作清单验收（2026-08-30）
+
+| 工作项 | 状态 | 验收证据 |
+| --- | --- | --- |
+| 公共动画改为服务端绝对时间轴 | 已完成 | `roundStarted`、掷骰、放置、封盘、六家赌场结算、轮末清点、换轮和终局均带 `startedAt/endsAt`，所有客户端消费同一时间槽。 |
+| 多动画 FIFO 队列与防重叠 | 已完成 | 每次动作生成结构化 `presentation` 批次；事件按连续时间槽排队，客户端按 `sequence/eventId` 去重并只播放未过期事件。 |
+| 重连/晚加入不重播过期动画 | 已完成 | 服务端只保留未结束批次，客户端依据 `serverNow` 转换本地时钟并过滤已结束批次。 |
+| 服务端播报期间锁定下一步操作 | 已完成 | `Room.handleGameAction` 在 `endsAt` 前统一返回“请等待当前播报结束”，跳过只隐藏本地画面，不缩短服务端锁。 |
+| 出局/获胜的个人视角 | 已完成 | 离场者看到“您已离开本局”，胜者看到“您已获胜/您已并列获胜”；个人事件与公共事件共享 `startedAt/endsAt`。 |
+| 永久离场收束 | 已完成 | 离线席位从未来回合跳过，未放置骰子清理；在线人数不足两人时同批生成 `finalSettlement(reason: players)`。 |
+| 结算动画子队列 | 已完成 | 每家赌场保留平手核对、逐笔奖金流向、钞票回库等 `segments`，同一赌场内严格串行。 |
+| 代码、专项测试和回归验收 | 已完成 | 新增同步播报专项 6 项；Las Vegas 核心专项（前端、规则、回归、播报）19 项全部通过，事件审计通过，全量 `npm test` 619/619 通过。 |
+
+本轮实现保留公共播报的完整信息，但把只属于当前观看者的离场/胜利文案放在同一时间槽的个人投影中；因此不同客户端不会因本地是否及时收到消息而改变阶段推进。
 
 ## 三局五人完整流程
 
@@ -82,7 +97,9 @@
 
 ## 自动化专项测试
 
-- `test/lasvegas-frontend.test.js`：4/4 通过，覆盖提交锁、处理中反馈、错误恢复、规则弹层、短横屏和九种视觉状态。
+- `test/lasvegas-frontend.test.js`：5/5 通过，覆盖提交锁、处理中反馈、错误恢复、规则弹层、短横屏、九种视觉状态和开局/终局播报。
+
+- `test/lasvegas-presentation.test.js`：6/6 通过，覆盖服务端绝对时间 FIFO、赌场结算子时间槽、Room 门禁、个人胜利投影、永久离场收束和客户端时间本地化。
 
 - `Las Vegas follows the official bank, setup, neutral-dice variants and four-round lifecycle`
 - `Las Vegas resolves ties before payout and returns neutral winnings to the bank`
@@ -90,7 +107,8 @@
 - `Las Vegas publishes split dice and structured placement presentation events`
 - `Las Vegas preserves every casino settlement scene and uses banknote count as the final tiebreaker`
 - 既有回归中的完整牌组、两人中立骰、平票结算和五人四轮对局测试
-- 当次全项目 `npm test`：429/429 通过（历史快照）。当前基线见 [`release-baseline.md`](./release-baseline.md)。
+- `node scripts/presentation-event-audit.js`：全部游戏事件映射通过，Las Vegas 9 种事件全部有前端处理器。
+- 当次全项目 `npm test`：619/619 通过。当前基线见 [`release-baseline.md`](./release-baseline.md)。
 
 ## 最终评分
 

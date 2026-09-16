@@ -1,0 +1,211 @@
+/* Canonical table primitives. Later component files refine the record,
+   central action content and player seats without legacy selector generations. */
+/* FINAL CENTRAL STAGE: use the same quiet two-column rhythm as Love Letter.
+   The left pile is a compact supply rail; the right slot is reserved for one
+   readable card and its short explanation instead of a large square panel. */
+.deal-stage-core {
+    grid-template-columns: minmax(132px, 158px) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 16px;
+    min-height: 220px;
+    padding: 10px 14px;
+    border: 1px solid rgba(217, 183, 118, .18);
+    border-radius: 5px;
+    background: rgba(35, 13, 20, .46);
+    box-shadow: inset 0 1px rgba(255, 235, 194, .035);
+}
+.deal-supply {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    align-content: center;
+    gap: 0;
+    min-width: 0;
+    margin: 6px 0;
+    padding: 8px 12px 8px 8px;
+    border: 1px solid rgba(220, 187, 126, .14);
+    border-radius: 5px;
+    background: rgba(22, 10, 15, .28);
+}
+.deal-court-deck {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-rows: auto 24px;
+    align-items: center;
+    justify-items: stretch;
+    gap: 5px 8px;
+    min-height: 0;
+    padding: 6px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #a8aa9e;
+    text-align: left;
+}
+.deal-deck-stack {
+    width: 52px;
+    aspect-ratio: 234 / 340;
+    padding: 0;
+    border: 1px solid rgba(195, 153, 82, .86);
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: 4px 7px 13px rgba(4, 1, 3, .38);
+    cursor: pointer;
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease, opacity .16s ease;
+}
+.deal-deck-stack:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-2px); }
+.deal-deck-stack:focus,
+.deal-deck-stack:focus-visible { outline: 0; box-shadow: none; filter: brightness(1.08); }
+.deal-deck-stack:disabled { cursor: default; opacity: .58; filter: saturate(.72); }
+
+.deal-event,
+.deal-event.is-public-stage {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1;
+    align-items: center;
+    width: auto;
+    min-height: 188px;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.deal-event::before { display: none; }
+.deal-event-idle { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 16px; width: min(440px, 100%); min-height: 188px; margin: 0 auto; }
+.deal-event-idle-mark { display: grid; width: 76px; aspect-ratio: 1.48; place-items: center; border: 1px solid rgba(195, 153, 82, .58); border-radius: 6px; background: linear-gradient(145deg, #6e3442, #3e1d2b); box-shadow: 0 12px 22px rgba(4, 1, 3, .24), inset 0 0 18px rgba(231, 188, 110, .08); color: #f1d59d; font: 700 24px "Noto Serif SC", serif; }
+.deal-event-idle > div { display: grid; gap: 4px; min-width: 0; padding-left: 16px; border-left: 1px solid rgba(208, 170, 99, .42); }
+.deal-event-idle > div > span { color: #b99560; font-size: 9px; letter-spacing: .14em; }
+.deal-event-idle > div > strong { overflow-wrap: anywhere; color: #f1dfbd; font: 600 clamp(17px, 2vw, 23px) "Noto Serif SC", serif; line-height: 1.35; }
+.deal-event-idle > div > small { overflow-wrap: anywhere; color: #9f9f95; font-size: 10px; line-height: 1.45; }
+.deal-event-idle.is-ended .deal-event-idle-mark { background: linear-gradient(145deg, #8a6040, #493123); }
+
+.deal-card-preview,
+.deal-preview-card-shell { display: grid; }
+
+@media (max-width: 760px) {
+    .deal-event,
+    .deal-event.is-public-stage { min-height: 142px; }
+    .deal-event-idle { grid-template-columns: 58px minmax(0, 1fr); gap: 8px; min-height: 142px; }
+    .deal-event-idle-mark { width: 58px; font-size: 19px; }
+    .deal-event-idle > div { padding-left: 8px; gap: 3px; }
+    .deal-event-idle > div > span { font-size: 7px; }
+    .deal-event-idle > div > strong { font-size: 15px; }
+    .deal-event-idle > div > small { font-size: 8px; }
+}
+
+/* The draw control is deliberately only a card back over one button. */
+.deal-court-deck {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    justify-items: center;
+    align-content: center;
+    place-items: center;
+    gap: 0;
+    width: 100%;
+    height: 100%;
+}
+.deal-deck-stack { grid-column: 1; grid-row: 1; }
+
+/* Compact hand faces use three clear zones instead of decorative artwork. */
+.deal-card.deal-hand-card-face {
+    padding: 0;
+    background: #fff;
+    color: #202b31;
+    border-color: #e3e7e8;
+    font-family: system-ui, "Noto Sans SC", sans-serif;
+    container-type: inline-size;
+}
+.deal-hand-zones { position: absolute; inset: 0; display: grid; grid-template-rows: 20% 60% 20%; }
+.deal-hand-band { display: flex; min-height: 0; background: #fff; }
+.deal-hand-band > span { flex: 1; }
+.deal-hand-kind { display: grid; place-items: center; color: #35473e; font-size: clamp(11px, 16cqi, 17px); font-weight: 650; letter-spacing: .18em; text-indent: .18em; border-block: 1px solid #243f3014; }
+.deal-hand-value { position: absolute; top: 4px; left: 4px; padding: 2px 4px; border-radius: 3px; background: #fffffff0; color: #202b31; font-size: clamp(9px, 12cqi, 12px); font-weight: 750; line-height: 1.2; }
+.deal-hand-money { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(24px, 43cqi, 48px); font-weight: 850; font-variant-numeric: tabular-nums; }
+.deal-hand-action { position: absolute; inset: 0; display: grid; grid-template-rows: 20% 60% 20%; }
+.deal-hand-action-value { display: grid; place-items: center; background: #edf1f3; font-size: clamp(18px, 29cqi, 30px); font-weight: 800; }
+.deal-hand-action-name { grid-row: 3; display: grid; place-items: center; padding: 3px; border-top: 1px solid #e3e7e8; font-size: clamp(10px, 17cqi, 18px); font-weight: 800; line-height: 1.3; text-align: center; overflow-wrap: anywhere; }
+.deal-card.deal-hand-card-face:hover,
+.deal-card.deal-hand-card-face.is-selected { border-color: var(--deal-brass-light); }
+
+/* Desktop rail width and dock proportions. */
+@media (min-width: 901px) {
+    .deal-opponents { grid-template-columns: repeat(var(--deal-seat-count, 4), 230px); gap: 14px; }
+    .deal-opponents[data-seat-count="1"] { width: 242px; }
+    .deal-opponents[data-seat-count="2"] { width: min(610px, calc(100% - 32px)); }
+    .deal-opponents[data-seat-count="3"] { width: min(840px, calc(100% - 32px)); }
+    .deal-opponents[data-seat-count="4"] { width: min(980px, calc(100% - 32px)); }
+    .deal-command-inner { grid-template-columns: 230px minmax(0, 1fr) minmax(190px, 220px); }
+}
+
+.deal-asset-flight-card {
+    position: fixed !important;
+    z-index: 12000 !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+    transform-origin: center;
+    box-shadow: 0 16px 30px rgba(0, 0, 0, .5) !important;
+}
+[data-asset-bank].is-receiving-card,
+[data-asset-properties].is-receiving-card { animation: deal-asset-receive .72s ease both; }
+@keyframes deal-asset-receive { 45% { filter: brightness(1.45); transform: scale(1.08); } }
+
+.deal-turn-toast {
+    position: fixed;
+    z-index: 11000;
+    top: calc(var(--game-shell-offset, 48px) + 54px);
+    left: 50%;
+    display: grid;
+    min-width: 230px;
+    justify-items: center;
+    gap: 3px;
+    padding: 10px 24px 11px;
+    border: 1px solid rgba(221, 184, 111, .55);
+    border-radius: 6px;
+    background: rgba(35, 16, 23, .94);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .38);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -10px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+.deal-turn-toast small { color: #b99560; font-size: 9px; letter-spacing: .16em; }
+.deal-turn-toast strong { color: #f2dfb9; font: 600 18px "Noto Serif SC", serif; }
+.deal-turn-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+
+@media (max-width: 760px) {
+    .deal-turn-toast { top: calc(var(--game-shell-offset, 48px) + 42px); min-width: 190px; padding: 8px 18px; }
+    .deal-turn-toast strong { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .deal-turn-toast { transition: none; }
+    [data-asset-bank].is-receiving-card,
+    [data-asset-properties].is-receiving-card { animation: none; }
+}
+
+/* Keep the hand independent of the local player's interaction highlight. */
+.deal-game .deal-cards { display: flex; flex-wrap: nowrap; gap: 0; padding: 16px 8px 8px; overflow-x: auto; overflow-y: hidden; min-height: 0; align-items: center; }
+.deal-game .deal-cards > .deal-card { width: clamp(68px, 7vw, 92px); height: auto; max-height: none; aspect-ratio: 234 / 340; flex: 0 0 clamp(68px, 7vw, 92px); margin: 0; }
+.deal-game .deal-cards > .deal-card + .deal-card { margin-left: var(--deal-hand-spacing, 8px); }
+.deal-game .deal-cards > .deal-card:hover,
+.deal-game .deal-cards > .deal-card.is-selected { z-index: 30; }
+.deal-game .deal-hand { padding: 6px; }
+/* Controls remain available, without duplicate prose beside the played card. */
+.deal-game .deal-command-note,
+.deal-game .deal-action-console [data-role="commandTitle"],
+.deal-game .deal-action-console [data-role="commandHint"] { display: none; }
+
+.deal-end-turn-control { display: grid; gap: 4px; text-align: center; }
+.deal-end-turn-control small { color: #b9ad94; font-size: 11px; }
+
+/* Reserve more of the phone stage for the selected card and readable rules. */
+@media (max-width: 760px) {
+    .deal-stage-core { grid-template-columns: 66px minmax(0, 1fr); gap: 10px; padding: 8px; }
+    .deal-supply { padding: 6px; }
+    .deal-court-deck { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
+}

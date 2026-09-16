@@ -48,7 +48,7 @@ function main() {
     const lockRoot = packageLock.packages?.[''] || {};
     const requiredScripts = [
         'start', 'test', 'test:syntax', 'test:audit', 'test:browser',
-        'test:browser:chromium', 'test:performance', 'test:lint', 'test:type', 'test:coverage', 'test:complexity',
+        'test:browser:chromium', 'test:performance', 'test:lint', 'test:type', 'test:coverage', 'test:presentation', 'test:complexity',
         'test:reports', 'test:release', 'test:deploy', 'test:acceptance',
     ];
     const requiredFiles = [
@@ -57,7 +57,17 @@ function main() {
         'deploy/nginx-jsgames.conf.example', 'server/realtime/security.js', 'scripts/acceptance-gate.js', 'scripts/deployment-smoke.js',
         'eslint.config.js', 'tsconfig.check.json',
         'server/realtime/protocol.js', 'server/realtime/broadcast.js', 'server/realtime/room-store.js',
-        'scripts/complexity-audit.js', 'scripts/complexity-baseline.json',
+        'server/realtime/room-handlers.js', 'server/realtime/socket-lifecycle.js', 'server/room-study.js',
+        'public/lobby/message-handler.js', 'public/lobby/event-bindings.js',
+        'public/lobby/game-shell.css', 'public/lobby/utilities.css', 'public/lobby/responsive.css',
+        'public/games/lasvegas/board.css', 'public/games/lasvegas/responsive.css',
+        'public/games/witchtown/table.css', 'public/games/witchtown/dossier.css', 'public/games/witchtown/responsive.css',
+        'public/games/hanabi/table.css', 'public/games/hanabi/actions.css', 'public/games/hanabi/responsive.css',
+        'public/games/hanabi/scenes.css', 'public/games/hanabi/responsive-scenes.css',
+        'public/games/monopolydeal/assets.css', 'public/games/monopolydeal/interactions.css', 'public/games/monopolydeal/scenes.css',
+        'public/games/monopolydeal/responsive-scenes.css', 'public/games/monopolydeal/responsive.css', 'public/games/monopolydeal/table.css',
+        'public/games/monopolydeal/records.css', 'public/games/monopolydeal/stage.css', 'public/games/monopolydeal/seats.css',
+        'scripts/complexity-audit.js', 'scripts/complexity-baseline.json', 'scripts/presentation-event-audit.js',
     ];
 
     check('package metadata', packageJson.name === 'jsgames' && packageJson.private === true, '项目必须保持私有发布包');
@@ -72,7 +82,8 @@ function main() {
         'X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy',
         "app.get('/healthz'",
     ]), '缺少安全响应头或健康检查');
-    const realtimeSource = read('server/realtime/create-realtime-server.js');
+    const realtimeSource = ['server/realtime/create-realtime-server.js', 'server/realtime/socket-lifecycle.js']
+        .map(file => read(file)).join('\n');
     check('WebSocket security baseline', hasEvery(realtimeSource, [
         'maxPayload: policy.maxPayload', 'verifyClient:', 'inspectJsonValue',
         'consumeInboundRate', 'heartbeatTick', 'requireReconnectToken',

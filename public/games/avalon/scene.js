@@ -1,19 +1,178 @@
-/** Expedition, vote and end-game scene transitions for 阿瓦隆. */
+/** Server-timed public scene queue for 阿瓦隆. */
+import { beginPresentationFade, clearPresentationFade, PRESENTATION_FADE_MS } from '../common/presentation-fade.js';
+
+export function avalonSceneKind(event = {}) {
+    // Outcome styling follows the winning faction, never the viewer-specific
+    // wording. In particular, an evil player's "您已获胜" must remain an
+    // evil victory rather than inheriting the ordinary success treatment.
+    if (event.kind === 'outcome') {
+        if (event.outcome === 'abandoned' || !event.winnerFaction) return 'abandoned';
+        return event.winnerFaction === 'evil' ? 'evil-victory' : 'good-victory';
+    }
+    return event.kind === 'identityBriefing'
+        ? 'identity'
+        : event.kind === 'playerLeft'
+            ? 'rejected'
+        : event.kind === 'teamVote'
+            ? event.approved ? 'success' : 'rejected'
+        : event.kind === 'missionResult'
+            ? event.mission?.success ? 'success' : 'failure'
+            : ['assassination', 'targetRoleReveal', 'assassinPhase'].includes(event.kind)
+                ? 'assassin'
+                : event.kind === 'identityReveal'
+                    ? 'roundtable'
+                    : event.kind === 'expeditionStart'
+                        ? 'expedition'
+                        : event.kind === 'leaderTransfer'
+                            ? 'rejected'
+                            : 'roundtable';
+}
+
 export function createAvalonScene({ mount, model, getElement, renderer, windowRef = globalThis.window || globalThis }) {
     const $ = role => getElement(role);
-    function hideSceneTransition() { if (model.sceneTimer) windowRef.clearTimeout(model.sceneTimer); model.sceneTimer = null; model.sceneSequence += 1; const element = $('sceneTransition'); element?.classList.add('is-hidden'); element?.setAttribute('aria-hidden', 'true'); }
-    function showSceneTransition(kind, kicker, title, detail, duration = 1400, onComplete = null) { const element = $('sceneTransition'); if (!element) { onComplete?.(); return; } if (model.sceneTimer) windowRef.clearTimeout(model.sceneTimer); const sequence = ++model.sceneSequence; element.className = `av-scene-transition is-${kind}`; $('sceneKicker').textContent = kicker; $('sceneTitle').textContent = title; $('sceneDetail').textContent = detail; element.setAttribute('aria-hidden', 'false'); model.sceneTimer = windowRef.setTimeout(() => { if (sequence === model.sceneSequence) { hideSceneTransition(); onComplete?.(); } }, model.prefersReducedMotion ? Math.min(900, duration) : duration); }
-    function enqueueScene(kind, kicker, title, detail, duration = 1400, archive = null) { model.sceneQueue.push({ kind, kicker, title, detail, duration, archive }); playNextScene(); }
-    function playNextScene() { if (model.scenePlaying || !model.sceneQueue.length) return; model.scenePlaying = true; const scene = model.sceneQueue.shift(); showSceneTransition(scene.kind, scene.kicker, scene.title, scene.detail, scene.duration, () => { if (scene.archive === 'ballot') pulseVoteLedger(); model.scenePlaying = false; playNextScene(); }); }
-    function maybePlaySceneTransition(previous, next) {
-        if (!next) return;
-        const events = Array.isArray(next.publicEvents) && next.publicEvents.length ? next.publicEvents : next.publicEvent ? [next.publicEvent] : [];
-        if (!previous) { model.lastPublicEventId = events.at(-1)?.id ?? null; model.lastWinnerKey = next.winner ? `${next.winner.faction}:${next.winner.reason}` : ''; return; }
-        const freshEvents = events.filter(event => model.lastPublicEventId === null || event.id > model.lastPublicEventId).sort((left, right) => left.id - right.id);
-        for (const event of freshEvents) { model.lastPublicEventId = event.id; const kind = event.kind === 'teamVote' ? event.approved ? 'success' : 'rejected' : event.kind === 'missionResult' ? event.mission?.success ? 'success' : 'failure' : ['assassination', 'targetRoleReveal', 'assassinPhase'].includes(event.kind) ? 'assassin' : event.kind === 'identityReveal' ? 'roundtable' : event.kind === 'expeditionStart' ? 'expedition' : event.kind === 'leaderTransfer' ? 'rejected' : 'roundtable'; const duration = ['assassination', 'targetRoleReveal'].includes(event.kind) ? 1800 : event.kind === 'identityReveal' ? 2000 : ['missionResult', 'twoFailRule', 'assassinPhase'].includes(event.kind) ? 1600 : 1400; enqueueScene(kind, event.kicker, event.title, event.detail, duration, event.kind === 'teamVote' ? 'ballot' : null); }
-        const winnerKey = next.winner ? `${next.winner.faction}:${next.winner.reason}` : ''; if (winnerKey && winnerKey !== model.lastWinnerKey) { model.lastWinnerKey = winnerKey; enqueueScene(next.winner.faction === 'evil' ? 'evil' : 'success', '终局揭晓', `${next.winner.name}获胜`, next.winner.text || '阿瓦隆的命运已经揭晓', 2600); }
+    let currentEventDeadline = Number.POSITIVE_INFINITY;
+    let currentContentDeadline = Number.POSITIVE_INFINITY;
+    const pulseTimers = new Set();
+
+    function hideSceneTransition() {
+        const element = $('sceneTransition');
+        clearPresentationFade(element);
+        element?.classList.add('is-hidden');
+        element?.setAttribute('aria-hidden', 'true');
+        mount.querySelector('.avalon-app')?.classList.remove('is-identity-presentation');
     }
-    function pulseVoteLedger() { const element = mount.querySelector('.av-vote-ledger'); if (!element) return; element.classList.remove('is-receiving'); void element.offsetWidth; element.classList.add('is-receiving'); windowRef.setTimeout(() => element.classList.remove('is-receiving'), 900); }
-    function stop() { model.sceneQueue = []; model.scenePlaying = false; if (model.sceneTimer) windowRef.clearTimeout(model.sceneTimer); model.sceneTimer = null; hideSceneTransition(); }
-    return { maybePlaySceneTransition, enqueueScene, stop, pulseVoteLedger, isPlaying: () => model.scenePlaying };
+
+    function showSceneTransition(kind, kicker, title, detail) {
+        const element = $('sceneTransition');
+        if (!element) return;
+        clearPresentationFade(element);
+        element.className = `av-scene-transition is-${kind}`;
+        $('sceneKicker').textContent = kicker || '';
+        $('sceneTitle').textContent = title || '';
+        $('sceneDetail').textContent = detail || '';
+        element.setAttribute('aria-hidden', 'false');
+        mount.querySelector('.avalon-app')?.classList.toggle('is-identity-presentation', kind === 'identity');
+    }
+
+    function waitUntil(timestamp, token) {
+        const wait = Number(timestamp) - Date.now();
+        if (!Number.isFinite(wait) || wait <= 0) return Promise.resolve(token === model.sceneToken);
+        return new Promise(resolve => {
+            const waiter = {
+                timer: windowRef.setTimeout(() => {
+                    model.sceneWaiters.delete(waiter);
+                    resolve(token === model.sceneToken);
+                }, wait),
+                resolve,
+            };
+            model.sceneWaiters.add(waiter);
+        });
+    }
+
+    function nextFrame() {
+        const request = windowRef.requestAnimationFrame || (callback => windowRef.setTimeout(callback, 0));
+        return new Promise(resolve => request(() => resolve()));
+    }
+
+    async function fadeThenHide(token) {
+        const element = $('sceneTransition');
+        beginPresentationFade(element);
+        if (!await waitUntil(currentEventDeadline, token)) return false;
+        hideSceneTransition();
+        return true;
+    }
+
+    function pulseVoteLedger() {
+        const element = mount.querySelector('.av-vote-ledger');
+        if (!element) return;
+        element.classList.remove('is-receiving');
+        void element.offsetWidth;
+        element.classList.add('is-receiving');
+        const timer = windowRef.setTimeout(() => {
+            pulseTimers.delete(timer);
+            element.classList.remove('is-receiving');
+        }, 900);
+        pulseTimers.add(timer);
+    }
+
+    async function playEvent(event, token) {
+        if (!event || Number(event.endsAt) <= Date.now()) return true;
+        if (Number.isFinite(Number(event.startedAt)) && !await waitUntil(event.startedAt, token)) return false;
+        if (token !== model.sceneToken) return false;
+        currentEventDeadline = Number.isFinite(Number(event.endsAt)) ? Number(event.endsAt) : Number.POSITIVE_INFINITY;
+        currentContentDeadline = Number.isFinite(currentEventDeadline)
+            ? Math.max(Date.now(), currentEventDeadline - PRESENTATION_FADE_MS)
+            : Number.POSITIVE_INFINITY;
+        showSceneTransition(avalonSceneKind(event), event.kicker, event.title, event.detail);
+        if (event.kind === 'teamVote') pulseVoteLedger();
+        await nextFrame();
+        if (!await waitUntil(currentContentDeadline, token)) return false;
+        return fadeThenHide(token);
+    }
+
+    async function runPresentationQueue() {
+        if (model.scenePlaying) return;
+        model.scenePlaying = true;
+        const token = ++model.sceneToken;
+        mount.querySelector('.avalon-app')?.classList.add('is-presentation-playing');
+        renderer?.render?.();
+        while (model.sceneQueue.length && token === model.sceneToken) {
+            const batch = model.sceneQueue.shift();
+            for (const event of batch?.events || []) {
+                if (!await playEvent(event, token)) break;
+            }
+        }
+        if (token !== model.sceneToken) return;
+        currentEventDeadline = Number.POSITIVE_INFINITY;
+        currentContentDeadline = Number.POSITIVE_INFINITY;
+        hideSceneTransition();
+        model.scenePlaying = false;
+        mount.querySelector('.avalon-app')?.classList.remove('is-presentation-playing');
+        renderer?.render?.();
+    }
+
+    function enqueuePresentation(batch) {
+        if (!batch?.events?.length || (Number.isFinite(Number(batch.endsAt)) && Number(batch.endsAt) <= Date.now())) return;
+        if (Number.isFinite(Number(batch.endsAt))) model.presentationLockedUntil = Math.max(model.presentationLockedUntil, Number(batch.endsAt));
+        model.sceneQueue.push(batch);
+        void runPresentationQueue();
+    }
+
+    // Compatibility helper for callers that enqueue one legacy scene directly.
+    function enqueueScene(kind, kicker, title, detail, duration = 1400) {
+        const startedAt = Date.now();
+        enqueuePresentation({
+            sequence: ++model.lastPresentationSequence,
+            startedAt,
+            endsAt: startedAt + duration + PRESENTATION_FADE_MS,
+            events: [{ kind, kicker, title, detail, startedAt, endsAt: startedAt + duration + PRESENTATION_FADE_MS }],
+        });
+    }
+
+    function stop() {
+        model.sceneToken += 1;
+        model.sceneQueue = [];
+        model.sceneTimer = null;
+        for (const waiter of model.sceneWaiters) {
+            windowRef.clearTimeout(waiter.timer);
+            waiter.resolve(false);
+        }
+        model.sceneWaiters.clear();
+        for (const timer of pulseTimers) windowRef.clearTimeout(timer);
+        pulseTimers.clear();
+        model.scenePlaying = false;
+        model.presentationLockedUntil = 0;
+        currentEventDeadline = Number.POSITIVE_INFINITY;
+        currentContentDeadline = Number.POSITIVE_INFINITY;
+        hideSceneTransition();
+        mount.querySelector('.avalon-app')?.classList.remove('is-presentation-playing');
+    }
+
+    return {
+        enqueuePresentation,
+        enqueueScene,
+        stop,
+        pulseVoteLedger,
+        isPlaying: () => model.scenePlaying || Date.now() < Number(model.presentationLockedUntil),
+    };
 }

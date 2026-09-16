@@ -5,9 +5,44 @@ export { escapeHtml };
 
 export function cardArt(card) {
     const pool = SPLENDOR_ART_BY_TIER[Number(card?.tier)] || SPLENDOR_ART_BY_TIER[1];
-    const seed = String(card?.id ?? `${card?.tier}-${card?.bonus}-${card?.points}`);
-    const hash = [...seed].reduce((total, character) => total + character.charCodeAt(0), 0);
-    return `/assets/bgg/splendor/art-${pool[hash % pool.length]}.jpg`;
+    // Card ids are stable across the server and the client. Use the printed
+    // card number instead of a character-code hash so artwork assignments are
+    // deterministic, inspectable and easy to replace with an explicit art
+    // manifest later.
+    const match = String(card?.id ?? '').match(/(?:-|L)?0?(\d+)$/i);
+    const cardNumber = Number(match?.[1]) || 1;
+    return `/assets/bgg/splendor/card-art-${pool[(cardNumber - 1) % pool.length]}.jpg`;
+}
+
+function cardCostMarkup(card) {
+    return COLORS.filter(color => Number(card?.cost?.[color]) > 0)
+        .map(color => `<span class="sp-cost tone-${color}" title="${COLOR_GEMS[color]}费用 ${Number(card.cost[color])}"><i aria-hidden="true"></i><b>${Number(card.cost[color])}</b><small>${escapeHtml(COLOR_LABELS[color])}</small></span>`)
+        .join('');
+}
+
+function cardAccessibleLabel(card) {
+    const costs = COLORS.filter(color => Number(card?.cost?.[color]) > 0)
+        .map(color => `${COLOR_LABELS[color]}${Number(card.cost[color])}`).join('、') || '免费';
+    const tier = TIER_LABELS[Number(card?.tier)] || card?.tier || '';
+    return `${tier}级发展卡，${Number(card?.points) || 0}点声望，提供${COLOR_LABELS[card?.bonus] || ''}色永久折扣，费用${costs}`;
+}
+
+/** Shared face used by market, reserved cards and transaction presentations. */
+export function cardFaceMarkup(card, { source = 'market', selected = false, interactive = true, readOnly = false } = {}) {
+    if (!card) return '';
+    const tag = interactive ? 'button' : 'div';
+    const attributes = interactive
+        ? ` data-card-select="${escapeHtml(card.id)}" data-card-source="${escapeHtml(source)}" type="button" aria-pressed="${selected}" aria-label="${escapeHtml(cardAccessibleLabel(card))}"${readOnly ? ' data-read-only="true" aria-disabled="true"' : ''}`
+        : ` role="img" aria-label="${escapeHtml(cardAccessibleLabel(card))}"`;
+    const points = Number(card.points);
+    const loading = source === 'market' ? 'eager' : 'lazy';
+    return `<${tag} class="sp-card-face ${points ? '' : 'is-zero-point'}"${attributes}>
+        <img src="${cardArt(card)}" alt="" loading="${loading}" decoding="async">
+        <span class="sp-card-veil" aria-hidden="true"></span>
+        <header><strong>${points || ''}</strong><span class="sp-bonus-gem" title="永久${escapeHtml(COLOR_LABELS[card.bonus] || '')}色折扣"><i aria-hidden="true"></i><small>+1</small></span></header>
+        <div class="sp-card-costs">${cardCostMarkup(card) || '<span class="sp-free-card">免费</span>'}</div>
+        <span class="sp-card-level">${escapeHtml(TIER_LABELS[card.tier] || card.tier || '')}</span>
+    </${tag}>`;
 }
 
 export function cardBackMarkup(tier, compact = false) {
@@ -22,16 +57,8 @@ export function noblePortraitMarkup(noble, extraClass = '') {
 
 export function presentationCardMarkup(card, extraClass = '') {
     if (!card) return '';
-    const costs = COLORS.filter(color => Number(card.cost?.[color]) > 0)
-        .map(color => `<span class="sp-cost tone-${color}"><i></i><b>${Number(card.cost[color])}</b></span>`).join('');
     return `<article class="sp-dev-card sp-event-card tier-${card.tier} tone-${card.bonus} ${extraClass}">
-        <div class="sp-card-face">
-            <img src="${cardArt(card)}" alt="璀璨宝石发展卡插画">
-            <span class="sp-card-veil"></span>
-            <header><strong>${Number(card.points) || '·'}</strong><span class="sp-bonus-gem"><i></i><small>+1</small></span></header>
-            <div class="sp-card-costs">${costs || '<span class="sp-free-card">无费用</span>'}</div>
-            <span class="sp-card-level">${TIER_LABELS[card.tier] || card.tier}</span>
-        </div>
+        ${cardFaceMarkup(card, { interactive: false })}
     </article>`;
 }
 

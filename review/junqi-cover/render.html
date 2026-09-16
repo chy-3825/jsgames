@@ -1,0 +1,39 @@
+<!doctype html><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden;background:#d6bc90}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"/three/three.module.js"}}</script>
+<script type="module">
+import * as THREE from '/three/three.module.js';
+import {RoundedBoxGeometry} from '/addons/geometries/RoundedBoxGeometry.js';
+const data=await (await fetch('/board.json')).json();
+await document.fonts.load('bold 60px "Noto Sans CJK SC"');
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(2560,1440);renderer.setPixelRatio(1);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.92;document.body.append(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#decca9');scene.fog=new THREE.Fog('#decca9',35,65);
+const camera=new THREE.PerspectiveCamera(35,16/9,.1,100);camera.position.set(10,17,19);camera.lookAt(0,0,.5);
+scene.add(new THREE.HemisphereLight('#ecf0f1','#675c50',1.25));
+const sun=new THREE.DirectionalLight('#ffe0a8',4.2);sun.position.set(-10,17,3);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-16,right:16,top:16,bottom:-16,near:1,far:55});sun.shadow.bias=-.0003;sun.shadow.normalBias=.025;sun.shadow.radius=4;scene.add(sun);
+let seed=327;function random(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
+function sandTexture(){const c=document.createElement('canvas');c.width=c.height=1024;const ctx=c.getContext('2d');ctx.fillStyle='#cbb082';ctx.fillRect(0,0,1024,1024);for(let i=0;i<85000;i++){const v=random();ctx.fillStyle=v>.5?'rgba(255,242,208,.12)':'rgba(100,72,39,.10)';ctx.fillRect(random()*1024,random()*1024,1+random()*2,1+random()*2);}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(4,4);return t;}
+const sand=sandTexture();const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({map:sand,bumpMap:sand,bumpScale:.035,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const board=new THREE.Mesh(new RoundedBoxGeometry(10.8,.18,15.2,3,.12),new THREE.MeshStandardMaterial({color:'#f1eee5',map:sand,roughness:.97,bumpMap:sand,bumpScale:.025}));board.position.y=.055;board.receiveShadow=true;scene.add(board);
+const frame=new THREE.Mesh(new RoundedBoxGeometry(11.12,.22,15.52,4,.10),new THREE.MeshStandardMaterial({color:'#514334',roughness:.7,metalness:.12}));frame.position.y=-.02;frame.receiveShadow=true;frame.castShadow=true;scene.add(frame);
+const Y=.153;const pos=(x,y)=>new THREE.Vector3((x-2)*2.15,Y,(y-5.5)*1.18+(y>5?.38:-.38));
+const campSet=new Set(data.camps.map(p=>p.join(',')));const hqSet=new Set(data.hq.map(p=>p.join(',')));
+const ink=new THREE.MeshStandardMaterial({color:'#69573f',roughness:1});const redInk=new THREE.MeshStandardMaterial({color:'#995e47',roughness:1});
+function bar(a,b,width,mat=ink){const d=b.clone().sub(a);const mesh=new THREE.Mesh(new THREE.BoxGeometry(d.length(),.008,width),mat);mesh.position.copy(a).add(b).multiplyScalar(.5);mesh.rotation.y=-Math.atan2(d.z,d.x);mesh.receiveShadow=true;scene.add(mesh);}
+function clipped(a,b){const delta=b.clone().sub(a);let t;const key=`${Math.round(a.x/2.15+2)},${Math.round((a.z-(a.z>0?.38:-.38))/1.18+5.5)}`;if(campSet.has(key))t=1/Math.sqrt((delta.x/.52)**2+(delta.z/.34)**2);else t=Math.min(.64/Math.abs(delta.x),.30/Math.abs(delta.z));return a.clone().addScaledVector(delta,t);}
+for(const e of data.edges){const start=pos(...e.a),end=pos(...e.b),a=clipped(start,end),b=clipped(end,start);if(!e.rail)bar(a,b,.025);else{const d=b.clone().sub(a),n=new THREE.Vector3(-d.z,0,d.x).normalize();for(const side of [-1,1])bar(a.clone().addScaledVector(n,side*.052),b.clone().addScaledVector(n,side*.052),.022);const count=Math.ceil(d.length()/.14);for(let i=0;i<=count;i++){const c=a.clone().lerp(b,i/count);bar(c.clone().addScaledVector(n,-.10),c.clone().addScaledVector(n,.10),.018);}}}
+function outline(points,mat){for(let i=0;i<points.length;i++)bar(points[i],points[(i+1)%points.length],.025,mat);}
+function textTexture(text,color,bg=null){const c=document.createElement('canvas');c.width=512;c.height=256;const ctx=c.getContext('2d');if(bg){ctx.fillStyle=bg;ctx.fillRect(0,0,512,256);}ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`bold ${text.length>2?142:190}px "Noto Sans CJK SC"`;ctx.fillText(text,256,132);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
+function groundLabel(text,p,w=.75,h=.32){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:textTexture(text,'#8c6247'),transparent:true,depthWrite:false}));mesh.rotation.x=-Math.PI/2;mesh.position.copy(p);mesh.position.y+=.02;scene.add(mesh);}
+for(let y=0;y<12;y++)for(let x=0;x<5;x++){const p=pos(x,y),key=`${x},${y}`,camp=campSet.has(key),hq=hqSet.has(key);const face=new THREE.Mesh(camp?new THREE.CircleGeometry(1,48):new THREE.PlaneGeometry(1.30,.64),new THREE.MeshStandardMaterial({color:camp?'#dfcda6':hq?'#dfbf95':'#d7bf95',roughness:1}));face.rotation.x=-Math.PI/2;if(camp)face.scale.set(.52,.34,1);face.position.copy(p);face.position.y+=.012;face.receiveShadow=true;scene.add(face);const pts=camp?Array.from({length:48},(_,i)=>new THREE.Vector3(p.x+.52*Math.cos(i*Math.PI/24),Y+.023,p.z+.34*Math.sin(i*Math.PI/24))):[[-.65,-.32],[.65,-.32],[.65,.32],[-.65,.32]].map(([dx,dz])=>new THREE.Vector3(p.x+dx,Y+.023,p.z+dz));outline(pts,hq?redInk:ink);if(camp)groundLabel('行营',p);if(hq)groundLabel('大本营',p,.99,.30);}
+// A sparse illustrative late-game position; flags and mines retain their home constraints.
+const pieces=[['red','军旗',1,11],['red','地雷',0,10],['red','旅长',2,9],['red','炸弹',4,8],['red','工兵',0,6],['red','师长',4,6],['blue','军旗',3,0],['blue','地雷',4,1],['blue','军长',0,3],['blue','团长',2,4],['blue','工兵',4,5]];
+for(const [side,label,x,y] of pieces){const p=pos(x,y);const g=new THREE.Group();g.position.set(p.x,Y+.018,p.z);const mat=new THREE.MeshStandardMaterial({color:side==='red'?'#781f1b':'#194d4b',roughness:.38,metalness:.18});const body=new THREE.Mesh(new RoundedBoxGeometry(1.19,.80,.32,5,.065),mat);body.position.y=.40;body.castShadow=true;body.receiveShadow=true;g.add(body);g.scale.y=1.25;
+const borderMat=new THREE.MeshStandardMaterial({color:'#be9e62',metalness:.65,roughness:.45});for(const z of [-.164,.164]){for(const yy of [.075,.725]){const m=new THREE.Mesh(new THREE.BoxGeometry(1.02,.015,.009),borderMat);m.position.set(0,yy,z);g.add(m);}for(const xx of [-.51,.51]){const m=new THREE.Mesh(new THREE.BoxGeometry(.015,.65,.009),borderMat);m.position.set(xx,.4,z);g.add(m);}}
+if(side==='red'){const plate=new THREE.Mesh(new THREE.PlaneGeometry(1.00,.50),new THREE.MeshStandardMaterial({map:textTexture(label,'#f3d9a0'),transparent:true,roughness:.6,polygonOffset:true,polygonOffsetFactor:-1}));plate.position.set(0,.40,.167);g.add(plate);}scene.add(g);}
+// Sparse peripheral rocks keep the actual route network unobstructed.
+const rockGeo=new THREE.DodecahedronGeometry(1,0),rockMat=new THREE.MeshStandardMaterial({color:'#bca17b',roughness:1});
+for(let i=0;i<190;i++){const x=(random()-.5)*31,z=(random()-.5)*29;if(Math.abs(x)<5.9&&Math.abs(z)<8.2)continue;const r=.035+random()**4*.35;const rock=new THREE.Mesh(rockGeo,rockMat);rock.scale.set(r*1.3,r*.55,r);rock.position.set(x,r*.3,z);rock.rotation.set(random(),random()*6,random());rock.castShadow=true;rock.receiveShadow=true;scene.add(rock);}
+renderer.render(scene,camera);window.coverReady=true;window.coverAudit={stations:60,camps:data.camps.length,headquarters:data.hq.length,edges:data.edges.length,pieces:pieces.length,positions:pieces};
+</script>

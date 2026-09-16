@@ -1,14 +1,17 @@
 import { escapeHtml } from './constants.js';
 import { athleteById, playerName, playerColor } from './state.js';
+import { beginPresentationFade, clearPresentationFade, PRESENTATION_FADE_MS } from '../common/presentation-fade.js';
 
 /** Full-screen presentation queue for race events. */
-export function createMagicalAthleteScene({ mount, model, getElement, windowRef = globalThis.window || globalThis, renderer }) {
+export function createMagicalAthleteScene({ mount, model, getElement, windowRef = globalThis.window || globalThis, renderer, onPresentationStart = () => {} }) {
     const $ = role => getElement(role);
     const state = () => model.state;
     const athlete = id => athleteById(state(), id);
     const name = id => playerName(state(), id);
     const color = id => playerColor(state(), id);
-    const reducedMotion = windowRef.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = Boolean(windowRef.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    let currentEventDeadline = Number.POSITIVE_INFINITY;
+    let currentContentDeadline = Number.POSITIVE_INFINITY;
     const findData = (attribute, value) => [...mount.querySelectorAll(`[${attribute}]`)].find(element => element.getAttribute(attribute) === String(value));
     const racerAnchor = id => findData('data-racer-id', id);
     const playerAnchor = id => findData('data-player-id', id);
@@ -16,10 +19,46 @@ export function createMagicalAthleteScene({ mount, model, getElement, windowRef 
     const centerOf = element => { if (!element) return null; const box = element.getBoundingClientRect(); return { x: box.left + box.width / 2, y: box.top + box.height / 2 }; };
     function clearPresentationMarks() { mount.querySelectorAll('.is-presentation-source, .is-presentation-target, .is-presentation-destination').forEach(element => element.classList.remove('is-presentation-source', 'is-presentation-target', 'is-presentation-destination')); $('actionLines').innerHTML = ''; }
     function drawActionLine(fromElement, toElement, tone = 'action') { const from = centerOf(fromElement); const to = centerOf(toElement); if (!from || !to) return; fromElement?.classList.add('is-presentation-source'); toElement?.classList.add('is-presentation-target'); const width = windowRef.innerWidth || 1; const height = windowRef.innerHeight || 1; const dx = to.x - from.x; const dy = to.y - from.y; const length = Math.hypot(dx, dy); const svg = $('actionLines'); svg.setAttribute('viewBox', `0 0 ${width} ${height}`); svg.innerHTML = `<defs><marker id="ma-arrow-${tone}" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z"></path></marker></defs><line class="is-${tone}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" marker-end="url(#ma-arrow-${tone})"></line><circle class="is-pulse" cx="${to.x}" cy="${to.y}" r="10"></circle>`; svg.style.setProperty('--ma-line-length', `${length}px`); }
-    function cancelPresentationWait() { if (model.presentationTimer) windowRef.clearTimeout(model.presentationTimer); model.presentationTimer = null; const release = model.presentationRelease; model.presentationRelease = null; release?.(false); }
-    function presentationWait(duration, token) { if (token !== model.presentationToken) return Promise.resolve(false); const wait = reducedMotion ? Math.min(duration, 120) : duration; return new Promise(resolve => { const finish = value => { model.presentationTimer = null; model.presentationRelease = null; resolve(value); }; model.presentationRelease = finish; model.presentationTimer = windowRef.setTimeout(() => finish(token === model.presentationToken), Math.max(0, wait)); }); }
-    function showPresentation(mode, tone, kicker, title, body = '') { const layer = $('presentationLayer'); layer.hidden = false; layer.className = `ma-presentation-layer is-${mode || 'compact'} is-${tone || 'action'}`; $('presentationStage').innerHTML = `<header class="ma-event-heading"><span>${escapeHtml(kicker)}</span><h2>${escapeHtml(title)}</h2></header>${body}`; }
-    function hidePresentation() { const layer = $('presentationLayer'); if (!layer) return; layer.hidden = true; layer.className = 'ma-presentation-layer'; $('presentationStage').innerHTML = ''; $('floatingLayer').innerHTML = ''; clearPresentationMarks(); }
+    function cancelPresentationWait() {
+        for (const waiter of model.presentationWaiters || []) {
+            windowRef.clearTimeout(waiter.timer);
+            waiter.resolve(false);
+        }
+        model.presentationWaiters?.clear();
+    }
+    function waitUntil(timestamp, token) {
+        if (token !== model.presentationToken) return Promise.resolve(false);
+        const target = Number(timestamp);
+        if (!Number.isFinite(target) || target <= Date.now()) return Promise.resolve(true);
+        return new Promise(resolve => {
+            const waiter = {
+                timer: windowRef.setTimeout(() => {
+                    model.presentationWaiters.delete(waiter);
+                    resolve(token === model.presentationToken);
+                }, Math.max(0, target - Date.now())),
+                resolve,
+            };
+            model.presentationWaiters.add(waiter);
+        });
+    }
+    function presentationWait(duration, token) {
+        if (token !== model.presentationToken) return Promise.resolve(false);
+        const visualDuration = reducedMotion ? Math.min(Number(duration) || 0, 120) : Math.max(0, Number(duration) || 0);
+        const target = Math.min(Date.now() + visualDuration, currentContentDeadline);
+        return waitUntil(target, token);
+    }
+    function showPresentation(mode, tone, kicker, title, body = '') {
+        onPresentationStart?.();
+        const layer = $('presentationLayer');
+        clearPresentationFade(layer);
+        layer.hidden = false;
+        layer.setAttribute('aria-hidden', 'false');
+        layer.className = `ma-presentation-layer is-${mode || 'compact'} is-${tone || 'action'}`;
+        $('presentationStage').innerHTML = `<header class="ma-event-heading"><span>${escapeHtml(kicker)}</span><h2>${escapeHtml(title)}</h2></header>${body}`;
+        windowRef.requestAnimationFrame?.(() => layer.classList.add('is-visible'));
+    }
+    function hidePresentation() { const layer = $('presentationLayer'); if (!layer) return; clearPresentationFade(layer); layer.hidden = true; layer.setAttribute('aria-hidden', 'true'); layer.className = 'ma-presentation-layer'; $('presentationStage').innerHTML = ''; $('floatingLayer').innerHTML = ''; clearPresentationMarks(); }
+    async function fadeThenHide(token) { const layer = $('presentationLayer'); if (!layer) return true; beginPresentationFade(layer); if (!await waitUntil(currentEventDeadline, token)) return false; hidePresentation(); return true; }
     function eventRacer(racer, detail = '') { if (!racer) return ''; const item = athlete(racer.athleteId) || { id: racer.athleteId }; return `<span class="ma-event-racer" style="--player-color:${escapeHtml(color(racer.playerId))}"><i class="ma-athlete-sprite" style="${renderer.athleteArt(item)}"></i><span><b>${escapeHtml(racer.athleteName || item?.name || racer.athleteId)}</b><small>${escapeHtml(racer.playerName || name(racer.playerId))}${detail ? ` · ${escapeHtml(detail)}` : ''}</small></span></span>`; }
     async function animateFloating(fromElement, toElement, racer, token, duration = 620) { const from = centerOf(fromElement); const to = centerOf(toElement); if (!from || !to || !racer) return presentationWait(220, token); const item = athlete(racer.athleteId) || { id: racer.athleteId }; const ghost = mount.ownerDocument.createElement('div'); ghost.className = 'ma-floating-racer'; ghost.style.cssText = `left:${from.x}px;top:${from.y}px;--player-color:${color(racer.playerId)};${renderer.athleteArt(item)}`; ghost.innerHTML = '<i class="ma-athlete-sprite"></i>'; $('floatingLayer').appendChild(ghost); ghost.getBoundingClientRect(); ghost.style.transform = `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(1.08)`; const continued = await presentationWait(duration, token); ghost.remove(); return continued; }
     function standingsMarkup(standings, winnerIds = []) { const winners = new Set(winnerIds); return `<div class="ma-event-standings">${(standings || []).map(entry => `<span class="${winners.has(entry.playerId) ? 'is-winner' : ''}" style="--player-color:${escapeHtml(entry.color || color(entry.playerId))}"><i>${entry.rank}</i><b>${escapeHtml(entry.playerName || name(entry.playerId))}</b><em>${entry.score ?? entry.scoreAfter ?? 0} 分</em>${entry.bronze != null ? `<small>${entry.bronze} ★</small>` : ''}</span>`).join('')}</div>`; }
@@ -38,15 +77,101 @@ export function createMagicalAthleteScene({ mount, model, getElement, windowRef 
         if (event.kind === 'racerMoved') { const from = trackAnchor(event.from); const to = trackAnchor(event.to); showPresentation('track', 'move', event.movementType === 'main' ? '主移动' : event.movementType === 'warp' ? '传送' : '能力位移', `${event.racer?.athleteName || '运动员'}：${event.from} → ${event.to}`, `<div class="ma-event-route">${eventRacer(event.racer)}<i>${event.from}</i><b>→</b><i>${event.to}</i></div>`); drawActionLine(from, to, event.movementType === 'warp' ? 'secret' : 'move'); await animateFloating(racerAnchor(event.racer?.id) || from, to, event.racer, token, 620); renderer.updateDisplayRacer(event); await presentationWait(160, token); return; }
         if (event.kind === 'racerTripped' || event.kind === 'racerRecovered') { showPresentation('compact', event.kind === 'racerTripped' ? 'trip' : 'recover', event.kind === 'racerTripped' ? '赛道意外' : '重新起身', `${event.racer?.athleteName || '运动员'}${event.kind === 'racerTripped' ? '摔倒了' : '恢复站立'}`, eventRacer(event.racer, `第 ${event.position} 格`)); racerAnchor(event.racer?.id)?.classList.add('is-presentation-target'); await presentationWait(520, token); renderer.updateDisplayRacer(event); return; }
         if (event.kind === 'bronzeAwarded' || event.kind === 'bronzeRemoved') { const awarded = event.kind === 'bronzeAwarded'; showPresentation('compact', 'bronze', awarded ? '铜星奖励' : '铜星失去', `${event.racer?.athleteName || '运动员'} ${awarded ? '+' : '−'}${event.amount} ★`, eventRacer(event.racer, `累计 ${event.racer?.bronze || 0} ★`)); await presentationWait(420, token); return; }
-        if (event.kind === 'eliminationThreatened') { showPresentation('major', 'danger', '淘汰警报', `${event.source?.athleteName || '大嘴'}锁定了${event.victim?.athleteName || '目标'}`, `<div class="ma-elimination-clash">${eventRacer(event.source, 'CHOMP')}<b>!</b>${eventRacer(event.victim, '等待玩家确认')}</div><p class="ma-event-note">受影响玩家确认后才会执行正式退场</p>`); drawActionLine(racerAnchor(event.source?.id), racerAnchor(event.victim?.id), 'danger'); await presentationWait(1200, token); return; }
-        if (event.kind === 'racerEliminated') { showPresentation('major', 'eliminated', '本场淘汰', `${event.victim?.athleteName || '运动员'}退出本场比赛`, `<div class="ma-elimination-exit">${eventRacer(event.victim, '仍可参加后续场次')}<b>OUT</b></div>`); racerAnchor(event.victim?.id)?.classList.add('is-presentation-destination'); await presentationWait(1150, token); renderer.updateDisplayRacer(event); return; }
+        if (event.kind === 'eliminationThreatened') { const personal = event.viewerVariant === 'personalEliminationWarning'; showPresentation('major', 'danger', personal ? '您的淘汰警报' : '淘汰警报', personal ? (event.title || '您的运动员面临淘汰') : `${event.source?.athleteName || '大嘴'}锁定了${event.victim?.athleteName || '目标'}`, `<div class="ma-elimination-clash">${eventRacer(event.source, 'CHOMP')}<b>!</b>${eventRacer(event.victim, personal ? '这是您的运动员' : '等待玩家确认')}</div><p class="ma-event-note">${escapeHtml(event.detail || '受影响玩家确认后才会执行正式退场')}</p>`); drawActionLine(racerAnchor(event.source?.id), racerAnchor(event.victim?.id), 'danger'); await presentationWait(1200, token); return; }
+        if (event.kind === 'racerEliminated') { const personal = event.viewerVariant === 'personalElimination'; const title = personal ? (event.title || '您的运动员已淘汰') : `${event.victim?.athleteName || '运动员'}退出本场比赛`; const detail = personal ? (event.detail || '该运动员退出本场比赛，您的队伍仍可参加后续场次。') : `${event.victim?.playerName || '该队'}的运动员已退出本场比赛`; showPresentation('major', 'eliminated', personal ? '您的比赛结果' : '本场淘汰', title, `<div class="ma-elimination-exit">${eventRacer(event.victim, personal ? '本队仍可继续后续场次' : '退出本场')}<b>OUT</b></div><p class="ma-event-note">${escapeHtml(detail)}</p>`); racerAnchor(event.victim?.id)?.classList.add('is-presentation-destination'); await presentationWait(1150, token); renderer.updateDisplayRacer(event); return; }
         if (event.kind === 'racerFinished') { showPresentation(event.place === 1 ? 'medium' : 'major', 'finish', event.place === 1 ? '第一名冲线' : '第二名冲线', `${event.racer?.playerName || ''} · ${event.racer?.athleteName || '运动员'}`, `<div class="ma-finish-hero">${eventRacer(event.racer, `第 ${event.place} 名`)}<b>FINISH</b></div>`); drawActionLine(trackAnchor(event.position), $('presentationStage'), 'danger'); await presentationWait(event.place === 1 ? 900 : 1200, token); renderer.updateDisplayRacer(event); return; }
         if (event.kind === 'raceSettlement') { const top = (event.ranking || []).slice(0, 2).map(entry => `<span>${eventRacer((event.racers || []).find(racer => racer.id === entry.id), `第 ${entry.place} 名`)}<b>${entry.gold ? `金牌 +${entry.gold}` : entry.silver ? `银牌 +${entry.silver}` : '未授牌'}</b></span>`).join(''); showPresentation('major', 'settlement', `第 ${event.match} 场结束`, '金银牌与积分结算', `<div class="ma-medal-podium">${top}</div>${standingsMarkup((event.playerResults || []).slice().sort((a, b) => b.scoreAfter - a.scoreAfter).map((entry, index) => ({ ...entry, rank: index + 1, score: entry.scoreAfter })))}${event.loop ? '<p class="ma-event-note">能力循环导致本场提前结束，未发放剩余奖牌。</p>' : ''}`); await presentationWait(2200, token); return; }
-        if (event.kind === 'finalSettlement') { const winnerNames = (event.standings || []).filter(entry => (event.winnerIds || []).includes(entry.playerId)).map(entry => entry.playerName).join('、'); showPresentation('major', 'final', '四场运动会落幕', `${winnerNames || '最高分队伍'}${(event.winnerIds || []).length > 1 ? '共享总冠军' : '赢得总冠军'}`, standingsMarkup(event.standings, event.winnerIds)); await presentationWait(3000, token); }
+        if (event.kind === 'playerLeft') { const personal = event.viewerVariant === 'personalDeparture'; showPresentation('major', 'danger', personal ? '个人离场结果' : '席位变更', personal ? (event.title || '您已离开本局') : `${event.playerName || '一名玩家'}离开了比赛`, `<p class="ma-event-note">${escapeHtml(event.detail || (personal ? '您的席位已退出，剩余玩家将完成结算。' : '其他在线玩家将继续比赛或完成终局结算。'))}</p>`); await presentationWait(900, token); return; }
+        if (event.kind === 'finalSettlement') { const winnerNames = (event.standings || []).filter(entry => (event.winnerIds || []).includes(entry.playerId)).map(entry => entry.playerName).join('、'); const personal = event.viewerVariant === 'personalVictory'; const shared = (event.winnerIds || []).length > 1; const title = personal ? (event.title || (shared ? '您已并列获胜' : '您已获胜')) : `${winnerNames || '最高分队伍'}${shared ? '共享总冠军' : '赢得总冠军'}`; const detail = personal ? (event.detail || '您的队伍取得了最高终局积分。') : event.reason === 'players' ? '在线玩家不足，本局已提前封存。' : '四场比赛完成，最终排名以累计积分和铜星决定。'; showPresentation('major', 'final', personal ? '您的最终结果' : '四场运动会落幕', title, `${standingsMarkup(event.standings, event.winnerIds)}<p class="ma-event-note">${escapeHtml(detail)}</p>`); await presentationWait(3000, token); }
     }
-    async function drainPresentations() { if (model.presentationPlaying || !model.presentationQueue.length) return; model.presentationPlaying = true; model.pendingAction = null; const token = ++model.presentationToken; renderer.render(); while (model.presentationQueue.length && token === model.presentationToken) { const item = model.presentationQueue.shift(); for (const event of item.presentation.events || []) { if (token !== model.presentationToken) break; await playPresentationEvent(event, token); clearPresentationMarks(); } if (token !== model.presentationToken) break; model.state = item.state; renderer.render(); } if (token !== model.presentationToken) return; model.latestPresentationState = null; hidePresentation(); model.presentationPlaying = false; renderer.render(); }
-    function enqueuePresentation(presentation, nextState) { if (!presentation?.events?.length) return; model.latestPresentationState = nextState; model.presentationQueue.push({ presentation, state: nextState }); void drainPresentations(); }
-    function skipPresentation() { const targetState = model.latestPresentationState || model.presentationQueue.at(-1)?.state; model.presentationQueue = []; model.presentationPlaying = false; model.presentationToken += 1; cancelPresentationWait(); hidePresentation(); model.latestPresentationState = null; if (targetState) { model.state = targetState; renderer.render(); } }
-    function stop() { model.presentationToken += 1; model.presentationQueue = []; cancelPresentationWait(); hidePresentation(); model.presentationPlaying = false; }
-    return { enqueuePresentation, skipPresentation, stop, isPlaying: () => model.presentationPlaying };
+    async function holdPresentationLock(token) {
+        const deadline = Number(model.presentationLockedUntil) || 0;
+        if (deadline > Date.now() && !await waitUntil(deadline, token)) return;
+        if (token !== model.presentationToken) return;
+        model.presentationPlaying = false;
+        model.presentationEvent = null;
+        renderer?.render?.();
+        if (model.presentationQueue.length) void drainPresentations();
+    }
+    async function drainPresentations() {
+        if (model.presentationPlaying || !model.presentationQueue.length) return;
+        model.presentationPlaying = true;
+        const token = ++model.presentationToken;
+        renderer?.render?.();
+        while (model.presentationQueue.length && token === model.presentationToken) {
+            const item = model.presentationQueue.shift();
+            const event = item.event || item;
+            if (!event || token !== model.presentationToken) break;
+            if (Number.isFinite(Number(event.endsAt)) && Number(event.endsAt) <= Date.now()) continue;
+            if (Number.isFinite(Number(event.startedAt)) && !await waitUntil(event.startedAt, token)) break;
+            currentEventDeadline = Number.isFinite(Number(event.endsAt))
+                ? Number(event.endsAt)
+                : Date.now() + (Number(event.durationMs) || 820) + PRESENTATION_FADE_MS;
+            currentContentDeadline = Math.max(Date.now(), currentEventDeadline - PRESENTATION_FADE_MS);
+            model.presentationEvent = event;
+            if (currentContentDeadline > Date.now() && await playPresentationEvent(event, token) === false) break;
+            if (token !== model.presentationToken) break;
+            if (!await waitUntil(currentContentDeadline, token)) break;
+            if (!await fadeThenHide(token)) break;
+            clearPresentationMarks();
+        }
+        if (token !== model.presentationToken) return;
+        currentEventDeadline = Number.POSITIVE_INFINITY;
+        currentContentDeadline = Number.POSITIVE_INFINITY;
+        model.presentationEvent = null;
+        hidePresentation();
+        if (Date.now() < Number(model.presentationLockedUntil || 0)) {
+            void holdPresentationLock(token);
+            return;
+        }
+        model.presentationPlaying = false;
+        renderer?.render?.();
+    }
+    function enqueuePresentation(presentation) {
+        if (!presentation?.events?.length) return;
+        const now = Date.now();
+        if (Number.isFinite(Number(presentation.endsAt))) {
+            if (Number(presentation.endsAt) <= now) return;
+            model.presentationLockedUntil = Math.max(Number(model.presentationLockedUntil) || 0, Number(presentation.endsAt));
+        }
+        for (const event of presentation.events) {
+            if (Number.isFinite(Number(event.endsAt)) && Number(event.endsAt) <= now) continue;
+            model.presentationQueue.push({ ...presentation, event, events: [event] });
+        }
+        model.presentationQueue.sort((left, right) => {
+            const sequenceDelta = Number(left.event?.sequence ?? left.event?.eventId ?? 0) - Number(right.event?.sequence ?? right.event?.eventId ?? 0);
+            return sequenceDelta || Number(left.event?.startedAt || 0) - Number(right.event?.startedAt || 0);
+        });
+        void drainPresentations();
+    }
+    function skipPresentation() {
+        const token = ++model.presentationToken;
+        cancelPresentationWait();
+        hidePresentation();
+        model.presentationEvent = null;
+        currentEventDeadline = Number.POSITIVE_INFINITY;
+        currentContentDeadline = Number.POSITIVE_INFINITY;
+        // Skipping is visual only.  Retain queued events and the server's
+        // absolute lock so this browser cannot enter the next phase early.
+        model.presentationPlaying = false;
+        renderer?.render?.();
+        if (model.presentationQueue.length) void drainPresentations();
+        else if (Date.now() < Number(model.presentationLockedUntil || 0)) {
+            model.presentationPlaying = true;
+            renderer?.render?.();
+            void holdPresentationLock(token);
+        }
+    }
+    function stop() {
+        model.presentationToken += 1;
+        model.presentationQueue = [];
+        cancelPresentationWait();
+        hidePresentation();
+        model.presentationPlaying = false;
+        model.presentationEvent = null;
+        model.presentationLockedUntil = 0;
+        currentEventDeadline = Number.POSITIVE_INFINITY;
+        currentContentDeadline = Number.POSITIVE_INFINITY;
+    }
+    return { enqueuePresentation, skipPresentation, skipPresentations: skipPresentation, stop, isPlaying: () => model.presentationPlaying || Date.now() < Number(model.presentationLockedUntil || 0) };
 }

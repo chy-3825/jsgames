@@ -327,25 +327,14 @@
 
 .lv-seat-head {
     display: grid;
-    grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 9px;
     min-width: 0;
 }
 
-.lv-avatar {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    border: 1px solid color-mix(in srgb, var(--player-color) 70%, transparent);
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--player-color) 13%, transparent);
-    color: var(--player-color);
-    font-family: Georgia, serif;
-    font-size: 15px;
-    font-weight: 700;
-}
+.lv-seat.is-neutral .lv-seat-head { grid-template-columns: 31px minmax(0, 1fr) auto; }
+.lv-neutral-symbol { display: grid; width: 31px; height: 31px; place-items: center; border: 1px solid var(--player-color); border-radius: 5px; background: color-mix(in srgb, var(--player-color) 13%, transparent); color: var(--player-color); font: 700 15px Georgia, serif; }
 
 .lv-seat-name {
     min-width: 0;
@@ -1481,16 +1470,8 @@
         padding: 11px 9px 9px;
     }
 
-    .lv-seat-head {
-        grid-template-columns: 29px minmax(0, 1fr) auto;
-        gap: 6px;
-    }
-
-    .lv-avatar {
-        width: 29px;
-        height: 29px;
-        font-size: 12px;
-    }
+    .lv-seat-head { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+    .lv-seat.is-neutral .lv-seat-head { grid-template-columns: 29px minmax(0, 1fr) auto; }
 
     .lv-seat-name strong {
         font-size: 10px;

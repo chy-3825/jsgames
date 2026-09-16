@@ -1,4 +1,4 @@
-/* Rules overlay, scene transitions, and responsive overrides. Loaded after style.css. */
+/* Rules, presentation layers and responsive composition. Loaded after style.css. */
 .av-overlay {
     position: fixed;
     z-index: 80;
@@ -6,122 +6,12 @@
     display: grid;
     place-items: center;
     padding: 20px;
-    background: rgba(5, 9, 15, .86);
+    background: rgba(5, 9, 15, .88);
     backdrop-filter: blur(7px);
 }
 
-.av-scene-transition {
-    position: fixed;
-    z-index: 75;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-    padding: 24px;
-    background: rgba(4, 7, 12, .94);
-    color: var(--av-paper);
-    text-align: center;
-    backdrop-filter: blur(16px);
-    animation: avSceneCurtain 3.6s ease both;
-}
-
+.av-overlay.is-hidden,
 .av-scene-transition.is-hidden {
-    display: none;
-}
-.av-vote-ledger.is-receiving { animation: avLedgerReceive .9s ease both; }
-@keyframes avLedgerReceive {
-    0% { transform: translateY(-9px) scale(1.025); border-color: rgba(233, 194, 119, .95); box-shadow: 0 0 0 rgba(222, 178, 92, 0); }
-    45% { transform: translateY(0) scale(1); box-shadow: 0 0 28px rgba(222, 178, 92, .46); }
-    100% { transform: none; box-shadow: none; }
-}
-
-.av-scene-transition::before,
-.av-scene-transition::after {
-    position: absolute;
-    width: min(70vw, 780px);
-    height: min(70vw, 780px);
-    border: 1px solid rgba(214, 169, 83, .15);
-    border-radius: 50%;
-    content: '';
-    animation: avSceneOrbit 3.4s ease-out both;
-}
-
-.av-scene-transition::after {
-    width: min(52vw, 580px);
-    height: min(52vw, 580px);
-    border-color: rgba(214, 169, 83, .08);
-    animation-direction: reverse;
-}
-
-.av-scene-transition.is-expedition,
-.av-scene-transition.is-success {
-    background: radial-gradient(circle, rgba(69, 130, 147, .28), transparent 42%), rgba(4, 12, 18, .95);
-}
-
-.av-scene-transition.is-assassin,
-.av-scene-transition.is-evil,
-.av-scene-transition.is-failure,
-.av-scene-transition.is-rejected {
-    background: radial-gradient(circle, rgba(138, 39, 50, .25), transparent 40%), rgba(9, 5, 10, .96);
-}
-
-.av-scene-transition > div {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    justify-items: center;
-    gap: 13px;
-    animation: avSceneWords 3.6s ease both;
-}
-
-.av-scene-transition small {
-    color: var(--av-gold);
-    font-size: clamp(10px, 1.1vw, 14px);
-    font-weight: 800;
-    letter-spacing: .32em;
-}
-
-.av-scene-transition strong {
-    color: var(--av-gold-light);
-    font: 600 clamp(34px, 6vw, 72px)/1.15 "Songti SC", "STSong", Georgia, serif;
-    letter-spacing: .08em;
-    text-shadow: 0 0 28px rgba(214, 169, 83, .24);
-}
-
-.av-scene-transition.is-evil strong,
-.av-scene-transition.is-failure strong,
-.av-scene-transition.is-rejected strong,
-.av-scene-transition.is-assassin strong {
-    color: #e29a98;
-    text-shadow: 0 0 30px rgba(158, 63, 72, .35);
-}
-
-.av-scene-transition span {
-    max-width: 680px;
-    color: #c9c1b1;
-    font-size: clamp(11px, 1.5vw, 17px);
-    line-height: 1.7;
-}
-
-@keyframes avSceneCurtain {
-    0% { opacity: 0; backdrop-filter: blur(0); }
-    15%, 78% { opacity: 1; backdrop-filter: blur(16px); }
-    100% { opacity: 0; backdrop-filter: blur(2px); }
-}
-
-@keyframes avSceneWords {
-    0%, 12% { opacity: 0; filter: blur(14px); transform: translateY(16px) scale(.97); }
-    30%, 72% { opacity: 1; filter: blur(0); transform: none; }
-    100% { opacity: 0; filter: blur(9px); transform: translateY(-13px) scale(1.02); }
-}
-
-@keyframes avSceneOrbit {
-    0% { opacity: 0; transform: scale(.72) rotate(-8deg); }
-    30%, 75% { opacity: 1; }
-    100% { opacity: 0; transform: scale(1.12) rotate(9deg); }
-}
-
-.av-overlay.is-hidden {
     display: none;
 }
 
@@ -130,35 +20,35 @@
     width: min(620px, 100%);
     max-height: min(760px, calc(100dvh - 40px));
     overflow: auto;
-    padding: 28px;
+    padding: 27px;
     border: 1px solid var(--av-gold);
-    background: #182638;
+    background: #172536;
     box-shadow: 0 28px 80px rgba(0, 0, 0, .58);
 }
 
 .av-overlay article > button {
     position: absolute;
-    top: 11px;
-    right: 11px;
-    width: 31px;
-    min-height: 31px;
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    min-height: 34px;
     padding: 0;
     border-radius: 50%;
-    font-size: 19px;
+    font-size: 18px;
 }
 
 .av-overlay h2 {
-    margin: 7px 0 15px;
+    margin: 6px 0 15px;
     color: var(--av-paper);
-    font: 600 27px "Songti SC", "STSong", serif;
+    font: 600 28px/1.2 "Songti SC", "STSong", serif;
 }
 
 .av-overlay ol {
     display: grid;
     gap: 8px;
-    padding-left: 21px;
-    color: #c1b9aa;
-    font-size: 10px;
+    padding-left: 22px;
+    color: #c8c0b0;
+    font-size: 13px;
     line-height: 1.65;
 }
 
@@ -175,49 +65,219 @@
     width: 100%;
     max-height: 250px;
     object-fit: contain;
-    border: 1px solid rgba(214, 169, 83, .48);
-    background: #0e1722;
+    border: 1px solid rgba(213, 170, 88, .45);
+    background: #0d1621;
 }
 
 .av-art-reference figcaption {
     color: var(--av-muted);
-    font-size: 8px;
-    line-height: 1.45;
+    font-size: 11px;
 }
 
-.avalon-app button:focus-visible {
-    outline: 3px solid rgba(240, 211, 138, .82);
-    outline-offset: 2px;
+.av-scene-transition {
+    position: fixed;
+    z-index: 90;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: 24px;
+    background: rgba(4, 7, 12, .95);
+    color: var(--av-paper);
+    text-align: center;
+    /* The curtain is informational.  Action locking is authoritative in
+       the client/server state, so the layer must not swallow the first
+       identity-card pointerdown while the opening briefing is visible. */
+    pointer-events: none;
+    backdrop-filter: blur(16px);
+    animation: avSceneCurtain .48s ease both;
+}
+
+.avalon-app.is-identity-presentation .av-role-column {
+    /* On reduced-motion devices the lobby transition can reveal the game
+       before the opening briefing ends.  Keep the private card above that
+       curtain so the first confirmation can still be read and held. */
+    position: relative;
+    z-index: 100;
+}
+
+.av-scene-transition::before,
+.av-scene-transition::after {
+    position: absolute;
+    width: min(70vw, 780px);
+    height: min(70vw, 780px);
+    border: 1px solid rgba(213, 170, 88, .14);
+    border-radius: 50%;
+    content: '';
+}
+
+.av-scene-transition::after {
+    width: min(52vw, 580px);
+    height: min(52vw, 580px);
+    border-color: rgba(213, 170, 88, .07);
+}
+
+.av-scene-transition.is-expedition,
+.av-scene-transition.is-success {
+    background: radial-gradient(circle, rgba(69, 130, 147, .27), transparent 42%), rgba(4, 12, 18, .96);
+}
+
+.av-scene-transition.is-assassin,
+.av-scene-transition.is-evil,
+.av-scene-transition.is-failure,
+.av-scene-transition.is-rejected {
+    background: radial-gradient(circle, rgba(138, 39, 50, .25), transparent 40%), rgba(9, 5, 10, .97);
+}
+
+.av-scene-transition > div {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: 13px;
+}
+
+.av-scene-transition small {
+    color: var(--av-gold);
+    font-size: clamp(11px, 1.1vw, 14px);
+    font-weight: 750;
+    letter-spacing: .25em;
+}
+
+.av-scene-transition strong {
+    color: var(--av-gold-light);
+    font: 600 clamp(34px, 6vw, 72px)/1.15 "Songti SC", "STSong", Georgia, serif;
+    letter-spacing: .06em;
+    text-shadow: 0 0 28px rgba(213, 170, 88, .22);
+}
+
+.av-scene-transition.is-evil strong,
+.av-scene-transition.is-failure strong,
+.av-scene-transition.is-rejected strong,
+.av-scene-transition.is-assassin strong {
+    color: #e29a98;
+}
+
+/* Only the final outcome gets a dedicated curtain. Ordinary round-table,
+   expedition and mission presentations retain their established styling. */
+.av-scene-transition.is-good-victory {
+    background: #f5f1e7;
+    color: #26364a;
+    backdrop-filter: none;
+}
+
+.av-scene-transition.is-good-victory::before,
+.av-scene-transition.is-good-victory::after {
+    border-color: rgba(118, 82, 10, .18);
+}
+
+.av-scene-transition.is-good-victory small {
+    color: #76520a;
+}
+
+.av-scene-transition.is-good-victory strong {
+    color: #285b91;
+    text-shadow: 0 0 26px rgba(40, 91, 145, .14);
+}
+
+.av-scene-transition.is-good-victory span {
+    color: #354052;
+}
+
+.av-scene-transition.is-evil-victory {
+    background: #050609;
+}
+
+.av-scene-transition.is-evil-victory::before,
+.av-scene-transition.is-evil-victory::after {
+    border-color: rgba(240, 148, 145, .13);
+}
+
+.av-scene-transition.is-evil-victory small {
+    color: #c7b083;
+}
+
+.av-scene-transition.is-evil-victory strong {
+    color: #f09491;
+    text-shadow: 0 0 28px rgba(184, 50, 58, .4);
+}
+
+.av-scene-transition.is-evil-victory span {
+    color: #ded7cd;
+}
+
+.av-scene-transition.is-abandoned {
+    background: #111317;
+}
+
+.av-scene-transition.is-abandoned::before,
+.av-scene-transition.is-abandoned::after {
+    border-color: rgba(190, 198, 207, .1);
+}
+
+.av-scene-transition.is-abandoned small,
+.av-scene-transition.is-abandoned strong {
+    color: #c5ccd4;
+    text-shadow: none;
+}
+
+.av-scene-transition.is-abandoned span {
+    color: #9ca6b1;
+}
+
+.av-scene-transition span {
+    max-width: 680px;
+    color: #cbc3b4;
+    font-size: clamp(12px, 1.5vw, 17px);
+    line-height: 1.65;
+}
+
+.av-vote-ledger.is-receiving {
+    animation: avLedgerReceive .8s ease both;
+}
+
+@keyframes avSceneCurtain {
+    from { opacity: 0; backdrop-filter: blur(0); }
+    to { opacity: 1; backdrop-filter: blur(16px); }
+}
+
+@keyframes avLedgerReceive {
+    0% { transform: translateY(-7px); border-color: rgba(233, 194, 119, .95); }
+    100% { transform: none; }
 }
 
 @media (max-width: 1180px) {
-    .av-layout {
-        grid-template-columns: 215px minmax(520px, 1fr);
+    .av-main-stage {
+        grid-template-columns: minmax(270px, 34%) minmax(0, 1fr);
     }
 
-    .av-side {
-        grid-column: 1 / -1;
-        grid-template-columns: 280px minmax(0, 1fr);
+    .av-records-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .av-log {
-        max-height: 170px;
-    }
-
-    .av-private-action {
-        grid-template-columns: minmax(250px, .8fr) minmax(0, 1.2fr);
+    .av-select-players {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 860px) {
+    .avalon-app {
+        padding: 12px 10px 24px;
+    }
+
     .av-header {
-        grid-template-columns: minmax(220px, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 9px;
+        min-height: 0;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
     }
 
     .av-round {
         grid-column: 1 / -1;
         grid-row: 2;
         min-width: 0;
+        padding: 7px 10px;
     }
 
     .av-actions {
@@ -225,378 +285,348 @@
         grid-row: 1;
     }
 
-    .av-layout {
+    .av-main-stage {
         display: flex;
+        min-height: 0;
         flex-direction: column;
     }
 
-    .av-table { order: 1; width: 100%; }
-    .av-players-panel { order: 2; width: 100%; }
-    .av-side { order: 3; display: grid; width: 100%; grid-template-columns: 280px minmax(0, 1fr); }
-    .av-players { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
+    .av-play-column { order: 1; }
+    .av-role-column { order: 2; }
 
-@media (max-width: 680px) {
-    .avalon-app {
-        padding: 12px 10px 26px;
+    .av-progress-panel {
+        padding: 13px 11px 11px;
     }
 
-    .avalon-app::before {
-        height: 160px;
-        opacity: .52;
-    }
-
-    .av-header {
-        gap: 10px;
-        min-height: 0;
-        margin-bottom: 12px;
-        padding-bottom: 12px;
-    }
-
-    .av-brand {
-        gap: 9px;
-    }
-
-    .av-mark {
-        width: 43px;
-        height: 47px;
-    }
-
-    .av-mark::before {
-        top: 6px;
-        font-size: 21px;
-    }
-
-    .av-mark i,
-    .av-mark b {
-        bottom: 5px;
-        height: 21px;
-    }
-
-    .av-brand h1 {
-        font-size: 22px;
-    }
-
-    .av-brand small {
-        font-size: 7px;
-    }
-
-    .av-brand p {
-        max-width: 190px;
-        margin-top: 5px;
-        font-size: 8px;
-    }
-
-    .av-actions {
-        gap: 5px;
-    }
-
-    .av-actions button {
-        padding-inline: 9px;
-    }
-
-    .av-round {
-        padding: 8px 10px;
-    }
-
-    .av-table,
-    .av-players-panel,
-    .av-panel {
-        padding: 12px;
-    }
-
-    .av-status {
-        min-height: 68px;
-        padding: 11px;
-    }
-
-    .av-status h2 {
-        font-size: 19px;
-    }
-
-    .av-status small {
-        white-space: normal;
-    }
-
-    .av-mission-board {
-        padding: 11px 9px;
-    }
-
-    .av-mission-road {
-        gap: 3px;
+    .av-board-heading {
+        margin-bottom: 10px;
     }
 
     .av-quest > span {
-        width: 40px;
-        height: 40px;
-        font-size: 13px;
+        width: 41px;
+        height: 41px;
     }
 
-    .av-quest strong {
-        font-size: 8px;
-    }
-
-    .av-quest small {
-        font-size: 6px;
-    }
-
-    .av-reject-track {
-        grid-template-columns: 1fr auto;
-    }
-
-    .av-reject-track > small {
-        grid-column: 1 / -1;
-        text-align: left;
-    }
-
-    .av-private-action {
-        grid-template-columns: 1fr;
-    }
-
-    .av-role {
-        grid-row: 1;
-    }
-
-    .av-decision {
-        grid-row: 2;
-        padding: 12px;
-    }
-
-    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-decision {
-        grid-row: 1;
-    }
-
-    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role {
-        grid-row: 2;
-        max-height: 150px;
-        min-height: 150px;
-    }
-
-    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role.is-revealed {
-        max-height: none;
-    }
-
-    .av-role-card {
-        min-height: 360px;
-    }
-
-    .av-role-art {
-        min-height: 270px;
-    }
-
-    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role-cover {
-        min-height: 0;
-    }
-
-    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role-cover::before {
-        width: 46px;
-        height: 46px;
-        font-size: 19px;
-    }
-
-    .avalon-app.is-my-action:not([data-phase="roleReveal"]) .av-role-cover small {
-        display: none;
+    .av-action-panel {
+        min-height: 350px;
     }
 
     .av-select-players {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .av-confirm {
-        grid-template-columns: 34px minmax(0, 1fr);
+    .av-role {
+        min-height: 560px;
     }
 
-    .av-confirm .av-primary {
-        grid-column: 1 / -1;
-        width: 100%;
+    .av-role-art {
+        min-height: 350px;
     }
 
-    .av-confirm small {
-        white-space: normal;
-    }
-
-    .av-players {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 4px;
-    }
-
-    .av-side {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .av-history-list {
+    .av-records-grid {
         grid-template-columns: 1fr;
+    }
+
+    .av-overlay,
+    .av-scene-transition {
+        inset: var(--game-shell-offset, 48px) 0 0;
     }
 
     .av-overlay article {
-        max-height: calc(100dvh - 24px);
-        padding: 24px 17px 18px;
+        max-height: calc(100svh - var(--game-shell-offset, 48px) - 24px);
     }
 }
 
-@media (max-width: 390px) {
-    .av-brand p {
-        display: none;
+@media (max-width: 480px) {
+    .av-mark {
+        width: 39px;
+        height: 43px;
     }
 
-    .av-actions button:last-child {
-        width: 36px;
-        padding: 0;
-        font-size: 0;
+    .av-mark::before { font-size: 19px; }
+    .av-mark i,
+    .av-mark b { height: 19px; }
+    .av-brand small { font-size: 10px; }
+    .av-brand h1 { font-size: 23px; }
+    .av-actions button { min-height: 36px; padding: 7px 10px; }
+
+    .av-board-heading h2 { font-size: 19px; }
+    .av-score-seals { gap: 8px; font-size: 10px; }
+    .av-score-seals b { font-size: 12px; }
+
+    .av-mission-road { gap: 3px; }
+    .av-quest > span { width: 37px; height: 37px; font-size: 12px; }
+    .av-mission-road::before { top: 18px; }
+    .av-quest strong { font-size: 12px; }
+    .av-quest small { font-size: 10px; }
+
+    .av-decision {
+        gap: 9px;
+        padding: 14px 12px;
     }
 
-    .av-actions button:last-child::after {
-        content: '←';
-        font-size: 15px;
+    .av-decision-heading h3 { font-size: 21px; }
+    .av-select-player { min-height: 58px; }
+    .av-choice-cards button { min-height: 88px; padding: 11px; }
+
+    .av-current-team {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 7px;
     }
 
-    .av-mission-road {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        overflow: visible;
-        padding-bottom: 0;
+    .av-confirm {
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 8px;
     }
 
-    .av-quest > span {
-        width: 35px;
-        height: 35px;
-        border-width: 1px;
-        font-size: 12px;
-    }
+    .av-confirm > span { width: 34px; height: 34px; }
+    .av-primary { grid-column: 1 / -1; width: 100%; }
 
-    .av-quest small {
-        max-width: 58px;
-    }
+    .av-role { min-height: 540px; }
+    .av-role-art { min-height: 330px; }
 
-    .av-choice-cards {
-        grid-template-columns: 1fr;
-    }
-
-    .av-players {
-        grid-template-columns: 1fr;
-    }
+    .av-records > summary small { display: none; }
+    .av-records > summary > i { gap: 6px; }
 }
 
-/* Batch 5: keep the table, private decision and player roster in one short
-   landscape viewport; public ledgers are secondary internal scroll regions. */
-@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
-    body.is-game-view { overflow: hidden; }
+@media (orientation: landscape) and (max-height: 520px) {
     .avalon-app {
+        width: 100%;
         height: calc(100svh - var(--game-shell-offset, 48px));
         min-height: 0;
         overflow: hidden;
-        padding: 8px;
+        padding: 5px 7px;
     }
-    .av-header { grid-template-columns: minmax(150px, 1fr) minmax(130px, .8fr) auto; height: 44px; min-height: 44px; gap: 8px; margin-bottom: 8px; padding-bottom: 7px; }
+
+    .avalon-app::before { display: none; }
+
+    .av-header {
+        grid-template-columns: minmax(120px, 1fr) minmax(210px, .9fr) auto;
+        gap: 7px;
+        min-height: 37px;
+        margin-bottom: 5px;
+        padding-bottom: 4px;
+    }
+
     .av-brand { gap: 7px; }
-    .av-mark { width: 35px; height: 38px; }
-    .av-mark::before { top: 5px; font-size: 18px; }
-    .av-mark i, .av-mark b { bottom: 4px; height: 17px; }
-    .av-brand small, .av-brand p { display: none; }
-    .av-brand h1 { font-size: 18px; }
-    .av-round { min-width: 0; padding: 6px 8px; font-size: 8px; }
-    .av-actions { gap: 4px; }
-    .av-actions button { min-height: 36px; padding: 6px 8px; font-size: 8px; }
+    .av-mark { width: 29px; height: 31px; }
+    .av-mark::before { top: 4px; font-size: 14px; }
+    .av-mark i,
+    .av-mark b { bottom: 4px; height: 13px; width: 2px; }
+    .av-brand small { display: none; }
+    .av-brand h1 { margin: 0; font-size: 18px; }
+
+    .av-round {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        padding: 5px 8px;
+        font-size: 10px;
+    }
+
+    .av-actions { grid-column: 3; grid-row: 1; }
+    .av-actions button { min-height: 30px; padding: 4px 8px; font-size: 10px; }
+
     .av-layout {
+        height: calc(100% - 42px);
+        gap: 0;
+    }
+
+    .av-main-stage {
         display: grid;
-        grid-template-columns: 150px minmax(0, 1fr) 190px;
-        grid-template-rows: minmax(0, 1fr);
-        height: calc(100% - 52px);
+        height: 100%;
         min-height: 0;
-        gap: 8px;
+        grid-template-columns: minmax(150px, 30%) minmax(0, 1fr);
+        gap: 6px;
     }
-    .av-layout > .av-players-panel,
-    .av-layout > .av-table,
-    .av-layout > .av-side {
-        grid-column: auto;
-        grid-row: auto;
+
+    .av-role-column { order: 0; min-height: 0; }
+    .av-play-column {
         order: 0;
-        width: auto;
+        min-height: 0;
+        grid-template-rows: 88px minmax(0, 1fr);
+        gap: 5px;
     }
-    .av-players-panel, .av-table, .av-panel { min-height: 0; overflow: hidden; padding: 8px; }
-    .av-players-panel { width: auto; max-height: none; }
-    .av-panel-heading { gap: 5px; padding-bottom: 6px; }
-    .av-panel-heading h2 { font-size: 12px; }
-    .av-players { grid-template-columns: 1fr; min-height: 0; max-height: calc(100% - 30px); overflow: auto; gap: 3px; }
-    .av-player { min-height: 31px; padding: 5px; gap: 5px; }
-    .av-seat { width: 21px; height: 21px; font-size: 9px; }
-    .av-player strong { font-size: 8px; }
-    .av-player small, .av-player em { font-size: 7px; }
-    .av-player > i { min-width: 18px; min-height: 18px; }
-    .av-table { display: flex; height: 100%; min-height: 0; flex-direction: column; }
-    .av-status { flex: 0 0 40px; height: 40px; min-height: 0; overflow: hidden; padding: 6px 8px; }
-    .av-status h2 { margin-top: 2px; font-size: 15px; }
-    .av-status small { margin-top: 3px; font-size: 7px; }
-    .av-status-seal { width: 28px; height: 28px; font-size: 11px; }
-    .av-mission-board { flex: 0 0 54px; height: 54px; min-height: 0; overflow: hidden; margin-top: 6px; padding: 5px 7px; }
-    .av-board-heading h2 { font-size: 13px; }
-    .av-score-seals { gap: 6px; }
-    .av-score-seals span { font-size: 7px; }
+
+    .av-progress-panel {
+        min-height: 0;
+        overflow: hidden;
+        padding: 6px 8px;
+    }
+
+    .av-board-heading {
+        min-height: 18px;
+        margin-bottom: 3px;
+    }
+
+    .av-board-heading .av-kicker { display: none; }
+    .av-board-heading h2 { margin: 0; font-size: 13px; }
+    .av-score-seals { gap: 7px; font-size: 9px; }
     .av-score-seals b { font-size: 10px; }
-    .av-mission-road { gap: 3px; margin-top: 6px; }
-    .av-quest { gap: 3px; }
-    .av-quest > span { width: 29px; height: 29px; font-size: 11px; }
-    .av-quest strong { font-size: 7px; }
-    .av-quest small { font-size: 5px; }
-    .av-reject-track { gap: 5px; margin-top: 6px; padding-top: 5px; }
-    .av-reject-track span, .av-reject-track small { font-size: 6px; }
-    .av-reject-seals i { width: 15px; height: 15px; font-size: 5px; }
-    .av-private-action { grid-template-columns: minmax(142px, .82fr) minmax(0, 1.18fr); gap: 6px; min-height: 75px; overflow: hidden; margin-top: 6px; flex: 1 1 75px; }
-    .av-role, .av-decision { min-height: 0; overflow: auto; padding: 8px; }
-    .av-role-card { grid-template-columns: clamp(48px, calc(100svh - 320px), 92px) minmax(0, 1fr); grid-template-areas: "role-head role-head" "role-art role-copy"; min-height: 0; padding: 5px; gap: 3px 5px; }
-    .av-role-card header { grid-area: role-head; }
-    .av-role-cover { inset: 8px; min-height: 0; padding: 8px; gap: 4px; }
-    .av-role-cover::before { width: 29px; height: 29px; font-size: 14px; }
-    .av-role-cover span, .av-role-cover small { display: none; }
-    .av-role-cover b { font-size: 10px; }
-    .av-role-art { grid-area: role-art; height: clamp(48px, calc(100svh - 320px), 92px); min-height: 48px; aspect-ratio: auto; }
-    .av-role-emblem { right: 5px; bottom: 5px; width: 28px; height: 28px; }
-    .av-role-emblem i { font-size: 13px; }
-    .av-role-copy { grid-area: role-copy; align-self: center; gap: 2px; padding: 0 2px 2px; }
-    .av-role-copy > strong { font-size: 13px; }
-    .av-role-copy > p, .av-known small { margin: 1px 0; font-size: 6px; line-height: 1.25; }
-    .av-known { gap: 2px; padding: 4px; }
-    .av-known strong { font-size: 8px; }
-    .av-decision-heading { gap: 5px; }
-    .av-decision-heading h3 { font-size: 14px; }
-    .av-decision > p { margin: 5px 0; font-size: 7px; line-height: 1.35; }
-    .av-select-players { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
-    .av-select-player { min-height: 34px; padding: 4px; }
-    .av-select-player b { font-size: 8px; }
-    .av-select-player small { font-size: 6px; }
-    .av-choice-cards { gap: 4px; }
-    .av-choice-cards button { min-height: 42px; padding: 5px; }
-    .av-choice-cards button strong { font-size: 9px; }
-    .av-choice-cards button small { font-size: 6px; }
-    .av-confirm { gap: 5px; margin-top: 6px; padding: 5px; }
-    .av-confirm > span { width: 24px; height: 24px; }
-    .av-confirm strong { font-size: 8px; }
-    .av-confirm small { font-size: 6px; }
-    .av-confirm .av-primary { min-height: 31px; padding: 5px 7px; font-size: 8px; }
-    .av-history { display: none; }
-    .av-side { display: flex !important; flex-direction: column; width: auto; min-height: 0; max-height: none; overflow: hidden; }
-    .av-vote-ledger { flex: 0 0 auto; max-height: 112px; }
-    .av-log-panel { min-height: 0; flex: 1; }
-    .av-log { max-height: none; overflow: auto; }
-    .av-overlay { position: fixed; inset: var(--game-shell-offset, 48px) 0 0; padding: 10px; }
-    .av-overlay article { max-height: calc(100svh - var(--game-shell-offset, 48px) - 20px); overflow: auto; padding: 16px; }
-    .av-scene-transition { position: fixed; inset: var(--game-shell-offset, 48px) 0 0; }
+
+    .av-mission-road { gap: 3px; }
+    .av-mission-road::before { top: 13px; }
+    .av-quest { gap: 2px; }
+    .av-quest > span { width: 27px; height: 27px; border-width: 1px; box-shadow: 0 0 0 2px rgba(9, 15, 24, .9); font-size: 10px; }
+    .av-quest strong { font-size: 10px; }
+    .av-quest small { display: none; }
+
+    .av-reject-track {
+        gap: 5px;
+        margin-top: 3px;
+        padding-top: 3px;
+        font-size: 9px;
+    }
+
+    .av-reject-track strong { font-size: 10px; }
+    .av-reject-seals { gap: 3px; }
+    .av-reject-seals i { width: 6px; height: 6px; }
+
+    .av-action-panel {
+        grid-template-rows: minmax(0, 1fr);
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .av-decision {
+        gap: 4px;
+        overflow: hidden;
+        padding: 6px 7px;
+    }
+
+    .av-decision-heading { align-items: center; }
+    .av-decision-heading .av-kicker { font-size: 9px; }
+    .av-decision-heading h3 { margin-top: 1px; font-size: 14px; }
+    .av-decision-heading > b { font-size: 10px; }
+    .av-decision > p { margin: 0; font-size: 10px; line-height: 1.25; }
+
+    .av-select-players {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 3px;
+    }
+
+    .av-select-player {
+        grid-template-columns: 22px minmax(0, 1fr);
+        min-height: 38px;
+        gap: 0 4px;
+        padding: 3px;
+    }
+
+    .av-select-player > span { width: 22px; height: 22px; font-size: 9px; }
+    .av-select-player b { font-size: 10px; }
+    .av-select-player small { display: none; }
+
+    .av-current-team {
+        min-height: 28px;
+        gap: 6px;
+        padding: 3px 5px;
+    }
+
+    .av-current-team > span { font-size: 9px; }
+    .av-current-team > div { gap: 3px; }
+    .av-current-team i { gap: 3px; padding: 2px 5px 2px 2px; }
+    .av-current-team i b { width: 17px; height: 17px; font-size: 8px; }
+    .av-current-team i em { font-size: 9px; }
+
+    .av-choice-cards { gap: 5px; }
+    .av-choice-cards button {
+        grid-template-columns: 29px minmax(0, 1fr);
+        min-height: 48px;
+        gap: 1px 7px;
+        padding: 5px 7px;
+    }
+
+    .av-choice-cards button i { width: 29px; height: 29px; font-size: 11px; }
+    .av-choice-cards button strong { font-size: 11px; }
+    .av-choice-cards button small { font-size: 9px; }
+
+    .av-confirm {
+        grid-template-columns: 29px minmax(0, 1fr) auto;
+        gap: 6px;
+        margin-top: auto;
+        padding: 4px;
+    }
+
+    .av-confirm > span { width: 29px; height: 29px; font-size: 10px; }
+    .av-confirm strong { font-size: 10px; }
+    .av-confirm small { display: none; }
+    .av-primary { min-width: 88px; min-height: 30px; padding: 4px 8px; font-size: 10px; }
+
+    .av-waiting {
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 9px;
+        min-height: 76px;
+        margin: auto 0;
+        padding: 10px;
+    }
+
+    .av-waiting > span { width: 38px; height: 38px; font-size: 14px; }
+    .av-waiting strong { font-size: 14px; }
+    .av-waiting small { font-size: 10px; }
+
+    .av-role {
+        width: 100%;
+        height: 100%;
+        min-width: 90px;
+        min-height: 70px;
+    }
+
+    .av-role-secret {
+        gap: 4px;
+        padding: 5px;
+    }
+
+    .av-role-card {
+        gap: 3px;
+        padding: 4px;
+    }
+
+    .av-role-card header { font-size: 9px; }
+    .av-role-card header b { font-size: 9px; }
+    .av-role-art { min-height: 92px; }
+    .av-role-emblem { right: 4px; bottom: 4px; width: 28px; height: 28px; }
+    .av-role-emblem i { font-size: 11px; }
+    .av-role-copy { gap: 2px; padding: 1px; }
+    .av-role-copy > strong { font-size: 14px; }
+    .av-role-copy > p { font-size: 10px; line-height: 1.25; -webkit-line-clamp: 2; }
+
+    .av-known {
+        gap: 2px;
+        padding: 5px;
+    }
+
+    .av-known span,
+    .av-known small { font-size: 9px; line-height: 1.2; }
+    .av-known strong { font-size: 10px; line-height: 1.25; overflow-wrap: anywhere; }
+    .av-known small { display: none; }
+
+    .av-role-cover {
+        inset: 5px;
+        gap: 5px;
+        padding: 10px;
+    }
+
+    .av-role-cover::before { width: 45px; height: 45px; font-size: 20px; }
+    .av-role-cover span { display: none; }
+    .av-role-cover b { font-size: 14px; }
+    .av-role-cover small { font-size: 9px; }
+
+    .av-records { display: none; }
+
+    .av-overlay,
+    .av-scene-transition {
+        inset: var(--game-shell-offset, 48px) 0 0;
+    }
+
+    .av-overlay { padding: 8px; }
+    .av-overlay article { max-height: calc(100svh - var(--game-shell-offset, 48px) - 16px); padding: 18px; }
+    .av-overlay ol { font-size: 11px; line-height: 1.45; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .avalon-app,
-    .av-role-secret,
-    .av-role-cover {
-        transition-duration: .01ms !important;
-    }
-
     .av-scene-transition,
-    .av-scene-transition > div {
+    .av-vote-ledger.is-receiving {
         animation: none !important;
-    }
-
-    .av-scene-transition::before,
-    .av-scene-transition::after {
-        display: none;
     }
 }

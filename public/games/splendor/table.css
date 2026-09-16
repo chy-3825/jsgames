@@ -1,0 +1,299 @@
+/* Splendor table layer: the board is a working surface, not a stretched card list. */
+
+.sp-app {
+    --sp-header-height: 58px;
+    --sp-card-max-width: 150px;
+    --sp-card-radius: 10px;
+    --sp-card-border-width: 1px;
+    overflow: visible;
+    overflow-x: clip;
+}
+
+.sp-header {
+    top: var(--game-shell-offset, 48px);
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: var(--sp-header-height);
+    height: var(--sp-header-height);
+    gap: 16px;
+    padding: 7px max(16px, calc((100vw - 1480px) / 2));
+}
+
+.sp-turn {
+    justify-self: start;
+    width: min(100%, 560px);
+    min-width: 0;
+    padding: 9px 14px;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sp-header-meta {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+}
+
+.sp-header-score { padding-left: 12px; }
+.sp-header-actions { gap: 8px; }
+
+.sp-layout {
+    grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 460px);
+    gap: 16px;
+    width: min(1420px, calc(100% - 32px));
+    padding: 16px 0 40px;
+}
+
+.sp-command-column {
+    top: calc(var(--game-shell-offset, 48px) + var(--sp-header-height, 58px) + 12px);
+    gap: 12px;
+}
+
+.sp-market-stage,
+.sp-command-panel,
+.sp-nobles-panel,
+.sp-guild,
+.sp-players-panel,
+.sp-log-panel { min-width: 0; }
+
+.sp-section-header { min-height: 38px; margin-bottom: 8px; }
+.sp-section-header > div { display: grid; gap: 2px; min-width: 0; }
+.sp-section-header h2 { font-size: 15px; letter-spacing: .01em; }
+.sp-section-header > span { font-size: 9px; }
+
+.sp-quick-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    margin: 0 0 10px;
+    padding: 6px 10px;
+    border: 1px solid rgba(212, 173, 84, .24);
+    border-radius: 8px;
+    background: linear-gradient(90deg, rgba(212, 173, 84, .12), rgba(25, 37, 40, .75) 42%, rgba(25, 37, 40, .45));
+    color: #cfd3ca;
+}
+
+.sp-summary-score,
+.sp-summary-tokens,
+.sp-summary-reserve { display: grid; align-items: baseline; gap: 4px; white-space: nowrap; }
+.sp-summary-score { grid-template-columns: auto auto; }
+.sp-summary-score b { color: var(--sp-gold); font: 900 18px Georgia, serif; }
+.sp-summary-score small,
+.sp-summary-tokens small,
+.sp-summary-reserve small { color: #818984; font-size: 7px; }
+.sp-summary-discounts { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 6px; }
+.sp-summary-discounts b { color: #c9d0c7; font: 900 10px Georgia, serif; }
+.sp-summary-discounts .sp-gem { width: 11px; height: 11px; border-width: 1px; }
+.sp-summary-tokens,
+.sp-summary-reserve { grid-template-columns: auto auto; padding-left: 9px; border-left: 1px solid var(--sp-line); }
+.sp-summary-tokens b,
+.sp-summary-reserve b { color: #d7dbd1; font: 900 13px Georgia, serif; }
+
+.sp-tier-tabs { display: none; }
+
+.sp-market { gap: 10px; }
+.sp-tier {
+    grid-template-columns: 108px minmax(0, 1fr);
+    padding: 10px;
+    border-radius: 11px;
+}
+
+.sp-tier > header { padding: 5px 10px 5px 2px; }
+.sp-tier > header > div { display: grid; gap: 1px; min-width: 0; }
+.sp-tier-number { font-size: 27px; }
+.sp-tier > header h3 { font-size: 11px; }
+
+.sp-market-cards {
+    grid-template-columns: repeat(4, minmax(0, var(--sp-card-max-width)));
+    min-width: 0;
+    width: 100%;
+    max-width: 700px;
+    margin-inline: auto;
+    justify-content: center;
+    column-gap: clamp(20px, 1.8vw, 26px);
+    row-gap: 10px;
+    padding-left: 0;
+}
+
+.sp-dev-card {
+    --sp-card-border-color: rgba(var(--token-rgb), .5);
+    position: relative;
+    grid-template-rows: minmax(0, 1fr);
+    width: 100%;
+    max-width: var(--sp-card-max-width);
+    height: auto;
+    aspect-ratio: 5 / 7;
+    border: 0;
+    border-radius: var(--sp-card-radius);
+}
+
+.sp-dev-card::before {
+    position: absolute;
+    z-index: 4;
+    inset: 0;
+    border: var(--sp-card-border-width) solid var(--sp-card-border-color);
+    border-radius: inherit;
+    content: "";
+    pointer-events: none;
+}
+.sp-dev-card.is-affordable { --sp-card-border-color: var(--sp-gold); }
+.sp-dev-card.is-selected { --sp-card-border-color: #f0ce75; }
+
+.sp-dev-card > .sp-card-face { min-height: 0; }
+.sp-card-state {
+    position: absolute;
+    z-index: 5;
+    right: 6px;
+    bottom: 6px;
+    max-width: calc(100% - 12px);
+    padding: 3px 5px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 4px;
+    background: rgba(9, 13, 15, .68);
+    color: #e9e5d6;
+    font-size: 7px;
+    line-height: 1.1;
+    pointer-events: none;
+}
+
+.sp-card-face {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    /* The outer card owns the border-radius and clipping. Keeping this layer
+       square prevents a second, smaller box from exposing corner crescents. */
+    border-radius: 0;
+    background: #111719;
+}
+
+.sp-card-face > img {
+    z-index: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: .98;
+    filter: saturate(.9) contrast(1.04);
+}
+
+.sp-card-veil {
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(8, 13, 15, .26) 0%, rgba(8, 13, 15, .04) 33%, rgba(8, 13, 15, .77) 100%), linear-gradient(90deg, rgba(8, 13, 15, .75), transparent 55%);
+}
+
+.sp-card-face::after { display: none; }
+.sp-card-face > header,
+.sp-card-costs,
+.sp-card-level { z-index: 2; }
+.sp-card-face > header { position: relative; padding: 8px; }
+.sp-card-face > header > strong {
+    min-width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: rgba(8, 13, 15, .78);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+}
+.sp-bonus-gem { width: 31px; height: 31px; }
+
+.sp-card-costs {
+    right: 7px;
+    bottom: 8px;
+    left: 7px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+}
+
+.sp-cost {
+    grid-template-columns: 10px auto;
+    min-width: 0;
+    min-height: 20px;
+    padding: 2px 4px;
+    border-radius: 5px;
+    background: rgba(8, 13, 15, .8);
+}
+
+.sp-cost > i { width: 9px; height: 9px; }
+.sp-cost > b { font-size: 10px; }
+.sp-cost > small { display: block; overflow: hidden; color: #d0d2c9; font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
+.sp-free-card { grid-column: 1 / -1; justify-self: start; font-size: 7px; }
+.sp-card-level { right: 8px; bottom: 8px; color: #f0ead7; font-size: 7px; text-shadow: 0 1px 3px #111; }
+
+.sp-dev-card.is-selected { transform: translateY(-5px); }
+.sp-dev-card[aria-disabled="true"] .sp-card-face { cursor: pointer; }
+.sp-dev-card[aria-disabled="true"] .sp-card-state { color: #aeb5ad; }
+
+.sp-deck-reserve { min-height: 34px; padding: 4px 7px; }
+
+.sp-command-panel {
+    min-height: 0;
+    padding: 16px;
+    border-top-width: 4px;
+}
+
+.sp-command-heading h2 { font-size: 15px; }
+.sp-command-heading > button { flex: 0 0 28px; width: 28px; height: 28px; }
+.sp-action-mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    margin: 0 0 12px;
+    padding: 3px;
+    border: 1px solid var(--sp-line);
+    border-radius: 8px;
+    background: rgba(8, 13, 15, .35);
+}
+.sp-action-mode button,
+.sp-action-secondary {
+    min-height: 31px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: #8f9892;
+    font-size: 8px;
+    font-weight: 900;
+}
+.sp-action-mode button.is-active,
+.sp-action-mode button:hover:not(:disabled) { border-color: rgba(212, 173, 84, .42); background: rgba(212, 173, 84, .12); color: var(--sp-paper); }
+.sp-action-mode button:disabled { cursor: default; opacity: .4; }
+.sp-action-secondary { display: block; width: 100%; margin-top: 9px; border-color: var(--sp-line); }
+.sp-action-secondary:hover { border-color: rgba(99, 174, 183, .55); color: var(--sp-paper); }
+
+.sp-selected-card {
+    display: grid;
+    gap: 9px;
+    margin: 0 0 9px;
+    padding: 10px;
+    border: 1px solid rgba(212, 173, 84, .4);
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(212, 173, 84, .12), rgba(17, 25, 27, .68));
+}
+.sp-selected-card-copy { display: grid; gap: 3px; }
+.sp-selected-card-copy small { color: var(--sp-gold); font-size: 7px; font-weight: 900; }
+.sp-selected-card-copy strong { color: #f0ead9; font-size: 10px; }
+.sp-selected-card-copy span { color: #8f9892; font-size: 7px; }
+.sp-detail-costs { display: flex; flex-wrap: wrap; gap: 4px; }
+.sp-detail-cost { display: grid; grid-template-columns: 10px auto; align-items: center; gap: 3px; min-width: 45px; padding: 3px 5px; border: 1px solid rgba(var(--token-rgb), .38); border-radius: 5px; background: rgba(8, 13, 15, .55); }
+.sp-detail-cost i { width: 8px; height: 8px; border-radius: 50%; background: var(--token-color); }
+.sp-detail-cost b { color: #f1eddf; font: 900 10px Georgia, serif; }
+.sp-detail-cost small { grid-column: 1 / -1; color: #86908b; font-size: 6px; }
+.sp-detail-cost.is-covered { opacity: .56; }
+.sp-selected-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.sp-selected-actions button { min-height: 31px; padding: 0 5px; border: 1px solid var(--sp-line); border-radius: 5px; background: #1a2528; color: #c4cac1; font-size: 7px; font-weight: 900; }
+.sp-selected-actions button[data-action="buy"]:not(:disabled) { border-color: var(--sp-gold); background: var(--sp-gold); color: #182021; }
+.sp-selected-actions button:disabled { cursor: default; opacity: .38; }
+
+.sp-command-wallet { margin: 0 0 12px; }
+.sp-bank-token { min-height: 58px; }
+
+.sp-guild { padding: 15px 16px 17px; }
+.sp-guild-grid { gap: 16px; }
+.sp-reserved .sp-dev-card { width: 110px; flex-basis: 110px; height: auto; aspect-ratio: 5 / 7; }
+
+.sp-table-rail { gap: 12px; }

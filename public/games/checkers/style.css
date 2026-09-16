@@ -724,3 +724,40 @@
 @media (prefers-reduced-motion: reduce) {
     .checkers-hole { transition: none; }
 }
+
+/* Mist blue-grey tabletop; keep the wood and coloured pieces prominent. */
+.checkers-game { --ink: #393b43; background: radial-gradient(ellipse at 50% 28%, #a5b3bd 0%, #899ba8 65%, #7e919f 100%); color: var(--ink); }
+.checkers-header, .checkers-brand h1 { color: #253440; }
+.checkers-mark { background: #b9c5cd; color: #624e2d; border-color: #8395a2; box-shadow: none; }
+.checkers-turn { background: transparent; color: #263642; border: 0; box-shadow: none; }
+.checkers-actions button { color: #293c4a; background: #b9c5cd; border-color: #8395a2; box-shadow: none; }
+.checkers-actions button:hover { color: #223340; background: #cad3da; }
+.checkers-layout { grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); max-width: 1150px; }
+.checkers-panel { background: #b2c0ca; border: 1px solid #92a3af; border-radius: 14px; box-shadow: none; }
+.checkers-panel-title { color: #354754; border-bottom: 0; }
+.checkers-panel-title small { display: none; }
+.checkers-player { grid-template-columns: 34px minmax(0, 1fr); min-height: 58px; border: 0; border-radius: 10px; background: #c2cdd5; }
+.checkers-player::before, .checkers-player.is-me::after { display: none; }
+.checkers-player.is-current { background: #d0d8db; box-shadow: inset 0 0 0 2px #c5a05c; }
+.checkers-player strong { color: #293b48; font-size: 13px; }
+.checkers-board-wrap { filter: drop-shadow(0 16px 18px rgba(68, 57, 42, .18)); }
+.checkers-hint { color: #2f424f; font-size: 12px; font-weight: 500; }
+.checkers-hint:empty { display: none; }
+.checkers-records { padding: 12px; border-top: 1px solid #94a5b2; color: #374b59; font-size: 12px; }
+.checkers-records summary { cursor: pointer; }
+.checkers-records .checkers-log { display: block; margin-top: 10px; max-height: 200px; }
+.checkers-log-entry, .checkers-log-entry.is-latest { color: #374b59; font-weight: 400; }
+.checkers-overlay { background: #25273399; }
+.checkers-rules { background: #faf7f0; color: #393d48; }
+@media (max-width: 740px) { .checkers-layout { display: flex; } }
+@media (orientation: landscape) and (max-height: 520px) {
+    .checkers-layout { display: grid; grid-template-columns: clamp(108px, 17vw, 145px) minmax(0, 1fr); }
+    .checkers-records { display: none; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+    .checkers-player { grid-template-columns: 22px minmax(0, 1fr); gap: 5px; min-height: 40px; padding: 6px; }
+    .checkers-player strong { font-size: 10px; }
+}
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 680px) {
+    .checkers-layout { grid-template-columns: minmax(0, 1fr); }
+}

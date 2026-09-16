@@ -47,3 +47,24 @@ test('富饶之城播报覆盖每轮选角开场、无人应答与皇冠转移',
     assert.match(client, /event\.kind === 'crownAcquired'/);
     assert.match(client, /取得皇冠/);
 });
+
+test('富饶之城客户端按服务器绝对时间追赶、排队并保持操作锁', () => {
+    assert.match(client, /localizePresentation/);
+    assert.match(client, /state\.presentations/);
+    assert.match(client, /sequence <= model\.lastPresentationSequence/);
+    assert.match(client, /waitUntil\(event\.startedAt/);
+    assert.match(client, /currentEventDeadline/);
+    assert.match(client, /presentationLockedUntil/);
+    assert.match(client, /event\.endsAt\)[^\n]*<= Date\.now\(\)/);
+    assert.doesNotMatch(client, /const firstState/);
+});
+
+test('富饶之城跳过只隐藏本地舞台，仍等待服务端结束时点并支持减少动态', () => {
+    assert.match(client, /function skipPresentation\(\)/);
+    assert.match(client, /holdPresentationLock/);
+    assert.match(client, /reducedMotion/);
+    assert.match(client, /personalElimination/);
+    assert.match(client, /personalVictory/);
+    assert.match(client, /const personalWinner = current\.winners/);
+    assert.match(client, /scene\.skipPresentation\(\)/);
+});

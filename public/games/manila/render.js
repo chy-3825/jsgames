@@ -8,6 +8,7 @@ export function createManilaRenderer({ mount, model, getElement }) {
     const actions = () => getActions(current());
     const myPlayer = () => getMyPlayer(current());
     const label = () => phaseLabel(current(), PHASE_LABELS);
+    const presentationLocked = () => model.presentationPlaying || Date.now() < Number(model.presentationLockedUntil || 0);
 
     function clearError() {
         const banner = $('errorBanner');
@@ -24,7 +25,12 @@ export function createManilaRenderer({ mount, model, getElement }) {
 
     function statusText() {
         const state = current();
-        if (state.status === 'ended') return `${escapeHtml(state.winner?.name || '本局结束')} 赢得商会 · 财富 ${state.winner?.fortune ?? '—'}`;
+        if (state.status === 'ended') {
+            const winnerIds = (state.winners || []).map(player => String(player.id));
+            if (winnerIds.includes(String(state.myId))) return winnerIds.length > 1 ? '您已并列获胜 · 终局财富已封存' : '您已获胜 · 终局财富已封存';
+            const names = state.winners?.map(player => player.name).join('、') || state.winner?.name || '本局结束';
+            return `${escapeHtml(names)} ${winnerIds.length > 1 ? '并列赢得商会' : '赢得商会'} · 财富 ${state.winner?.fortune ?? '—'}`;
+        }
         if (state.phase === 'auction') return actions().bid ? '轮到你决定港务长竞价' : '港务长竞价正在进行';
         if (state.phase === 'master') return actions().buyShare || actions().setBoats ? '你掌管本次航线' : `${escapeHtml(state.harborMasterName || '港务长')} 正在筹备船队`;
         if (state.phase === 'placement') return actions().placeAccomplice ? '选择位置，核对代价后安插帮手' : '等待下一位商人安插帮手';
@@ -38,7 +44,7 @@ export function createManilaRenderer({ mount, model, getElement }) {
     function render() {
         const state = current();
         if (!state) return;
-        mount.querySelector('.manila-app')?.setAttribute('aria-busy', String(model.actionPending));
+        mount.querySelector('.manila-app')?.setAttribute('aria-busy', String(model.actionPending || presentationLocked()));
         const me = myPlayer();
         const shareCount = Number(me?.sharesCount ?? state.myShares?.length ?? 0);
         const encumberedCount = Number(me?.encumberedShares ?? state.myEncumberedShares?.length ?? 0);
@@ -46,7 +52,7 @@ export function createManilaRenderer({ mount, model, getElement }) {
         $('movement').textContent = state.phase === 'sailing' ? `第 ${state.movementPlan?.round || state.movementRound} / 3 轮 · 骰点已出` : state.movementRound ? `已完成 ${state.movementRound} / 3 轮` : '尚未掷骰';
         $('status').innerHTML = `<div><span class="mn-kicker">${label()}</span><h2>${statusText()}</h2></div><aside><p>${state.currentTurnName ? `当前操作 · ${escapeHtml(state.currentTurnName)}` : state.harborMasterName ? `港务长 · ${escapeHtml(state.harborMasterName)}` : '等待港务长'}</p><div class="mn-self-summary" aria-label="我的资产：${me?.cash ?? 0} 比索，${shareCount} 股，${encumberedCount} 股抵押，${me?.accomplices ?? 0} 名帮手"><span><b>${me?.cash ?? 0}</b> 比索</span><span><b>${shareCount}</b> 股</span><span><b>${encumberedCount}</b> 抵押</span><span><b>${me?.accomplices ?? 0}</b> 帮手</span></div></aside>`;
         renderMarket(); renderBoats(); renderCommand(); renderLocations(); renderMaster(); renderPlayers(); renderFinance(); renderLog();
-        if (model.actionPending) mount.querySelectorAll('button:not([data-ui="skipPresentation"]), input, select').forEach(control => { control.disabled = true; });
+        if (model.actionPending || presentationLocked()) mount.querySelectorAll('button:not([data-ui="skipPresentation"]), input, select').forEach(control => { control.disabled = true; });
     }
 
     function renderMarket() {
@@ -65,7 +71,7 @@ export function createManilaRenderer({ mount, model, getElement }) {
         return Array.from({ length: capacity }, (_, index) => {
             const stake = list[index];
             const player = stake && state.players?.find(candidate => candidate.id === stake.playerId);
-            return stake ? `<span class="mn-stake is-filled" style="--player:${escapeHtml(player?.color || '#d5a85e')}" title="${escapeHtml(stake.playerName || '商人')} · ${stake.fee} 比索">${escapeHtml((stake.playerName || '?').slice(0, 1))}</span>` : '<span class="mn-stake" aria-label="空位"></span>';
+            return stake ? `<span class="mn-stake is-filled" style="--player:${escapeHtml(player?.color || '#d5a85e')}" title="${escapeHtml(stake.playerName || '商人')} · ${stake.fee} 比索" aria-label="${escapeHtml(stake.playerName || '商人')}下注"></span>` : '<span class="mn-stake" aria-label="空位"></span>';
         }).join('');
     }
 
@@ -118,7 +124,7 @@ export function createManilaRenderer({ mount, model, getElement }) {
             if (model.pendingChoice?.kind === 'passPlacement') html += choiceSummary('本次航行不再安插帮手', 'is-warning');
         } else if (state.phase === 'sailing') {
             const rolls = state.movementPlan?.rolls || []; const byId = new Map(rolls.map(item => [Number(item.boatId), item])); const displayOrder = [...model.sailOrder, ...rolls.map(item => Number(item.boatId)).filter(id => !model.sailOrder.includes(id))];
-            html = `<header><div><span class="mn-kicker">第 ${state.movementPlan?.round || state.movementRound} 轮行船</span><h3>港务长决定行船顺序</h3></div><small>骰点由服务端掷出</small></header><p>${a.sailBoats ? '依次点选货船。先到港的船占据前面的港口位，因此同一轮内的移动顺序会影响收益。' : `等待${escapeHtml(state.harborMasterName || '港务长')}确认；所有骰点与顺序均为公开信息。`}</p><div class="mn-sail-board">${displayOrder.map(boatId => { const item = byId.get(boatId); if (!item) return ''; const orderIndex = model.sailOrder.indexOf(boatId); const meta = GOOD_META[item.good] || GOOD_META.人参; return `<button type="button" data-sail-boat="${boatId}" class="${orderIndex >= 0 ? 'is-selected' : ''}" style="--good:${meta.accent}" ${a.sailBoats ? '' : 'disabled'}><span class="mn-sail-order">${orderIndex >= 0 ? orderIndex + 1 : '·'}</span><i class="mn-die">${item.roll}</i><span><b>${escapeHtml(item.good)}货船</b><small>${item.from} 格 → ${item.projected > 13 ? '马尼拉港' : `${item.projected} 格`}</small></span></button>`; }).join('')}</div>${a.sailBoats ? `<div class="mn-sail-tools"><span>已选 ${model.sailOrder.length} / ${rolls.length} 艘</span><button type="button" data-ui="resetSail" ${model.sailOrder.length ? '' : 'disabled'}>重选顺序</button></div>` : ''}`;
+            html = `<header><div><span class="mn-kicker">第 ${state.movementPlan?.round || state.movementRound} 轮行船</span><h3>港务长决定行船顺序</h3></div><small>公开骰点 · 依次选船</small></header><p>${a.sailBoats ? '依次点选货船。先到港的船占据前面的港口位，因此同一轮内的移动顺序会影响收益。' : `等待${escapeHtml(state.harborMasterName || '港务长')}确认；所有骰点与顺序均为公开信息。`}</p><div class="mn-sail-board">${displayOrder.map(boatId => { const item = byId.get(boatId); if (!item) return ''; const orderIndex = model.sailOrder.indexOf(boatId); const meta = GOOD_META[item.good] || GOOD_META.人参; return `<button type="button" data-sail-boat="${boatId}" class="${orderIndex >= 0 ? 'is-selected' : ''}" style="--good:${meta.accent}" ${a.sailBoats ? '' : 'disabled'}><span class="mn-sail-order">${orderIndex >= 0 ? orderIndex + 1 : '·'}</span><i class="mn-die">${item.roll}</i><span><b>${escapeHtml(item.good)}货船</b><small>${item.from} 格 → ${item.projected > 13 ? '马尼拉港' : `${item.projected} 格`}</small></span></button>`; }).join('')}</div>${a.sailBoats ? `<div class="mn-sail-tools"><span>已选 ${model.sailOrder.length} / ${rolls.length} 艘</span><button type="button" data-ui="resetSail" ${model.sailOrder.length ? '' : 'disabled'}>重选顺序</button></div>` : ''}`;
             if (model.pendingChoice?.kind === 'sailBoats') html += choiceSummary(`依次移动：${model.pendingChoice.order.map(id => escapeHtml(byId.get(id)?.good || '')).join(' → ')}`);
         } else if (state.phase === 'pilot') {
             const sailing = (state.boats || []).filter(boat => boat.fate === 'sailing'); const large = (state.locations?.['pilot-large'] || []).some(stake => stake.playerId === state.currentTurn); const canMove = Boolean(a.pilotMove && sailing.length); if (!large) model.pilotDraft.mode = 'one';
@@ -146,8 +152,8 @@ export function createManilaRenderer({ mount, model, getElement }) {
         $('locations').innerHTML = groups.map(group => `<section class="mn-location-group"><header><strong>${group.title}</strong><small>${group.subtitle}</small></header><div>${group.ids.map(id => { const info = LOCATION_INFO[id]; const stakes = state.locations?.[id] || []; const detail = info.payout ? `投入 ${info.fee} · 回报 ${info.payout}` : id === 'insurance' ? '免费 · 先收 10' : `投入 ${info.fee}`; return `<article class="mn-location-card ${stakes.length ? 'is-occupied' : ''}" data-location-id="${escapeHtml(id)}"><div><strong>${info.label}</strong><small>${info.note || detail}</small></div><aside>${playerDots(stakes, info.capacity)}</aside></article>`; }).join('')}</div></section>`).join('');
     }
 
-    function renderMaster() { const state = current(); const master = state.players?.find(player => player.id === state.harborMasterId); $('master').innerHTML = `<span class="mn-kicker">本次港务长</span><div><i style="--player:${escapeHtml(master?.color || '#d5a85e')}">${escapeHtml((master?.name || '待').slice(0, 1))}</i><span><strong>${escapeHtml(master?.name || '等待竞价')}</strong><small>${state.auction ? `当前最高出价 ${state.auction.highestBid} 比索` : '掌管装载与起点'}</small></span></div>`; }
-    function renderPlayers() { const state = current(); $('players').innerHTML = (state.players || []).map(player => { const isMe = player.id === state.myId; return `<article class="mn-player ${isMe ? 'is-me' : ''} ${player.isOnline ? '' : 'is-away'}" data-player-id="${escapeHtml(player.id)}"><i style="--player:${escapeHtml(player.color)}">${escapeHtml(player.name.slice(0, 1))}</i><div><strong>${escapeHtml(player.name)}${isMe ? '<em>我</em>' : ''}</strong><small class="mn-player-assets">${isMe ? '' : shareBackFan(player.sharesCount)}<span>${player.sharesCount} 股 · ${player.encumberedShares} 抵押 · ${player.accomplices} 帮手</span></small></div><b>${player.fortune ?? player.cash}</b></article>`; }).join(''); }
+    function renderMaster() { const state = current(); const master = state.players?.find(player => player.id === state.harborMasterId); $('master').innerHTML = `<span class="mn-kicker">本次港务长</span><div style="--player:${escapeHtml(master?.color || '#d5a85e')}"><span><strong>${escapeHtml(master?.name || '等待竞价')}</strong><small>${state.auction ? `当前最高出价 ${state.auction.highestBid} 比索` : '掌管装载与起点'}</small></span></div>`; }
+    function renderPlayers() { const state = current(); $('players').innerHTML = (state.players || []).map(player => { const isMe = player.id === state.myId; return `<article class="mn-player ${isMe ? 'is-me' : ''} ${player.isOnline ? '' : 'is-away'}" data-player-id="${escapeHtml(player.id)}" style="--player:${escapeHtml(player.color)}"><div><strong>${escapeHtml(player.name)}${isMe ? '<em>我</em>' : ''}</strong><small class="mn-player-assets">${isMe ? '' : shareBackFan(player.sharesCount)}<span>${player.sharesCount} 股 · ${player.encumberedShares} 抵押 · ${player.accomplices} 帮手</span></small></div><b>${player.fortune ?? player.cash}</b></article>`; }).join(''); }
 
     function shareCertificate(good, index, encumbered) { const state = current(); const meta = GOOD_META[good] || GOOD_META.人参; const a = actions(); const selectable = (!encumbered && a.takeLoan) || (encumbered && a.repayLoan); const selected = model.financeChoice?.index === index && model.financeChoice?.kind === (encumbered ? 'repayLoan' : 'takeLoan'); return `<button class="mn-share ${encumbered ? 'is-encumbered' : ''} ${selected ? 'is-selected' : ''}" style="--share:${meta.accent}" type="button" data-good="${meta.id}" data-finance-kind="${encumbered ? 'repayLoan' : 'takeLoan'}" data-index="${index}" ${selectable ? '' : 'disabled'}><header><span>马尼拉商会股份</span><b>${String(index + 1).padStart(2, '0')}</b></header><div><i>${meta.mark}</i><span><strong>${good}</strong><small>${meta.note}</small></span></div><footer>${encumbered ? '已抵押 · 偿还 15' : '有效凭证 · 可借 12'}</footer></button>`; }
     function renderFinance() { const state = current(); const cash = myPlayer()?.cash ?? 0; const encumbered = new Set(state.myEncumberedShares || []); const shares = (state.myShares || []).map((good, index) => shareCertificate(good, index, encumbered.has(index))).join(''); let confirmation = ''; if (model.financeChoice) { const good = state.myShares?.[model.financeChoice.index] || '该'; confirmation = `<div class="mn-finance-confirm"><span>${model.financeChoice.kind === 'takeLoan' ? `抵押${good}股份，取得 12 比索` : `支付 15 比索，赎回${good}股份`}</span><div><button type="button" data-ui="cancelFinance">取消</button><button type="button" data-ui="confirmFinance">确认</button></div></div>`; } $('finance').innerHTML = `<header class="mn-paper-title"><span>我的金库</span><b>${cash} 比索</b></header><p>点击可操作的股份，核对后确认抵押或偿还。</p><div class="mn-shares">${shares || '<span class="mn-muted">尚无股份</span>'}</div>${confirmation}`; }

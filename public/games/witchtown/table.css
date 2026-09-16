@@ -1,0 +1,861 @@
+/* Tribunal table and responsive table layout layer. Loaded after style.css. */
+
+/* Late visual layer for the tribunal table. It intentionally loads after
+ * style.css so scene, responsive, and reduced-motion rules keep their cascade. */
+/* 2026 tribunal visual pass: scorched records, prominent suspects, and a real evidence-confirmation flow. */
+body.is-witchtown-view {
+    background: #17110f;
+}
+
+.witchtown-app {
+    --ink: #1b1411;
+    --panel: #2a201b;
+    --panel-raised: #382a22;
+    --line: #665044;
+    --line-soft: rgba(234, 211, 165, .14);
+    --paper: #f1e3c4;
+    --paper-muted: #b8a78d;
+    --gold: #c49a55;
+    --gold-bright: #edc978;
+    --rose: #a74d42;
+    --rose-soft: #d88778;
+    --blue: #708da9;
+    --green: #859773;
+    --violet: #8d769d;
+    background-color: var(--ink);
+    background-image:
+        radial-gradient(circle at 16% 8%, rgba(210, 152, 86, .15), transparent 25%),
+        radial-gradient(ellipse at 70% 108%, rgba(128, 47, 38, .18), transparent 42%),
+        repeating-linear-gradient(92deg, transparent 0 82px, rgba(235, 202, 143, .018) 83px 84px, transparent 85px 168px),
+        repeating-linear-gradient(4deg, rgba(255, 255, 255, .009) 0 1px, transparent 2px 7px);
+    transition: background-color .35s ease, color .35s ease;
+}
+
+.witchtown-app::before {
+    top: 118px;
+    right: clamp(26px, 7vw, 112px);
+    width: 154px;
+    height: 154px;
+    background: radial-gradient(circle at 35% 31%, #fff8dc 0 7%, #d8c994 8% 15%, #85775d 16% 19%, #d4c69d 20% 61%, transparent 62%);
+    box-shadow: 0 0 90px rgba(220, 203, 151, .2);
+    opacity: .07;
+}
+
+.witchtown-app::after {
+    position: absolute;
+    z-index: -1;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 210px;
+    background:
+        linear-gradient(90deg, transparent 0 6%, #0d0b0a 6% 11%, transparent 11% 18%, #0d0b0a 18% 25%, transparent 25% 33%, #0d0b0a 33% 39%, transparent 39% 48%, #0d0b0a 48% 56%, transparent 56% 66%, #0d0b0a 66% 72%, transparent 72% 83%, #0d0b0a 83% 92%, transparent 92%),
+        linear-gradient(176deg, transparent 0 56%, #0d0b0a 57% 100%);
+    clip-path: polygon(0 82%, 7% 82%, 7% 55%, 9% 48%, 11% 55%, 11% 82%, 18% 82%, 18% 42%, 21% 31%, 24% 42%, 24% 82%, 33% 82%, 33% 61%, 36% 54%, 39% 61%, 39% 82%, 49% 82%, 49% 46%, 52% 36%, 55% 46%, 55% 82%, 66% 82%, 66% 58%, 69% 49%, 72% 58%, 72% 82%, 83% 82%, 83% 50%, 87% 39%, 91% 50%, 91% 82%, 100% 82%, 100% 100%, 0 100%);
+    content: '';
+    opacity: .48;
+    pointer-events: none;
+}
+
+.witchtown-app.is-night-phase {
+    --ink: #0f1119;
+    --panel: #191d29;
+    --panel-raised: #232838;
+    --line: #4d566c;
+    --line-soft: rgba(191, 204, 230, .14);
+    --paper: #e7e4d9;
+    --paper-muted: #9fa8bc;
+    --gold: #a89567;
+    --gold-bright: #dac998;
+    --rose: #9b4858;
+    --rose-soft: #d27886;
+    --blue: #7d9bc7;
+    background-image:
+        radial-gradient(circle at 84% 13%, rgba(130, 153, 198, .18), transparent 26%),
+        radial-gradient(ellipse at 20% 104%, rgba(75, 64, 111, .2), transparent 42%),
+        repeating-linear-gradient(92deg, transparent 0 82px, rgba(190, 202, 229, .017) 83px 84px, transparent 85px 168px),
+        repeating-linear-gradient(4deg, rgba(255, 255, 255, .008) 0 1px, transparent 2px 7px);
+}
+
+.witchtown-app.is-night-phase::before {
+    opacity: .62;
+    filter: saturate(.55) brightness(1.2);
+}
+
+.witchtown-app.is-day-phase {
+    background-image:
+        radial-gradient(circle at 15% 8%, rgba(211, 151, 82, .17), transparent 26%),
+        radial-gradient(ellipse at 68% 108%, rgba(124, 45, 36, .18), transparent 42%),
+        repeating-linear-gradient(92deg, transparent 0 82px, rgba(235, 202, 143, .018) 83px 84px, transparent 85px 168px),
+        repeating-linear-gradient(4deg, rgba(255, 255, 255, .009) 0 1px, transparent 2px 7px);
+}
+
+.witchtown-brand-mark {
+    position: relative;
+    display: block;
+    width: 48px;
+    height: 64px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.witchtown-brand-mark::before,
+.witchtown-brand-mark::after {
+    position: absolute;
+    content: '';
+}
+
+.witchtown-brand-mark::before {
+    inset: 17px 6px 2px;
+    border: 1px solid #9b7847;
+    border-radius: 50% 50% 46% 46%;
+    background: radial-gradient(circle at 48% 44%, rgba(196, 154, 85, .27), transparent 34%), #2c1d18;
+    box-shadow: inset 0 0 0 4px #1a1210, 0 8px 18px rgba(0, 0, 0, .34);
+}
+
+.witchtown-brand-mark::after {
+    left: 50%;
+    top: 0;
+    width: 14px;
+    height: 24px;
+    border-radius: 70% 30% 70% 30%;
+    background: radial-gradient(circle at 48% 55%, #f5d48a 0 18%, #c7793e 20% 55%, #6d302b 57% 78%, transparent 80%);
+    filter: drop-shadow(0 0 7px rgba(224, 147, 74, .64));
+    transform: translateX(-50%) rotate(8deg);
+}
+
+.witchtown-brand-mark i {
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    bottom: 11px;
+    width: 5px;
+    height: 27px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #795b3d, #e1c081 50%, #6c5038);
+    box-shadow: 0 -7px 0 -2px #e4c889;
+    transform: translateX(-50%);
+}
+
+.witchtown-brand-mark b {
+    position: absolute;
+    z-index: 2;
+    right: 4px;
+    bottom: 0;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ad5448;
+    border-radius: 50%;
+    background: #6b2e2a;
+    box-shadow: inset 0 0 0 3px #8f4038;
+}
+
+.witchtown-eyebrow,
+.witchtown-kicker {
+    letter-spacing: .2em;
+}
+
+.witchtown-command,
+.witchtown-panel {
+    border-color: var(--line);
+    border-radius: 3px;
+    background:
+        linear-gradient(145deg, rgba(255, 244, 211, .025), transparent 32%),
+        color-mix(in srgb, var(--panel) 94%, transparent);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, .24), inset 0 0 0 1px rgba(255, 239, 199, .025);
+}
+
+.witchtown-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-areas:
+        "table command"
+        "table hand"
+        "role hand"
+        "private log"
+        "private log";
+    gap: 16px;
+    align-items: start;
+}
+
+.witchtown-workspace {
+    display: contents;
+}
+
+.witchtown-command {
+    grid-area: command;
+    padding: 17px 18px 14px;
+    border-top: 3px solid var(--rose);
+}
+
+.witchtown-table-panel {
+    grid-area: table;
+    padding: 18px;
+    background:
+        radial-gradient(ellipse at 50% 42%, rgba(153, 75, 58, .12), transparent 44%),
+        repeating-radial-gradient(ellipse at 50% 45%, rgba(211, 180, 120, .028) 0 1px, transparent 2px 13px),
+        color-mix(in srgb, var(--panel) 95%, transparent);
+}
+
+.witchtown-private-panel { grid-area: private; padding: 16px; }
+.witchtown-role-panel {
+    --role-focus-accent: rgba(196, 154, 85, .78);
+    --role-focus-glow: rgba(196, 154, 85, .16);
+    grid-area: role;
+    padding: 16px;
+}
+.witchtown-hand-panel { grid-area: hand; padding: 16px; }
+.witchtown-log-panel { grid-area: log; padding: 16px; }
+
+.witchtown-tribunal-line {
+    display: grid;
+    grid-template-columns: 1fr 31px 1fr;
+    align-items: center;
+    gap: 9px;
+    margin: 12px 0 3px;
+}
+
+.witchtown-tribunal-line span {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(196, 154, 85, .48));
+}
+
+.witchtown-tribunal-line span:last-child {
+    transform: scaleX(-1);
+}
+
+.witchtown-tribunal-line i {
+    display: block;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(196, 154, 85, .58);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(167, 77, 66, .38), transparent 62%);
+    box-shadow: inset 0 0 0 4px rgba(22, 14, 12, .56);
+}
+
+.witchtown-tribunal-line i::before {
+    display: block;
+    color: var(--gold);
+    content: '裁';
+    font: 600 13px/26px "Songti SC", serif;
+    text-align: center;
+}
+
+.witchtown-player-grid {
+    grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
+    gap: 10px;
+    max-height: min(64vh, 620px);
+    margin-top: 9px;
+    padding: 2px 5px 5px 2px;
+    overflow: auto;
+    scrollbar-color: var(--line) transparent;
+}
+
+.witchtown-seat {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 112px;
+    padding: 0;
+    overflow: hidden;
+    border-color: rgba(224, 196, 147, .2);
+    border-radius: 2px;
+    background: linear-gradient(112deg, rgba(17, 13, 11, .84), rgba(51, 37, 30, .78));
+    box-shadow: inset 0 -20px 42px rgba(0, 0, 0, .15);
+}
+
+.witchtown-seat::after {
+    position: absolute;
+    inset: 5px;
+    border: 1px solid rgba(236, 214, 166, .045);
+    content: '';
+    pointer-events: none;
+}
+
+.witchtown-seat.is-current {
+    border-color: rgba(217, 151, 82, .88);
+    background: linear-gradient(112deg, rgba(48, 28, 21, .94), rgba(91, 52, 37, .72));
+    box-shadow: 0 0 0 1px rgba(217, 151, 82, .25), 0 0 22px rgba(165, 77, 53, .18);
+}
+
+.witchtown-seat.is-current::before {
+    position: absolute;
+    z-index: 3;
+    right: 8px;
+    top: 7px;
+    padding: 3px 5px;
+    border: 1px solid #bd745f;
+    background: #642e27;
+    color: #f0c8a0;
+    content: '受审中';
+    font-size: 7px;
+    letter-spacing: .08em;
+}
+
+.witchtown-seat.is-me {
+    box-shadow: inset 0 -3px 0 var(--gold), 0 0 0 1px rgba(196, 154, 85, .15);
+}
+
+.witchtown-seat.is-dead {
+    opacity: .52;
+    filter: grayscale(.75);
+}
+
+.witchtown-seat-number {
+    flex: 0 0 auto;
+    padding: 3px 5px;
+    border: 1px solid rgba(241, 227, 196, .42);
+    background: rgba(22, 15, 12, .72);
+    color: #ead2a1;
+    font-size: 7px;
+}
+
+.witchtown-cat-mark {
+    display: grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border-radius: 2px;
+    background: #171310;
+    color: #e8c976;
+    font-size: 10px;
+}
+
+.witchtown-seat-file {
+    display: grid;
+    align-content: start;
+    min-width: 0;
+    padding: 11px;
+}
+
+.witchtown-seat-file > header {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 7px;
+}
+
+.witchtown-seat-flags {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+}
+
+.witchtown-seat-name strong {
+    font-family: "Songti SC", serif;
+    font-size: 13px;
+}
+
+.witchtown-seat-name strong em,
+.witchtown-ledger-row strong em {
+    color: var(--gold-bright);
+}
+
+.witchtown-seat-role {
+    margin-top: 8px;
+    padding-top: 7px;
+}
+
+.witchtown-seat-role span {
+    color: #d4b988;
+}
+
+.witchtown-accusation-line {
+    display: grid;
+    grid-template-columns: minmax(44px, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0;
+}
+
+.witchtown-seat-status {
+    display: grid;
+    grid-template-columns: auto minmax(80px, 1fr);
+    align-items: center;
+    gap: 10px;
+    margin-top: 9px;
+}
+
+.witchtown-accusation-line > span {
+    height: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(166, 79, 66, .48);
+    background: rgba(21, 13, 12, .64);
+}
+
+.witchtown-accusation-line > span i {
+    display: block;
+    width: var(--progress);
+    height: 100%;
+    background: linear-gradient(90deg, #6d2927, #c15c49);
+    box-shadow: 0 0 8px rgba(193, 92, 73, .42);
+}
+
+.witchtown-accusation-line > b {
+    color: var(--rose-soft);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.witchtown-accusation-line small {
+    color: var(--paper-muted);
+    font-size: 7px;
+    font-weight: 400;
+}
+
+.witchtown-seat-metrics {
+    margin-top: 8px;
+}
+
+.witchtown-seat-assets {
+    min-height: 22px;
+    margin-top: 7px;
+}
+
+.witchtown-faction {
+    border-left-color: #93764c;
+    background: linear-gradient(90deg, rgba(147, 118, 76, .15), transparent);
+}
+
+.witchtown-faction.is-witch {
+    border-left-color: var(--rose);
+    background: linear-gradient(90deg, rgba(167, 77, 66, .18), transparent);
+}
+
+.witchtown-hall {
+    grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+    min-height: 220px;
+    gap: 18px;
+    padding: 14px;
+    border-color: rgba(196, 154, 85, .38);
+    background: linear-gradient(105deg, rgba(196, 154, 85, .12), transparent 70%);
+}
+
+.witchtown-hall-art {
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 1;
+    background-color: #bda779;
+    filter: sepia(.28) contrast(1.08) saturate(.8);
+}
+
+.witchtown-hall strong {
+    font-size: clamp(20px, 2.1vw, 30px);
+}
+
+.witchtown-hall p {
+    font-size: 11px;
+    line-height: 1.75;
+}
+
+.witchtown-hall > div > small {
+    color: var(--gold);
+    font-size: 8px;
+    letter-spacing: .08em;
+}
+
+.witchtown-trial-card {
+    background: linear-gradient(145deg, #e8d8b0, #bfa979) !important;
+    box-shadow: inset 0 0 0 4px rgba(65, 42, 32, .1), 0 5px 12px rgba(0, 0, 0, .22);
+}
+
+.witchtown-hand-note {
+    background: rgba(14, 10, 9, .32);
+}
+
+.witchtown-card {
+    min-height: 218px;
+    background: linear-gradient(160deg, rgba(66, 50, 41, .98), rgba(28, 20, 18, .98));
+}
+
+.witchtown-card.is-selected {
+    border-color: var(--card-color, var(--gold));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--card-color) 35%, transparent), 0 14px 24px rgba(0, 0, 0, .3);
+    transform: translateY(-4px);
+}
+
+.witchtown-card-action .witchtown-button.is-selected {
+    background: var(--card-color, var(--gold));
+    color: #18120f;
+}
+
+.witchtown-card-confirm {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    margin-top: 13px;
+    padding: 12px;
+    border: 1px solid rgba(181, 87, 70, .62);
+    background: linear-gradient(90deg, rgba(113, 43, 37, .3), rgba(31, 21, 18, .7));
+    box-shadow: inset 3px 0 0 var(--rose);
+}
+
+.witchtown-confirm-seal {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 1px solid #c57462;
+    border-radius: 50%;
+    background: #6f2f2a;
+    color: #f1cbb1;
+    font-family: "Songti SC", serif;
+    font-size: 17px;
+    box-shadow: inset 0 0 0 4px rgba(31, 16, 14, .34);
+}
+
+.witchtown-card-confirm > div {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+}
+
+.witchtown-card-confirm small {
+    color: var(--paper-muted);
+    font-size: 8px;
+}
+
+.witchtown-card-confirm strong {
+    color: var(--paper);
+    font-family: "Songti SC", serif;
+    font-size: 15px;
+}
+
+.witchtown-card-confirm p {
+    overflow: hidden;
+    margin: 0;
+    color: var(--rose-soft);
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.witchtown-deck-order {
+    margin-top: 12px;
+    border: 1px solid rgba(141, 118, 157, .42);
+    background: rgba(29, 22, 31, .45);
+}
+
+.witchtown-deck-order summary {
+    padding: 10px 11px;
+    color: #d2bedf;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.witchtown-deck-order summary small {
+    margin-left: 7px;
+    color: var(--paper-muted);
+    font-size: 8px;
+    font-weight: 400;
+}
+
+.witchtown-deck-order > p {
+    margin: 0;
+    padding: 0 11px 9px;
+    color: var(--paper-muted);
+    font-size: 8px;
+    line-height: 1.55;
+}
+
+.witchtown-deck-order ol {
+    display: grid;
+    max-height: 260px;
+    margin: 0;
+    padding: 0 8px;
+    overflow: auto;
+    list-style: none;
+}
+
+.witchtown-deck-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 4px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.witchtown-deck-row > span {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 7px;
+}
+
+.witchtown-deck-row > span:first-child > i {
+    width: 20px;
+    color: var(--violet);
+    font-size: 8px;
+    font-style: normal;
+    text-align: right;
+}
+
+.witchtown-deck-row b {
+    color: var(--paper);
+    font-size: 9px;
+    font-weight: 600;
+}
+
+.witchtown-deck-row small {
+    color: var(--paper-muted);
+    font-size: 7px;
+}
+
+.witchtown-deck-row button {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .035);
+    color: var(--paper);
+}
+
+.witchtown-deck-row button:disabled {
+    cursor: default;
+    opacity: .28;
+}
+
+.witchtown-deck-confirm {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 9px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.witchtown-ledger-row {
+    padding-block: 8px;
+}
+
+.witchtown-app.is-night-phase .witchtown-command,
+.witchtown-app.is-night-phase .witchtown-panel {
+    background:
+        linear-gradient(145deg, rgba(197, 207, 232, .025), transparent 34%),
+        color-mix(in srgb, var(--panel) 95%, transparent);
+}
+
+@media (max-width: 1120px) {
+    .witchtown-shell {
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 12px;
+    }
+
+    .witchtown-player-grid {
+        grid-template-columns: repeat(auto-fill, minmax(254px, 1fr));
+    }
+
+    .witchtown-seat {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .witchtown-hall {
+        grid-template-columns: 168px minmax(0, 1fr);
+        min-height: 168px;
+    }
+}
+
+@media (max-width: 820px) {
+    .witchtown-shell {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "command"
+            "private"
+            "table"
+            "hand"
+            "log";
+        gap: 11px;
+    }
+
+    .witchtown-workspace {
+        display: contents;
+    }
+
+    .witchtown-command,
+    .witchtown-table-panel,
+    .witchtown-private-panel,
+    .witchtown-role-panel,
+    .witchtown-hand-panel,
+    .witchtown-log-panel {
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    .witchtown-player-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .witchtown-app::after {
+        height: 130px;
+        opacity: .34;
+    }
+
+    .witchtown-brand-mark {
+        width: 41px;
+        height: 52px;
+    }
+
+    .witchtown-brand-mark::before {
+        inset: 14px 5px 1px;
+    }
+
+    .witchtown-brand-mark::after {
+        width: 12px;
+        height: 20px;
+    }
+
+    .witchtown-brand-mark i {
+        height: 22px;
+        bottom: 9px;
+    }
+
+    .witchtown-player-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .witchtown-seat {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 112px;
+    }
+
+    .witchtown-card-grid {
+        display: flex;
+        gap: 9px;
+        padding: 4px 2px 8px;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+    }
+
+    .witchtown-card {
+        width: 156px;
+        min-width: 156px;
+        scroll-snap-align: start;
+    }
+
+    .witchtown-card-confirm {
+        grid-template-columns: 36px minmax(0, 1fr);
+    }
+
+    .witchtown-card-confirm .witchtown-button {
+        grid-column: 1 / 3;
+        width: 100%;
+    }
+
+    .witchtown-confirm-seal {
+        width: 34px;
+        height: 34px;
+    }
+
+    .witchtown-card-confirm p {
+        white-space: normal;
+    }
+}
+
+@media (min-width: 821px) {
+    .witchtown-shell {
+        grid-template-areas:
+            "table command"
+            "table hand"
+            "role hand"
+            "private log"
+            "private log";
+    }
+
+    .witchtown-hand-panel .witchtown-card-grid {
+        display: flex;
+        gap: 9px;
+        padding: 4px 2px 9px;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+    }
+
+    .witchtown-hand-panel .witchtown-card {
+        width: 148px;
+        min-width: 148px;
+        min-height: 210px;
+        scroll-snap-align: start;
+    }
+
+    .witchtown-private-panel > [data-role="private"] {
+        display: block;
+    }
+
+    .witchtown-private-panel .witchtown-private-block {
+        margin-top: 0;
+    }
+}
+
+.witchtown-command .witchtown-targets {
+    grid-template-columns: 1fr;
+}
+
+@media (max-width: 820px) {
+    .witchtown-shell {
+        grid-template-areas:
+            "command"
+            "role"
+            "hand"
+            "table"
+            "private"
+            "log";
+    }
+
+    .witchtown-command { grid-area: command; }
+    .witchtown-hand-panel { grid-area: hand; order: 0; }
+    .witchtown-role-panel { grid-area: role; order: 0; }
+    .witchtown-private-panel { grid-area: private; order: 0; }
+    .witchtown-table-panel { grid-area: table; order: 0; }
+    .witchtown-log-panel { grid-area: log; order: 0; }
+
+    .witchtown-hall {
+        grid-template-columns: minmax(132px, 42%) minmax(0, 1fr);
+        min-height: 132px;
+        gap: 12px;
+        padding: 10px;
+    }
+
+    .witchtown-hall strong { font-size: clamp(18px, 6vw, 25px); }
+    .witchtown-hall p { font-size: 10px; line-height: 1.6; }
+
+    .witchtown-app[data-phase="dossier_review"] .witchtown-shell {
+        grid-template-areas:
+            "command"
+            "private"
+            "role"
+            "hand"
+            "table"
+            "log";
+    }
+
+    .witchtown-app.is-my-action:not([data-phase="dossier_review"]) .witchtown-role-panel {
+        max-height: 154px;
+        overflow: hidden;
+    }
+
+    .witchtown-app.is-my-action:not([data-phase="dossier_review"]) .witchtown-role-panel .witchtown-section-heading {
+        margin-bottom: 5px;
+    }
+
+    .witchtown-app.is-my-action:not([data-phase="dossier_review"]) .witchtown-hall {
+        grid-template-columns: 88px minmax(0, 1fr);
+        min-height: 88px;
+        margin-top: 5px;
+        padding: 6px;
+    }
+
+    .witchtown-app.is-my-action:not([data-phase="dossier_review"]) .witchtown-hall strong { font-size: 17px; }
+    .witchtown-app.is-my-action:not([data-phase="dossier_review"]) .witchtown-hall p { font-size: 8px; line-height: 1.4; }
+    .witchtown-app.is-my-action:not([data-phase="dossier_review"]) .witchtown-hall > div > small { display: none; }
+}

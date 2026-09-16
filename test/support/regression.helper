@@ -77,12 +77,34 @@ const passWitchtownConfessions = session => {
     for (const player of game._alive().filter(item => !game.nightActions.confessions[item.id])) assert.equal(session.handleAction(player.id, { kind: 'passConfession' }).success, true);
 };
 const confirmedWerewolfNightAction = (game, playerId, action) => {
+    const activeSeat = game._active(playerId);
+    if (game.phase === 'nightWolf' && activeSeat?.role === 'werewolf') return game.handleAction(playerId, { ...action, kind: 'nightAction' });
     const staged = game.handleAction(playerId, { ...action, kind: 'stageNightAction' });
     if (!staged.success) return staged;
     const confirmed = game.handleAction(playerId, { kind: 'confirmNightAction' });
     if (!confirmed.success) return confirmed;
     if (game.getPlayerState(playerId).nightConfirmation?.stage === 'result') return game.handleAction(playerId, { kind: 'confirmSeerResult' });
     return confirmed;
+};
+const acknowledgeWerewolfPresentation = game => {
+    const gate = game.presentationGate;
+    if (!gate) return;
+    const gateId = gate.id;
+    for (const player of game.realPlayers.filter(item => item.online && !item.left)) {
+        if (!game.presentationGate) break;
+        const result = game.handleAction(player.id, { kind: 'presentationComplete', gateId });
+        assert.equal(result.success, true, '狼人杀夜幕播报确认应成功');
+    }
+};
+const advanceWerewolfNight = game => {
+    acknowledgeWerewolfPresentation(game);
+    if (!game.nightFlow?.deadlineAt) return null;
+    const originalNow = game.now;
+    const deadline = game.nightFlow.deadlineAt;
+    game.now = () => deadline;
+    const result = game.handleSystemTick();
+    game.now = originalNow;
+    return result;
 };
 const chessEngine = () => {
     const session = Chess.create('rules', players(['white', 'black']));
@@ -139,5 +161,4 @@ const maAutoPlay = (game, maxSteps = 4000) => {
 };
 
 
-module.exports = { assert, test, fs, Room, LoveLetter, LoveLetterEngine, Coup, Chess, Xiangqi, Jungle, Gobang, Checkers, Monopoly, MonopolyDeal, MonopolyDealEngine, GuessNumber, Aeroplane, Junqi, TakeFive, TakeFiveEngine, Splendor, SplendorEngine, Hanabi, HanabiEngine, Kingdomino, KingdominoEngine, Acquire, AcquireEngine, Citadels, CitadelsEngine, Witchtown, WitchtownEngine, LasVegas, LasVegasEngine, Avalon, AvalonEngine, Scout, ScoutEngine, Decrypto, DecryptoEngine, Manila, ManilaEngine, ModernArt, ModernArtEngine, CamelUp, CamelUpEngine, MagicalAthlete, MagicalAthleteEngine, Werewolf, WerewolfEngine, registry, GROUP_DEFINITIONS, GAME_GROUPS, players, readFrontendSource, readWitchtownClient, confirmAvalonRoles, confirmDecryptoKeys, confirmWitchtownDossiers, passWitchtownConfessions, confirmedWerewolfNightAction, chessEngine, maAthlete, maDraft, maRaceSelect, maResolvePrompts, maAutoPlay };
-
+module.exports = { assert, test, fs, Room, LoveLetter, LoveLetterEngine, Coup, Chess, Xiangqi, Jungle, Gobang, Checkers, Monopoly, MonopolyDeal, MonopolyDealEngine, GuessNumber, Aeroplane, Junqi, TakeFive, TakeFiveEngine, Splendor, SplendorEngine, Hanabi, HanabiEngine, Kingdomino, KingdominoEngine, Acquire, AcquireEngine, Citadels, CitadelsEngine, Witchtown, WitchtownEngine, LasVegas, LasVegasEngine, Avalon, AvalonEngine, Scout, ScoutEngine, Decrypto, DecryptoEngine, Manila, ManilaEngine, ModernArt, ModernArtEngine, CamelUp, CamelUpEngine, MagicalAthlete, MagicalAthleteEngine, Werewolf, WerewolfEngine, registry, GROUP_DEFINITIONS, GAME_GROUPS, players, readFrontendSource, readWitchtownClient, confirmAvalonRoles, confirmDecryptoKeys, confirmWitchtownDossiers, passWitchtownConfessions, confirmedWerewolfNightAction, acknowledgeWerewolfPresentation, advanceWerewolfNight, chessEngine, maAthlete, maDraft, maRaceSelect, maResolvePrompts, maAutoPlay };

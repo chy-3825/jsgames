@@ -11,7 +11,7 @@ sudo systemctl enable --now jsgames
 sudo systemctl status jsgames --no-pager
 ```
 
-确认 `systemctl status` 正常后，用 `journalctl -u jsgames -e` 查看启动日志。应用只监听本机 `127.0.0.1:3000` 或 `*:3000`，由 Nginx 对外提供入口。
+确认 `systemctl status` 正常后，用 `journalctl -u jsgames -e` 查看启动日志。生产环境默认只监听本机 `127.0.0.1:3000`，也可通过 `JSGAMES_HOST` 显式设置监听地址，由 Nginx 对外提供入口。
 
 ## Nginx 与 WebSocket
 
@@ -31,7 +31,7 @@ Node 服务启动前应通过 systemd 的环境文件或等效安全配置设置
 
 ## 云平台安全组
 
-生产反代方案只需放行 TCP 80/443，并限制 TCP 3000 仅允许本机或内网访问。若暂时不使用 Nginx、直接对外测试 Node，则需要为实例安全组增加 IPv4 TCP 3000 入站规则；测试结束后应撤销该公网端口。
+生产反代方案只需放行 TCP 80/443，并限制 TCP 3000 仅允许本机或内网访问。若暂时不使用 Nginx、直接对外测试 Node，则需显式设置 `JSGAMES_HOST=0.0.0.0`，并为实例安全组增加 IPv4 TCP 3000 入站规则；测试结束后应撤销该公网端口。
 
 上线后检查：
 
@@ -40,3 +40,13 @@ Node 服务启动前应通过 systemd 的环境文件或等效安全配置设置
 3. 浏览器可以创建房间、加入房间并保持 WebSocket 连接。
 4. 云安全组只保留实际需要的端口；服务器凭据已轮换并改用 SSH 密钥。
 5. `curl -fsS https://你的域名/healthz` 返回 `status: ok`，并确认响应包含 HSTS、CSP、`X-Content-Type-Options` 等安全头。
+
+## 朋友内测包
+
+在开发机运行 `npm run package:preview`，会将当前工作区的运行文件（包括尚未 Git 跟踪的新模块）打包到 `dist/`，并生成 SHA-256 校验文件。包内 `RELEASE_MANIFEST.json` 记录每个运行文件的哈希，便于固定、核对和回滚这一版。该命令不会提交 Git 或上传服务器。
+
+将压缩包解到服务器的独立版本目录，执行 `npm ci --omit=dev`，再按上面的 systemd/Nginx 配置启动。保留上一版压缩包和独立配置。包不含 `node_modules`、测试脚本、评审页面、历史封面、Git 或本地环境变量；开发评审页面在生产模式下也返回 404。
+
+本轮仍使用单进程内存房间：重启、更新或进程崩溃都会结束当前对局；应在朋友结束对局后维护。断线重连仅用于同一进程仍运行时的短时网络恢复，不能恢复服务器重启前的对局。
+
+依赖通过 npm overrides 将 `qs` 固定到 `6.16.0`，修复本轮审计问题且保留 Express 4；未来升级 Express 时应复核并移除不再需要的覆盖。

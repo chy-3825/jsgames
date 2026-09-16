@@ -1,0 +1,512 @@
+[
+  {
+    "id": "p1",
+    "kind": "property",
+    "color": "brown",
+    "value": 1,
+    "name": "地中海大道",
+    "rent": [
+      1,
+      2
+    ],
+    "setSize": 2
+  },
+  {
+    "id": "p2",
+    "kind": "property",
+    "color": "brown",
+    "value": 1,
+    "name": "波罗的海大道",
+    "rent": [
+      1,
+      2
+    ],
+    "setSize": 2
+  },
+  {
+    "id": "p3",
+    "kind": "property",
+    "color": "lightblue",
+    "value": 1,
+    "name": "东方大道",
+    "rent": [
+      1,
+      2,
+      3
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p4",
+    "kind": "property",
+    "color": "lightblue",
+    "value": 1,
+    "name": "佛蒙特大道",
+    "rent": [
+      1,
+      2,
+      3
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p5",
+    "kind": "property",
+    "color": "lightblue",
+    "value": 1,
+    "name": "康涅狄格大道",
+    "rent": [
+      1,
+      2,
+      3
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p6",
+    "kind": "property",
+    "color": "pink",
+    "value": 2,
+    "name": "圣查尔斯广场",
+    "rent": [
+      1,
+      2,
+      4
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p7",
+    "kind": "property",
+    "color": "pink",
+    "value": 2,
+    "name": "州际大道",
+    "rent": [
+      1,
+      2,
+      4
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p8",
+    "kind": "property",
+    "color": "pink",
+    "value": 2,
+    "name": "弗吉尼亚大道",
+    "rent": [
+      1,
+      2,
+      4
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p9",
+    "kind": "property",
+    "color": "orange",
+    "value": 2,
+    "name": "圣詹姆斯广场",
+    "rent": [
+      1,
+      3,
+      5
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p10",
+    "kind": "property",
+    "color": "orange",
+    "value": 2,
+    "name": "田纳西大道",
+    "rent": [
+      1,
+      3,
+      5
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p11",
+    "kind": "property",
+    "color": "orange",
+    "value": 2,
+    "name": "纽约大道",
+    "rent": [
+      1,
+      3,
+      5
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p12",
+    "kind": "property",
+    "color": "red",
+    "value": 3,
+    "name": "肯塔基大道",
+    "rent": [
+      2,
+      3,
+      6
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p13",
+    "kind": "property",
+    "color": "red",
+    "value": 3,
+    "name": "印第安纳大道",
+    "rent": [
+      2,
+      3,
+      6
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p14",
+    "kind": "property",
+    "color": "red",
+    "value": 3,
+    "name": "伊利诺伊大道",
+    "rent": [
+      2,
+      3,
+      6
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p15",
+    "kind": "property",
+    "color": "yellow",
+    "value": 3,
+    "name": "大西洋大道",
+    "rent": [
+      2,
+      4,
+      6
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p16",
+    "kind": "property",
+    "color": "yellow",
+    "value": 3,
+    "name": "文特诺大道",
+    "rent": [
+      2,
+      4,
+      6
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p17",
+    "kind": "property",
+    "color": "yellow",
+    "value": 3,
+    "name": "马文花园",
+    "rent": [
+      2,
+      4,
+      6
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p18",
+    "kind": "property",
+    "color": "green",
+    "value": 4,
+    "name": "太平洋大道",
+    "rent": [
+      2,
+      4,
+      7
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p19",
+    "kind": "property",
+    "color": "green",
+    "value": 4,
+    "name": "北卡罗来纳大道",
+    "rent": [
+      2,
+      4,
+      7
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p20",
+    "kind": "property",
+    "color": "green",
+    "value": 4,
+    "name": "宾夕法尼亚大道",
+    "rent": [
+      2,
+      4,
+      7
+    ],
+    "setSize": 3
+  },
+  {
+    "id": "p21",
+    "kind": "property",
+    "color": "blue",
+    "value": 4,
+    "name": "公园广场",
+    "rent": [
+      3,
+      8
+    ],
+    "setSize": 2
+  },
+  {
+    "id": "p22",
+    "kind": "property",
+    "color": "blue",
+    "value": 4,
+    "name": "木板路",
+    "rent": [
+      3,
+      8
+    ],
+    "setSize": 2
+  },
+  {
+    "id": "p23",
+    "kind": "property",
+    "color": "railroad",
+    "value": 2,
+    "name": "雷丁铁路",
+    "rent": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "setSize": 4
+  },
+  {
+    "id": "p24",
+    "kind": "property",
+    "color": "railroad",
+    "value": 2,
+    "name": "宾州铁路",
+    "rent": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "setSize": 4
+  },
+  {
+    "id": "p25",
+    "kind": "property",
+    "color": "railroad",
+    "value": 2,
+    "name": "B&O 铁路",
+    "rent": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "setSize": 4
+  },
+  {
+    "id": "p26",
+    "kind": "property",
+    "color": "railroad",
+    "value": 2,
+    "name": "短线铁路",
+    "rent": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "setSize": 4
+  },
+  {
+    "id": "p27",
+    "kind": "property",
+    "color": "utility",
+    "value": 2,
+    "name": "电力公司",
+    "rent": [
+      1,
+      2
+    ],
+    "setSize": 2
+  },
+  {
+    "id": "p28",
+    "kind": "property",
+    "color": "utility",
+    "value": 2,
+    "name": "自来水厂",
+    "rent": [
+      1,
+      2
+    ],
+    "setSize": 2
+  },
+  {
+    "id": "w29",
+    "kind": "property_wild",
+    "colors": [
+      "brown",
+      "lightblue"
+    ],
+    "color": null,
+    "value": 1,
+    "allColor": false,
+    "name": "棕色/浅蓝万能地产"
+  },
+  {
+    "id": "w30",
+    "kind": "property_wild",
+    "colors": [
+      "lightblue",
+      "railroad"
+    ],
+    "color": null,
+    "value": 4,
+    "allColor": false,
+    "name": "浅蓝/铁路万能地产"
+  },
+  {
+    "id": "w31",
+    "kind": "property_wild",
+    "colors": [
+      "pink",
+      "orange"
+    ],
+    "color": null,
+    "value": 2,
+    "allColor": false,
+    "name": "粉色/橙色万能地产"
+  },
+  {
+    "id": "w32",
+    "kind": "property_wild",
+    "colors": [
+      "pink",
+      "orange"
+    ],
+    "color": null,
+    "value": 2,
+    "allColor": false,
+    "name": "粉色/橙色万能地产"
+  },
+  {
+    "id": "w33",
+    "kind": "property_wild",
+    "colors": [
+      "red",
+      "yellow"
+    ],
+    "color": null,
+    "value": 3,
+    "allColor": false,
+    "name": "红色/黄色万能地产"
+  },
+  {
+    "id": "w34",
+    "kind": "property_wild",
+    "colors": [
+      "red",
+      "yellow"
+    ],
+    "color": null,
+    "value": 3,
+    "allColor": false,
+    "name": "红色/黄色万能地产"
+  },
+  {
+    "id": "w35",
+    "kind": "property_wild",
+    "colors": [
+      "blue",
+      "green"
+    ],
+    "color": null,
+    "value": 4,
+    "allColor": false,
+    "name": "深蓝/绿色万能地产"
+  },
+  {
+    "id": "w36",
+    "kind": "property_wild",
+    "colors": [
+      "green",
+      "railroad"
+    ],
+    "color": null,
+    "value": 4,
+    "allColor": false,
+    "name": "绿色/铁路万能地产"
+  },
+  {
+    "id": "w37",
+    "kind": "property_wild",
+    "colors": [
+      "railroad",
+      "utility"
+    ],
+    "color": null,
+    "value": 2,
+    "allColor": false,
+    "name": "铁路/公用事业万能地产"
+  },
+  {
+    "id": "w38",
+    "kind": "property_wild",
+    "colors": [
+      "brown",
+      "lightblue",
+      "pink",
+      "orange",
+      "red",
+      "yellow",
+      "green",
+      "blue",
+      "railroad",
+      "utility"
+    ],
+    "color": null,
+    "value": 0,
+    "allColor": true,
+    "name": "十色地产万能牌"
+  },
+  {
+    "id": "w39",
+    "kind": "property_wild",
+    "colors": [
+      "brown",
+      "lightblue",
+      "pink",
+      "orange",
+      "red",
+      "yellow",
+      "green",
+      "blue",
+      "railroad",
+      "utility"
+    ],
+    "color": null,
+    "value": 0,
+    "allColor": true,
+    "name": "十色地产万能牌"
+  }
+]

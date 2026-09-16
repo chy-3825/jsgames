@@ -109,26 +109,26 @@ export const GROUP_LABELS = Object.freeze({
     yellow: '黄色地产',
     green: '绿色地产',
     blue: '深蓝地产',
-    transit: '车站',
+    transit: '交通设施',
     utility: '公用事业',
 });
 
 export const TYPE_LABELS = Object.freeze({
     start: '起点',
     chance: '机会',
-    community_chest: '命运',
+    community_chest: '公益金',
     tax: '税费',
-    jail: '拘留所',
+    jail: '监狱',
     parking: '免费停车',
-    go_to_jail: '入狱',
+    go_to_jail: '前往监狱',
 });
 
 export function actionMark(kind) {
-    return ({ rollDice: '⚄', buyProperty: '＋', passProperty: '↗', payBail: '¥', rollForDoubles: '⚄', useJailCard: '□', endTurn: '→' }[kind] || '·');
+    return ({ rollDice: '⚄', buyProperty: '＋', passProperty: '↗', payBail: 'M', rollForDoubles: '⚄', useJailCard: '□', endTurn: '→' }[kind] || '·');
 }
 
 export function tileSymbol(type) {
-    return ({ start: 'GO', chance: '?', community_chest: '运', tax: '¥', jail: '囚', parking: 'P', go_to_jail: '→' }[type] || '·');
+    return ({ start: 'GO', chance: '?', community_chest: '公', tax: 'M', jail: '囚', parking: 'P', go_to_jail: '→' }[type] || '·');
 }
 
 export function buildingMarkup(tile) {
@@ -141,5 +141,5 @@ export function firstCharacter(value) {
 }
 
 export function money(value) {
-    return `¥${Number(value || 0).toLocaleString('zh-CN')}`;
+    return `M${Number(value || 0).toLocaleString('zh-CN')}`;
 }

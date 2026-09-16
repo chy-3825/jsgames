@@ -4,9 +4,12 @@ import { claimForTile, cellKey, hasLegalPlacement, legalAnchors, placementOrient
 export function createKingdominoActions({ mount, model, scene, renderer, send, rulesModal, getElement }) {
     const $ = getElement || (role => mount.querySelector(`[data-role="${role}"]`));
     const state = () => model.state;
+    // `stopPresentation` is teardown-only; player input must skip just the
+    // current visual while the shared server deadline and later events remain.
+    const presentationLocked = () => scene.isPlaying();
     function selectBoardCell(cell) {
         const current = state(); const tile = current?.mySelectedTile;
-        if (!current?.availableActions?.canPlace || !tile || model.actionPending) return;
+        if (presentationLocked() || !current?.availableActions?.canPlace || !tile || model.actionPending) return;
         const key = cellKey(cell); const anchors = legalAnchors(current, tile);
         if (!model.placementCells.length) {
             if (anchors.has(key)) model.placementCells = [cell];
@@ -21,13 +24,13 @@ export function createKingdominoActions({ mount, model, scene, renderer, send, r
         renderer.renderCommand(); renderer.renderBoard();
     }
     function sendAction(action) {
-        if (model.actionPending) return;
+        if (presentationLocked() || model.actionPending) return;
         model.actionPending = true;
         send({ type: 'gameAction', action });
         renderer.render();
     }
     function handleClick(event) {
-        if (scene.isPlaying()) { if (event.target.closest('[data-action="skipPresentation"]')) scene.stopPresentation(); return; }
+        if (presentationLocked()) { if (event.target.closest('[data-action="skipPresentation"]')) scene.skipPresentation(); return; }
         const cellButton = event.target.closest('[data-cell]');
         if (cellButton && !cellButton.disabled) { const [x, y] = cellButton.dataset.cell.split(',').map(Number); if (Number.isInteger(x) && Number.isInteger(y)) selectBoardCell({ x, y }); return; }
         const domino = event.target.closest('[data-domino-id]');
@@ -47,7 +50,7 @@ export function createKingdominoActions({ mount, model, scene, renderer, send, r
         if (ui === 'closeRules' || event.target === $('rules')) rulesModal.setOpen(false);
     }
     function handleKeydown(event) {
-        if (event.key === 'Escape' && scene.isPlaying()) return scene.stopPresentation();
+        if (event.key === 'Escape' && presentationLocked()) return scene.skipPresentation();
         if (rulesModal.trapFocus(event)) return;
         if (event.key === 'Escape' && rulesModal.isOpen()) rulesModal.setOpen(false);
     }

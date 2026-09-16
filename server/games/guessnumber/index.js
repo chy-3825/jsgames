@@ -4,8 +4,8 @@ const metadata = { type: 'guessnumber', name: '猜数字', minPlayers: 1, maxPla
 
 class GuessNumberSession {
     constructor(roomId, players, options = {}) {
-        const random = typeof options === 'function' ? options : options?.random;
-        this.engine = new GuessNumberEngine(roomId, players, random);
+        const resolvedOptions = typeof options === 'function' ? { random: options } : (options || {});
+        this.engine = new GuessNumberEngine(roomId, players, resolvedOptions);
         this.started = false;
     }
     start() { if (this.started) return { success: false, message: '游戏已经开始' }; const result = this.engine.start(); if (result.success) this.started = true; return result; }

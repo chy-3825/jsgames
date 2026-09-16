@@ -166,7 +166,7 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort, wss) {
     const roomId = await evaluate(
         bidi,
         hostContext,
-        `document.querySelector('#roomPageCode')?.textContent.match(/\\b\\d{6}\\b/)?.[0] || ''`,
+        `(() => { document.querySelector('#roomInfoBtn')?.click(); const code = document.querySelector('#roomInfoCode')?.textContent.trim() || ''; document.querySelector('#roomInfoClose')?.click(); return code; })()`,
     );
     if (!/^\d{6}$/.test(roomId)) throw new Error('房主等待房间没有可用房间号');
 
@@ -233,8 +233,8 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort, wss) {
         await waitForCondition(bidi, guestContext, gameVisible, '成员游戏界面', 20000);
         const fatal = `document.querySelector('#fatalErrorBox')?.style.display !== 'none'`;
         if (await evaluate(bidi, hostContext, fatal) || await evaluate(bidi, guestContext, fatal)) throw new Error('多人房间生命周期出现前端致命错误');
-        const guestPlayerId = await evaluate(bidi, guestContext, `document.querySelector('#roomPageIdentity')?.textContent.replace(/^玩家 ID\\s*/, '') || ''`);
-        if (!guestPlayerId) throw new Error('成员游戏界面没有显示玩家 ID');
+        const guestPlayerId = await evaluate(bidi, guestContext, `(() => { document.querySelector('#roomInfoBtn')?.click(); const id = document.querySelector('#roomInfoPlayerId')?.textContent.trim() || ''; document.querySelector('#roomInfoClose')?.click(); return id === '—' ? '' : id; })()`);
+        if (!guestPlayerId) throw new Error('成员无法从房间信息查看玩家 ID');
         await evaluate(bidi, hostContext, `document.querySelector('#gameMount .gobang-cell:not([disabled])')?.click(); true`);
         const occupiedBoard = `document.querySelectorAll('#gameMount .gobang-cell.is-occupied').length >= 1`;
         await waitForCondition(bidi, hostContext, occupiedBoard, '房主核心落子');
@@ -257,7 +257,7 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort, wss) {
         await waitForCondition(
             bidi,
             guestContext,
-            `${gameVisible} && document.querySelector('#roomPageIdentity')?.textContent.endsWith(${JSON.stringify(guestPlayerId)}) && document.querySelector('#roomConnectionState')?.hidden === true`,
+            `${gameVisible} && document.querySelector('#roomInfoPlayerId')?.textContent === ${JSON.stringify(guestPlayerId)} && document.querySelector('#roomConnectionState')?.hidden === true`,
             '网络断线后成员自动重连恢复',
             20000,
         );
@@ -268,7 +268,7 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort, wss) {
         await waitForCondition(
             bidi,
             guestContext,
-            `document.querySelector('#gameMount')?.style.display === 'block' && document.querySelector('#gameMount')?.dataset.gameType === 'gobang' && document.querySelector('#roomPageIdentity')?.textContent.endsWith(${JSON.stringify(guestPlayerId)})`,
+            `document.querySelector('#gameMount')?.style.display === 'block' && document.querySelector('#gameMount')?.dataset.gameType === 'gobang' && document.querySelector('#roomInfoPlayerId')?.textContent === ${JSON.stringify(guestPlayerId)}`,
             '成员刷新后恢复原座位和对局',
             20000,
         );
@@ -282,7 +282,8 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort, wss) {
         await waitForCondition(bidi, hostContext, releasedGameMount, '房主释放游戏资源');
 
         // A second short flow verifies that an invite-only room stays out of
-        // the public catalog while remaining joinable with its six-digit code.
+        // the public catalog, rejects a guessed room code, and remains
+        // joinable through its server-generated invitation URL.
         await click('#gamePicker [data-game-type="gobang"]');
         await waitForCondition(bidi, hostContext, `document.querySelector('#createRoomDialog')?.hidden === false`, '私密房间规则页');
         await click('#createRoomNextBtn');
@@ -301,12 +302,14 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort, wss) {
             `document.querySelector('#roomView')?.style.display === 'block' && Boolean(document.querySelector('#roomMount .pregame-room[data-game-type="gobang"]'))`,
             '私密房间等待页',
         );
-        const privateRoomId = await evaluate(
+        const privateRoom = JSON.parse(await evaluate(
             bidi,
             hostContext,
-            `document.querySelector('#roomPageCode')?.textContent.match(/\\b\\d{6}\\b/)?.[0] || ''`,
-        );
+            `JSON.stringify((() => { document.querySelector('#roomInfoBtn')?.click(); const code = document.querySelector('#roomInfoCode')?.textContent.trim() || ''; const inviteUrl = document.querySelector('#ipDisplay')?.dataset.inviteUrl || ''; document.querySelector('#roomInfoClose')?.click(); return { code, inviteUrl }; })())`,
+        ) || '{}');
+        const privateRoomId = privateRoom.code;
         if (!/^\d{6}$/.test(privateRoomId)) throw new Error('私密房间没有可用房间号');
+        if (!privateRoom.inviteUrl || !new URL(privateRoom.inviteUrl).searchParams.get('invite')) throw new Error('私密房间没有带令牌的邀请链接');
         await bidi.command('browsingContext.navigate', { context: guestContext, url: `http://127.0.0.1:${httpPort}/` });
         await waitForCondition(bidi, guestContext, `document.querySelector('#entryConnectionStatus')?.textContent.includes('已连接')`, '私密房间成员大厅连接');
         await evaluate(bidi, guestContext, `document.querySelector('#entryJoinBtn')?.click(); true`);
@@ -326,9 +329,13 @@ async function runLobbyLifecycle(bidi, hostContext, httpPort, wss) {
         await waitForCondition(
             bidi,
             guestContext,
-            `document.querySelector('#roomView')?.style.display === 'block' && Boolean(document.querySelector('#roomMount .pregame-room[data-game-type="gobang"]'))`,
-            '私密房间按房间号加入',
+            `document.querySelector('#joinLobbyCodeError')?.textContent.includes('仅邀请房间') && document.querySelector('#roomView')?.style.display !== 'block'`,
+            '私密房间拒绝仅凭房间号加入',
         );
+        await bidi.command('browsingContext.navigate', { context: guestContext, url: privateRoom.inviteUrl });
+        await waitForCondition(bidi, guestContext, `document.querySelector('#joinLobbyView')?.style.display === 'block' && document.querySelector('#joinLobbyCodeInput')?.value === ${JSON.stringify(privateRoomId)} && document.querySelector('#entryConnectionStatus')?.textContent.includes('已连接')`, '私密邀请链接待确认');
+        await evaluate(bidi, guestContext, `document.querySelector('#joinLobbyCodeForm')?.requestSubmit(); true`);
+        await waitForCondition(bidi, guestContext, `document.querySelector('#roomView')?.style.display === 'block' && Boolean(document.querySelector('#roomMount .pregame-room[data-game-type="gobang"]'))`, '私密邀请链接加入');
         await evaluate(bidi, guestContext, `document.querySelector('#leaveRoomBtn')?.click(); true`);
         await waitForCondition(bidi, guestContext, `document.querySelector('#roomView')?.style.display === 'none'`, '私密房间成员离开');
         await evaluate(bidi, hostContext, `document.querySelector('#leaveRoomBtn')?.click(); true`);
@@ -347,7 +354,8 @@ async function runPrivacyAndInputChecks(bidi, context, httpPort) {
         { game: 'werewolf', hold: '[data-role-hold]', secret: '[data-role-secret]', scope: '.social-role-focus' },
         { game: 'avalon', hold: '[data-role-hold]', secret: '[data-role-secret]', scope: '.social-role-focus' },
         { game: 'witchtown', hold: '[data-dossier-hold]', secret: '[data-dossier-secret]', scope: '.witchtown-dossier-stack' },
-        { game: 'coup', hold: '[data-identity-hold]', secret: '[data-private-identity]', scope: '.cp-private' },
+        // 政变的当前契约是“在线手牌可见”；其牌面与交互已由 coup-frontend
+        // 覆盖，不再属于按住查看身份的隐私夹具。
     ];
     const readIdentity = fixture => evaluateJson(`(() => {
         const hold = document.querySelector(${JSON.stringify(fixture.hold)});
@@ -361,11 +369,16 @@ async function runPrivacyAndInputChecks(bidi, context, httpPort) {
             secretHidden: secrets.length > 0 && secrets.every(element => element.getAttribute('aria-hidden') === 'true'),
             secretScope: Boolean(scope),
             scopeCount: document.querySelectorAll(${JSON.stringify(fixture.scope)}).length,
+            factionClassLeak: ${fixture.game === 'avalon' ? "Boolean(scope && /\\bis-(?:good|evil)\\b/.test(scope.className))" : 'false'},
+            factionAccent: ${fixture.game === 'avalon' ? "scope ? getComputedStyle(scope).getPropertyValue('--role-focus-accent') : ''" : "''"},
         };
     })()`);
     const requireIdentity = (fixture, state, label) => {
         if (!state || state.holdCount !== 1 || !state.holdVisible || state.secretCount < 1 || !state.secretHidden || !state.secretScope || state.scopeCount !== 1 || state.pressed !== 'false') {
             throw new Error(`${fixture.game} ${label} 身份隔离失败：${JSON.stringify(state)}`);
+        }
+        if (fixture.game === 'avalon' && (state.factionClassLeak || /96\s*,\s*157\s*,\s*181|157\s*,\s*66\s*,\s*76/.test(state.factionAccent || ''))) {
+            throw new Error(`${fixture.game} ${label} 隐藏身份泄露阵营色：${JSON.stringify(state)}`);
         }
     };
     const readHanabi = () => evaluateJson(`(() => {
@@ -382,10 +395,13 @@ async function runPrivacyAndInputChecks(bidi, context, httpPort) {
     })()`);
     const interactIdentity = fixture => evaluateJson(`(() => {
         const hold = document.querySelector(${JSON.stringify(fixture.hold)});
+        const scope = hold?.closest(${JSON.stringify(fixture.scope)});
         const secretSelector = ${JSON.stringify(fixture.secret)};
         const state = () => ({
             pressed: hold?.getAttribute('aria-pressed') || '',
             hidden: [...document.querySelectorAll(secretSelector)].every(element => element.getAttribute('aria-hidden') === 'true'),
+            factionClassLeak: ${fixture.game === 'avalon' ? "Boolean(scope && /\\bis-(?:good|evil)\\b/.test(scope.className))" : 'false'},
+            factionAccent: ${fixture.game === 'avalon' ? "scope ? getComputedStyle(scope).getPropertyValue('--role-focus-accent') : ''" : "''"},
         });
         const before = state();
         hold?.focus();
@@ -416,7 +432,8 @@ async function runPrivacyAndInputChecks(bidi, context, httpPort) {
         const pointerRevealed = interaction.pointerDown.pressed === 'true' && interaction.pointerDown.hidden === false;
         const pointerResealed = interaction.pointerUp.pressed === 'false' && interaction.pointerUp.hidden === true;
         const blurResealed = interaction.blurBefore.pressed === 'true' && interaction.blurAfter.pressed === 'false' && interaction.blurAfter.hidden === true;
-        if (!keyRevealed || !keyResealed || !pointerRevealed || !pointerResealed || !blurResealed) {
+        const noAvalonFactionLeakAfterRelease = fixture.game !== 'avalon' || [interaction.keyUp, interaction.pointerUp, interaction.blurAfter].every(state => !state.factionClassLeak && !/96\s*,\s*157\s*,\s*181|157\s*,\s*66\s*,\s*76/.test(state.factionAccent || ''));
+        if (!keyRevealed || !keyResealed || !pointerRevealed || !pointerResealed || !blurResealed || !noAvalonFactionLeakAfterRelease) {
             throw new Error(`${fixture.game} 键盘/触屏身份收束失败：${JSON.stringify(interaction)}`);
         }
         console.log(`privacy/input: ${fixture.game} · hidden → keyboard/touch reveal → reseal`);

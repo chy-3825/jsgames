@@ -3,6 +3,5 @@ export const COLOR_SIZE = { brown: 2, lightblue: 3, pink: 3, orange: 3, red: 3, 
 export const COLORS = Object.keys(COLOR_LABELS);
 export const ACTION_LABELS = { dealBreaker: '物业接管', justSayNo: '做出反对', passGo: '通行证', doubleRent: '双倍租金', debtCollector: '收取债务', birthday: '我的生日', slyDeal: '盗取', forcedDeal: '强制交易', house: '房子', hotel: '酒店' };
 export const COLOR_HEX = { brown: '#84533d', lightblue: '#6badd0', pink: '#cc5d9b', orange: '#dc793a', red: '#c6423b', yellow: '#e4b938', green: '#3f9a59', blue: '#3e61b2', railroad: '#303a3d', utility: '#86b999' };
-export const ACTION_MARKS = { dealBreaker: ['组', '整组接管'], justSayNo: ['反', '抵制行动'], passGo: ['摸', '摸取两张'], doubleRent: ['×2', '租金翻倍'], debtCollector: ['5M', '收取债务'], birthday: ['+2', '我的生日'], slyDeal: ['1↗', '盗取地产'], forcedDeal: ['⇄', '强制交易'], house: ['⌂', '加盖房子'], hotel: ['店', '升级酒店'] };
 export const RESPONSE_REACTION_MS = 800;
 export const COUNTER_REACTION_MS = 650;

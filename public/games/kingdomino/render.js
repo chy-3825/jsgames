@@ -3,9 +3,13 @@ import { castleMarkup, dominoFaceMarkup, escapeHtml, terrainArt, terrainMeta, cr
 import { analyzeGrid, cellKey, claimForTile, hasLegalPlacement, legalAnchors, legalPartners, me, placementOrientation, safeColor, turnCopy } from './state.js';
 
 /** Dynamic draft, board and score rendering for 多米诺王国. */
-export function createKingdominoRenderer({ mount, model, getElement }) {
+export function createKingdominoRenderer({ mount, model, scene, getElement }) {
     const $ = getElement || (role => mount.querySelector(`[data-role="${role}"]`));
     const currentState = () => model.state;
+    const presentationLocked = () => {
+        const view = scene?.getViewState?.() || model;
+        return Boolean(view.presentationPlaying || view.presentationQueue?.length || Date.now() < Number(view.presentationLockedUntil || 0));
+    };
 
     function render() {
         const state = currentState();
@@ -14,11 +18,14 @@ export function createKingdominoRenderer({ mount, model, getElement }) {
         if (currentTileId !== model.placementTileId) { model.placementCells = []; model.placementTileId = currentTileId; }
         const analysis = analyzeGrid(state.myGrid || {});
         const app = mount.querySelector('.kd-app');
+        const locked = presentationLocked();
         app.dataset.phase = state.phase || 'waiting';
-        app.classList.toggle('is-my-turn', Boolean(state.availableActions?.canSelect || state.availableActions?.canPlace));
+        app.classList.toggle('is-my-turn', !locked && Boolean(state.availableActions?.canSelect || state.availableActions?.canPlace));
         app.classList.toggle('is-ended', state.status === 'ended');
         app.classList.toggle('is-duel-board', Number(state.boardSize) === 7);
-        $('turn').innerHTML = `<span class="kd-live-dot ${state.status === 'ended' ? 'is-ended' : ''}"></span>${escapeHtml(turnCopy(state))}`;
+        app.classList.toggle('is-presentation-playing', locked);
+        app.setAttribute('aria-busy', String(locked));
+        $('turn').innerHTML = `<span class="kd-live-dot ${state.status === 'ended' ? 'is-ended' : ''}"></span>${escapeHtml(locked && state.status !== 'ended' ? '正在播报王国行动' : turnCopy(state))}`;
         $('headerScore').textContent = analysis.score;
         $('headerRound').textContent = state.round || '—';
         $('headerRounds').textContent = `/ ${state.maxRounds || '—'}`;
@@ -35,40 +42,50 @@ export function createKingdominoRenderer({ mount, model, getElement }) {
     function renderDraft() {
         const state = currentState();
         const draft = state.draft || [];
+        const locked = presentationLocked();
         if (!draft.some(tile => tile.id === model.pendingDominoId && !claimForTile(state, tile))) model.pendingDominoId = null;
         const selectedCount = draft.filter(tile => claimForTile(state, tile)).length;
-        $('draftNote').textContent = state.availableActions?.canSelect ? `轮到你 · ${selectedCount}/${state.draftSize || draft.length} 已选` : `${selectedCount}/${state.draftSize || draft.length} 已选`;
+        $('draftNote').textContent = state.availableActions?.canSelect && !locked ? `轮到你 · ${selectedCount}/${state.draftSize || draft.length} 已选` : `${selectedCount}/${state.draftSize || draft.length} 已选`;
         $('draft').innerHTML = draft.length ? draft.map(tile => {
             const claim = claimForTile(state, tile);
-            const canSelect = Boolean(state.availableActions?.canSelect && !claim && !model.actionPending);
+            const canSelect = Boolean(state.availableActions?.canSelect && !locked && !claim && !model.actionPending);
             const isPending = canSelect && model.pendingDominoId === tile.id;
             const playerColor = safeColor(claim?.color);
-            return `<button class="kd-domino-card ${claim ? 'is-claimed' : ''} ${canSelect ? 'is-selectable' : ''} ${isPending ? 'is-pending' : ''}" data-domino-id="${escapeHtml(tile.id)}" type="button" aria-disabled="${!canSelect}" ${canSelect ? '' : 'data-read-only="true"'} aria-pressed="${isPending}" aria-label="${claim ? `${escapeHtml(claim.playerName)}已选择` : isPending ? '取消选择' : '查看'}第 ${tile.number} 号多米诺">${dominoFaceMarkup(tile)}${claim ? `<span class="kd-domino-claim" style="--player-color:${playerColor}"><i>${escapeHtml(String(claim.playerName || '?').slice(0, 1))}</i><b>${escapeHtml(claim.playerName || '已占用')}</b><small>${Number(claim.token) > 0 ? `王冠 ${Number(claim.token) + 1}` : '已选择'}</small></span>` : `<span class="kd-domino-open">${isPending ? '已预选' : '可选择'}</span>`}</button>`;
+            return `<button class="kd-domino-card ${claim ? 'is-claimed' : ''} ${canSelect ? 'is-selectable' : ''} ${isPending ? 'is-pending' : ''}" data-domino-id="${escapeHtml(tile.id)}" type="button" aria-disabled="${!canSelect}" ${canSelect ? '' : 'data-read-only="true"'} aria-pressed="${isPending}" aria-label="${claim ? `${escapeHtml(claim.playerName)}已选择` : isPending ? '取消选择' : '查看'}第 ${tile.number} 号多米诺">${dominoFaceMarkup(tile)}${claim ? `<span class="kd-domino-claim" style="--player-color:${playerColor}"><b>${escapeHtml(claim.playerName || '已占用')}</b><small>${Number(claim.token) > 0 ? `王冠 ${Number(claim.token) + 1}` : '已选择'}</small></span>` : `<span class="kd-domino-open">${isPending ? '已预选' : '可选择'}</span>`}</button>`;
         }).join('') : '<div class="kd-empty-state"><span>♛</span><strong>本轮领地已结算</strong></div>';
         const pendingTile = draft.find(tile => tile.id === model.pendingDominoId);
         const confirm = $('draftConfirm');
-        confirm.classList.toggle('is-hidden', !pendingTile || !state.availableActions?.canSelect);
-        confirm.innerHTML = pendingTile ? `<span><small>准备锁定</small><strong>第 ${String(Number(pendingTile.number) || 0).padStart(2, '0')} 号领地</strong></span><button data-action="confirmDomino" type="button" ${model.actionPending ? 'disabled' : ''}>确认选择</button>` : '';
+        confirm.classList.toggle('is-hidden', !pendingTile || !state.availableActions?.canSelect || locked);
+        confirm.innerHTML = pendingTile ? `<span><small>准备锁定</small><strong>第 ${String(Number(pendingTile.number) || 0).padStart(2, '0')} 号领地</strong></span><button data-action="confirmDomino" type="button" ${model.actionPending || locked ? 'disabled' : ''}>确认选择</button>` : '';
     }
 
     function renderCommand() {
         const state = currentState();
         const tile = state.mySelectedTile;
         const command = $('command');
+        const locked = presentationLocked();
         if (state.status === 'ended') {
-            const ranking = [...(state.players || [])].filter(player => player.isOnline !== false).sort((a, b) => b.score - a.score);
-            const ownRank = ranking.findIndex(player => player.id === state.myId) + 1;
+            const settlement = [...(state.presentation?.events || [])].reverse().find(event => event.kind === 'finalSettlement');
+            const ranking = settlement?.standings?.length
+                ? settlement.standings
+                : [...(state.players || [])].filter(player => player.isOnline !== false).sort((a, b) => b.score - a.score);
+            const winners = state.winners?.length ? state.winners : state.winner ? [state.winner] : [];
+            const winnerIds = new Set(winners.map(player => String(player.id)));
+            const winnerNames = winners.map(player => player.name).filter(Boolean).join('、') || '王国建设完成';
+            const isWinner = winnerIds.has(String(state.myId));
+            const ownRank = isWinner ? 1 : ranking.findIndex(player => player.id === state.myId) + 1;
+            const ownSeat = isWinner && winners.length > 1 ? '你的席位 · 并列第 1 名' : ownRank ? `你的席位 · 第 ${ownRank} 名` : '本局已经结束';
             command.className = 'kd-command is-ended';
-            command.innerHTML = `<header><small>最终疆域</small><h2>王国结算</h2></header><div class="kd-result-crown">♛</div><div class="kd-result-score"><strong>${state.winner?.score ?? ranking[0]?.score ?? 0}</strong><span>最终分</span></div><p>${escapeHtml(state.winner?.name || '王国建设完成')}</p><b>${ownRank ? `你的席位 · 第 ${ownRank} 名` : '本局已经结束'}</b>`;
+            command.innerHTML = `<header><small>最终疆域</small><h2>王国结算</h2></header><div class="kd-result-crown">♛</div><div class="kd-result-score"><strong>${winners[0]?.score ?? ranking[0]?.score ?? 0}</strong><span>最终分</span></div><p>${escapeHtml(winnerNames)}</p><b>${ownSeat}</b>`;
             return;
         }
-        if (state.availableActions?.canSelect) {
+        if (state.availableActions?.canSelect && !locked) {
             const tokenNumber = Number(state.currentToken?.token) + 1;
             command.className = 'kd-command is-selecting';
             command.innerHTML = `<header><small>你的选择</small><h2>选择下一块领地</h2></header><div class="kd-command-mark"><span>01</span><div><strong>从本轮公开牌中选择</strong><small>${tokenNumber > 1 ? `这是你的第 ${tokenNumber} 枚王冠` : '较低编号会优先摆放'}</small></div></div><div class="kd-order-scale"><span>先行动</span><i></i><span>高价值领地</span></div><p>选择后将锁定，等待所有国王完成选牌。</p>`;
             return;
         }
-        if (state.availableActions?.canPlace && tile) {
+        if (state.availableActions?.canPlace && tile && !locked) {
             const orientation = placementOrientation(state, tile, model.placementCells);
             const legal = hasLegalPlacement(state, tile);
             const step = model.placementCells.length === 0 ? '选择第一格' : model.placementCells.length === 1 ? '选择高亮的相邻格' : orientation ? '位置有效，可以确认' : '这组位置无法连接';
@@ -80,13 +97,13 @@ export function createKingdominoRenderer({ mount, model, getElement }) {
         const waitingFor = state.phase === 'placing' ? '等待摆放顺序' : '等待其他国王选择';
         const selectedTiles = ownSelections.length ? ownSelections.map(entry => `<span>#${String(entry.tile?.number || 0).padStart(2, '0')}</span>`).join('') : '<span>尚未锁定领地</span>';
         command.className = 'kd-command is-waiting';
-        command.innerHTML = `<header><small>牌局状态</small><h2>${waitingFor}</h2></header><div class="kd-waiting-player"><span style="--player-color:${safeColor((state.players || []).find(player => player.id === state.currentTurn)?.color)}">${escapeHtml(String(state.currentTurnName || '王').slice(0, 1))}</span><div><strong>${escapeHtml(state.currentTurnName || '下一位国王')}</strong><small>${state.phase === 'placing' ? '正在扩建王国' : '正在选择领地'}</small></div></div><div class="kd-locked-tiles"><small>我的本轮领地</small><div>${selectedTiles}</div></div><p>${escapeHtml(state.lastAction?.message || '王冠顺序会自动推进。')}</p>`;
+        command.innerHTML = `<header><small>牌局状态</small><h2>${waitingFor}</h2></header><div class="kd-waiting-player"><div><strong>${escapeHtml(state.currentTurnName || '下一位国王')}</strong><small>${state.phase === 'placing' ? '正在扩建王国' : '正在选择领地'}</small></div></div><div class="kd-locked-tiles"><small>我的本轮领地</small><div>${selectedTiles}</div></div><p>${escapeHtml(state.lastAction?.message || '王冠顺序会自动推进。')}</p>`;
     }
 
     function renderBoard() {
         const state = currentState();
         const board = $('board'); const grid = state.myGrid || {}; const size = Number(state.boardSize) || 5; const tile = state.mySelectedTile;
-        const canPlace = Boolean(state.availableActions?.canPlace && tile && !model.actionPending);
+        const canPlace = Boolean(state.availableActions?.canPlace && !presentationLocked() && tile && !model.actionPending);
         const anchors = canPlace ? legalAnchors(state, tile) : new Set();
         const partners = canPlace && model.placementCells.length === 1 ? new Set(legalPartners(state, tile, model.placementCells[0]).map(cellKey)) : new Set();
         const orientation = placementOrientation(state, tile, model.placementCells);
@@ -112,7 +129,7 @@ export function createKingdominoRenderer({ mount, model, getElement }) {
         $('players').innerHTML = (state.players || []).map((player, index) => {
             const selectedNumbers = claims.filter(tile => claimForTile(state, tile)?.playerId === player.id).map(tile => tile.number);
             const status = player.isOnline === false ? '离线' : player.isCurrentTurn ? state.phase === 'placing' ? '正在摆放' : '正在选择' : selectedNumbers.length ? `已选 ${selectedNumbers.map(number => `#${number}`).join(' · ')}` : `${player.placedCount || 0} 块多米诺`;
-            return `<article class="kd-player ${player.isCurrentTurn ? 'is-current' : ''} ${player.id === state.myId ? 'is-me' : ''} ${player.isOnline === false ? 'is-offline' : ''}" data-player-id="${escapeHtml(player.id)}" style="--player-color:${safeColor(player.color)}"><span class="kd-player-order">${String(index + 1).padStart(2, '0')}</span><span class="kd-avatar">${escapeHtml(String(player.name || '?').slice(0, 1))}</span><span class="kd-player-copy"><strong>${escapeHtml(player.name)}${player.id === state.myId ? '<em>我</em>' : ''}</strong><small>${escapeHtml(status)}</small></span><b>${player.score || 0}<small>分</small></b></article>`;
+            return `<article class="kd-player ${player.isCurrentTurn ? 'is-current' : ''} ${player.id === state.myId ? 'is-me' : ''} ${player.isOnline === false ? 'is-offline' : ''}" data-player-id="${escapeHtml(player.id)}" style="--player-color:${safeColor(player.color)}"><span class="kd-player-order">${String(index + 1).padStart(2, '0')}</span><span class="kd-player-copy"><strong>${escapeHtml(player.name)}${player.id === state.myId ? '<em>我</em>' : ''}</strong><small>${escapeHtml(status)}</small></span><b>${player.score || 0}<small>分</small></b></article>`;
         }).join('');
     }
 

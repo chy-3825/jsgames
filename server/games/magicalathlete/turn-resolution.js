@@ -446,10 +446,12 @@ function finishRace({ loop = false } = {}) {
         this.status = 'ended';
         this.phase = 'ended';
         this.pending = null;
-        const high = Math.max(...this.players.map(player => player.score));
-        this.winners = this.players.filter(player => player.score === high);
+        const eligiblePlayers = this._activePlayers ? this._activePlayers() : this.players;
+        const scoringPlayers = eligiblePlayers.length ? eligiblePlayers : this.players;
+        const high = Math.max(...scoringPlayers.map(player => player.score));
+        this.winners = scoringPlayers.filter(player => player.score === high);
         this.winner = this.winners[0] || null;
-        const sorted = this.players.slice().sort((a, b) => b.score - a.score || b.bronze - a.bronze);
+        const sorted = scoringPlayers.slice().sort((a, b) => b.score - a.score || b.bronze - a.bronze);
         this.finalStandings = sorted.map(player => ({
             rank: sorted.findIndex(item => item.score === player.score) + 1,
             playerId: player.id, playerName: player.name, color: player.color,

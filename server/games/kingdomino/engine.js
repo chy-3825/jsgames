@@ -6,7 +6,27 @@ const TERRAIN_COLORS = { 麦田: '#d5a948', 森林: '#3d7b5b', 海洋: '#4e88b8'
 const BOARD_SIZE = 5;
 const ROUNDS = 12;
 
+// The browser renders each scene, while the server owns its absolute slot so
+// every connected table follows the same public announcement timeline.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    gameStart: 900,
+    roundReveal: 920,
+    selectDomino: 1120,
+    unclaimedDomino: 940,
+    placementPhase: 850,
+    placeDomino: 1020,
+    discardDomino: 940,
+    playerLeft: 1000,
+    finalSettlement: 2700,
+};
+
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
+
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'roundReveal' && data.isLastRound) return 1350;
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 900;
+}
 
 function buildDominoes() {
     const pairs = [
@@ -31,6 +51,7 @@ class KingdominoEngine {
         this.roomId = roomId;
         this.random = typeof random === 'function' ? random : Math.random;
         this.options = options && typeof options === 'object' ? { ...options } : {};
+        this.now = typeof this.options.now === 'function' ? this.options.now : () => Date.now();
         this.players = players.map((player, index) => ({ id: player.id, name: player.name, color: ['#d66a56', '#4f83aa', '#c99a3d', '#6b9b68'][index], grid: {}, score: 0, isOnline: true, selectedTile: null, selectedTiles: [], placedCount: 0 }));
         this.playerMap = Object.fromEntries(this.players.map(player => [player.id, player]));
         this.deck = [];
@@ -48,11 +69,14 @@ class KingdominoEngine {
         this.discarded = [];
         this.lastAction = null;
         this.actionLog = [];
+        this.endReason = null;
         this.winner = null;
+        this.winners = [];
         this.presentationSequence = 0;
         this.transactionSequence = 0;
         this.eventSequence = 0;
         this.presentation = null;
+        this.presentationQueue = [];
     }
 
     start() {
@@ -78,11 +102,14 @@ class KingdominoEngine {
         this.placedTokens.clear();
         this.discarded = [];
         this.lastAction = null;
+        this.endReason = null;
         this.winner = null;
+        this.winners = [];
         this.presentationSequence = 0;
         this.transactionSequence = 0;
         this.eventSequence = 0;
         this.presentation = null;
+        this.presentationQueue = [];
         this._openDraft();
         this.status = 'playing';
         this.phase = 'selecting';
@@ -137,28 +164,33 @@ class KingdominoEngine {
             round: this.round,
         });
         if (this.currentQueueIndex >= this.currentQueue.length) {
-            const selectedIds = new Set(Array.from(this.selected.values()).map(selected => selected.id));
-            const unclaimedTiles = this.draft.filter(tile => !selectedIds.has(tile.id));
-            this.discarded.push(...unclaimedTiles);
-            for (const unclaimedTile of unclaimedTiles) {
-                this._appendPresentationEvent(null, 'unclaimedDomino', {
-                    tile: this._publicTile(unclaimedTile),
-                    round: this.round,
-                });
-            }
-            this.phase = 'placing';
-            this.currentQueue = this._orderByDraftSelection();
-            this.currentQueueIndex = 0;
-            this._appendPresentationEvent(null, 'placementPhase', {
-                round: this.round,
-                order: this._placementOrderPresentation(),
-            });
+            this._completeSelectionPhase();
             this._updatePresentation({ resolved: true, nextPlayerId: this.currentQueue[0]?.playerId || null });
             this.actionLog.push('选牌完成，请按顺序把多米诺放入王国');
             return this._success(`${player.name} 完成选牌`);
         }
         this._updatePresentation({ resolved: true, nextPlayerId: this.currentQueue[this.currentQueueIndex]?.playerId || null });
         return this._success(`${player.name} 完成选牌，轮到下一位`);
+    }
+
+    _completeSelectionPhase() {
+        const selectedIds = new Set(Array.from(this.selected.values()).map(selected => selected.id));
+        const discardedIds = new Set(this.discarded.map(tile => tile.id));
+        const unclaimedTiles = this.draft.filter(tile => !selectedIds.has(tile.id) && !discardedIds.has(tile.id));
+        this.discarded.push(...unclaimedTiles);
+        for (const unclaimedTile of unclaimedTiles) {
+            this._appendPresentationEvent(null, 'unclaimedDomino', {
+                tile: this._publicTile(unclaimedTile),
+                round: this.round,
+            });
+        }
+        this.phase = 'placing';
+        this.currentQueue = this._orderByDraftSelection();
+        this.currentQueueIndex = 0;
+        this._appendPresentationEvent(null, 'placementPhase', {
+            round: this.round,
+            order: this._placementOrderPresentation(),
+        });
     }
 
     _placeDomino(player, action) {
@@ -233,17 +265,7 @@ class KingdominoEngine {
         }
         this.players.forEach(player => { player.score = this._score(player); });
         if (this.round >= this.maxRounds || this.deck.length < this._draftSize()) {
-            this.status = 'ended'; this.phase = 'ended';
-            const online = this._rankedPlayers();
-            this.winner = online[0] || null;
-            this._updatePresentation({
-                resolved: true,
-                ended: true,
-                standings: online.map(player => this._standing(player)),
-                winner: this.winner ? this._standing(this.winner) : null,
-            });
-            this.actionLog.push(`${this.winner?.name || '无人'} 以 ${this.winner?.score || 0} 分成为王国霸主`);
-            return this._success('王国建设完成');
+            return this._finishGame('points', 'completed', '王国建设完成');
         }
         this.round += 1;
         this.selectionOrder = this.currentQueue.filter(token => this.playerMap[token.playerId]?.isOnline).map(token => ({ ...token }));
@@ -263,6 +285,51 @@ class KingdominoEngine {
         this._updatePresentation({ resolved: true, nextPlayerId: this.currentQueue[0]?.playerId || null });
         this.actionLog.push(`第 ${this.round} 轮：按照上一轮王冠顺序选择`);
         return this._success(`第 ${this.round} 轮开始`);
+    }
+
+    _finishGame(reason = 'points', outcome = 'completed', message = '王国建设完成') {
+        this.players.forEach(player => { player.score = this._score(player); });
+        this.status = 'ended';
+        this.phase = 'ended';
+        this.endReason = reason;
+        const ranked = this._rankedPlayers();
+        const standings = ranked.map(player => this._standing(player));
+        const best = standings[0] || null;
+        const winningStandings = best
+            ? standings.filter(player => player.score === best.score
+                && player.largestTerritory === best.largestTerritory
+                && player.totalCrowns === best.totalCrowns)
+            : [];
+        const winnerIds = new Set(winningStandings.map(player => player.id));
+        this.winners = ranked.filter(player => winnerIds.has(player.id));
+        // Keep the historical singleton winner API pointed at the first ranked
+        // co-winner while `winners` carries the complete shared-victory set.
+        this.winner = this.winners[0] || null;
+        const publicWinner = this.winner ? this._standing(this.winner) : null;
+        const publicWinners = this.winners.map(player => this._standing(player));
+        this._appendPresentationEvent(null, 'finalSettlement', {
+            outcome,
+            reason,
+            standings,
+            winner: publicWinner,
+            winners: publicWinners,
+            winnerIds: publicWinners.map(player => player.id),
+        });
+        this._updatePresentation({
+            resolved: true,
+            ended: true,
+            endReason: reason,
+            nextPlayerId: null,
+            standings,
+            winner: publicWinner,
+            winners: publicWinners,
+        });
+        const winnerNames = this.winners.map(player => player.name).join('、') || '无人';
+        const winningScore = this.winners[0]?.score || 0;
+        this.actionLog.push(this.winners.length > 1
+            ? `${winnerNames} 以 ${winningScore} 分并列成为王国霸主`
+            : `${winnerNames} 以 ${winningScore} 分成为王国霸主`);
+        return this._success(message);
     }
 
     _openDraft() { this.draft = Array.from({ length: this._draftSize() }, () => this.deck.pop()).filter(Boolean); this.currentQueue = this.selectionOrder.filter(token => this.playerMap[token.playerId]?.isOnline); this.currentQueueIndex = 0; }
@@ -372,46 +439,120 @@ class KingdominoEngine {
         }
         return this.draft.map(tile => ({ ...this._publicTile(tile), selectedBy: claims.get(tile.id) || null }));
     }
+    _now() {
+        const value = Number(this.now?.());
+        return Number.isFinite(value) ? value : Date.now();
+    }
     _startPresentation(player, kind, data = {}) {
+        if (this.presentation && !this.presentation.resolved) return this._appendPresentationEvent(player, kind, data);
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
         this.presentation = {
             sequence: ++this.presentationSequence,
             transactionId: ++this.transactionSequence,
-            events: [{
-                eventId: ++this.eventSequence,
-                kind,
-                playerId: player?.id || null,
-                playerName: player?.name || null,
-                ...clone(data),
-            }],
+            actorId: player?.id || null,
+            actorName: player?.name || null,
+            action: kind,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
+            events: [],
             resolved: false,
+            nextPhase: null,
             nextPlayerId: null,
             ended: false,
+            endReason: null,
             standings: null,
             winner: null,
+            winners: [],
         };
+        this.presentationQueue.push(this.presentation);
+        this._appendPresentationEvent(player, kind, data);
         return this.presentation;
     }
     _appendPresentationEvent(player, kind, data = {}) {
-        if (!this.presentation) return this._startPresentation(player, kind, data);
-        this.presentation.events.push({
-            eventId: ++this.eventSequence,
+        if (!this.presentation || this.presentation.resolved) return this._startPresentation(player, kind, data);
+        const now = this._now();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || now;
+        const startedAt = Math.max(now, previousEnd);
+        const contentDurationMs = presentationContentDuration(kind, data);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const eventId = ++this.eventSequence;
+        const event = {
+            ...clone(data),
+            sequence: eventId,
+            eventId,
             kind,
             playerId: player?.id || null,
             playerName: player?.name || null,
-            ...clone(data),
-        });
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
+        this.presentation.events.push(event);
+        this.presentation.endsAt = event.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
         return this.presentation;
     }
     _updatePresentation(values = {}) {
-        if (this.presentation) Object.assign(this.presentation, clone(values));
+        if (!this.presentation) return;
+        Object.assign(this.presentation, clone(values));
+        if (values.resolved) {
+            this.presentation.nextPhase = this.phase;
+            if (!Object.prototype.hasOwnProperty.call(values, 'ended')) this.presentation.ended = this.status === 'ended';
+            if (!Object.prototype.hasOwnProperty.call(values, 'endReason')) this.presentation.endReason = this.endReason;
+            if (!Object.prototype.hasOwnProperty.call(values, 'winner')) this.presentation.winner = this.winner ? this._standing(this.winner) : null;
+            if (!Object.prototype.hasOwnProperty.call(values, 'winners')) this.presentation.winners = this.winners.map(player => this._standing(player));
+        }
+    }
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        if (!player) return projected;
+        if (event.kind === 'playerLeft' && event.playerId === player.id) {
+            projected.viewerVariant = 'personalDeparture';
+            projected.title = '您已离开本局';
+            projected.detail = '其他玩家将按当前王冠顺序继续。';
+        }
+        if (event.kind === 'finalSettlement') {
+            const winnerIds = Array.isArray(event.winnerIds)
+                ? event.winnerIds
+                : (event.winners || []).map(winner => winner.id);
+            if (winnerIds.includes(player.id)) {
+                const tied = winnerIds.length > 1;
+                projected.viewerVariant = 'personalVictory';
+                projected.title = tied ? '您已并列获胜' : '您已获胜';
+                projected.detail = tied ? '您与其他王国共享最终胜利。' : '您的王国在最终结算中排名第一。';
+            }
+        }
+        return projected;
+    }
+    _projectPresentation(batch, player) {
+        if (!batch) return null;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
     }
     getPublicState() {
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         const currentToken = this.currentQueue[this.currentQueueIndex] || null;
         const currentPlayerId = currentToken?.playerId || null;
         return {
             roomId: this.roomId,
+            serverNow,
             status: this.status,
             phase: this.phase,
+            endReason: this.endReason,
             round: this.round,
             maxRounds: this.maxRounds,
             boardSize: this.boardSize,
@@ -435,44 +576,133 @@ class KingdominoEngine {
             })),
             lastAction: this.lastAction ? clone(this.lastAction) : null,
             actionLog: this.actionLog.slice(-18),
-            presentation: this.presentation ? clone(this.presentation) : null,
+            presentations,
+            presentation,
             winner: this.winner ? { id: this.winner.id, name: this.winner.name, score: this.winner.score } : null,
+            winners: this.winners.map(player => this._standing(player)),
         };
     }
-    getPlayerState(playerId) { const state = this.getPublicState(); const player = this.playerMap[playerId]; const currentToken = this.currentQueue[this.currentQueueIndex]; const currentTile = currentToken?.playerId === playerId ? this.selected.get(this._tokenKey(currentToken)) : null; state.myId = playerId; state.myGrid = player ? clone(player.grid) : {}; state.mySelectedTiles = player ? player.selectedTiles.map(entry => ({ token: entry.token, tile: this._publicTile(entry.tile) })) : []; state.mySelectedTile = this._publicTile(currentTile || player?.selectedTile); state.availableActions = { canSelect: Boolean(player?.isOnline && this.phase === 'selecting' && currentToken?.playerId === playerId), canPlace: Boolean(player?.isOnline && this.phase === 'placing' && currentToken?.playerId === playerId && currentTile && !this.placedTokens.has(this._tokenKey(currentToken))), canDiscard: Boolean(player?.isOnline && this.phase === 'placing' && currentToken?.playerId === playerId && currentTile && !this.placedTokens.has(this._tokenKey(currentToken))) }; return state; }
+    getPlayerState(playerId) {
+        const state = this.getPublicState();
+        const player = this.playerMap[playerId];
+        const currentToken = this.currentQueue[this.currentQueueIndex];
+        const currentTile = currentToken?.playerId === playerId ? this.selected.get(this._tokenKey(currentToken)) : null;
+        state.myId = playerId;
+        state.myGrid = player ? clone(player.grid) : {};
+        state.mySelectedTiles = player ? player.selectedTiles.map(entry => ({ token: entry.token, tile: this._publicTile(entry.tile) })) : [];
+        state.mySelectedTile = this._publicTile(currentTile || player?.selectedTile);
+        state.availableActions = {
+            canSelect: Boolean(player?.isOnline && this.phase === 'selecting' && currentToken?.playerId === playerId),
+            canPlace: Boolean(player?.isOnline && this.phase === 'placing' && currentToken?.playerId === playerId && currentTile && !this.placedTokens.has(this._tokenKey(currentToken))),
+            canDiscard: Boolean(player?.isOnline && this.phase === 'placing' && currentToken?.playerId === playerId && currentTile && !this.placedTokens.has(this._tokenKey(currentToken))),
+        };
+        state.presentation = this._projectPresentation(state.presentation, player);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, player));
+        return state;
+    }
+    _removePlayerQueueTokens(playerId) {
+        const oldQueue = this.currentQueue;
+        const oldIndex = this.currentQueueIndex;
+        const removedBefore = oldQueue.slice(0, oldIndex).filter(token => token.playerId === playerId).length;
+        this.currentQueue = oldQueue.filter(token => token.playerId !== playerId);
+        this.currentQueueIndex = Math.max(0, Math.min(this.currentQueue.length, oldIndex - removedBefore));
+        this.selectionOrder = this.selectionOrder.filter(token => token.playerId !== playerId);
+    }
+    _removePlayerSelections(player, { discard = false } = {}) {
+        const removed = [];
+        for (const [tokenKey, tile] of [...this.selected.entries()]) {
+            if (!tokenKey.startsWith(`${player.id}:`)) continue;
+            this.selected.delete(tokenKey);
+            if (discard && !this.placedTokens.has(tokenKey)) {
+                if (!this.discarded.some(item => item.id === tile.id)) this.discarded.push(tile);
+                removed.push({ token: Number(tokenKey.slice(tokenKey.lastIndexOf(':') + 1)), tile });
+            }
+        }
+        player.selectedTiles = [];
+        player.selectedTile = null;
+        return removed;
+    }
     handlePlayerLeave(playerId) {
         const player = this.playerMap[playerId];
         if (!player || !player.isOnline) return { success: false, message: '玩家不存在或已离线' };
+        const phaseBefore = this.phase;
         const currentToken = this.currentQueue[this.currentQueueIndex];
         const wasCurrent = currentToken?.playerId === playerId;
         player.isOnline = false;
-        if (this.status === 'playing' && this.players.filter(item => item.isOnline).length < 2) {
-            this.status = 'ended'; this.phase = 'ended'; this.winner = this.players.find(item => item.isOnline) || null;
-        } else if (this.status === 'playing' && wasCurrent && this.phase === 'selecting') {
-            this.currentQueue = this.currentQueue.filter(token => token.playerId !== playerId);
-            const fallbackToken = this.currentQueue[this.currentQueueIndex];
-            const fallbackTile = this.draft.find(tile => !Array.from(this.selected.values()).some(selected => selected.id === tile.id));
-            if (fallbackToken && fallbackTile) {
-                const fallback = this.playerMap[fallbackToken.playerId];
-                this.selected.set(this._tokenKey(fallbackToken), fallbackTile); fallback.selectedTiles.push({ token: fallbackToken.token, tile: fallbackTile }); fallback.selectedTile = fallbackTile; this.currentQueueIndex += 1;
-                if (this.currentQueueIndex >= this.currentQueue.length) { this.phase = 'placing'; this.currentQueue = this._orderByDraftSelection(); this.currentQueueIndex = 0; }
-            }
-        } else if (this.status === 'playing' && this.phase === 'placing' && this.currentQueue.some(token => token.playerId === playerId)) {
-            this.currentQueue = this.currentQueue.filter(token => token.playerId !== playerId);
-            player.selectedTiles = [];
-            player.selectedTile = null;
-            const oldIndex = currentToken ? this.currentQueue.indexOf(currentToken) : -1;
-            if (oldIndex >= 0 && oldIndex < this.currentQueueIndex) this.currentQueueIndex -= 1;
-            if (!this.currentQueue.length || this.currentQueueIndex >= this.currentQueue.length) return this._afterPlacement();
+        const message = `${player.name} 离开了王国建设`;
+        this.actionLog.push(message);
+        this.lastAction = { kind: 'playerLeft', playerId: player.id, playerName: player.name, message };
+        if (this.status !== 'playing') return this._success(`${player.name} 已离开`);
+
+        const remainingPlayerCount = this.players.filter(item => item.isOnline).length;
+        this._startPresentation(player, 'playerLeft', {
+            round: this.round,
+            phase: phaseBefore,
+            wasCurrent,
+            remainingPlayerCount,
+        });
+        this._removePlayerQueueTokens(playerId);
+        const forfeited = this._removePlayerSelections(player, { discard: phaseBefore === 'placing' });
+        for (const entry of forfeited) {
+            this._appendPresentationEvent(player, 'discardDomino', {
+                tile: this._publicTile(entry.tile),
+                token: entry.token,
+                tokenNumber: entry.token + 1,
+                playerColor: player.color,
+                round: this.round,
+                reason: 'playerLeave',
+            });
         }
-        this.actionLog.push(`${player.name} 离开了王国建设`);
+
+        if (remainingPlayerCount < 2) {
+            return this._finishGame('players', 'lastPlayerStanding', `${player.name} 已离开`);
+        }
+
+        if (phaseBefore === 'selecting') {
+            if (this.currentQueueIndex >= this.currentQueue.length) {
+                this._completeSelectionPhase();
+                this.actionLog.push('选牌队列已调整，请按新顺序摆放多米诺');
+            }
+            this._updatePresentation({ resolved: true, nextPlayerId: this.currentQueue[this.currentQueueIndex]?.playerId || this.currentQueue[0]?.playerId || null });
+            return this._success(`${player.name} 已离开`);
+        }
+
+        if (phaseBefore === 'placing') {
+            if (!this.currentQueue.length || this.currentQueueIndex >= this.currentQueue.length) {
+                const result = this._afterPlacement();
+                return { ...result, message: `${player.name} 已离开` };
+            }
+            this._updatePresentation({ resolved: true, nextPlayerId: this.currentQueue[this.currentQueueIndex]?.playerId || null });
+        } else {
+            this._updatePresentation({ resolved: true, nextPlayerId: null });
+        }
         return this._success(`${player.name} 已离开`);
     }
-    _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null }; }
-    getWinner() { return this.winner ? { id: this.winner.id, name: this.winner.name, score: this.winner.score } : null; }
+    _success(message) {
+        return {
+            success: true,
+            message,
+            state: this.getPublicState(),
+            ended: this.status === 'ended',
+            winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null,
+            winners: this.winners.map(player => ({ id: player.id, name: player.name, score: player.score })),
+        };
+    }
+    getWinner() {
+        if (!this.winner) return null;
+        return {
+            id: this.winner.id,
+            name: this.winner.name,
+            score: this.winner.score,
+            shared: this.winners.length > 1,
+            winners: this.winners.map(player => ({ id: player.id, name: player.name, score: player.score })),
+        };
+    }
 }
 
 module.exports = KingdominoEngine;
 module.exports.buildDominoes = buildDominoes;
 module.exports.TERRAIN_TYPES = TERRAIN_TYPES;
 module.exports.TERRAIN_COLORS = TERRAIN_COLORS;
+module.exports.PRESENTATION_FADE_MS = PRESENTATION_FADE_MS;
+module.exports.PRESENTATION_CONTENT_DURATIONS = PRESENTATION_CONTENT_DURATIONS;

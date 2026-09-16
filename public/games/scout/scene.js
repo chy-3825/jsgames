@@ -1,4 +1,5 @@
 import { cardFace, escapeHtml } from './constants.js';
+import { beginPresentationFade, clearPresentationFade, PRESENTATION_FADE_MS } from '../common/presentation-fade.js';
 
 /** Presentation queue and table-side animations for 马戏星探. */
 export function createScoutScene({ mount, model, getElement, renderer, windowRef = globalThis.window || globalThis }) {
@@ -46,6 +47,7 @@ export function createScoutScene({ mount, model, getElement, renderer, windowRef
     }
     function showPresentation(kind, html, options = {}) {
         const layer = $('presentationLayer');
+        clearPresentationFade(layer);
         clearPresentationTargets();
         layer.hidden = false;
         layer.className = `sc-presentation-layer is-${kind} ${options.major ? 'is-major' : ''} ${options.compact ? 'is-compact' : ''}`;
@@ -55,9 +57,17 @@ export function createScoutScene({ mount, model, getElement, renderer, windowRef
     function hidePresentation() {
         clearPresentationTargets();
         const layer = $('presentationLayer');
+        clearPresentationFade(layer);
         layer.classList.remove('is-visible');
         layer.hidden = true;
         $('presentationScene').innerHTML = '';
+    }
+    async function fadeThenHide(token) {
+        const layer = $('presentationLayer');
+        beginPresentationFade(layer);
+        if (!await waitForPresentation(PRESENTATION_FADE_MS, token)) return false;
+        hidePresentation();
+        return true;
     }
     function eventCards(cards = [], className = '') {
         return cards.map((card, index) => `<article class="sc-event-card ${className}" style="--event-index:${index}">${cardFace(card)}</article>`).join('') || '<span class="sc-event-empty">空舞台</span>';
@@ -139,7 +149,7 @@ export function createScoutScene({ mount, model, getElement, renderer, windowRef
         if (model.state) renderer?.renderCommand?.();
         while (model.presentationQueue.length && token === model.presentationToken) await playPresentationEvent(model.presentationQueue.shift(), token);
         if (token === model.presentationToken) {
-            hidePresentation();
+            if (!await fadeThenHide(token)) return;
             model.presentationPlaying = false;
             if (model.state) renderer?.renderCommand?.();
         }

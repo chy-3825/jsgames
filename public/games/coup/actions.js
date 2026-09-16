@@ -1,56 +1,57 @@
-import { escapeHtml } from './constants.js';
 import { getAction, getPlayer, isMyTurn, decisionReady } from './state.js';
 
 /** Pointer, keyboard and action submission handlers for 政变. */
-export function createCoupActions({ mount, model, renderer, scene, send, documentRef = globalThis.document }) {
+export function createCoupActions({ mount, model, renderer, scene, send }) {
     const $ = role => mount.querySelector(`[data-role="${role}"]`);
     const state = () => model.state;
 
-    function setPrivateIdentityVisible(visible) {
-        model.privateIdentityVisible = Boolean(visible && state() && !state().gameOver);
-        renderer.syncPrivateIdentityVisibility();
-    }
-
-    function hidePrivateIdentity() {
-        model.identityRevealPointerId = null;
-        model.identityRevealKey = null;
-        model.identityRevealElement = null;
-        setPrivateIdentityVisible(false);
-    }
-
     function handleAction(kind) {
-        if (kind === 'exchange') {
-            model.exchangeMode = 'confirm';
-            model.exchangeOpen = true;
-            renderer.render();
-            return;
-        }
-        const action = getAction(kind);
-        if (action?.needsTarget) {
-            model.pendingAction = { kind };
-            model.selectedTarget = null;
-            renderer.render();
-            return;
-        }
-        send({ type: 'gameAction', action: { kind } });
-    }
-
-    function selectTarget(id) {
-        if (!model.pendingAction) return;
-        model.selectedTarget = id;
-        renderer.render();
-    }
-
-    function confirmTarget() {
-        if (!model.pendingAction || !model.selectedTarget) return;
-        send({ type: 'gameAction', action: { kind: model.pendingAction.kind, targetId: model.selectedTarget } });
-        model.pendingAction = null;
+        if (scene.isPlaying() || model.submitting) return;
+        model.pendingAction = { kind };
+        model.hoveredActionKind = null;
         model.selectedTarget = null;
         renderer.render();
     }
 
+    function hoverAvailable() {
+        return globalThis.window?.matchMedia?.('(hover: hover) and (pointer: fine)').matches !== false;
+    }
+
+    function handlePointerOver(event) {
+        if (!hoverAvailable() || model.pendingAction || scene.isPlaying()) return;
+        const action = event.target.closest('[data-action-kind]');
+        if (!action || action.disabled || model.hoveredActionKind === action.dataset.actionKind) return;
+        model.hoveredActionKind = action.dataset.actionKind;
+        renderer.renderEvent();
+    }
+
+    function handlePointerOut(event) {
+        if (!model.hoveredActionKind || model.pendingAction) return;
+        const action = event.target.closest('[data-action-kind]');
+        if (!action || action.contains(event.relatedTarget)) return;
+        model.hoveredActionKind = null;
+        renderer.renderEvent();
+    }
+
+    function selectTarget(id) {
+        if (scene.isPlaying() || model.submitting) return;
+        if (!model.pendingAction) return;
+        if (!getAction(model.pendingAction.kind)?.needsTarget) return;
+        model.selectedTarget = id;
+        renderer.render();
+    }
+
+    function confirmAction() {
+        if (scene.isPlaying() || model.submitting) return;
+        if (!model.pendingAction) return;
+        const action = getAction(model.pendingAction.kind);
+        if (action?.needsTarget && !model.selectedTarget) return;
+        model.submitting = true;
+        send({ type: 'gameAction', action: { kind: model.pendingAction.kind, ...(action?.needsTarget ? { targetId: model.selectedTarget } : {}) } });
+        renderer.render();
+    }
+
     function handleClick(event) {
-        if (event.target.closest('[data-identity-hold]')) { event.preventDefault(); return; }
         if (scene.isPlaying()) {
             const sceneAction = event.target.closest('[data-action="skip-scene"]');
             event.preventDefault();
@@ -73,61 +74,55 @@ export function createCoupActions({ mount, model, renderer, scene, send, documen
         if (actionButton) { handleAction(actionButton.dataset.actionKind); return; }
         const challenge = event.target.closest('[data-challenge]');
         if (challenge) {
-            if (!renderer.decisionReady()) return;
+            if (!renderer.decisionReady() || model.submitting) return;
+            model.submitting = true;
             send({ type: 'gameAction', action: { kind: challenge.dataset.challenge } });
+            renderer.render();
             return;
         }
         const loss = event.target.closest('[data-loss-index]');
         if (loss) {
-            if (!renderer.decisionReady()) return;
+            if (!renderer.decisionReady() || model.submitting) return;
+            model.submitting = true;
             send({ type: 'gameAction', action: { kind: 'influence_loss', influenceIndex: Number(loss.dataset.lossIndex) } });
+            renderer.render();
             return;
         }
+        const roleCard = event.target.closest('[data-role-card]');
+        if (roleCard) { renderer.openRoleDetail(roleCard.dataset.roleCard); return; }
         const button = event.target.closest('[data-action]');
         if (!button) {
             if (event.target === $('rolesOverlay')) renderer.setOverlay($('rolesOverlay'), false);
+            if (event.target === $('historyOverlay')) renderer.setOverlay($('historyOverlay'), false);
+            if (event.target === $('roleDetailOverlay')) renderer.setOverlay($('roleDetailOverlay'), false);
             return;
         }
         switch (button.dataset.action) {
-            case 'confirm-target': confirmTarget(); break;
-            case 'cancel-target': model.pendingAction = null; model.selectedTarget = null; renderer.render(); break;
+            case 'confirm-action': confirmAction(); break;
+            case 'cancel-target': if (!model.submitting) { model.pendingAction = null; model.hoveredActionKind = null; model.selectedTarget = null; renderer.render(); } break;
             case 'roles': renderer.setOverlay($('rolesOverlay'), true); break;
             case 'close-roles': renderer.setOverlay($('rolesOverlay'), false); break;
-            case 'confirm-exchange':
-                renderer.setOverlay($('exchangeOverlay'), false);
-                model.exchangeOpen = false;
-                model.exchangeMode = null;
-                send({ type: 'gameAction', action: { kind: 'exchange' } });
-                break;
+            case 'open-history': renderer.setOverlay($('historyOverlay'), true); break;
+            case 'close-history': renderer.setOverlay($('historyOverlay'), false); break;
+            case 'close-role-detail': renderer.setOverlay($('roleDetailOverlay'), false); break;
             case 'confirm-exchange-select':
-                if (current?.exchange?.isMyTurn && model.exchangeKeep.length === current.exchange.keepCount) {
+                if (!model.submitting && current?.exchange?.isMyTurn && model.exchangeKeep.length === current.exchange.keepCount) {
+                    model.submitting = true;
                     send({ type: 'gameAction', action: { kind: 'exchangeSelect', keepIndices: model.exchangeKeep } });
-                    model.exchangeKeep = [];
+                    renderer.render();
                 }
-                break;
-            case 'cancel-exchange':
-                renderer.setOverlay($('exchangeOverlay'), false);
-                model.exchangeOpen = false;
-                model.exchangeMode = null;
                 break;
             default: break;
         }
     }
 
     function handleKeydown(event) {
-        const identityHold = event.target.closest?.('[data-identity-hold]');
-        if (identityHold && !event.repeat && (event.key === ' ' || event.key === 'Enter')) {
-            event.preventDefault();
-            model.identityRevealPointerId = null;
-            model.identityRevealKey = event.key;
-            model.identityRevealElement = identityHold;
-            setPrivateIdentityVisible(true);
-            return;
-        }
         if (scene.isPlaying()) { if (event.key === 'Escape') scene.skipScene(); return; }
         if (renderer.trapOverlayFocus(event)) return;
         if (event.key !== 'Escape') return;
         renderer.setOverlay($('rolesOverlay'), false);
+        renderer.setOverlay($('historyOverlay'), false);
+        renderer.setOverlay($('roleDetailOverlay'), false);
         if (!state()?.exchange?.isMyTurn) {
             renderer.setOverlay($('exchangeOverlay'), false);
             model.exchangeOpen = false;
@@ -135,61 +130,10 @@ export function createCoupActions({ mount, model, renderer, scene, send, documen
         }
     }
 
-    function handleIdentityPointerDown(event) {
-        const hold = event.target.closest('[data-identity-hold]');
-        if (!hold || (event.pointerType === 'mouse' && event.button !== 0)) return;
-        event.preventDefault();
-        model.identityRevealPointerId = event.pointerId;
-        model.identityRevealKey = null;
-        model.identityRevealElement = hold;
-        setPrivateIdentityVisible(true);
-    }
-
-    function handleIdentityPointerMove(event) {
-        if (event.pointerId !== model.identityRevealPointerId) return;
-        const hold = model.identityRevealElement;
-        if (!hold) return hidePrivateIdentity();
-        const bounds = hold.getBoundingClientRect();
-        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) hidePrivateIdentity();
-    }
-
-    function handleIdentityPointerOut(event) {
-        const hold = event.target.closest('[data-identity-hold]');
-        if (hold && event.pointerId === model.identityRevealPointerId && !hold.contains(event.relatedTarget)) hidePrivateIdentity();
-    }
-
-    function handleIdentityPointerEnd(event) {
-        if (event.pointerId === model.identityRevealPointerId) hidePrivateIdentity();
-    }
-
-    function handleIdentityKeyup(event) {
-        if (event.key === model.identityRevealKey) hidePrivateIdentity();
-    }
-
-    function handleIdentityVisibilityChange() {
-        if (documentRef.hidden) hidePrivateIdentity();
-    }
-
-    function handleFocusOut(event) {
-        if (event.target.closest?.('[data-identity-hold]')) hidePrivateIdentity();
-    }
-
-    function handleContextMenu(event) {
-        if (event.target.closest?.('[data-identity-hold]')) event.preventDefault();
-    }
-
     return {
         handleClick,
+        handlePointerOver,
+        handlePointerOut,
         handleKeydown,
-        handleIdentityPointerDown,
-        handleIdentityPointerMove,
-        handleIdentityPointerOut,
-        handleIdentityPointerEnd,
-        handleIdentityKeyup,
-        handleIdentityVisibilityChange,
-        handleFocusOut,
-        handleContextMenu,
-        hidePrivateIdentity,
-        setPrivateIdentityVisible,
     };
 }

@@ -30,6 +30,11 @@ test('并购基础设置、起始地块顺序、牌库和私有手牌符合经�
         assert.equal(game.presentation.events[0].kind, 'startSetup');
         assert.deepEqual(game.presentation.events[0].startingTiles.map(entry => entry.tile.id), ordered.map(entry => entry.tile.id));
         assert.equal(game.presentation.events[0].firstPlayer.id, ordered[0].playerId);
+        assert.equal(game.presentation.blocking, true);
+        assert.equal(game.presentation.events[0].startedAt, game.presentation.startedAt);
+        assert.equal(game.presentation.events[0].endsAt, game.presentation.endsAt);
+        assert.equal(game.presentation.durationMs, game.presentation.endsAt - game.presentation.startedAt);
+        assert.ok(game.getPlayerState(ids[0]).presentation.serverNow >= game.presentation.startedAt);
         assert.equal(session.start().success, false, '同一会话不能重复开始');
         assert.equal(game.start().success, false, '引擎不能绕过会话重复开始');
     }
@@ -164,11 +169,49 @@ test('并购只有永久不可玩地块可以弃置，终局会发放红利并�
     assert.equal(current.shares.sackson, 0);
     assert.ok(current.cash > 5000, '终局应包含集团红利和股票清算');
     assert.deepEqual(game.presentation.events.map(event => event.kind), ['buyShares', 'finalSettlement']);
+    assert.equal(game.presentation.events[0].endsAt, game.presentation.events[1].startedAt, '同一批播报必须串行排期');
+    assert.equal(game.presentation.endsAt, game.presentation.events[1].endsAt);
     assert.equal(game.presentation.ended, true);
     assert.equal(game.presentation.winner.id, game.winner.id);
     assert.ok(game.presentation.standings.every(player => player.cashBefore + player.bonuses + player.liquidation === player.finalCash));
     assert.ok(game.presentation.events[1].chainSettlements.length >= 2);
     assert.ok(game.presentation.events[1].chainSettlements.every(item => item.chain && Array.isArray(item.payouts) && Array.isArray(item.liquidations)));
+    const finalEvent = game.presentation.events[1];
+    assert.equal(finalEvent.segments.length, finalEvent.chainSettlements.length + 1);
+    assert.equal(finalEvent.segments[0].startedAt, finalEvent.startedAt);
+    assert.equal(finalEvent.segments.at(-1).kind, 'finalOutcome');
+    assert.equal(finalEvent.segments.at(-1).endsAt, finalEvent.endsAt);
+    for (let index = 1; index < finalEvent.segments.length; index += 1) {
+        assert.equal(finalEvent.segments[index - 1].endsAt, finalEvent.segments[index].startedAt, '终局子段必须串行排期');
+    }
+});
+
+test('并购在在线房间中由服务端锁定播报时段', () => {
+    const room = new Room('acquire-server-clock', 'a', 'a', 'acquire', { random: lcg(180) }, { readyCheckEnabled: true });
+    for (const id of ['a', 'b']) assert.equal(room.addPlayer({ id, name: id }).success, true);
+    assert.equal(room.startGame().success, true);
+    const game = room.game.engine;
+    const current = game.players[game.currentTurnIndex];
+    const tile = current.hand.find(candidate => game._isTilePlayable(candidate));
+    assert.ok(tile);
+    const blocked = room.handleGameAction(current.id, { kind: 'placeTile', tileId: tile.id });
+    assert.equal(blocked.success, false);
+    assert.match(blocked.message, /播报结束/);
+    game.presentation.endsAt = Date.now() - 1;
+    assert.equal(room.handleGameAction(current.id, { kind: 'placeTile', tileId: tile.id }).success, true);
+});
+
+test('并购的服务端队列保留未结束播报且不会相互覆盖', () => {
+    const game = new AcquireEngine('acquire-presentation-queue', players(['a', 'b']), lcg(181));
+    assert.equal(game.start().success, true);
+    const opening = game.presentation;
+    assert.equal(game.handlePlayerLeave('b').success, true);
+    const finale = game.presentation;
+    assert.notEqual(finale.sequence, opening.sequence);
+    assert.equal(finale.startedAt, opening.endsAt);
+    const state = game.getPlayerState('a');
+    assert.deepEqual(state.presentations.map(batch => batch.sequence), [opening.sequence, finale.sequence]);
+    assert.equal(state.presentations[0].endsAt, state.presentations[1].startedAt);
 });
 
 function runSixPlayerGame(seed) {

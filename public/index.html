@@ -6,7 +6,11 @@
     <meta name="theme-color" content="#172b35">
     <title>桌游馆 · 在线游戏大厅</title>
     <link rel="stylesheet" href="style.css?v=20260827-seat-ring-v16">
+    <link rel="stylesheet" href="lobby/game-shell.css?v=20260831-room-info-1">
+    <link rel="stylesheet" href="lobby/utilities.css?v=20260829-architecture-split-2">
+    <link rel="stylesheet" href="lobby/responsive.css?v=20260829-architecture-split-2">
     <link rel="stylesheet" href="lobby/waiting-room.css?v=20260828-lobby-layer-1">
+    <link rel="stylesheet" href="lobby/room-info.css?v=20260831-room-info-1">
 </head>
 <body class="is-entry-view">
     <div id="app">
@@ -20,18 +24,18 @@
             <main class="entry-shell">
                 <section class="entry-intro">
                     <span class="entry-eyebrow">WELCOME TO THE TABLE</span>
-                    <h1 id="lobbyEntryTitle">先决定，<br>从哪一张桌开始。</h1>
-                    <p>创建自己的游戏房间，或者凭房间号直接加入朋友。身份、房间和游戏流程从这里自然衔接。</p>
+                    <h1 id="lobbyEntryTitle">在线桌游，<br>与友同乐。</h1>
+                    <p>选择游戏创建房间，或输入房间号加入房间。</p>
                     <div class="entry-identity" data-auth-slot>
                         <div class="entry-avatar" id="entryAvatar">玩</div>
-                        <label for="entryNameInput"><span>当前以访客身份进入</span><input id="entryNameInput" type="text" maxlength="8" autocomplete="nickname" placeholder="输入你的桌牌名"><small>未来的账号、密码与个人资料将在此处接入</small></label>
+                        <label for="entryNameInput"><span>玩家昵称</span><input id="entryNameInput" type="text" maxlength="8" autocomplete="nickname" placeholder="输入昵称"><small>昵称将显示在房间和聊天消息中</small></label>
                         <b>访客</b>
                     </div>
                 </section>
                 <section class="entry-routes" aria-label="选择进入方式">
-                    <button id="entryStartBtn" class="entry-route is-primary" type="button"><span class="entry-route-number">01</span><span><small>CREATE A TABLE</small><strong>开始游戏</strong><em>浏览游戏目录，选择游戏并创建自己的房间</em></span><i>→</i></button>
-                    <button id="entryJoinBtn" class="entry-route" type="button"><span class="entry-route-number">02</span><span><small>JOIN A TABLE</small><strong>加入房间</strong><em>进入找房大厅，选择朋友正在等待的牌桌</em></span><i>→</i></button>
-                    <footer><span>无需注册即可游玩</span><i></i><span>账号系统接入位已预留</span></footer>
+                    <button id="entryStartBtn" class="entry-route is-primary" type="button"><span class="entry-route-number">01</span><span><small>START A GAME</small><strong>开始游戏</strong><em>选择游戏并创建房间</em></span><i>→</i></button>
+                    <button id="entryJoinBtn" class="entry-route" type="button"><span class="entry-route-number">02</span><span><small>JOIN A ROOM</small><strong>加入房间</strong><em>输入房间号，或加入公开房间</em></span><i>→</i></button>
+                    <footer><span>无需注册即可参与</span></footer>
                 </section>
             </main>
         </section>
@@ -39,19 +43,19 @@
         <section id="joinLobbyView" class="join-lobby-view" hidden aria-labelledby="joinLobbyTitle">
             <header class="site-header join-lobby-header">
                 <a class="brand" href="/" aria-label="桌游馆首页"><span class="brand-mark">桌</span><span><strong>桌游馆</strong><small>THE TABLE CLUB</small></span></a>
-                <nav class="join-lobby-nav" aria-label="找房大厅导航"><button id="joinLobbyBackBtn" class="join-lobby-nav-button" type="button">← 返回入口</button><span class="join-lobby-nav-active">找房大厅</span><button id="joinLobbyStartBtn" class="join-lobby-start-button" type="button">开始游戏 <span>→</span></button></nav>
+                <nav class="join-lobby-nav" aria-label="房间大厅导航"><button id="joinLobbyBackBtn" class="join-lobby-nav-button" type="button">← 返回首页</button><span class="join-lobby-nav-active">房间大厅</span><button id="joinLobbyStartBtn" class="join-lobby-start-button" type="button">开始游戏 <span>→</span></button></nav>
                 <div class="header-tools"><span class="online-indicator" id="joinLobbyOnlineIndicator"><i></i><span id="joinLobbyPlayerCount">在线 0</span></span><span id="joinLobbyConnectionStatus" class="connection-status is-connecting">连接中</span></div>
             </header>
             <main class="join-lobby-shell">
                 <section class="join-lobby-hero">
-                    <div class="join-lobby-copy"><span class="eyebrow">FIND YOUR TABLE</span><h1 id="joinLobbyTitle">找一张，<br>正在等待你的桌。</h1><p>输入房间号直达朋友的牌桌，也可以从下方公开房间中选择一张加入。进入后，你会直接落座到游戏房间。</p></div>
+                    <div class="join-lobby-copy"><span class="eyebrow">FIND A ROOM</span><h1 id="joinLobbyTitle">查找房间</h1><p>输入房间号直接加入，或从公开房间列表中选择。</p></div>
                     <form id="joinLobbyCodeForm" class="join-lobby-code-card">
-                        <span class="join-lobby-card-kicker">ROOM CODE ENTRY</span><h2>使用房间号进入游戏</h2><p>输入朋友分享给你的六位房间号。</p>
-                        <label for="joinLobbyCodeInput">房间号</label><div class="join-lobby-code-row"><input id="joinLobbyCodeInput" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="000000"><button id="joinLobbyCodeBtn" type="submit">进入房间 <span>→</span></button></div><p id="joinLobbyCodeError" class="join-lobby-code-error" role="alert"></p>
+                        <span class="join-lobby-card-kicker">ROOM CODE</span><h2>输入房间号</h2>
+                        <label for="joinLobbyCodeInput">房间号</label><div class="join-lobby-code-row"><input id="joinLobbyCodeInput" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="6 位数字"><button id="joinLobbyCodeBtn" type="submit">加入房间 <span>→</span></button></div><p id="joinLobbyCodeError" class="join-lobby-code-error" role="alert"></p>
                         <div id="reconnectForm" class="reconnect-form" hidden>
-                            <span class="reconnect-form-kicker">RECONNECT TEST</span>
-                            <h3>这个房间已经开始了</h3>
-                            <p>如果你是刚刚断线的玩家，请输入进入房间时显示的玩家 ID；系统还会校验本浏览器的短期会话凭证，避免仅凭玩家 ID 接管座位。</p>
+                            <span class="reconnect-form-kicker">RECONNECT</span>
+                            <h3>对局已经开始</h3>
+                            <p>如果你刚刚断线，请输入原来的玩家 ID 恢复座位。</p>
                             <label for="reconnectPlayerIdInput">玩家 ID</label>
                             <div class="join-lobby-code-row"><input id="reconnectPlayerIdInput" autocomplete="off" maxlength="24" placeholder="例如 P1A2B3C4"><button id="reconnectBtn" type="button">恢复座位 <span>→</span></button></div>
                             <p id="reconnectError" class="join-lobby-code-error" role="alert"></p>
@@ -59,11 +63,11 @@
                     </form>
                 </section>
                 <section class="join-lobby-tables" aria-labelledby="joinLobbyTablesTitle">
-                    <header class="join-lobby-section-header"><div><span class="eyebrow">OPEN TABLES</span><h2 id="joinLobbyTablesTitle">正在开桌</h2><p>公开房间会实时出现在这里，选一张合适的桌加入。</p></div><div class="join-lobby-table-count"><strong id="joinLobbyRoomCount">0</strong><span>张桌</span></div></header>
+                    <header class="join-lobby-section-header"><div><span class="eyebrow">OPEN ROOMS</span><h2 id="joinLobbyTablesTitle">公开房间</h2><p>选择一个公开房间加入。</p></div><div class="join-lobby-table-count"><strong id="joinLobbyRoomCount">0</strong><span>个房间</span></div></header>
                     <div class="join-lobby-toolbar"><span><i></i>实时更新 · 仅显示公开房间</span><label for="joinLobbyGameFilter"><span>筛选游戏</span><select id="joinLobbyGameFilter" aria-label="按游戏筛选公开房间"><option value="all">全部游戏</option></select></label></div>
-                    <div id="joinLobbyRoomList" class="room-list join-room-list" aria-live="polite"><div class="empty-state"><span>○</span><p>还没有公开房间</p><small>创建一张桌，邀请朋友加入</small></div></div>
+                    <div id="joinLobbyRoomList" class="room-list join-room-list" aria-live="polite"><div class="empty-state"><span>○</span><p>暂时没有公开房间</p><small>可以选择游戏并创建房间</small></div></div>
                 </section>
-                <footer class="join-lobby-footer"><span>找不到朋友的房间？</span><button id="joinLobbyFooterStartBtn" type="button">去选择一款游戏并创建房间 <span>→</span></button></footer>
+                <footer class="join-lobby-footer"><button id="joinLobbyFooterStartBtn" type="button">创建新房间 <span>→</span></button></footer>
             </main>
         </section>
 
@@ -75,36 +79,51 @@
 
         <main id="lobbyView" class="lobby-shell">
             <section class="lobby-hero">
-                <div class="hero-copy"><span class="eyebrow">A PLACE FOR GOOD GAMES</span><h1>（宣传语征集，都来帮我想）</h1><p>挑一款桌游，邀请朋友入座。规则交给系统，胜负留给牌桌。</p><div class="hero-meta"><span><b id="gameCount">—</b> 款游戏</span><span class="meta-divider"></span><span>实时联机 · 无需注册</span></div></div>
-                <div class="hero-actions"><div class="profile-card"><div class="avatar" id="profileAvatar">玩</div><div class="profile-input"><label for="nameInput">你的桌牌名</label><input type="text" id="nameInput" placeholder="输入你的名字" maxlength="8"><small>让朋友认出你</small></div><button id="setNameBtn" class="icon-button" type="button" aria-label="保存名字">↗</button></div><div id="inviteLink" class="invite-card"><div class="invite-icon">⌁</div><div><span>当前桌邀请链接</span><strong id="ipDisplay">先创建或加入房间</strong></div><button class="copy-button" type="button" data-copy-invite>复制</button></div><div class="quick-join-card"><label for="roomCodeInput">已有房间号？</label><div><input id="roomCodeInput" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="输入6位房间号"><button id="joinCodeBtn" type="button">加入 <span>→</span></button></div></div><button id="openMobileRoomsBtn" class="mobile-open-rooms" type="button"><span><b>正在开桌</b><small id="mobileRoomCountLabel">查看可加入的公开房间</small></span><i>→</i></button></div>
+                <div class="hero-copy"><span class="eyebrow">ONLINE BOARD GAMES</span><h1>在线桌游，与友同乐。</h1><p>浏览游戏、创建房间，或加入其他玩家的房间。</p><div class="hero-meta"><span><b id="gameCount">—</b> 款游戏</span><span class="meta-divider"></span><span>实时联机 · 无需注册</span></div></div>
+                <div class="hero-actions"><div class="profile-card"><div class="avatar" id="profileAvatar">玩</div><div class="profile-input"><label for="nameInput">昵称</label><input type="text" id="nameInput" placeholder="输入昵称" maxlength="8"></div><button id="setNameBtn" class="icon-button" type="button" aria-label="保存昵称">保存</button></div><div id="inviteLink" class="invite-card" hidden><div class="invite-icon">⌁</div><div><span>房间邀请链接</span><strong id="ipDisplay"></strong></div><button class="copy-button" type="button" data-copy-invite>复制</button></div><div class="quick-join-card"><label for="roomCodeInput">输入房间号</label><div><input id="roomCodeInput" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="6 位数字"><button id="joinCodeBtn" type="button">加入房间 <span>→</span></button></div></div><button id="openMobileRoomsBtn" class="mobile-open-rooms" type="button"><span><b>公开房间</b><small id="mobileRoomCountLabel">查看可加入的公开房间</small></span><i>→</i></button></div>
             </section>
 
             <section class="lobby-layout">
                 <div class="catalog-column">
-                    <div class="section-heading"><div><span class="eyebrow">CHOOSE YOUR TABLE</span><h2>挑一款游戏</h2></div><label class="catalog-filter" for="gameFilter"><span>筛选</span><select id="gameFilter" aria-label="按人数筛选游戏"><option value="all">全部游戏</option><option value="two">适合2人</option><option value="small">2–4人</option><option value="large">5人以上</option></select></label></div>
+                    <div class="section-heading"><div><span class="eyebrow">SELECT A GAME</span><h2>选择游戏</h2></div><label class="catalog-filter" for="gameFilter"><span>筛选</span><select id="gameFilter" aria-label="按人数筛选游戏"><option value="all">全部游戏</option><option value="two">适合2人</option><option value="small">2–4人</option><option value="large">5人以上</option></select></label></div>
                     <select id="gameTypeSelect" class="visually-hidden" aria-label="选择游戏"></select>
-                    <div id="gamePicker" class="game-groups" aria-live="polite"></div><div class="catalog-footer"><span>点击游戏卡片查看规则并创建房间</span><a class="asset-attribution" href="https://boardgamegeek.com" target="_blank" rel="noreferrer">原创封面 · BGG 组件参考 ↗</a></div>
+                    <div id="gamePicker" class="game-groups" aria-live="polite"></div><div class="catalog-footer"><span>选择游戏，查看规则并创建房间</span><a class="asset-attribution" href="https://boardgamegeek.com" target="_blank" rel="noreferrer">素材说明 ↗</a></div>
                 </div>
                 <aside class="lobby-sidebar">
                     <section id="currentRoomPanel" class="club-card current-room-panel" style="display:none;"><div class="card-kicker"><span>YOUR TABLE</span><i></i></div><div id="currentRoomInfo" class="current-room-info"></div><div id="currentRoomPlayers" class="current-room-players"></div><div class="room-card-actions"><button id="lobbyStartGameBtn" class="primary-button" type="button" style="display:none;">开始游戏 <span>→</span></button><button id="lobbyLeaveRoomBtn" class="text-button" type="button">离开房间</button></div></section>
-                    <section class="club-card rooms-card"><div class="card-kicker"><span>OPEN TABLES</span><b id="roomCountLabel">0 张桌</b></div><div id="roomList" class="room-list"><div class="empty-state"><span>○</span><p>还没有公开房间</p><small>创建一张桌，邀请朋友加入</small></div></div></section>
-                    <section class="club-card chat-card"><div class="card-kicker"><span>LOUNGE CHAT</span><i class="chat-live-dot"></i></div><div id="log" class="lounge-log"><div class="log-placeholder">欢迎来到桌游馆，和大家打个招呼吧。</div></div><div class="chat-input-row"><input type="text" id="chatInput" placeholder="说点什么..." maxlength="50"><button id="sendChatBtn" type="button" aria-label="发送">↗</button></div></section>
+                    <section class="club-card rooms-card"><div class="card-kicker"><span>OPEN ROOMS</span><b id="roomCountLabel">0 个房间</b></div><div id="roomList" class="room-list"><div class="empty-state"><span>○</span><p>暂时没有公开房间</p><small>可以选择游戏并创建房间</small></div></div></section>
+                    <section class="club-card chat-card"><div class="card-kicker"><span>LOUNGE CHAT</span><i class="chat-live-dot"></i></div><div id="log" class="lounge-log"><div class="log-placeholder">欢迎来到桌游馆。</div></div><div class="chat-input-row"><input type="text" id="chatInput" placeholder="输入聊天消息…" maxlength="50"><button id="sendChatBtn" type="button" aria-label="发送">↗</button></div></section>
                 </aside>
             </section>
         </main>
 
-        <div id="mobileRoomsDrawer" class="mobile-rooms-drawer" hidden aria-hidden="true"><button class="mobile-rooms-backdrop" type="button" data-close-mobile-rooms aria-label="关闭公开房间列表"></button><section role="dialog" aria-modal="true" aria-labelledby="mobileRoomsTitle"><header><div><span>OPEN TABLES</span><h2 id="mobileRoomsTitle">正在开桌</h2></div><button type="button" data-close-mobile-rooms aria-label="关闭">×</button></header><div id="mobileRoomList" class="room-list mobile-room-list"></div></section></div>
+        <div id="mobileRoomsDrawer" class="mobile-rooms-drawer" hidden aria-hidden="true"><button class="mobile-rooms-backdrop" type="button" data-close-mobile-rooms aria-label="关闭公开房间列表"></button><section role="dialog" aria-modal="true" aria-labelledby="mobileRoomsTitle"><header><div><span>OPEN ROOMS</span><h2 id="mobileRoomsTitle">公开房间</h2></div><button type="button" data-close-mobile-rooms aria-label="关闭">×</button></header><div id="mobileRoomList" class="room-list mobile-room-list"></div></section></div>
 
         <section id="roomView" class="room-view" style="display:none;">
             <header class="room-page-header" aria-label="游戏房间导航">
                 <button id="leaveRoomBtn" class="back-button" type="button" aria-label="离开本局并回到大厅"><span aria-hidden="true">←</span><span>回到大厅</span></button>
-                <div class="room-page-title"><span id="roomPageGame">桌游房间</span><small id="roomPageCode"></small><button id="roomPageIdentity" class="room-page-identity" data-copy-player-id type="button" aria-label="复制玩家 ID">玩家 ID</button></div>
-                <button id="startGameBtn" class="primary-button" style="display:none;" type="button">开始游戏 <span>→</span></button>
+                <div class="room-page-title"><span id="roomPageGame">桌游</span></div>
+                <div class="room-page-actions"><button id="startGameBtn" class="primary-button" style="display:none;" type="button">开始游戏 <span>→</span></button><button id="roomInfoBtn" class="room-info-button" type="button" aria-haspopup="dialog" aria-controls="roomInfoDialog"><span aria-hidden="true">ⓘ</span><b>房间信息</b></button></div>
             </header>
             <div id="roomMount"></div>
             <div id="gameMount" style="display:none;"></div>
             <div id="roomConnectionState" class="room-connection-state" hidden role="status" aria-live="polite"></div>
             <div id="roomFeedback" class="room-feedback" hidden role="status" aria-live="polite"></div>
+            <div id="roomInfoDialog" class="room-info-overlay is-hidden" aria-hidden="true">
+                <section class="room-info-dialog" role="dialog" aria-modal="true" aria-labelledby="roomInfoTitle">
+                    <button id="roomInfoClose" class="room-info-close" type="button" aria-label="关闭房间信息">×</button>
+                    <span class="room-info-kicker">当前对局</span>
+                    <h2 id="roomInfoTitle">房间信息</h2>
+                    <dl class="room-info-list">
+                        <div><dt>游戏</dt><dd id="roomInfoGame">—</dd></div>
+                        <div><dt>房间名</dt><dd id="roomInfoName">—</dd></div>
+                        <div><dt>房间号</dt><dd><strong id="roomInfoCode">—</strong><button id="roomInfoCopyRoom" type="button">复制</button></dd></div>
+                        <div><dt>房间状态</dt><dd id="roomInfoStatus">—</dd></div>
+                        <div><dt>我的身份</dt><dd id="roomInfoPlayer">—</dd></div>
+                        <div><dt>玩家 ID</dt><dd><strong id="roomInfoPlayerId">—</strong><button type="button" data-copy-player-id>复制</button></dd></div>
+                    </dl>
+                </section>
+            </div>
         </section>
 
         <div id="createRoomDialog" class="create-room-dialog" aria-hidden="true" hidden>
@@ -119,19 +138,19 @@
                         <div class="create-room-rule-meta"><span id="createRoomRulePlayers"></span><i></i><span id="createRoomRuleTime"></span><i></i><span id="createRoomRuleMode"></span></div>
                         <div id="createRoomRuleList" class="create-room-rule-list"></div>
                         <p id="createRoomRuleNote" class="create-room-rule-note"></p>
-                        <footer class="create-room-step-actions"><button id="createRoomNextBtn" class="create-room-primary" type="button">创建房间 <span>→</span></button></footer>
+                        <footer class="create-room-step-actions"><button id="createRoomNextBtn" class="create-room-primary" type="button">下一步：设置房间 <span>→</span></button></footer>
                     </section>
 
                     <form id="createRoomForm" class="create-room-step room-settings-step" aria-label="房间属性设置">
-                        <header class="room-settings-header"><button id="createRoomBackBtn" class="create-room-back" type="button">← 返回规则</button><span class="eyebrow">ROOM SETTINGS</span><h2>设置房间属性</h2><p>确认后才会真正创建房间，所有选项均可在此时取消。</p></header>
+                        <header class="room-settings-header"><button id="createRoomBackBtn" class="create-room-back" type="button">← 返回规则</button><span class="eyebrow">ROOM SETTINGS</span><h2>设置房间</h2><p>确认名称、人数和加入方式。</p></header>
                         <div class="room-setting-fields">
                             <label class="room-setting-field" for="createRoomName"><span>房间名称</span><input id="createRoomName" name="roomName" type="text" maxlength="24" autocomplete="off" required><small>最多 24 个字符，将显示在公开房间列表中。</small></label>
-                            <fieldset id="createRoomCapacityField" class="room-setting-field"><legend>房间人数上限</legend><div id="createRoomCapacityOptions" class="room-setting-options room-capacity-options"></div><small>达到游戏最少人数后，房主即可开始游戏。</small></fieldset>
-                            <fieldset class="room-setting-field"><legend>房间可见性</legend><div class="room-setting-options room-visibility-options"><label><input type="radio" name="isPublic" value="true" checked><span><b>公开房间</b><small>显示在大厅，其他玩家可直接加入。</small></span></label><label><input type="radio" name="isPublic" value="false"><span><b>仅凭邀请加入</b><small>不显示在大厅，通过房间号或邀请链接加入。</small></span></label></div></fieldset>
+                            <fieldset id="createRoomCapacityField" class="room-setting-field"><legend>房间人数上限</legend><div id="createRoomCapacityOptions" class="room-setting-options room-capacity-options"></div><small>房间人数不会超过所选上限。</small></fieldset>
+                            <fieldset class="room-setting-field"><legend>房间可见性</legend><div class="room-setting-options room-visibility-options"><label><input type="radio" name="isPublic" value="true" checked><span><b>公开房间</b><small>显示在大厅，其他玩家可直接加入。</small></span></label><label><input type="radio" name="isPublic" value="false"><span><b>仅凭邀请加入</b><small>不显示在大厅，必须通过房主生成的邀请链接加入。</small></span></label></div></fieldset>
                             <div id="createRoomSpecialSettings" class="room-special-settings"></div>
                         </div>
                         <p id="createRoomFormError" class="create-room-form-error" role="alert"></p>
-                        <footer class="create-room-step-actions settings-actions"><button id="createRoomCancelBtn" class="create-room-secondary" type="button">取消</button><button id="createRoomConfirmBtn" class="create-room-primary" type="submit">确定创建 <span>→</span></button></footer>
+                        <footer class="create-room-step-actions settings-actions"><button id="createRoomCancelBtn" class="create-room-secondary" type="button">取消</button><button id="createRoomConfirmBtn" class="create-room-primary" type="submit">创建房间 <span>→</span></button></footer>
                     </form>
                 </div>
             </div>
@@ -139,6 +158,6 @@
 
         <div id="fatalErrorBox" class="fatal-error-box" style="display:none;"></div>
     </div>
-    <script type="module" src="script.js?v=20260829-architecture-1"></script>
+    <script type="module" src="script.js?v=20260910-game-feedback-1"></script>
 </body>
 </html>

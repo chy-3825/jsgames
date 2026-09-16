@@ -12,7 +12,33 @@ export function createKingdominoModel() {
         presentationPlaying: false,
         presentationQueue: [],
         presentationToken: 0,
+        presentationEventIds: new Set(),
         presentationWaiters: new Set(),
+        presentationLockedUntil: 0,
+        presentationSkipCurrent: false,
+        presentationEvent: null,
+    };
+}
+
+/** Translate server absolute timestamps to this browser's clock. */
+export function localizePresentation(batch, localNow = Date.now()) {
+    if (!batch?.events?.length) return null;
+    const serverNow = Number(batch.serverNow);
+    const batchEnd = Number(batch.endsAt);
+    if (!Number.isFinite(serverNow) || !Number.isFinite(batchEnd)) return batch;
+    if (batchEnd <= serverNow) return null;
+    const toLocalTime = value => Number.isFinite(Number(value))
+        ? localNow + (Number(value) - serverNow)
+        : value;
+    return {
+        ...batch,
+        startedAt: toLocalTime(batch.startedAt),
+        endsAt: toLocalTime(batch.endsAt),
+        events: batch.events.map(event => ({
+            ...event,
+            startedAt: toLocalTime(event.startedAt),
+            endsAt: toLocalTime(event.endsAt),
+        })),
     };
 }
 
@@ -70,7 +96,13 @@ export function legalAnchors(state, tile) {
 export function hasLegalPlacement(state, tile) { return Boolean(tile && legalAnchors(state, tile).size); }
 
 export function turnCopy(state) {
-    if (state.status === 'ended') return `${state.winner?.name || '王国'}完成最终疆域`;
+    if (state.status === 'ended') {
+        const winnerNames = (state.winners?.length ? state.winners : state.winner ? [state.winner] : [])
+            .map(player => player.name)
+            .filter(Boolean)
+            .join('、');
+        return `${winnerNames || '王国'}完成最终疆域`;
+    }
     if (state.availableActions?.canSelect) return '你的选择 · 编号决定下轮顺序';
     if (state.availableActions?.canPlace) return '你的摆放 · 连接两格新领地';
     if (state.phase === 'selecting') return `${state.currentTurnName || '下一位国王'}正在选择领地`;

@@ -3,10 +3,11 @@
     display: grid;
     grid-area: stage;
     grid-template-areas:
-        "heading heading"
-        "board hand";
-    grid-template-columns: minmax(0, 1fr) 166px;
-    gap: 10px 14px;
+        "heading"
+        "board"
+        "hand";
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
     align-items: start;
     min-width: 0;
 }
@@ -182,19 +183,19 @@
 
 .acquire-hand-surface {
     grid-area: hand;
-    margin-top: 0;
-    padding: 12px 10px;
+    margin-top: 4px;
+    padding: 12px;
     background: rgba(8, 22, 35, .97);
 }
 
 .acquire-hand-surface .acquire-section-heading {
-    display: grid;
-    justify-content: stretch;
-    gap: 5px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .acquire-hand-surface .acquire-section-meta {
-    white-space: normal;
+    white-space: nowrap;
 }
 
 .acquire-section-heading {
@@ -210,8 +211,8 @@
 
 .acquire-hand {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px 6px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
     min-width: 0;
 }
 
@@ -378,4 +379,3 @@
     font-size: 11px;
     text-align: center;
 }
-

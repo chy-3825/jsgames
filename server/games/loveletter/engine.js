@@ -1,6 +1,6 @@
 const CARDS = [
-    { id: 1, name: '\u4f8d\u536b', value: 1, count: 5, description: '\u731c\u4e00\u540d\u73a9\u5bb6\u7684\u624b\u724c\uff0c\u4e0d\u80fd\u731c\u4f8d\u536b\u3002' },
-    { id: 2, name: '\u7267\u5e08', value: 2, count: 2, description: '\u67e5\u770b\u4e00\u540d\u73a9\u5bb6\u7684\u624b\u724c\u3002' },
+    { id: 1, name: '\u4f8d\u536b', value: 1, count: 5, description: '\u731c\u4e00\u540d\u5bf9\u624b\u7684\u624b\u724c\uff0c\u4e0d\u80fd\u731c\u4f8d\u536b\u3002' },
+    { id: 2, name: '\u7267\u5e08', value: 2, count: 2, description: '\u67e5\u770b\u4e00\u540d\u5bf9\u624b\u7684\u624b\u724c\u3002' },
     { id: 3, name: '\u7537\u7235', value: 3, count: 2, description: '\u548c\u4e00\u540d\u73a9\u5bb6\u6bd4\u8f83\u624b\u724c\uff0c\u70b9\u6570\u4f4e\u8005\u51fa\u5c40\u3002' },
     { id: 4, name: '\u4f8d\u5973', value: 4, count: 2, description: '\u4fdd\u62a4\u81ea\u5df1\u76f4\u5230\u4f60\u7684\u4e0b\u4e00\u56de\u5408\u3002' },
     { id: 5, name: '\u738b\u5b50', value: 5, count: 2, description: '\u6307\u5b9a\u4e00\u540d\u73a9\u5bb6\u5f03\u724c\u5e76\u91cd\u62bd\u3002' },
@@ -10,7 +10,10 @@ const CARDS = [
 ];
 
 const TARGET_ACKNOWLEDGEMENT_MS = 4000;
-const TARGET_REACTION_MS = 900;
+const ELIMINATION_PRESENTATION_MS = 1660;
+const ROUND_OUTCOME_PRESENTATION_MS = 2460;
+const GAME_OUTCOME_PRESENTATION_MS = 2760;
+const SHOWDOWN_PRESENTATION_MS = 3410;
 
 function buildDeck() {
     const deck = [];
@@ -39,8 +42,6 @@ class LoveLetterGame {
         this.deck = [];
         this.reservedCard = null;
         this.setAsideCards = [];
-        this.discardPile = [];
-        this.hiddenDiscardPile = [];
         this.publicDiscard = [];
         this.currentTurnIndex = 0;
         this.status = 'waiting';
@@ -51,12 +52,16 @@ class LoveLetterGame {
         this.roundWinner = null;
         this.roundWinners = [];
         this.nextRoundStarterId = null;
+        this.nextRoundReadyIds = new Set();
         this.lastAction = null;
+        this.seatReveals = [];
         this.pendingAction = null;
         this.phase = 'turn';
         this.actionSequence = 0;
         this.endReason = null;
         this.actionLog = [];
+        this.presentation = null;
+        this.presentationSequence = 0;
     }
 
     init(startingPlayerId = null, preserveFavor = true) {
@@ -80,8 +85,6 @@ class LoveLetterGame {
                 if (card) this.setAsideCards.push(card);
             }
         }
-        this.discardPile = [];
-        this.hiddenDiscardPile = [];
         this.publicDiscard = [];
         this.currentTurnIndex = startingPlayerId ? Math.max(0, this.players.findIndex(player => player.id === startingPlayerId)) : 0;
         this.status = 'playing';
@@ -91,10 +94,13 @@ class LoveLetterGame {
         this.round++;
         this.roundWinner = null;
         this.roundWinners = [];
+        this.nextRoundReadyIds.clear();
         this.lastAction = null;
+        this.seatReveals = [];
         this.pendingAction = null;
         this.phase = 'turn';
         this.endReason = null;
+        this.presentation = null;
 
         for (const player of this.players) {
             player.hand.push(this.drawCard());
@@ -153,9 +159,7 @@ class LoveLetterGame {
 
         if (this.deck.length === 0) {
             const highestValue = Math.max(...alive.map(player => player.hand[0]?.value || 0));
-            const highest = alive.filter(player => (player.hand[0]?.value || 0) === highestValue);
-            const highestDiscard = Math.max(...highest.map(player => this._discardValue(player.id)));
-            const roundWinners = highest.filter(player => this._discardValue(player.id) === highestDiscard);
+            const roundWinners = alive.filter(player => (player.hand[0]?.value || 0) === highestValue);
             this._completeRound(roundWinners, 'showdown');
             return true;
         }
@@ -177,9 +181,15 @@ class LoveLetterGame {
 
         player.hand.splice(cardIndex, 1);
 
-        this.discardPile.push(card);
-        this.publicDiscard.push({ ownerId: player.id, card: { ...card }, reason: 'played' });
         const actionId = ++this.actionSequence;
+        this.publicDiscard.push({
+            ownerId: player.id,
+            targetId: effectiveTargetId,
+            guess: guess || null,
+            actionId,
+            card: { ...card },
+            reason: 'played',
+        });
 
         if (intent.requiresAcknowledgement) {
             return this.beginTargetAcknowledgement(player, card, effectiveTargetId, guess, actionId);
@@ -210,7 +220,7 @@ class LoveLetterGame {
             case 6:
                 return this.resolveKing(player, targetId);
             case 7:
-                return { success: true, message: `${player.name} \u6253\u51fa\u4e86\u4f2f\u7235\u592b\u4eba` };
+                return { success: true, message: `${player.name} \u6253\u51fa\u4f2f\u7235\u592b\u4eba` };
             case 8:
                 return this.resolvePrincess(player);
             default:
@@ -226,7 +236,7 @@ class LoveLetterGame {
                 return { success: false, message: '\u65e0\u6548\u76ee\u6807' };
             }
             if (card.id === 1 && (!guess || guess < 2 || guess > 8)) {
-                return { success: false, message: '\u731c\u6d4b\u5fc5\u987b\u662f 2-8' };
+                return { success: false, message: '\u8bf7\u9009\u62e9\u4f8d\u536b\u4ee5\u5916\u7684\u89d2\u8272' };
             }
             return { success: true, requiresAcknowledgement: true };
         }
@@ -234,7 +244,7 @@ class LoveLetterGame {
         if (card.id === 5) {
             const target = this.findTarget(targetId, true, player.id);
             if (!target) return { success: false, message: '\u65e0\u6548\u76ee\u6807' };
-            return { success: true, requiresAcknowledgement: target.id !== player.id };
+            return { success: true, requiresAcknowledgement: true };
         }
 
         return { success: true, requiresAcknowledgement: false };
@@ -242,9 +252,7 @@ class LoveLetterGame {
 
     beginTargetAcknowledgement(player, card, targetId, guess, actionId) {
         const target = this.players.find(candidate => candidate.id === targetId);
-        const announcedAt = Date.now();
-        const availableAt = announcedAt + TARGET_REACTION_MS;
-        const deadlineAt = announcedAt + TARGET_ACKNOWLEDGEMENT_MS;
+        const deadlineAt = Date.now() + TARGET_ACKNOWLEDGEMENT_MS;
         this.phase = 'target_ack';
         this.pendingAction = {
             actionId,
@@ -254,12 +262,11 @@ class LoveLetterGame {
             targetId: target.id,
             targetName: target.name,
             guess: guess || null,
-            availableAt,
             deadlineAt,
         };
         const guessedRole = CARDS.find(candidate => candidate.id === Number(guess))?.name || '\u672a\u77e5\u89d2\u8272';
         const guessText = card.id === 1 ? `\uff0c\u731c\u6d4b ${guess} \u00b7 ${guessedRole}` : '';
-        const message = `${player.name} \u5bf9 ${target.name} \u6253\u51fa\u4e86${card.name}${guessText}\uff0c\u7b49\u5f85\u5bf9\u65b9\u77e5\u6653`;
+        const message = `${player.name} 对 ${target.name} 打出${card.name}${guessText}，等待对方确认`;
         this.lastAction = {
             kind: 'playCard',
             actionId,
@@ -279,18 +286,15 @@ class LoveLetterGame {
         const pending = this.pendingAction;
         if (!pending) {
             if (this.lastAction?.actionId === Number(actionId)) {
-                return { success: true, alreadyResolved: true, message: '\u8be5\u51fa\u724c\u5df2\u7ecf\u7ed3\u7b97', ended: this.status === 'ended', gameState: this.getState(), action: this.lastAction };
+                return { success: true, alreadyResolved: true, message: '\u8fd9\u9879\u884c\u52a8\u5df2\u7ecf\u7ed3\u675f', ended: this.status === 'ended', gameState: this.getState(), action: this.lastAction };
             }
-            return { success: false, message: '\u5f53\u524d\u6ca1\u6709\u7b49\u5f85\u786e\u8ba4\u7684\u51fa\u724c', state: this.getState() };
+            return { success: false, message: '\u5f53\u524d\u6ca1\u6709\u5f85\u786e\u8ba4\u7684\u884c\u52a8', state: this.getState() };
         }
         if (Number(actionId) !== pending.actionId) {
-            return { success: false, message: '\u8fd9\u5c01\u4fe1\u5df2\u7ecf\u8fc7\u671f', state: this.getState() };
-        }
-        if (playerId === pending.targetId && Date.now() < pending.availableAt) {
-            return { success: false, message: '\u8bf7\u5148\u67e5\u770b\u5b8c\u6574\u7684\u51fa\u724c\u5c55\u793a', state: this.getState() };
+            return { success: false, message: '\u8fd9\u9879\u884c\u52a8\u5df2\u7ecf\u8fc7\u671f', state: this.getState() };
         }
         if (playerId !== pending.targetId && Date.now() < pending.deadlineAt) {
-            return { success: false, message: '\u8bf7\u7b49\u5f85\u76ee\u6807\u73a9\u5bb6\u77e5\u6653', state: this.getState() };
+            return { success: false, message: '\u8bf7\u7b49\u5f85\u76ee\u6807\u73a9\u5bb6\u786e\u8ba4', state: this.getState() };
         }
 
         const player = this.players.find(candidate => candidate.id === pending.playerId);
@@ -307,13 +311,42 @@ class LoveLetterGame {
         });
     }
 
+    handleSystemTick() {
+        if (this.status !== 'playing' || !this.pendingAction) return null;
+        const pending = this.pendingAction;
+        if (Date.now() < pending.deadlineAt) return null;
+
+        const player = this.players.find(candidate => candidate.id === pending.playerId);
+        if (!player || player.isOut) {
+            // A pending action should normally keep its actor alive.  Clear a
+            // stale envelope defensively so one malformed room cannot remain
+            // locked in target_ack forever.
+            this.pendingAction = null;
+            this.phase = 'turn';
+            return { success: false, message: '行动已失效，游戏继续', gameState: this.getState() };
+        }
+
+        this.pendingAction = null;
+        this.phase = 'turn';
+        const result = this.resolveCardEffect(player, pending.card, pending.targetId, pending.guess);
+        result.timedOut = true;
+        result.message = `${result.message || '行动已结算'}（目标未响应，已自动继续）`;
+        return this.finishAction(player, pending.card, result, {
+            kind: 'playCard',
+            targetId: pending.targetId,
+            guess: pending.guess,
+            isPrivate: false,
+            actionId: pending.actionId,
+        });
+    }
+
     discardCard(playerId, cardIndex) {
-        return { success: false, message: '\u6807\u51c6\u60c5\u4e66\u6bcf\u56de\u5408\u5fc5\u987b\u6253\u51fa\u4e00\u5f20\u724c\uff0c\u4e0d\u80fd\u80cc\u9762\u5f03\u724c' };
+        return { success: false, message: '\u6bcf\u56de\u5408\u5fc5\u987b\u6253\u51fa\u4e00\u5f20\u624b\u724c' };
     }
 
     prepareTurnCard(playerId, cardIndex) {
         if (this.pendingAction) {
-            return { success: false, message: '请先等待目标玩家知晓上一封信' };
+        return { success: false, message: '请先等待目标玩家确认上一项行动' };
         }
         if (this.status !== 'playing') {
             return { success: false, message: '\u6e38\u620f\u5df2\u7ed3\u675f' };
@@ -342,6 +375,9 @@ class LoveLetterGame {
     }
 
     finishAction(player, card, result, meta) {
+        // A revealed seat stays open through that player's next turn. Remove
+        // it only when that player has now completed an action.
+        this.seatReveals = this.seatReveals.filter(reveal => reveal.targetId !== player.id);
         const roundEnded = this.checkGameEnd();
         this.lastAction = {
             kind: meta.kind,
@@ -357,6 +393,28 @@ class LoveLetterGame {
             isPrivate: meta.isPrivate,
             result,
         };
+
+        const target = this.players.find(candidate => candidate.id === meta.targetId);
+        const historyEntry = this.publicDiscard.find(entry => entry.actionId === meta.actionId && entry.reason === 'played');
+        if (historyEntry) {
+            // Store only public outcomes; Priest knowledge stays private.
+            historyEntry.result = {
+                message: card.id === 2 ? (result.publicMessage || '牧师查看了目标的手牌') : result.message,
+                noEffect: result.noEffect,
+                eliminated: result.eliminated,
+                guardMiss: result.guardMiss,
+                baronOutcome: result.baronOutcome,
+                discardedCard: result.discardedCard ? { ...result.discardedCard } : undefined,
+            };
+        }
+        const revealCard = Number(card.id) === 2 ? result.revealedCard : Number(card.id) === 5 ? result.discardedCard : null;
+        if (!roundEnded && revealCard && target && !target.isOut && target.id !== player.id) {
+            this.seatReveals.push(this.lastAction);
+        }
+
+        if (roundEnded) this.seatReveals = [];
+
+        this._schedulePresentation(result, roundEnded);
 
         if (!roundEnded) this.nextTurn();
         this.phase = this.status === 'playing' ? 'turn' : 'round_result';
@@ -377,24 +435,39 @@ class LoveLetterGame {
             this.winners = gameWinners;
             this.winner = gameWinners[0];
             const names = gameWinners.map(player => player.name).join('、');
-            this.actionLog.push(`${names} 赢得本轮并集齐 ${this.targetFavor} 枚爱心筹码，赢下情书！`);
+            this.actionLog.push(`${names} 赢得整场游戏并集齐 ${this.targetFavor} 枚爱心`);
             return;
         }
-        const nextStarter = roundWinners[0]?.id || this.getCurrentPlayer()?.id || this.players[0]?.id;
+        const nextStarter = roundWinners.length
+            ? roundWinners[Math.floor(this.random() * roundWinners.length)].id
+            : this.getCurrentPlayer()?.id || this.players[0]?.id;
         this.nextRoundStarterId = nextStarter;
+        this.nextRoundReadyIds.clear();
         this.status = 'round_end';
         this.phase = 'round_result';
         const names = roundWinners.map(player => player.name).join('、') || '无人';
-        this.actionLog.push(`${names} 赢得第 ${this.round} 轮，获得 1 枚爱心筹码`);
+        this.actionLog.push(`${names} 赢得第 ${this.round} 轮，获得 1 枚爱心`);
         if (this.actionLog.length > 20) this.actionLog = this.actionLog.slice(-20);
     }
 
     startNextRound(playerId) {
         if (this.status !== 'round_end') {
-            return { success: false, message: '当前没有等待开始的下一轮', state: this.getState() };
+            return { success: false, message: '现在不能开始下一轮', state: this.getState() };
         }
-        if (!this.roundWinners.some(player => player.id === playerId) && playerId !== this.hostId) {
-            return { success: false, message: '只有本轮胜者或房主可以开始下一轮', state: this.getState() };
+        if (!this.players.some(player => player.id === playerId)) {
+            return { success: false, message: '你不在本局游戏中', state: this.getState() };
+        }
+        if (this.nextRoundReadyIds.has(playerId)) {
+            return { success: true, alreadyReady: true, message: '你已经准备好了', state: this.getState() };
+        }
+        this.nextRoundReadyIds.add(playerId);
+        if (this.nextRoundReadyIds.size < this.players.length) {
+            return {
+                success: true,
+                ready: true,
+                message: `已准备，等待其他玩家（${this.nextRoundReadyIds.size}/${this.players.length}）`,
+                state: this.getState(),
+            };
         }
         const starterId = this.nextRoundStarterId || this.roundWinner?.id || this.players[0]?.id;
         const winnerName = this.roundWinners.map(player => player.name).join('、') || '随机玩家';
@@ -411,7 +484,7 @@ class LoveLetterGame {
         const hasKingOrPrince = player.hand.some(c => c.id === 5 || c.id === 6);
         if (!hasCountess || !hasKingOrPrince) return null;
         if (kind === 'playCard' && card.id === 7) return null;
-        return { success: false, message: '\u624b\u91cc\u6709\u4f2f\u7235\u592b\u4eba\u548c\u56fd\u738b\u6216\u738b\u5b50\u65f6\uff0c\u53ea\u80fd\u6253\u51fa\u4f2f\u7235\u592b\u4eba\uff0c\u4e0d\u80fd\u5f03\u6389' };
+            return { success: false, message: '\u540c\u65f6\u6301\u6709\u4f2f\u7235\u592b\u4eba\u548c\u56fd\u738b\u6216\u738b\u5b50\uff0c\u53ea\u80fd\u6253\u51fa\u4f2f\u7235\u592b\u4eba' };
     }
 
     findTarget(targetId, allowSelf = false, actorId = null) {
@@ -432,17 +505,17 @@ class LoveLetterGame {
             // Official edge case: if every other player is protected by a
             // Handmaid, cards that require another player are still played,
             // but their effect simply does nothing.
-            if (!this.hasTargetableOpponent(player.id)) return { success: true, message: '\u6240\u6709\u5176\u4ed6\u73a9\u5bb6\u90fd\u53d7\u4fdd\u62a4\uff0c\u4f8d\u536b\u6548\u679c\u8431\u53d1', noEffect: true };
+            if (!this.hasTargetableOpponent(player.id)) return { success: true, message: '\u6240\u6709\u5176\u4ed6\u73a9\u5bb6\u5747\u53d7\u4fdd\u62a4\uff0c\u4f8d\u536b\u4e0d\u4f1a\u4ea7\u751f\u6548\u679c', noEffect: true };
             return { success: false, message: '\u65e0\u6548\u76ee\u6807' };
         }
         if (!guess || guess < 2 || guess > 8) {
-            return { success: false, message: '\u731c\u6d4b\u5fc5\u987b\u662f 2-8' };
+            return { success: false, message: '\u8bf7\u9009\u62e9\u4f8d\u536b\u4ee5\u5916\u7684\u89d2\u8272' };
         }
 
         const targetCard = target.hand[0];
         if (targetCard?.value === guess) {
             this.eliminatePlayer(target);
-            return { success: true, message: `${player.name} \u731c\u5bf9\u4e86\uff0c${target.name} \u51fa\u5c40`, eliminated: target.id, revealedCard: targetCard };
+            return { success: true, message: `${player.name}\u731c\u5bf9\u4e86\uff0c${target.name}\u51fa\u5c40`, eliminated: target.id, revealedCard: targetCard };
         }
         return { success: true, message: `${player.name} \u731c\u9519\u4e86`, guardMiss: true };
     }
@@ -450,14 +523,14 @@ class LoveLetterGame {
     resolvePriest(player, targetId) {
         const target = this.findTarget(targetId, false, player.id);
         if (!target) {
-            if (!this.hasTargetableOpponent(player.id)) return { success: true, message: '\u6240\u6709\u5176\u4ed6\u73a9\u5bb6\u90fd\u53d7\u4fdd\u62a4\uff0c\u7267\u5e08\u6548\u679c\u5931\u6548', noEffect: true };
+            if (!this.hasTargetableOpponent(player.id)) return { success: true, message: '\u6240\u6709\u5176\u4ed6\u73a9\u5bb6\u5747\u53d7\u4fdd\u62a4\uff0c\u7267\u5e08\u4e0d\u4f1a\u4ea7\u751f\u6548\u679c', noEffect: true };
             return { success: false, message: '\u65e0\u6548\u76ee\u6807' };
         }
         return {
             success: true,
-            message: `${target.name} \u7684\u624b\u724c\u662f ${target.hand[0]?.name || '\u65e0'}`,
+            message: `${target.name}\u7684\u624b\u724c\u662f${target.hand[0]?.name || '\u65e0'}`,
             privateFor: player.id,
-            publicMessage: `${player.name} \u4f7f\u7528\u4e86\u7267\u5e08`,
+            publicMessage: `${player.name} 打出牧师`,
             target: target.id,
             revealedCard: target.hand[0] || null,
         };
@@ -466,24 +539,43 @@ class LoveLetterGame {
     resolveBaron(player, targetId) {
         const target = this.findTarget(targetId, false, player.id);
         if (!target) {
-            if (!this.hasTargetableOpponent(player.id)) return { success: true, message: '\u6240\u6709\u5176\u4ed6\u73a9\u5bb6\u90fd\u53d7\u4fdd\u62a4\uff0c\u7537\u7235\u6548\u679c\u5931\u6548', noEffect: true };
+            if (!this.hasTargetableOpponent(player.id)) return { success: true, message: '\u6240\u6709\u5176\u4ed6\u73a9\u5bb6\u5747\u53d7\u4fdd\u62a4\uff0c\u7537\u7235\u4e0d\u4f1a\u4ea7\u751f\u6548\u679c', noEffect: true };
             return { success: false, message: '\u65e0\u6548\u76ee\u6807' };
         }
 
         const playerCard = player.hand.find(Boolean) || null;
         const targetCard = target.hand.find(Boolean) || null;
-        const revealedCards = { [player.id]: playerCard, [target.id]: targetCard };
         const playerValue = playerCard?.value || 0;
         const targetValue = targetCard?.value || 0;
         if (playerValue > targetValue) {
             this.eliminatePlayer(target);
-            return { success: true, message: `${target.name} \u51fa\u5c40`, eliminated: target.id, revealedCard: targetCard, revealedCards };
+            return {
+                success: true,
+                message: `${target.name} \u51fa\u5c40`,
+                eliminated: target.id,
+                baronOutcome: 'actor_win',
+                baronWinnerId: player.id,
+                baronLoserId: target.id,
+            };
         }
         if (targetValue > playerValue) {
             this.eliminatePlayer(player);
-            return { success: true, message: `${player.name} \u51fa\u5c40`, eliminated: player.id, revealedCard: playerCard, revealedCards };
+            return {
+                success: true,
+                message: `${player.name} \u51fa\u5c40`,
+                eliminated: player.id,
+                baronOutcome: 'target_win',
+                baronWinnerId: target.id,
+                baronLoserId: player.id,
+            };
         }
-        return { success: true, message: '\u70b9\u6570\u76f8\u540c\uff0c\u65e0\u4eba\u51fa\u5c40', revealedCards };
+        return {
+            success: true,
+            message: '\u70b9\u6570\u76f8\u540c\uff0c\u65e0\u4eba\u51fa\u5c40',
+            baronOutcome: 'tie',
+            baronWinnerId: null,
+            baronLoserId: null,
+        };
     }
 
     resolveHandmaid(player) {
@@ -497,32 +589,42 @@ class LoveLetterGame {
 
         const discarded = target.hand.shift();
         if (discarded) {
-            this.discardPile.push(discarded);
-            this.publicDiscard.push({ ownerId: target.id, card: { ...discarded }, reason: 'prince' });
+            this.publicDiscard.push({ ownerId: target.id, targetId: target.id, card: { ...discarded }, reason: 'prince' });
         }
         if (discarded?.id === 8) {
             this.eliminatePlayer(target);
-            return { success: true, message: `${target.name} \u5f03\u6389\u516c\u4e3b\uff0c\u51fa\u5c40`, eliminated: target.id, revealedCard: discarded };
+            return {
+                success: true,
+                message: `${target.name} \u5f03\u6389\u516c\u4e3b\uff0c\u51fa\u5c40`,
+                eliminated: target.id,
+                discardedCard: { ...discarded },
+                revealedCard: { ...discarded },
+            };
         }
 
         const newCard = this.drawCardForPrince();
         if (newCard) {
             target.hand.push(newCard);
-            return { success: true, message: `${target.name} \u5f03\u724c\u5e76\u91cd\u62bd` };
+            return { success: true, message: `${target.name}\u5f03\u724c\u5e76\u91cd\u65b0\u6478\u724c`, discardedCard: { ...discarded } };
         }
 
         this.eliminatePlayer(target);
-        return { success: true, message: `${target.name} \u65e0\u724c\u53ef\u62bd\uff0c\u51fa\u5c40`, eliminated: target.id };
+        return {
+            success: true,
+            message: `${target.name} \u65e0\u724c\u53ef\u62bd\uff0c\u51fa\u5c40`,
+            eliminated: target.id,
+            discardedCard: discarded ? { ...discarded } : null,
+        };
     }
 
     resolveKing(player, targetId) {
         const target = this.findTarget(targetId, false, player.id);
         if (!target) {
-            if (!this.hasTargetableOpponent(player.id)) return { success: true, message: '\u6240\u6709\u5176\u4ed6\u73a9\u5bb6\u90fd\u53d7\u4fdd\u62a4\uff0c\u56fd\u738b\u6548\u679c\u5931\u6548', noEffect: true };
+            if (!this.hasTargetableOpponent(player.id)) return { success: true, message: '\u6240\u6709\u5176\u4ed6\u73a9\u5bb6\u5747\u53d7\u4fdd\u62a4\uff0c\u56fd\u738b\u4e0d\u4f1a\u4ea7\u751f\u6548\u679c', noEffect: true };
             return { success: false, message: '\u65e0\u6548\u76ee\u6807' };
         }
         [player.hand, target.hand] = [target.hand, player.hand];
-        return { success: true, message: `${player.name} \u548c ${target.name} \u4ea4\u6362\u4e86\u624b\u724c` };
+        return { success: true, message: `${player.name}\u4e0e${target.name}\u4ea4\u6362\u624b\u724c` };
     }
 
     resolvePrincess(player) {
@@ -532,11 +634,11 @@ class LoveLetterGame {
 
     eliminatePlayer(player) {
         if (!player || player.isOut) return;
+        this.seatReveals = this.seatReveals.filter(reveal => reveal.targetId !== player.id);
         player.isOut = true;
         player.isAlive = false;
         player.isProtected = false;
         for (const discarded of player.hand.splice(0)) {
-            this.discardPile.push(discarded);
             this.publicDiscard.push({ ownerId: player.id, card: { ...discarded }, reason: 'eliminated' });
         }
     }
@@ -577,13 +679,10 @@ class LoveLetterGame {
             deckCount: this.deck.length,
             reservedCount: this.reservedCard ? 1 : 0,
             setAsideCount: this.setAsideCards.length,
-            // Two-player face-down cards are never revealed, including in
-            // the public start/action payloads.  Keep placeholders so the UI
-            // can still show how many cards were removed from the round.
-            setAsideCards: this.setAsideCards.map(() => null),
-            discardCount: this.discardPile.length + this.hiddenDiscardPile.length,
+            // The separate reserved card remains face-down. In a two-player
+            // round these three additional setup cards are public information.
+            setAsideCards: this.setAsideCards.map(card => ({ ...card })),
             publicDiscardCount: this.publicDiscard.length,
-            hiddenDiscardCount: this.hiddenDiscardPile.length,
             publicDiscard: this.publicDiscard.map(entry => ({ ...entry, card: { ...entry.card } })),
             winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null,
             winners: this.winners.map(player => ({ id: player.id, name: player.name })),
@@ -593,6 +692,9 @@ class LoveLetterGame {
             favorTokens: this.players.map(player => ({ id: player.id, count: player.favorTokens })),
             endReason: this.endReason,
             nextRoundStarterId: this.nextRoundStarterId,
+            nextRoundReadyIds: [...this.nextRoundReadyIds],
+            nextRoundReadyCount: this.nextRoundReadyIds.size,
+            nextRoundReadyTotal: this.players.length,
             pendingAction: this.pendingAction ? {
                 actionId: this.pendingAction.actionId,
                 playerId: this.pendingAction.playerId,
@@ -602,12 +704,12 @@ class LoveLetterGame {
                 targetId: this.pendingAction.targetId,
                 targetName: this.pendingAction.targetName,
                 guess: this.pendingAction.guess,
-                availableAt: this.pendingAction.availableAt,
-                remainingReadyMs: Math.max(0, this.pendingAction.availableAt - Date.now()),
                 deadlineAt: this.pendingAction.deadlineAt,
                 remainingMs: Math.max(0, this.pendingAction.deadlineAt - Date.now()),
             } : null,
             lastAction: this.lastAction,
+            seatReveals: this.seatReveals,
+            presentation: this.presentation ? { ...this.presentation, serverNow: Date.now() } : null,
         };
     }
 
@@ -622,7 +724,7 @@ class LoveLetterGame {
             return {
                 canAct: false,
                 canAcknowledge: this.pendingAction.targetId === playerId,
-                reason: this.pendingAction.targetId === playerId ? '请查看并知晓这封信' : `等待 ${this.pendingAction.targetName} 知晓`,
+                reason: this.pendingAction.targetId === playerId ? '请确认这项行动' : `等待 ${this.pendingAction.targetName} 确认`,
             };
         }
         if (this.status !== 'playing') {
@@ -635,14 +737,35 @@ class LoveLetterGame {
         return { canAct: true, hand: player.hand };
     }
 
-    _discardValue(playerId) {
-        const publicEntries = this.publicDiscard.filter(entry => entry.ownerId === playerId);
-        const publicCardIds = new Set(publicEntries.map(entry => entry.card?.cardId).filter(Boolean));
-        const publicValue = publicEntries.reduce((sum, entry) => sum + (entry.card?.value || 0), 0);
-        const hiddenValue = this.hiddenDiscardPile
-            .filter(entry => entry.ownerId === playerId && (!entry.card?.cardId || !publicCardIds.has(entry.card.cardId)))
-            .reduce((sum, entry) => sum + (entry.card?.value || 0), 0);
-        return publicValue + hiddenValue;
+    _presentationActive(now = Date.now()) {
+        return Boolean(this.presentation && now < this.presentation.endsAt);
+    }
+
+    _schedulePresentation(result, roundEnded) {
+        const eliminatedPlayerId = result?.eliminated || null;
+        const isShowdown = roundEnded && this.endReason === 'showdown';
+        if (!eliminatedPlayerId && !isShowdown) return;
+        const startedAt = Date.now();
+        const winnerIds = this.status === 'ended'
+            ? this.winners.map(player => player.id)
+            : this.roundWinners.map(player => player.id);
+        let durationMs = ELIMINATION_PRESENTATION_MS;
+        if (isShowdown) {
+            durationMs = SHOWDOWN_PRESENTATION_MS;
+        } else if (roundEnded) {
+            durationMs = this.status === 'ended' ? GAME_OUTCOME_PRESENTATION_MS : ROUND_OUTCOME_PRESENTATION_MS;
+        }
+        this.presentation = {
+            id: ++this.presentationSequence,
+            kind: isShowdown ? 'showdown' : 'elimination',
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            subjectPlayerId: eliminatedPlayerId,
+            winnerIds,
+            gameEnded: this.status === 'ended',
+            blocking: true,
+        };
     }
 }
 

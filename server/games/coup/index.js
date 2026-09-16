@@ -30,8 +30,11 @@ class CoupSession {
     constructor(roomId, players, options = {}) {
         this.roomId = roomId;
         // 将大厅玩家数据传给 engine
-        const random = typeof options === 'function' ? options : options?.random;
-        this.engine = new CoupEngine(roomId, players, random);
+        // Keep both the deterministic random source and the server clock
+        // override available to the engine.  The latter is used by replay and
+        // presentation-timeline tests; dropping it here would make absolute
+        // deadlines depend on the wall clock again.
+        this.engine = new CoupEngine(roomId, players, options);
         this.started = false;
     }
 

@@ -112,6 +112,7 @@ test('Avalon enforces private role knowledge and optional role visibility rules'
     const mordred = game.players.find(player => player.role === 'mordred');
     assert.ok(merlin && percival && morgana && mordred);
     assert.equal(game.getPublicState().players.every(player => player.role === null), true);
+    assert.equal(game.getPlayerState(percival.id).knownPlayers.every(player => !Object.hasOwn(player, 'faction')), true, '派西维尔不能通过状态 payload 区分梅林与莫甘娜');
     assert.equal(game.getPlayerState(merlin.id).knownPlayers.some(player => player.id === mordred.id), false);
     assert.deepEqual(game.getPlayerState(percival.id).knownPlayers.map(player => player.id).sort(), [merlin.id, morgana.id].sort());
     assert.equal(game.getPlayerState(morgana.id).knownPlayers.some(player => player.id === mordred.id), true);
@@ -139,8 +140,8 @@ test('Avalon only allows the assassin to target a good player', () => {
     assert.equal(game.winner.faction, 'good');
     assert.equal(game.winner.reason, 'missedMerlin');
     assert.equal(game.winner.targetId, good.id);
-    const endingKinds = game.getPublicState().publicEvents.slice(-3).map(event => event.kind);
-    assert.deepEqual(endingKinds, ['assassination', 'targetRoleReveal', 'identityReveal']);
+    const endingKinds = game.getPublicState().publicEvents.slice(-4).map(event => event.kind);
+    assert.deepEqual(endingKinds, ['assassination', 'targetRoleReveal', 'identityReveal', 'outcome']);
     const assassination = game.getPublicState().publicEvents.find(event => event.kind === 'assassination');
     assert.deepEqual({ title: assassination.title, detail: assassination.detail, targetId: assassination.targetId, hit: assassination.hit }, {
         title: `刺客选择了 ${good.seat} 号 · ${good.name}`, detail: '梅林仍隐藏在圆桌之中', targetId: good.id, hit: false,

@@ -138,6 +138,7 @@ async function run() {
             ...process.env,
             NODE_ENV: 'production',
             PORT: String(port),
+            JSGAMES_HOST: '127.0.0.1',
             JSGAMES_ALLOWED_ORIGINS: origin,
             JSGAMES_REQUIRE_RECONNECT_TOKEN: 'true',
         },
@@ -159,6 +160,13 @@ async function run() {
         assert.equal(healthBody.status, 'ok');
         assert.equal(healthBody.service, 'jsgames');
         assert.equal(healthBody.realtime.players, 0);
+
+        for (const resource of ['/__game_shell_visual_test.html', '/%5f%5fgame_shell_visual_test.html', '/visual-fixtures/fixture-state.js', '/reviews/monopolydeal-properties/', '/assets/covers/README.md']) {
+            const result = await httpGet(`${origin}${resource}`);
+            assert.equal(result.response.statusCode, 404, `Development resource exposed: ${resource}`);
+        }
+        assert.equal((await httpGet(`${origin}/`)).response.statusCode, 200);
+        assert.equal((await httpGet(`${origin}/games/monopolydeal/client.js`)).response.statusCode, 200);
 
         client = await openClient(`ws://127.0.0.1:${port}`, origin);
         await client.waitFor(message => message.type === 'session');

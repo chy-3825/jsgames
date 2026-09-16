@@ -41,6 +41,7 @@ export function createGameClient({ mount, send, addLog }) {
             model.state = message.state;
             model.tokenChoice = [];
             model.selectedCard = null;
+            model.commandMode = 'tokens';
             model.actionPending = false;
             renderer.render();
             const sequence = Number(model.state.presentation?.sequence) || 0;

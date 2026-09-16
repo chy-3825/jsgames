@@ -7,6 +7,31 @@ const CAMELS = [
 ];
 const TRACK_LENGTH = 16;
 const PLAYER_COLORS = ['#d45f54', '#4d82a6', '#bf8b3e', '#6d9466', '#80699b', '#9c6876', '#4f8f8e', '#997e58'];
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    raceStarted: 1200,
+    legStarted: 850,
+    dieRevealed: 720,
+    camelMoved: 980,
+    legBetTaken: 900,
+    overallBetPlaced: 900,
+    desertTilePlaced: 620,
+    legSettlement: 2000,
+    raceFinished: 1500,
+    finalSettlement: 2700,
+};
+
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'desertTileTriggered') return 720 + (data.reward ? 520 : 0);
+    if (kind === 'legSettlement') return data.final ? 2300 : 2000;
+    if (kind === 'overallBetsRevealed') {
+        const count = (data.winnerBets || []).length + (data.loserBets || []).length;
+        // The client reveals each row, pauses between the two piles, then
+        // holds the complete result before the common fade.
+        return count * 260 + 1210;
+    }
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 650;
+}
 
 function shuffle(values, random = Math.random) {
     const result = values.slice();
@@ -57,6 +82,7 @@ class CamelUpEngine {
         this.lastLeg = null;
         this.finalStandings = [];
         this.presentation = null;
+        this.presentationQueue = [];
         this.presentationSequence = 0;
         this.presentationEventSequence = 0;
         this.presentationPrivate = {};
@@ -94,6 +120,7 @@ class CamelUpEngine {
         this.lastLeg = null;
         this.finalStandings = [];
         this.presentation = null;
+        this.presentationQueue = [];
         this.presentationSequence = 0;
         this.presentationEventSequence = 0;
         this.presentationPrivate = {};
@@ -319,6 +346,9 @@ class CamelUpEngine {
     getPublicState() {
         const ranking = this._ranking();
         const current = this.players[this.turnPlayerIndex];
+        const serverNow = Date.now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         return {
             roomId: this.roomId, status: this.status, phase: this.phase, leg: this.leg,
             rules: { players: '3–8', startingCoins: 3, camels: 5, trackLength: TRACK_LENGTH, legBetPayouts: [5, 3, 2], legOtherCamelPayout: -1, overallBetPayouts: [8, 5, 3, 2, 1], desertTiles: '不可放在 1 号格、骆驼所在格，且不能与其他板块相邻', pyramidTileReward: 1, finish: '第一匹骆驼越过 16 格后立即终局；同格时最上方骆驼为冠军' },
@@ -331,7 +361,7 @@ class CamelUpEngine {
                 loser: this.players.reduce((total, player) => total + player.overallBets.filter(bet => bet.outcome === 'loser').length, 0),
             },
             players: this.players.map(player => ({ id: player.id, name: player.name, color: player.color, cash: player.cash, pyramidTileCount: player.pyramidTiles, legBetCount: player.legBets.length, overallBetCount: player.overallBets.length, finishCardCount: player.raceCards.length, hasOverallBet: Boolean(player.overallBets.length), isOnline: player.isOnline })),
-            lastLeg: clone(this.lastLeg), presentation: clone(this.presentation), finalStandings: clone(this.finalStandings), actionLog: this.actionLog.slice(-20), winner: this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, cash: player.cash })),
+            lastLeg: clone(this.lastLeg), serverNow, presentation, presentations, finalStandings: clone(this.finalStandings), actionLog: this.actionLog.slice(-20), winner: this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, cash: player.cash })),
         };
     }
 
@@ -344,10 +374,8 @@ class CamelUpEngine {
         state.myOverallBet = player?.overallBets[0] ? { ...player.overallBets[0] } : null;
         state.myRaceCards = player?.raceCards.map(card => ({ ...card })) || [];
         state.myPyramidTiles = player?.pyramidTiles || 0;
-        if (state.presentation?.events?.length) state.presentation.events = state.presentation.events.map(event => {
-            const privateData = this.presentationPrivate[event.sequence]?.[playerId];
-            return privateData ? { ...event, private: clone(privateData) } : event;
-        });
+        state.presentation = this._projectPresentation(state.presentation, player);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, player));
         state.availableActions = { rollDie: this.phase === 'leg' && state.currentTurn === playerId && this.rolled.size < CAMELS.length, betLeg: this.phase === 'leg' && state.currentTurn === playerId && Object.values(this.legTiles).some(tiles => tiles.length), betOverall: this.phase === 'leg' && state.currentTurn === playerId && (player?.raceCards.length || 0) > 0, placeTile: this.phase === 'leg' && state.currentTurn === playerId };
         return state;
     }
@@ -357,24 +385,131 @@ class CamelUpEngine {
         if (!player || !player.isOnline) return { success: false, message: '玩家不存在' };
         const wasCurrent = this.players[this.turnPlayerIndex]?.id === playerId;
         player.isOnline = false;
-        if (this.players.filter(item => item.isOnline).length < 3) { this.status = 'ended'; this.phase = 'ended'; this.winner = this.players.find(item => item.isOnline) || null; this.winners = this.winner ? [this.winner] : []; }
+        if (this.status !== 'playing') return this._success(`${player.name} 已离开赛道`);
+        if (this.players.filter(item => item.isOnline).length < 3) return this._finishByDeparture(player);
         else if (wasCurrent) this._nextTurn();
         return this._success(`${player.name} 已离开赛道`);
     }
 
+    _finishByDeparture(player) {
+        const eligible = this.players.filter(item => item.isOnline);
+        const highestCash = Math.max(...eligible.map(item => item.cash), 0);
+        const winners = eligible.filter(item => item.cash === highestCash);
+        const ranking = this._ranking();
+        const sortedPlayers = this.players.slice().sort((a, b) => b.cash - a.cash);
+        this.status = 'ended';
+        this.phase = 'ended';
+        this.winners = winners;
+        this.winner = winners[0] || null;
+        this.finalStandings = sortedPlayers.map(playerItem => ({
+            rank: sortedPlayers.findIndex(item => item.cash === playerItem.cash) + 1,
+            id: playerItem.id,
+            name: playerItem.name,
+            color: playerItem.color,
+            cash: playerItem.cash,
+        }));
+        this._startPresentation(null, 'playerLeave');
+        this._appendPresentationEvent({
+            kind: 'raceFinished',
+            forced: true,
+            reason: 'playerLeave',
+            actorName: player.name,
+            camel: this._publicCamel(ranking[0]),
+            position: ranking[0]?.position ?? TRACK_LENGTH,
+            ranking: ranking.map(camel => this._publicCamel(camel)),
+        });
+        this._appendPresentationEvent({
+            kind: 'finalSettlement',
+            forced: true,
+            reason: 'playerLeave',
+            standings: clone(this.finalStandings),
+            winnerIds: winners.map(item => item.id),
+            camelRanking: ranking.map(camel => this._publicCamel(camel)),
+        });
+        this._finishPresentation();
+        this._log(`${player.name} 离开后，${winners.map(item => item.name).join('、') || '无人'}结束比赛`);
+        return this._success(`${player.name} 离开后，比赛结束`);
+    }
+
     _startPresentation(actorId, action, firstEvent = null, privateByPlayer = null) {
-        this.presentation = { sequence: ++this.presentationSequence, actorId, action, resolved: false, events: [] };
-        this.presentationPrivate = {};
+        const now = Date.now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
+        this.presentation = {
+            sequence: ++this.presentationSequence,
+            actorId,
+            action,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
+            events: [],
+            resolved: false,
+            ended: false,
+            nextPhase: null,
+            nextPlayerId: null,
+            winner: null,
+        };
+        this.presentationQueue.push(this.presentation);
         if (firstEvent) this._appendPresentationEvent(firstEvent, privateByPlayer);
+        return this.presentation;
     }
     _appendPresentationEvent(event, privateByPlayer = null) {
         if (!this.presentation || this.presentation.resolved) this._startPresentation(event.actorId || null, event.kind || 'system');
-        const entry = { sequence: ++this.presentationEventSequence, ...clone(event) };
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || Date.now();
+        const startedAt = Math.max(Date.now(), previousEnd);
+        const contentDurationMs = presentationContentDuration(event.kind, event);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const sequence = ++this.presentationEventSequence;
+        const entry = {
+            sequence,
+            eventId: sequence,
+            ...clone(event),
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
         this.presentation.events.push(entry);
-        if (privateByPlayer && Object.keys(privateByPlayer).length) this.presentationPrivate[entry.sequence] = clone(privateByPlayer);
+        this.presentation.endsAt = entry.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        if (privateByPlayer && Object.keys(privateByPlayer).length) this.presentationPrivate[sequence] = clone(privateByPlayer);
         return entry;
     }
-    _finishPresentation() { if (this.presentation) this.presentation.resolved = true; }
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this.presentation.resolved = true;
+        this.presentation.ended = this.status === 'ended';
+        this.presentation.nextPhase = this.phase;
+        this.presentation.nextPlayerId = this.status === 'playing' ? this.players[this.turnPlayerIndex]?.id || null : null;
+        this.presentation.winner = this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash } : null;
+    }
+
+    _presentationBatches(serverNow = Date.now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        const privateData = this.presentationPrivate[event.sequence];
+        if (privateData?.[player?.id]) projected.private = clone(privateData[player.id]);
+        if (event.kind === 'finalSettlement' && (event.winnerIds || []).includes(player?.id)) {
+            projected.viewerVariant = 'personalVictory';
+            projected.title = '您已获胜';
+            projected.detail = '您以最高金币赢得了狂野骆驼。';
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
+    }
     _log(message) { this.actionLog.push(message); }
     _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, cash: player.cash })) }; }
     getWinner() { return this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash, shared: this.winners.length > 1, winners: this.winners.map(player => ({ id: player.id, name: player.name, cash: player.cash })) } : null; }

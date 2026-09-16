@@ -103,14 +103,21 @@
                 const emptyMap = () => Object.fromEntries(colors.map(color => [color, color === 'brown' || color === 'blue' || color === 'utility' ? 0 : 0]));
                 const players = ['甲方玩家', '乙方玩家', '丙方玩家', '丁方玩家', '戊方玩家'].map((name, index) => ({
                     id: `p${index + 1}`, name, handCount: index ? 5 : 7, bankValue: index ? index + 1 : 0, bank: [],
-                    properties: Object.fromEntries(colors.map(color => [color, []])), propertyGroups: [], houses: emptyMap(), hotels: emptyMap(),
-                    isOnline: true, isCurrentTurn: index === 0, completedSets: 0,
+                    properties: Object.fromEntries(colors.map(color => [color, []])), propertyGroups: index === 0
+                        ? [{ id: 'p1-brown', color: 'brown', cards: [{ id: 'p1-brown-1' }, { id: 'p1-brown-2' }], isComplete: true }, { id: 'p1-blue', color: 'blue', cards: [{ id: 'p1-blue-1' }], isComplete: false }]
+                        : index === 1 ? [{ id: 'p2-red', color: 'red', cards: [{ id: 'p2-red-1' }, { id: 'p2-red-2' }], isComplete: false }] : [], houses: emptyMap(), hotels: emptyMap(),
+                    isOnline: true, isCurrentTurn: index === 0, completedSets: index === 0 ? 1 : 0,
                 }));
                 return {
                     roomId: 'visual', status: 'playing', phase: 'play', turnNumber: 1, currentTurn: 'p1', currentTurnName: '甲方玩家', cardsPlayed: 0,
                     deckCount: 79, discard: [], discardCount: 0, pendingAction: null, pendingDebt: null, interaction: null,
+                    lastPlayedCard: { playId: 2, card: { id: 'visual-rent', kind: 'rent', colors: ['red', 'yellow'], value: 1, name: '红黄租金' }, playerId: 'p1', playerName: '甲方玩家', message: '甲方玩家打出红黄租金' },
                     lastAction: { kind: 'drawCards', playerId: 'p1', playerName: '甲方玩家', message: '甲方玩家摸了 2 张牌' },
-                    actionLog: ['游戏开始，甲方玩家先行动', '甲方玩家摸了 2 张牌'], players, winner: null,
+                    actionLog: ['游戏开始，甲方玩家先行动', '甲方玩家摸了 2 张牌'], actionHistory: [
+                        { id: 1, kind: 'gameStarted', message: '游戏开始，甲方玩家先行动', playerId: 'p1', playerName: '甲方玩家' },
+                        { id: 2, kind: 'drawCards', message: '甲方玩家摸了 2 张牌', playerId: 'p1', playerName: '甲方玩家', actionType: 'drawCards' },
+                        { id: 3, kind: 'playCard', message: '甲方玩家打出红黄租金', playerId: 'p1', playerName: '甲方玩家', actionType: 'rent', card: { id: 'visual-rent', kind: 'rent', colors: ['red', 'yellow'], value: 1, name: '红黄租金' }, color: 'red' },
+                    ], players, winner: null,
                     myId: 'p1', myIsCurrentTurn: true, myBank: [], myPendingDoubleRent: false, myRentMultiplier: 1, myPaymentOptions: [],
                     myHand: [
                         { id: 'a-debt', kind: 'action', action: 'debtCollector', value: 3, name: '收取债务' },
@@ -317,7 +324,7 @@
                 };
             }
             if (gameType === 'werewolf') {
-                const roles = ['seer', 'werewolf', 'witch', 'hunter', 'guard', 'villager', 'villager', 'werewolf', 'villager'];
+                const roles = ['seer', 'werewolf', 'witch', 'hunter', 'villager', 'villager', 'villager', 'werewolf', 'werewolf'];
                 const seats = roles.map((role, index) => ({
                     number: index + 1, role, controllerName: `${['甲','乙','丙','丁','戊','己','庚','辛','壬'][index]}方玩家`,
                     alive: true, canControl: index === 0, roleConfirmed: true, dayReady: false, isSheriff: index === 0,

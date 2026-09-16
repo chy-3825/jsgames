@@ -62,6 +62,8 @@ const {
     confirmWitchtownDossiers,
     passWitchtownConfessions,
     confirmedWerewolfNightAction,
+    acknowledgeWerewolfPresentation,
+    advanceWerewolfNight,
     chessEngine,
     maAthlete,
     maDraft,
@@ -82,7 +84,10 @@ test('Werewolf allows one tester to switch across all nine private seats', () =>
         assert.equal(state.activeSeat, seat);
         roles.add(state.myRole);
     }
-    assert.deepEqual([...roles].sort(), ['guard', 'hunter', 'seer', 'villager', 'witch', 'werewolf'].sort());
+    assert.deepEqual([...roles].sort(), ['hunter', 'seer', 'villager', 'witch', 'werewolf'].sort());
+    assert.equal(game.seats.filter(seat => seat.role === 'werewolf').length, 3);
+    assert.equal(game.seats.filter(seat => seat.role === 'villager').length, 3);
+    assert.equal(game.seats.some(seat => seat.role === 'guard'), false);
 });
 
 test('Werewolf solo test mode can confirm all nine roles with one action', () => {
@@ -90,7 +95,9 @@ test('Werewolf solo test mode can confirm all nine roles with one action', () =>
     assert.equal(game.start().success, true);
     assert.equal(game.getPlayerState('host').seats.every(seat => seat.role), true);
     assert.equal(game.handleAction('host', { kind: 'confirmAllRoles' }).success, true);
-    assert.equal(game.phase, 'nightGuard');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightWolf');
+    assert.deepEqual(game.getPublicState().flowRules.nightOrder, ['nightWolf', 'nightWitch', 'nightSeer']);
     assert.equal(game.getPublicState().phaseProgress.completed, 0);
     assert.equal(game.seats.every(seat => game.roleConfirmedSeats[seat.number]), true);
 
@@ -113,7 +120,8 @@ test('Werewolf gives no player phase authority and assigns every seat to exactly
         assert.equal(game.handleAction(controllerId, { kind: 'switchSeat', seat }).success, true);
         assert.equal(game.handleAction(controllerId, { kind: 'confirmRole' }).success, true);
     }
-    assert.equal(game.phase, 'nightGuard');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightWolf');
     assert.equal(game.getPublicState().hostId, undefined);
     assert.equal(game.getPlayerState('a').isHost, undefined);
 });
@@ -159,15 +167,16 @@ test('Werewolf rooms stay private until the host locks a 9 or 12 player board an
         assert.equal(room.startGame().success, true);
         assert.equal(room.game.engine.seats.length, targetPlayers);
         assert.equal(room.game.engine.seats.filter(seat => seat.role === 'werewolf').length, targetPlayers === 12 ? 4 : 3);
-        assert.equal(room.game.engine.seats.filter(seat => seat.role === 'villager').length, targetPlayers === 12 ? 4 : 2);
+        assert.equal(room.game.engine.seats.filter(seat => seat.role === 'villager').length, targetPlayers === 12 ? 4 : 3);
         assert.equal(new Set(room.game.engine.seats.map(seat => seat.controllerId)).size, targetPlayers);
     }
 });
 
-test('Werewolf night skills require confirmation and Seer acknowledges the revealed faction', () => {
-    const game = new WerewolfEngine('werewolf-night-confirmations', players(['host']), 'host', () => 0);
+test('Werewolf keeps irreversible night-skill confirmation while wolf ballots remain directly mutable', () => {
+    const game = new WerewolfEngine('werewolf-night-confirmations', players(['host']), 'host', () => 0, Date.now, { playerCount: 12 });
     assert.equal(game.start().success, true);
     assert.equal(game.handleAction('host', { kind: 'confirmAllRoles' }).success, true);
+    acknowledgeWerewolfPresentation(game);
     const seatFor = role => game.seats.find(seat => seat.role === role).number;
     const guardSeat = seatFor('guard');
     const seerSeat = seatFor('seer');
@@ -184,15 +193,28 @@ test('Werewolf night skills require confirmation and Seer acknowledges the revea
     assert.equal(game.handleAction('host', { kind: 'stageNightAction', targetSeat: seerSeat }).success, true);
     assert.equal(game.handleAction('host', { kind: 'confirmNightAction' }).success, true);
     assert.equal(game.night.guard, seerSeat);
+    assert.equal(game.phase, 'nightGuard', '守卫确认后仍需等待完整 20 秒');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.phase, 'nightWolf');
 
     for (const wolfSeat of wolfSeats) {
         game.handleAction('host', { kind: 'switchSeat', seat: wolfSeat });
         assert.equal(game.handleAction('host', { kind: 'stageNightAction', targetSeat: guardSeat }).success, true);
-        assert.equal(game.night.wolfVotes?.[wolfSeat], undefined, '确认前不能计入狼队票型');
-        assert.equal(game.handleAction('host', { kind: 'confirmNightAction' }).success, true);
+        assert.equal(game.night.wolfVotes?.[wolfSeat], guardSeat, '狼人提交后应立即计入可修改的临时票');
+        assert.equal(game.getPlayerState('host').nightConfirmation, null, '狼人不应进入二次确认环节');
     }
+    assert.equal(game.phase, 'nightWolf', '狼队投票确认后仍需等待完整 20 秒');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.night.wolf, guardSeat);
+    assert.equal(game.phase, 'nightWitch');
+
+    game.handleAction('host', { kind: 'switchSeat', seat: witchSeat });
+    assert.equal(game.handleAction('host', { kind: 'stageNightAction', choice: 'pass' }).success, true);
+    assert.equal(game.night.witchActed, undefined, '女巫确认前不能提前结算');
+    assert.equal(game.handleAction('host', { kind: 'confirmNightAction' }).success, true);
+    assert.equal(game.night.witchActed, true);
+    assert.equal(game.phase, 'nightWitch', '女巫确认后仍需等待完整 20 秒');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.phase, 'nightSeer');
 
     game.handleAction('host', { kind: 'switchSeat', seat: seerSeat });
@@ -203,18 +225,125 @@ test('Werewolf night skills require confirmation and Seer acknowledges the revea
     assert.equal(game.getPlayerState('host').nightConfirmation.stage, 'result');
     assert.equal(game.getPlayerState('host').seerResult.faction, 'wolf');
     assert.equal(game.handleAction('host', { kind: 'confirmSeerResult' }).success, true);
-    assert.equal(game.phase, 'nightWitch');
+    assert.equal(game.phase, 'nightSeer', '预言家确认结果后仍需等待完整 20 秒');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    assert.notEqual(game.phase, 'nightSeer');
+});
 
-    game.handleAction('host', { kind: 'switchSeat', seat: witchSeat });
+test('Werewolf follows the standard night order and supports an empty guard', () => {
+    const game = new WerewolfEngine('werewolf-standard-night-order', players(['host']), 'host', () => 0, Date.now, { playerCount: 12 });
+    assert.equal(game.start().success, true);
+    assert.equal(game.handleAction('host', { kind: 'confirmAllRoles' }).success, true);
+    acknowledgeWerewolfPresentation(game);
+    const seatFor = role => game.seats.find(seat => seat.role === role).number;
+    const guardSeat = seatFor('guard');
+    const witchSeat = seatFor('witch');
+    const seerSeat = seatFor('seer');
+    const target = game.seats.find(seat => seat.role === 'villager').number;
+
+    game.handleAction('host', { kind: 'switchSeat', seat: guardSeat });
     assert.equal(game.handleAction('host', { kind: 'stageNightAction', choice: 'pass' }).success, true);
-    assert.equal(game.night.witchActed, undefined, '女巫确认前不能提前结算');
+    assert.equal(game.night.guard, undefined, '空守在确认前不能提前生效');
     assert.equal(game.handleAction('host', { kind: 'confirmNightAction' }).success, true);
-    assert.equal(game.night.witchActed, true);
-    assert.notEqual(game.phase, 'nightWitch');
+    assert.equal(game.phase, 'nightGuard');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    assert.equal(game.phase, 'nightWolf');
+
+    for (const wolf of game.seats.filter(seat => seat.role === 'werewolf')) {
+        game.handleAction('host', { kind: 'switchSeat', seat: wolf.number });
+        assert.equal(confirmedWerewolfNightAction(game, 'host', { targetSeat: target }).success, true);
+    }
+    assert.equal(game.phase, 'nightWolf');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    assert.equal(game.phase, 'nightWitch');
+    game.handleAction('host', { kind: 'switchSeat', seat: witchSeat });
+    assert.equal(game.getPlayerState('host').wolfSeat, target);
+    assert.equal(confirmedWerewolfNightAction(game, 'host', { choice: 'pass' }).success, true);
+    assert.equal(game.phase, 'nightWitch');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    assert.equal(game.phase, 'nightSeer');
+    game.handleAction('host', { kind: 'switchSeat', seat: seerSeat });
+    assert.equal(confirmedWerewolfNightAction(game, 'host', { targetSeat: target }).success, true);
+    assert.equal(game.phase, 'nightSeer');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    assert.notEqual(game.phase, 'nightSeer');
+    assert.deepEqual(game.getPublicState().flowRules.nightOrder, ['nightGuard', 'nightWolf', 'nightWitch', 'nightSeer']);
+});
+
+test('Werewolf resolves the guard and witch hidden protection conflicts', () => {
+    const makeNight = ({ guard, saved = false, poison = null }) => {
+        const game = new WerewolfEngine(`werewolf-protection-${guard}-${saved}-${poison}`, players(['host']), 'host', () => 0, Date.now, { playerCount: 12 });
+        assert.equal(game.start().success, true);
+        const wolfTarget = game.seats.find(seat => seat.role === 'villager').number;
+        const otherTarget = game.seats.find(seat => seat.number !== wolfTarget && seat.alive).number;
+        const guardTarget = guard === 'target' ? wolfTarget : guard === 'other' ? otherTarget : guard;
+        const poisonTarget = poison === 'other' ? otherTarget : poison === 'guard' ? guardTarget : poison;
+        game.day = 2;
+        game.phase = 'nightSeer';
+        game.night = { wolf: wolfTarget, guard: guardTarget || null, saved, poison: poisonTarget || null };
+        game._resolveNight();
+        return { game, wolfTarget, guardTarget, poisonTarget };
+    };
+
+    const blocked = makeNight({ guard: 'target' });
+    assert.equal(blocked.game.seats.find(seat => seat.number === blocked.wolfTarget).alive, true, '单独守护应挡住狼刀');
+    assert.equal(blocked.game.night.guardSaveConflict, false);
+
+    const saved = makeNight({ guard: null, saved: true });
+    assert.equal(saved.game.seats.find(seat => seat.number === saved.wolfTarget).alive, true, '单独解药应救回狼刀目标');
+    assert.equal(saved.game.night.guardSaveConflict, false);
+
+    const pierced = makeNight({ guard: 'target', saved: true });
+    assert.equal(pierced.game.seats.find(seat => seat.number === pierced.wolfTarget).alive, false, '同守同救应奶穿，目标仍然出局');
+    assert.equal(pierced.game.night.guardSaveConflict, true);
+    assert.deepEqual(pierced.game.getPublicState().announcement.deaths, [pierced.wolfTarget]);
+
+    const poisoned = makeNight({ guard: 'target', poison: 'other' });
+    assert.equal(poisoned.game.seats.find(seat => seat.number === poisoned.wolfTarget).alive, true, '守卫仍只挡狼刀');
+    assert.equal(poisoned.game.seats.find(seat => seat.number === poisoned.poisonTarget).alive, false, '守卫不能挡女巫毒药');
+
+    const guardedPoisoned = makeNight({ guard: 'other', poison: 'guard' });
+    assert.equal(guardedPoisoned.game.night.guardSaveConflict, false, '守卫守毒药目标不属于同守同救');
+    assert.equal(guardedPoisoned.game.seats.find(seat => seat.number === guardedPoisoned.guardTarget).alive, false, '守卫不能挡住落在守护目标身上的毒药');
+    assert.equal(guardedPoisoned.game.seats.find(seat => seat.number === guardedPoisoned.wolfTarget).alive, false, '未被守护的狼刀目标仍按狼刀结算');
+});
+
+test('Werewolf makes witch self-save a visible, validated board setting', () => {
+    const makeWitchNight = (witchSelfSave, day) => {
+        const game = new WerewolfEngine(`werewolf-self-save-${witchSelfSave}-${day}`, players(['host']), 'host', () => 0, Date.now, { witchSelfSave });
+        assert.equal(game.start().success, true);
+        const witch = game.seats.find(seat => seat.role === 'witch');
+        game.day = day;
+        game.phase = 'nightWitch';
+        game.night = { wolf: witch.number };
+        game.handleAction('host', { kind: 'switchSeat', seat: witch.number });
+        return { game, witch };
+    };
+
+    const firstNight = makeWitchNight('firstNight', 1);
+    assert.equal(firstNight.game.getPublicState().flowRules.witchSelfSave, 'firstNight');
+    assert.equal(firstNight.game.getPlayerState('host').witchCanSaveSelf, true);
+    assert.equal(firstNight.game.handleAction('host', { kind: 'stageNightAction', choice: 'save' }).success, true);
+    assert.equal(firstNight.game.handleAction('host', { kind: 'confirmNightAction' }).success, true);
+    assert.equal(firstNight.game.witchItems.antidote, false);
+
+    const laterFirstNightBoard = makeWitchNight('firstNight', 2);
+    assert.equal(laterFirstNightBoard.game.getPlayerState('host').witchCanSaveSelf, false);
+    const laterResult = laterFirstNightBoard.game.handleAction('host', { kind: 'stageNightAction', choice: 'save' });
+    assert.equal(laterResult.success, false);
+    assert.match(laterResult.message, /首夜自救/);
+
+    const never = makeWitchNight('never', 1);
+    assert.equal(never.game.getPlayerState('host').witchCanSaveSelf, false);
+    assert.equal(never.game.handleAction('host', { kind: 'stageNightAction', choice: 'save' }).success, false);
+
+    const always = makeWitchNight('always', 2);
+    assert.equal(always.game.getPlayerState('host').witchCanSaveSelf, true);
+    assert.equal(always.game.handleAction('host', { kind: 'stageNightAction', choice: 'save' }).success, true);
 });
 
 test('Werewolf confirms every seat and automatically runs the first full day-night cycle', () => {
-    const game = new WerewolfEngine('werewolf-night', players(['host']), 'host', () => 0);
+    const game = new WerewolfEngine('werewolf-night', players(['host']), 'host', () => 0, Date.now, { playerCount: 12 });
     game.start();
     const seatFor = role => game.seats.find(seat => seat.role === role).number;
     const wolfSeats = game.seats.filter(seat => seat.role === 'werewolf').map(seat => seat.number);
@@ -222,7 +351,7 @@ test('Werewolf confirms every seat and automatically runs the first full day-nig
     const dissentTarget = seatFor('seer');
 
     assert.equal(game.handleAction('host', { kind: 'nextPhase' }).success, false);
-    for (let seat = 1; seat <= 9; seat += 1) {
+    for (let seat = 1; seat <= 12; seat += 1) {
         assert.equal(game.handleAction('host', { kind: 'switchSeat', seat }).success, true);
         assert.equal(game.getPlayerState('host').canConfirmRole, true);
         assert.equal(game.handleAction('host', { kind: 'confirmRole' }).success, true);
@@ -230,47 +359,63 @@ test('Werewolf confirms every seat and automatically runs the first full day-nig
             assert.equal(game.handleAction('host', { kind: 'confirmRole' }).success, false);
             assert.equal(game.getPublicState().phaseProgress.completed, 1);
         }
-        if (seat < 9) assert.equal(game.phase, 'roleReveal');
+        if (seat < 12) assert.equal(game.phase, 'roleReveal');
     }
+    acknowledgeWerewolfPresentation(game);
     assert.equal(game.phase, 'nightGuard');
     assert.equal(game.day, 1);
     assert.equal(game.getPublicState().nextPhaseName, '狼人请睁眼');
     assert.deepEqual(game.getPublicState().phaseProgress, { completed: 0, total: 1, label: '夜幕之中' });
     game.handleAction('host', { kind: 'switchSeat', seat: seatFor('guard') });
     assert.equal(game.getPlayerState('host').skillState.available, true);
-    assert.equal(game.getPlayerState('host').legalTargetSeats.length, 9);
+    assert.equal(game.getPlayerState('host').legalTargetSeats.length, 12);
     assert.equal(confirmedWerewolfNightAction(game, 'host', { targetSeat: seatFor('seer') }).success, true);
+    assert.equal(game.phase, 'nightGuard');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.phase, 'nightWolf');
-    assert.equal(game.getPublicState().phaseInstruction, '狼人请睁眼，共同决定今夜的袭击目标。其他玩家请保持安静。');
+    assert.equal(game.getPublicState().phaseInstruction, '狼人请睁眼，本阶段固定 20 秒；可更新临时票，到点结算，平票则无人遇袭。');
     assert.equal(game.handleAction('host', { kind: 'stageNightAction', targetSeat: goodTarget }).success, false);
     for (const [index, wolfSeat] of wolfSeats.entries()) {
         game.handleAction('host', { kind: 'switchSeat', seat: wolfSeat });
-        if (index === 0) assert.equal(game.handleAction('host', { kind: 'stageNightAction', targetSeat: wolfSeats[1] }).success, false);
+        if (index === 0) {
+            assert.equal(game.handleAction('host', { kind: 'stageNightAction', targetSeat: wolfSeats[1] }).success, true, '狼队可以自刀或刀狼队友');
+            assert.equal(game.getPlayerState('host').nightConfirmation, null);
+        }
         const voteTarget = index === wolfSeats.length - 1 ? dissentTarget : goodTarget;
         const vote = confirmedWerewolfNightAction(game, 'host', { targetSeat: voteTarget });
         assert.equal(vote.success, true);
         assert.equal(game.getPlayerState('host').wolfVote.myTarget, voteTarget);
-        if (index === 0) assert.equal(game.handleAction('host', { kind: 'stageNightAction', targetSeat: dissentTarget }).success, false);
+        if (index === 0) {
+            assert.equal(game.handleAction('host', { kind: 'stageNightAction', targetSeat: dissentTarget }).success, true, '倒计时结束前允许修改狼队临时票');
+            assert.equal(game.night.wolfVotes[wolfSeat], dissentTarget);
+            assert.equal(game.getPlayerState('host').nightConfirmation, null);
+            assert.equal(game.handleAction('host', { kind: 'nightAction', targetSeat: goodTarget }).success, true, '可再次覆盖临时票');
+        }
         if (index < wolfSeats.length - 1) {
             assert.equal(game.night.wolfResolved, undefined);
             assert.equal(game.phase, 'nightWolf');
         }
     }
+    assert.equal(game.phase, 'nightWolf');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.night.wolfResolved, true);
     assert.equal(game.night.wolf, goodTarget);
-    assert.equal(game.phase, 'nightSeer');
+    assert.equal(game.phase, 'nightWitch');
     for (const wolfSeat of wolfSeats) {
         game.handleAction('host', { kind: 'switchSeat', seat: wolfSeat });
-        assert.equal(game.getPlayerState('host').wolfVote.resultTarget, goodTarget);
-        assert.equal(game.getPlayerState('host').wolfVote.noKill, false);
+        assert.equal(game.night.wolf, goodTarget);
+        assert.equal(game.getPlayerState('host').wolfVote, null, '狼队临时票仅在狼人行动阶段公开');
     }
-    game.handleAction('host', { kind: 'switchSeat', seat: seatFor('seer') });
-    assert.equal(confirmedWerewolfNightAction(game, 'host', { targetSeat: seatFor('werewolf') }).success, true);
-    assert.equal(game.phase, 'nightWitch');
-    assert.equal(game.getPlayerState('host').seerResult.faction, 'wolf');
     game.handleAction('host', { kind: 'switchSeat', seat: seatFor('witch') });
     assert.equal(game.getPlayerState('host').wolfSeat, goodTarget);
     assert.equal(confirmedWerewolfNightAction(game, 'host', { choice: 'save', targetSeat: goodTarget }).success, true);
+    assert.equal(game.phase, 'nightWitch');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    assert.equal(game.phase, 'nightSeer');
+    game.handleAction('host', { kind: 'switchSeat', seat: seatFor('seer') });
+    assert.equal(confirmedWerewolfNightAction(game, 'host', { targetSeat: seatFor('werewolf') }).success, true);
+    assert.equal(game.phase, 'nightSeer');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.phase, 'day');
     assert.equal(game.seats.find(seat => seat.number === goodTarget).alive, true);
 
@@ -297,20 +442,24 @@ test('Werewolf confirms every seat and automatically runs the first full day-nig
     assert.equal(game.getPlayerState('host').canStartLastWords, true);
     assert.equal(game.handleAction('host', { kind: 'startLastWords' }).success, true);
     assert.equal(game.handleAction('host', { kind: 'finishLastWords' }).success, true);
+    acknowledgeWerewolfPresentation(game);
     assert.equal(game.phase, 'nightGuard');
     assert.equal(game.day, 2);
 });
 
 test('Werewolf retries a tied wolf attack once, then treats a second tie as no kill', () => {
-    const game = new WerewolfEngine('werewolf-wolf-tie', players(['host']), 'host', () => 0);
+    const game = new WerewolfEngine('werewolf-wolf-tie', players(['host']), 'host', () => 0, Date.now, { playerCount: 12 });
     game.start();
-    for (let seat = 1; seat <= 9; seat += 1) {
+    for (let seat = 1; seat <= 12; seat += 1) {
         game.handleAction('host', { kind: 'switchSeat', seat });
         game.handleAction('host', { kind: 'confirmRole' });
     }
+    acknowledgeWerewolfPresentation(game);
     const guardSeat = game.seats.find(seat => seat.role === 'guard').number;
     game.handleAction('host', { kind: 'switchSeat', seat: guardSeat });
     confirmedWerewolfNightAction(game, 'host', { targetSeat: guardSeat });
+    assert.equal(game.phase, 'nightGuard');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.phase, 'nightWolf');
 
     const wolfSeats = game.seats.filter(seat => seat.role === 'werewolf').map(seat => seat.number);
@@ -321,18 +470,22 @@ test('Werewolf retries a tied wolf attack once, then treats a second tie as no k
     });
 
     assert.equal(castTiedRound().every(result => result.success), true);
+    assert.equal(game.night.wolfVoteRound || 1, 1);
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.night.wolfVoteRound, 2);
     assert.deepEqual(game.night.wolfVotes, {});
     assert.deepEqual(game.night.wolfTieTargets.sort((left, right) => left - right), goodTargets.slice().sort((left, right) => left - right));
     assert.equal(game.night.wolfResolved, undefined);
 
     assert.equal(castTiedRound().every(result => result.success), true);
+    assert.equal(game.night.wolfResolved, undefined);
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.night.wolfVoteRound, 2);
     assert.equal(game.night.wolfResolved, true);
     assert.equal(game.night.wolf, null);
-    assert.equal(game.getPlayerState('host').wolfVote.noKill, true);
-    assert.equal(game.getPlayerState('host').wolfVote.resultTarget, null);
-    assert.equal(game.phase, 'nightSeer');
+    assert.equal(game.night.wolf, null);
+    assert.equal(game.night.wolfResolved, true);
+    assert.equal(game.phase, 'nightWitch');
 });
 
 test('Werewolf orders simultaneous night deaths by seat number', () => {
@@ -348,6 +501,51 @@ test('Werewolf orders simultaneous night deaths by seat number', () => {
     assert.equal(game.announcement.text, `天亮，${low}、${high} 号倒牌`);
 });
 
+test('Werewolf labels ordinary first-night words separately from daytime words', () => {
+    const game = new WerewolfEngine('werewolf-first-night-word-label', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: false });
+    assert.equal(game.start().success, true);
+    const victim = game.seats.find(seat => seat.role === 'villager');
+    game.day = 1;
+    game.phase = 'nightSeer';
+    game.night = { wolf: victim.number, guard: null, saved: false, poison: null };
+    game._resolveNight();
+    game.handleAction('host', { kind: 'switchSeat', seat: victim.number });
+    assert.equal(game.handleAction('host', { kind: 'confirmDeathResolution' }).success, true);
+    assert.equal(game.phase, 'lastWords');
+    assert.equal(game.getPublicState().lastWordsFlow.currentKind, 'firstNight');
+    game.handleAction('host', { kind: 'startLastWords' });
+    assert.equal(game.publicEvents.at(-1).title, '首夜遗言');
+});
+
+test('Werewolf publishes the complete night death chain before an edge-condition win', () => {
+    const game = new WerewolfEngine('werewolf-night-edge-finale', players(['host']), 'host', () => 0, () => 1234, { winCondition: 'edge', sheriffEnabled: false });
+    game.start();
+    const villagers = game.seats.filter(seat => seat.role === 'villager').map(seat => seat.number);
+    assert.equal(villagers.length, 3);
+    const nightVictims = villagers.slice(0, 2);
+    game._seat(villagers[2]).alive = false;
+    game.day = 2;
+    game.phase = 'nightSeer';
+    game.night = { wolf: nightVictims[0], guard: null, saved: false, poison: nightVictims[1] };
+
+    game._resolveNight();
+
+    assert.equal(game.status, 'playing', '终局夜死仍需先完成离场确认');
+    assert.equal(game.phase, 'deathResolution');
+    for (const number of nightVictims) {
+        game.handleAction('host', { kind: 'switchSeat', seat: number });
+        assert.equal(game.handleAction('host', { kind: 'confirmDeathResolution' }).success, true);
+    }
+    assert.equal(game.status, 'ended');
+    assert.equal(game.phase, 'ended');
+    assert.deepEqual(game.announcement.deaths, nightVictims.slice().sort((left, right) => left - right));
+    assert.deepEqual(game.publicEvents.map(event => event.kind), ['nightDeaths', 'elimination', 'elimination', 'identityReveal']);
+    assert.deepEqual(game.publicEvents.slice(1, 3).map(event => event.eliminatedSeats), nightVictims.map(seat => [seat]));
+    assert.equal(game.winner.reason, 'allVillagersEliminated');
+    assert.equal(game.winner.trigger, 'nightDeaths');
+    assert.deepEqual(game.winner.eliminatedSeats, nightVictims.slice().sort((left, right) => left - right));
+});
+
 test('Werewolf hides wolf-vote messages and state from non-wolves and dead wolves', () => {
     const game = new WerewolfEngine('werewolf-wolf-privacy', players(['wolf-user', 'good-user']), 'wolf-user', () => 0);
     game.start();
@@ -360,7 +558,7 @@ test('Werewolf hides wolf-vote messages and state from non-wolves and dead wolve
     game.phase = 'nightWolf';
     const action = confirmedWerewolfNightAction(game, wolfUser, { targetSeat: goodSeat.number });
     assert.equal(action.success, true);
-    assert.match(game.getPlayerAction(action, wolfUser).message, /袭击选择已藏入夜色/);
+    assert.match(game.getPlayerAction(action, wolfUser).message, /临时袭击票已更新/);
     assert.equal(game.getPlayerAction(action, goodUser).message, '');
     assert.equal(game.getPlayerState(goodUser).wolfVote, null);
     assert.deepEqual(game.getPlayerState(goodUser).phaseProgress, { completed: 0, total: 1, label: '夜幕之中' });
@@ -370,21 +568,24 @@ test('Werewolf hides wolf-vote messages and state from non-wolves and dead wolve
 });
 
 test('Werewolf keeps the fixed night order when a hidden role is dead', () => {
-    const game = new WerewolfEngine('werewolf-dead-night-role', players(['host']), 'host', () => 0);
+    const game = new WerewolfEngine('werewolf-dead-night-role', players(['host']), 'host', () => 0, Date.now, { playerCount: 12 });
     game.start();
     const guard = game.seats.find(seat => seat.role === 'guard');
     const seer = game.seats.find(seat => seat.role === 'seer');
     guard.alive = false;
     seer.alive = false;
-    for (let seat = 1; seat <= 9; seat += 1) {
+    for (let seat = 1; seat <= 12; seat += 1) {
         game.handleAction('host', { kind: 'switchSeat', seat });
         game.handleAction('host', { kind: 'confirmRole' });
     }
+    acknowledgeWerewolfPresentation(game);
     assert.equal(game.phase, 'nightGuard');
     assert.equal(game.getPublicState().nextPhaseName, '狼人请睁眼');
     game.handleAction('host', { kind: 'switchSeat', seat: guard.number });
     assert.equal(game.getPlayerState('host').canConfirmDeadRole, true);
     assert.equal(game.handleAction('host', { kind: 'confirmDeadRole' }).success, true);
+    assert.equal(game.phase, 'nightGuard');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.phase, 'nightWolf');
     const wolves = game.seats.filter(seat => seat.alive && seat.role === 'werewolf');
     const target = game.seats.find(seat => seat.alive && seat.role !== 'werewolf').number;
@@ -392,11 +593,22 @@ test('Werewolf keeps the fixed night order when a hidden role is dead', () => {
         game.handleAction('host', { kind: 'switchSeat', seat: wolf.number });
         confirmedWerewolfNightAction(game, 'host', { targetSeat: target });
     }
+    assert.equal(game.phase, 'nightWolf');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    assert.equal(game.phase, 'nightWitch');
+    const witch = game.seats.find(item => item.role === 'witch');
+    game.handleAction('host', { kind: 'switchSeat', seat: witch.number });
+    assert.equal(game.getPlayerState('host').skillState.available, true);
+    assert.equal(confirmedWerewolfNightAction(game, 'host', { choice: 'pass' }).success, true);
+    assert.equal(game.phase, 'nightWitch');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
     assert.equal(game.phase, 'nightSeer');
     game.handleAction('host', { kind: 'switchSeat', seat: seer.number });
     assert.equal(game.getPlayerState('host').canConfirmDeadRole, true);
     assert.equal(game.handleAction('host', { kind: 'confirmDeadRole' }).success, true);
-    assert.equal(game.phase, 'nightWitch');
+    assert.equal(game.phase, 'nightSeer');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    assert.notEqual(game.phase, 'nightSeer');
 });
 
 test('Werewolf uses the same private death resolution for ordinary, hunter, and poisoned-hunter deaths', () => {
@@ -427,7 +639,8 @@ test('Werewolf uses the same private death resolution for ordinary, hunter, and 
     assert.equal(ordinary.phase, 'lastWords', '出局私密结算后自动进入遗言');
     assert.equal(ordinary.handleAction('host', { kind: 'startLastWords' }).success, true);
     assert.equal(ordinary.handleAction('host', { kind: 'finishLastWords' }).success, true);
-    assert.equal(ordinary.phase, 'nightGuard', '普通玩家完成遗言后不会卡住');
+    acknowledgeWerewolfPresentation(ordinary);
+    assert.equal(ordinary.phase, 'nightWolf', '普通玩家完成遗言后不会卡住');
 
     const game = new WerewolfEngine('werewolf-hunter', players(['host']), 'host', () => 0);
     game.start();
@@ -477,7 +690,8 @@ test('Werewolf uses the same private death resolution for ordinary, hunter, and 
         assert.equal(game.handleAction('host', { kind: 'startLastWords' }).success, true);
         assert.equal(game.handleAction('host', { kind: 'finishLastWords' }).success, true);
     }
-    assert.equal(game.phase, 'nightGuard');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightWolf');
     assert.equal(game.day, 2);
 
     const poisoned = new WerewolfEngine('werewolf-poisoned-hunter', players(['host']), 'host', () => 0);
@@ -487,8 +701,16 @@ test('Werewolf uses the same private death resolution for ordinary, hunter, and 
     poisoned.phase = 'nightWitch';
     poisoned.day = 1;
     poisoned.night = {};
+    const poisonedClock = Number(poisoned.now());
+    poisoned.nightFlow = { phase: 'nightWitch', startedAt: poisonedClock, deadlineAt: poisonedClock + 20_000, durationSeconds: 20 };
     poisoned.handleAction('host', { kind: 'switchSeat', seat: witch.number });
     assert.equal(confirmedWerewolfNightAction(poisoned, 'host', { choice: 'poison', targetSeat: poisonedHunter.number }).success, true);
+    assert.equal(poisoned.phase, 'nightWitch');
+    assert.equal(advanceWerewolfNight(poisoned)?.success, true);
+    poisoned.handleAction('host', { kind: 'switchSeat', seat: poisoned.seats.find(seat => seat.role === 'seer').number });
+    assert.equal(confirmedWerewolfNightAction(poisoned, 'host', { targetSeat: poisoned.seats.find(seat => seat.number !== poisonedHunter.number).number }).success, true);
+    assert.equal(poisoned.phase, 'nightSeer');
+    assert.equal(advanceWerewolfNight(poisoned)?.success, true);
     assert.equal(poisonedHunter.alive, false);
     assert.equal(poisoned.pendingHunter, null);
     assert.equal(poisoned.phase, 'deathResolution');
@@ -501,6 +723,33 @@ test('Werewolf uses the same private death resolution for ordinary, hunter, and 
     assert.equal(poisoned.handleAction('host', { kind: 'startLastWords' }).success, true);
     assert.equal(poisoned.handleAction('host', { kind: 'finishLastWords' }).success, true);
     assert.equal(poisoned.phase, 'day');
+
+    const laterPoison = new WerewolfEngine('werewolf-later-poison-no-words', players(['host']), 'host', () => 0, Date.now);
+    laterPoison.start();
+    const laterPoisonVictim = laterPoison.seats.find(seat => seat.role === 'villager');
+    laterPoison.day = 2;
+    laterPoison._beginDeathResolution([laterPoisonVictim.number], 'day', [laterPoisonVictim.number], false);
+    laterPoison.handleAction('host', { kind: 'switchSeat', seat: laterPoisonVictim.number });
+    assert.equal(laterPoison.handleAction('host', { kind: 'confirmDeathResolution' }).success, true);
+    assert.equal(laterPoison.phase, 'day');
+    assert.equal(laterPoison.lastWordsFlow, null, '第二夜女巫毒杀也没有遗言');
+});
+
+test('Werewolf gives a later-night hunter shot the same no-last-words window as its night death', () => {
+    const game = new WerewolfEngine('werewolf-later-night-hunter', players(['host']), 'host', () => 0);
+    assert.equal(game.start().success, true);
+    game.day = 2;
+    const hunter = game.seats.find(seat => seat.role === 'hunter');
+    const target = game.seats.find(seat => seat.alive && seat.number !== hunter.number);
+    hunter.alive = false;
+    game._beginDeathResolution([hunter.number], 'day', [], false);
+    game.handleAction('host', { kind: 'switchSeat', seat: hunter.number });
+    assert.equal(game.handleAction('host', { kind: 'hunterAction', choice: 'shoot', targetSeat: target.number }).success, true);
+    game.handleAction('host', { kind: 'switchSeat', seat: target.number });
+    assert.equal(game.handleAction('host', { kind: 'confirmDeathResolution' }).success, true);
+    assert.equal(game.phase, 'day');
+    assert.equal(game.lastWordsFlow, null);
+    assert.equal(game.lastWordsHistory.length, 0);
 });
 
 test('Werewolf announces night deaths, times ordered speeches, and retains complete public vote history', () => {
@@ -513,8 +762,20 @@ test('Werewolf announces night deaths, times ordered speeches, and retains compl
     game.day = 1;
     game.phase = 'nightWitch';
     game.night = { wolf: firstVictim.number };
+    game.nightFlow = { phase: 'nightWitch', startedAt: now, deadlineAt: now + 20_000, durationSeconds: 20 };
     game.handleAction('host', { kind: 'switchSeat', seat: witch.number });
     assert.equal(confirmedWerewolfNightAction(game, 'host', { choice: 'pass' }).success, true);
+    assert.equal(game.phase, 'nightWitch');
+    now += 20_000;
+    assert.equal(game.handleSystemTick().success, true);
+    assert.equal(game.phase, 'nightSeer');
+    const seer = game.seats.find(seat => seat.role === 'seer');
+    game.handleAction('host', { kind: 'switchSeat', seat: seer.number });
+    const seerTarget = game.seats.find(seat => seat.alive && seat.number !== seer.number).number;
+    assert.equal(confirmedWerewolfNightAction(game, 'host', { targetSeat: seerTarget }).success, true);
+    assert.equal(game.phase, 'nightSeer');
+    now += 20_000;
+    assert.equal(game.handleSystemTick().success, true);
 
     let publicState = game.getPublicState();
     assert.equal(game.phase, 'deathResolution');
@@ -592,7 +853,8 @@ test('Werewolf announces night deaths, times ordered speeches, and retains compl
     assert.equal(game.handleAction('host', { kind: 'confirmDeathResolution' }).success, true);
     assert.equal(game.handleAction('host', { kind: 'startLastWords' }).success, true);
     assert.equal(game.handleAction('host', { kind: 'finishLastWords' }).success, true);
-    assert.equal(game.phase, 'nightGuard');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightWolf');
     assert.equal(game.getPublicState().voteHistory[0].exiledSeat, secondVictim.number, '进入下一夜后完整票型仍保留');
 });
 
@@ -621,12 +883,21 @@ test('Werewolf wraps counterclockwise speech order and records a tied public bal
     assert.deepEqual(result.topSeats, [1, 2]);
     assert.deepEqual(result.counts, { 1: 4, 2: 4 });
     assert.equal(result.ballots.length, 8);
+    assert.equal(game.phase, 'dayRunoffSpeech');
+    assert.deepEqual(game.runoffSpeechFlow.order, [2, 1]);
+    for (const seatNumber of game.runoffSpeechFlow.order) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        assert.equal(game.handleAction('host', { kind: 'startRunoffSpeech' }).success, true);
+        assert.equal(game.handleAction('host', { kind: 'finishRunoffSpeech' }).success, true);
+    }
     assert.equal(game.phase, 'vote');
     for (let seatNumber = 1; seatNumber <= 8; seatNumber += 1) {
+        if ([1, 2].includes(seatNumber)) continue;
         game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
         assert.equal(game.handleAction('host', { kind: 'vote', targetSeat: seatNumber % 2 ? 1 : 2 }).success, true);
     }
-    assert.equal(game.phase, 'nightGuard');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightWolf');
     assert.equal(game.getPublicState().lastVoteResult.tied, true);
     assert.equal(game.getPublicState().voteHistory.length, 2);
 });
@@ -650,6 +921,10 @@ test('Werewolf runs a private first-day sheriff election and applies the 1.5 vot
     game.start();
     game.day = 1;
     game._beginDayAgenda();
+    assert.equal(game.phase, 'sheriffPrelude');
+    assert.equal(game.sheriff.deadlineAt, null, '天亮播报结束前不得启动报名计时');
+    assert.equal(game.handleAction('host', { kind: 'sheriffSignup', choice: 'run' }).success, false);
+    acknowledgeWerewolfPresentation(game);
     assert.equal(game.phase, 'sheriffSignup');
     for (let seatNumber = 1; seatNumber <= 9; seatNumber += 1) {
         game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
@@ -684,9 +959,355 @@ test('Werewolf runs a private first-day sheriff election and applies the 1.5 vot
     assert.equal(game.getPublicState().lastVoteResult.ballots.find(ballot => ballot.voterSeat === 1).weight, 1.5);
 });
 
+test('Werewolf publishes each sheriff campaign and runoff speaker start', () => {
+    const game = new WerewolfEngine('werewolf-sheriff-speech-events', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: true });
+    game.start();
+    game.day = 1;
+    game._beginDayAgenda();
+    acknowledgeWerewolfPresentation(game);
+    for (let seatNumber = 1; seatNumber <= 9; seatNumber += 1) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        assert.equal(game.handleAction('host', { kind: 'sheriffSignup', choice: seatNumber <= 2 ? 'run' : 'skip' }).success, true);
+    }
+    assert.deepEqual(game.publicEvents.map(event => event.kind), ['sheriffSignup', 'sheriffCandidates', 'sheriffSpeechStart']);
+    for (const seatNumber of [1, 2]) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        assert.equal(game.handleAction('host', { kind: 'finishSheriffCampaign', choice: 'stay' }).success, true);
+    }
+    assert.equal(game.phase, 'sheriffVote');
+    for (let seatNumber = 3; seatNumber <= 9; seatNumber += 1) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        const targetSeat = seatNumber <= 5 ? 1 : seatNumber <= 8 ? 2 : null;
+        assert.equal(game.handleAction('host', { kind: 'sheriffVote', targetSeat }).success, true);
+    }
+    assert.equal(game.phase, 'sheriffRunoffSpeech');
+    assert.equal(game.publicEvents.at(-2).kind, 'sheriffRunoff');
+    assert.equal(game.publicEvents.at(-1).kind, 'sheriffRunoffSpeechStart');
+    for (const seatNumber of game.sheriff.runoffCandidates) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        assert.equal(game.handleAction('host', { kind: 'finishSheriffRunoffSpeech' }).success, true);
+    }
+    assert.equal(game.publicEvents.at(-1).kind, 'sheriffRunoffSpeechStart');
+});
+
+test('Werewolf holds the first sheriff election before revealing the first-night deaths', () => {
+    const game = new WerewolfEngine('werewolf-first-day-agenda', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: true, playerCount: 12 });
+    game.start();
+    game.handleAction('host', { kind: 'confirmAllRoles' });
+    acknowledgeWerewolfPresentation(game);
+    const seatFor = role => game.seats.find(seat => seat.role === role).number;
+    const victim = seatFor('villager');
+    const guard = seatFor('guard');
+    const witch = seatFor('witch');
+    const seer = seatFor('seer');
+    const wolfTarget = seatFor('werewolf');
+
+    game.handleAction('host', { kind: 'switchSeat', seat: guard });
+    assert.equal(confirmedWerewolfNightAction(game, 'host', { choice: 'pass' }).success, true);
+    assert.equal(game.phase, 'nightGuard');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    for (const wolf of game.seats.filter(seat => seat.role === 'werewolf')) {
+        game.handleAction('host', { kind: 'switchSeat', seat: wolf.number });
+        assert.equal(confirmedWerewolfNightAction(game, 'host', { targetSeat: victim }).success, true);
+    }
+    assert.equal(game.phase, 'nightWolf');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    game.handleAction('host', { kind: 'switchSeat', seat: witch });
+    assert.equal(confirmedWerewolfNightAction(game, 'host', { choice: 'pass' }).success, true);
+    assert.equal(game.phase, 'nightWitch');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+    game.handleAction('host', { kind: 'switchSeat', seat: seer });
+    assert.equal(confirmedWerewolfNightAction(game, 'host', { targetSeat: wolfTarget }).success, true);
+    assert.equal(game.phase, 'nightSeer');
+    assert.equal(advanceWerewolfNight(game)?.success, true);
+
+    assert.equal(game.phase, 'sheriffPrelude');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'sheriffSignup');
+    assert.equal(game.pendingNightResult.deaths.includes(victim), true);
+    assert.equal(game.getPublicState().announcement, null);
+    assert.equal(game.getPublicState().seats.every(seat => seat.alive), true, '首夜死讯公开前，公共席位不能泄露死亡');
+
+    const candidate = game.seats.find(seat => seat.alive && seat.number !== victim).number;
+    for (const seat of game.seats) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seat.number });
+        assert.equal(game.handleAction('host', { kind: 'sheriffSignup', choice: seat.number === candidate ? 'run' : 'skip' }).success, true);
+    }
+    assert.equal(game.sheriff.holderSeat, candidate);
+    assert.deepEqual(game.getPublicState().announcement.deaths, [victim]);
+    assert.equal(game.phase, 'deathResolution');
+});
+
+test('Werewolf lets a hidden first-night victim complete the sheriff election', () => {
+    const game = new WerewolfEngine('werewolf-hidden-victim-election', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: true });
+    game.start();
+    const victim = game.seats.find(seat => seat.role === 'villager');
+    victim.alive = false;
+    game.day = 1;
+    game.pendingNightResult = { deaths: [victim.number], poisonedSeats: [], announcement: { day: 1, kind: 'night', deaths: [victim.number], peaceful: false, text: `天亮，${victim.number} 号倒牌`, createdAt: 1 } };
+    game._beginDayAgenda();
+    acknowledgeWerewolfPresentation(game);
+
+    game.handleAction('host', { kind: 'switchSeat', seat: victim.number });
+    assert.equal(game.getPlayerState('host').sheriffAction.kind, 'signup');
+    assert.equal(game.handleAction('host', { kind: 'sheriffSignup', choice: 'run' }).success, true);
+    for (const seat of game.seats.filter(item => item.number !== victim.number)) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seat.number });
+        game.handleAction('host', { kind: 'sheriffSignup', choice: 'skip' });
+    }
+    assert.equal(game.sheriff.holderSeat, victim.number);
+    assert.equal(game.phase, 'deathResolution');
+    assert.equal(game.pendingBadge.seat, victim.number);
+});
+
+test('Werewolf sheriff runoff ballots remain restricted to the original non-candidates', () => {
+    const game = new WerewolfEngine('werewolf-original-down-voters', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: true });
+    game.start(); game.day = 1; game._beginDayAgenda(); acknowledgeWerewolfPresentation(game);
+    for (const seat of game.seats) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seat.number });
+        game.handleAction('host', { kind: 'sheriffSignup', choice: seat.number <= 3 ? 'run' : 'skip' });
+    }
+    for (const seatNumber of [1, 2, 3]) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        game.handleAction('host', { kind: 'finishSheriffCampaign', choice: 'stay' });
+    }
+    for (let seatNumber = 4; seatNumber <= 9; seatNumber += 1) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        game.handleAction('host', { kind: 'sheriffVote', targetSeat: seatNumber <= 6 ? 1 : 2 });
+    }
+    assert.equal(game.phase, 'sheriffRunoffSpeech');
+    for (const seatNumber of [1, 2]) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        game.handleAction('host', { kind: 'finishSheriffRunoffSpeech' });
+    }
+    game.handleAction('host', { kind: 'switchSeat', seat: 3 });
+    assert.equal(game.getPlayerState('host').sheriffAction, null);
+    assert.equal(game.handleAction('host', { kind: 'sheriffVote', targetSeat: 1 }).success, false);
+    assert.deepEqual(game._sheriffEligibleVoters().map(seat => seat.number), [4, 5, 6, 7, 8, 9]);
+});
+
+test('Werewolf self-destruct publishes one complete scene chain and grants a 30-second self-destruct statement', () => {
+    const game = new WerewolfEngine('werewolf-self-destruct', players(['host']), 'host', () => 0, () => 77, { sheriffEnabled: false });
+    game.start(); game.day = 2; game._beginDaySpeech();
+    const wolf = game.seats.find(seat => seat.role === 'werewolf');
+    game.handleAction('host', { kind: 'switchSeat', seat: wolf.number });
+    assert.equal(game.getPlayerState('host').canWolfSelfDestruct, true);
+    assert.equal(game.handleAction('host', { kind: 'wolfSelfDestruct' }).success, true);
+    assert.deepEqual(game.publicEvents.slice(-2).map(event => event.kind), ['wolfSelfDestruct', 'elimination']);
+    assert.equal(game.phase, 'lastWords');
+    assert.deepEqual(game.lastWordsFlow.order, [wolf.number]);
+    assert.equal(game.lastWordsFlow.turn, null, '自爆结果播放完前不能消耗遗言时间');
+    assert.equal(game.presentationGate.kind, 'selfDestructResult');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.publicEvents.at(-1).kind, 'selfDestructWordsStart');
+    assert.equal(game.lastWordsFlow.turn, null, '遗言提示播放期间不得消耗遗言时间');
+    assert.equal(game.presentationGate.kind, 'selfDestructPrompt');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.getPublicState().lastWordsFlow.durationSeconds, 30);
+    assert.equal(game.getPublicState().flowRules.selfDestructWordsSeconds, 30);
+    game.handleAction('host', { kind: 'switchSeat', seat: wolf.number });
+    assert.equal(game.getPlayerState('host').canStartLastWords, false, '自爆遗言应自动开始');
+    assert.equal(game.getPlayerState('host').canFinishLastWords, true);
+    assert.equal(game.publicEvents.at(-1).kind, 'selfDestructWordsStart');
+    assert.equal(game.handleAction('host', { kind: 'finishLastWords', text: '这是我的自爆遗言' }).success, true);
+    assert.equal(game.publicEvents.at(-1).kind, 'nightFalls');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightWolf');
+    assert.equal(game.lastWordsFlow, null);
+    assert.equal(game.lastWordsHistory.at(-1).kind, 'selfDestruct');
+    assert.equal(game.lastWordsHistory.at(-1).durationSeconds, 30);
+
+    const laterNight = new WerewolfEngine('werewolf-no-later-night-last-words', players(['host']), 'host', () => 0);
+    laterNight.start(); laterNight.day = 2;
+    const victim = laterNight.seats.find(seat => seat.role === 'villager');
+    victim.alive = false;
+    laterNight._beginDeathResolution([victim.number], 'day', [], false);
+    laterNight.handleAction('host', { kind: 'switchSeat', seat: victim.number });
+    laterNight.handleAction('host', { kind: 'confirmDeathResolution' });
+    assert.equal(laterNight.phase, 'day');
+    assert.equal(laterNight.lastWordsFlow, null);
+});
+
+test('Werewolf uses board-specific ordinary last-words duration', () => {
+    const game = new WerewolfEngine('werewolf-twelve-last-words', players(['host']), 'host', () => 0, Date.now, { playerCount: 12, winCondition: 'edge' });
+    assert.equal(game.start().success, true);
+    assert.equal(game.getPublicState().flowRules.lastWordsSeconds, 120);
+    const victim = game.seats.find(seat => seat.role === 'villager');
+    victim.alive = false;
+    game.day = 1;
+    game._beginDeathResolution([victim.number], 'day', [], true);
+    game.handleAction('host', { kind: 'switchSeat', seat: victim.number });
+    assert.equal(game.handleAction('host', { kind: 'confirmDeathResolution' }).success, true);
+    assert.equal(game.phase, 'lastWords');
+    assert.equal(game.getPublicState().lastWordsFlow.durationSeconds, 120);
+});
+
+test('Werewolf sheriff-phase self-destruct consumes the badge and preserves first-night victim last words', () => {
+    const game = new WerewolfEngine('werewolf-sheriff-self-destruct', players(['host']), 'host', () => 0, () => 88, { sheriffEnabled: true });
+    game.start(); game.day = 1;
+    const victim = game.seats.find(seat => seat.role === 'villager');
+    const wolf = game.seats.find(seat => seat.role === 'werewolf');
+    victim.alive = false;
+    game.pendingNightResult = { deaths: [victim.number], poisonedSeats: [], announcement: { day: 1, kind: 'night', deaths: [victim.number], peaceful: false, text: `天亮，${victim.number} 号倒牌`, createdAt: 88 } };
+    game._beginDayAgenda();
+    acknowledgeWerewolfPresentation(game);
+    game.handleAction('host', { kind: 'switchSeat', seat: wolf.number });
+
+    assert.equal(game.handleAction('host', { kind: 'wolfSelfDestruct' }).success, true);
+    assert.deepEqual(game.publicEvents.map(event => event.kind), ['sheriffSignup', 'wolfSelfDestruct', 'elimination']);
+    assert.equal(game.phase, 'lastWords');
+    assert.equal(game.lastWordsFlow.turn, null);
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.publicEvents.at(-1).kind, 'selfDestructWordsStart');
+    assert.equal(game.lastWordsFlow.turn, null);
+    acknowledgeWerewolfPresentation(game);
+    game.handleAction('host', { kind: 'switchSeat', seat: wolf.number });
+    assert.equal(game.getPlayerState('host').canStartLastWords, false);
+    assert.equal(game.getPlayerState('host').canFinishLastWords, true);
+    assert.equal(game.publicEvents.at(-1).title, `${wolf.number} 号玩家发表遗言`);
+    assert.equal(game.publicEvents.at(-1).text, '');
+    assert.equal(game.handleAction('host', { kind: 'finishLastWords' }).success, true);
+    assert.equal(game.publicEvents.at(-1).kind, 'badgeTorn');
+    assert.equal(game.publicEvents.at(-1).title, '本局警徽流失');
+    assert.equal(game.publicEvents.at(-1).text, '本局警徽流失');
+    assert.equal(game.sheriff.status, 'torn');
+    acknowledgeWerewolfPresentation(game);
+    assert.deepEqual(game.publicEvents.map(event => event.kind), ['sheriffSignup', 'wolfSelfDestruct', 'elimination', 'selfDestructWordsStart', 'badgeTorn', 'nightDeaths', 'elimination']);
+    assert.equal(game.publicEvents.some(event => event.kind === 'nightFalls'), false, '首夜死者结算前不能先播第二次天黑');
+    assert.equal(game.phase, 'deathResolution');
+    game.handleAction('host', { kind: 'switchSeat', seat: victim.number });
+    assert.equal(game.handleAction('host', { kind: 'confirmDeathResolution' }).success, true);
+    assert.equal(game.phase, 'lastWords');
+    assert.deepEqual(game.lastWordsFlow.order, [victim.number]);
+    assert.equal(game.lastWordsFlow.durationBySeat[victim.number], undefined);
+    assert.equal(game.getPublicState().lastWordsFlow.currentKind, 'firstNight');
+    game.handleAction('host', { kind: 'switchSeat', seat: victim.number });
+    assert.equal(game.handleAction('host', { kind: 'startLastWords' }).success, true);
+    assert.equal(game.publicEvents.at(-1).title, '首夜遗言');
+    assert.equal(game.handleAction('host', { kind: 'finishLastWords', text: '这是首夜遗言' }).success, true);
+    assert.equal(game.lastWordsHistory.at(-1).kind, 'firstNight');
+    assert.equal(game.publicEvents.at(-1).kind, 'nightFalls', '第二次天黑必须排在首夜死者及遗言处理之后');
+    assert.equal(game.phase, 'nightPrelude');
+});
+
+test('Werewolf defers the first 12-player sheriff self-destruct and tears the badge on the second attempt', () => {
+    const game = new WerewolfEngine('werewolf-twelve-sheriff-retry', players(['host']), 'host', () => 0, () => 500, { sheriffEnabled: true, playerCount: 12 });
+    game.start(); game.day = 1;
+    game.pendingNightResult = { deaths: [], poisonedSeats: [], announcement: { day: 1, kind: 'night', deaths: [], peaceful: true, text: '天亮，昨夜平安夜', createdAt: 500 } };
+    game._beginDayAgenda();
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.sheriff.electionAttempt, 1);
+
+    const wolves = game.seats.filter(seat => seat.role === 'werewolf');
+    game.handleAction('host', { kind: 'switchSeat', seat: wolves[0].number });
+    assert.equal(game.handleAction('host', { kind: 'wolfSelfDestruct' }).success, true);
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.presentationGate.kind, 'selfDestructPrompt');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.lastWordsFlow.turn.durationSeconds, 30);
+    assert.equal(game.handleAction('host', { kind: 'finishLastWords' }).success, true);
+    assert.equal(game.sheriff.status, 'deferred');
+    assert.equal(game.publicEvents.at(-1).kind, 'sheriffDeferred');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightPrelude');
+    assert.equal(game.publicEvents.at(-1).kind, 'nightFalls');
+
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.day, 2);
+    game._beginDayAgenda();
+    assert.equal(game.phase, 'sheriffPrelude');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.sheriff.electionAttempt, 2);
+
+    game.handleAction('host', { kind: 'switchSeat', seat: wolves[1].number });
+    assert.equal(game.handleAction('host', { kind: 'wolfSelfDestruct' }).success, true);
+    acknowledgeWerewolfPresentation(game);
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.handleAction('host', { kind: 'finishLastWords' }).success, true);
+    assert.equal(game.sheriff.status, 'torn');
+    assert.equal(game.publicEvents.at(-1).kind, 'badgeTorn');
+    assert.equal(game.publicEvents.at(-1).title, '本局警徽流失');
+    assert.equal(game.publicEvents.at(-1).text, '本局警徽流失');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightPrelude');
+    assert.equal(game.day, 3);
+    assert.equal(game.publicEvents.at(-1).kind, 'nightFalls', '警徽流失必须在第三次天黑请闭眼之前播放');
+});
+
+test('Werewolf drops a malformed duplicate bomber from the deferred first-night words queue', () => {
+    const game = new WerewolfEngine('werewolf-self-destruct-dedupe', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: true });
+    assert.equal(game.start().success, true);
+    const bomber = game.seats.find(seat => seat.role === 'werewolf');
+    const victim = game.seats.find(seat => seat.role === 'villager');
+    bomber.alive = false;
+    victim.alive = false;
+    game.pendingSelfDestructSequence = {
+        targetDay: 2,
+        selfDestructSeat: bomber.number,
+        pendingNightResult: {
+            deaths: [bomber.number, victim.number, victim.number],
+            poisonedSeats: [],
+            announcement: { day: 1, kind: 'night', deaths: [bomber.number, victim.number], peaceful: false, text: '首夜死讯', createdAt: 1 },
+        },
+    };
+    game._resumeAfterSelfDestructWords();
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'deathResolution');
+    assert.deepEqual(game.deathResolution.seats, [victim.number]);
+    assert.deepEqual(game.deathResolution.lastWordsSeats, [victim.number]);
+    assert.deepEqual(game.deathResolution.lastWordsOptions.kindBySeat, { [victim.number]: 'firstNight' });
+});
+
+test('Werewolf never schedules a second last-words turn for a seat that already completed one', () => {
+    const game = new WerewolfEngine('werewolf-last-words-history-dedupe', players(['host']), 'host', () => 0);
+    game.start();
+    const wolf = game.seats.find(seat => seat.role === 'werewolf');
+    wolf.alive = false;
+    game.lastWordsHistory.push({ day: 1, seat: wolf.number, kind: 'selfDestruct', durationSeconds: 30 });
+    let continuedAfter = null;
+    game._continueAfterDeathResolution = after => { continuedAfter = after; };
+
+    game._beginLastWords([wolf.number, wolf.number], 'night', {
+        durationBySeat: { [wolf.number]: 30 },
+        kindBySeat: { [wolf.number]: 'selfDestruct' },
+    });
+
+    assert.equal(game.lastWordsFlow, null);
+    assert.equal(continuedAfter, 'night');
+    assert.equal(game.lastWordsHistory.length, 1);
+});
+
+test('Werewolf keeps withdrawn sheriff candidates out of both sheriff ballots', () => {
+    const game = new WerewolfEngine('werewolf-withdrawn-sheriff', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: true });
+    game.start();
+    game.day = 1;
+    game._beginDayAgenda();
+    acknowledgeWerewolfPresentation(game);
+    for (let seatNumber = 1; seatNumber <= 9; seatNumber += 1) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        game.handleAction('host', { kind: 'sheriffSignup', choice: seatNumber <= 3 ? 'run' : 'skip' });
+    }
+    assert.equal(game.phase, 'sheriffCampaign');
+    game.handleAction('host', { kind: 'switchSeat', seat: 1 });
+    game.handleAction('host', { kind: 'finishSheriffCampaign', choice: 'withdraw' });
+    for (const seatNumber of [2, 3]) {
+        game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
+        game.handleAction('host', { kind: 'finishSheriffCampaign', choice: 'stay' });
+    }
+    assert.equal(game.phase, 'sheriffVote');
+    assert.equal(game._sheriffEligibleVoters().some(seat => seat.number === 1), false);
+    game.handleAction('host', { kind: 'switchSeat', seat: 1 });
+    assert.equal(game.handleAction('host', { kind: 'sheriffVote', targetSeat: 2 }).success, false);
+    for (const voter of game._sheriffEligibleVoters()) {
+        game.handleAction('host', { kind: 'switchSeat', seat: voter.number });
+        assert.equal(game.handleAction('host', { kind: 'sheriffVote', targetSeat: 2 }).success, true);
+    }
+    assert.equal(game.getPublicState().sheriff.results[0].ballots.some(ballot => ballot.voterSeat === 1), false);
+});
+
 test('Werewolf sheriff runoff ends without a sheriff after a second tie', () => {
     const game = new WerewolfEngine('werewolf-sheriff-runoff', players(['host']), 'host', () => 0, Date.now, { sheriffEnabled: true });
-    game.start(); game.day = 1; game._beginDayAgenda();
+    game.start(); game.day = 1; game._beginDayAgenda(); acknowledgeWerewolfPresentation(game);
     for (let seatNumber = 1; seatNumber <= 9; seatNumber += 1) {
         game.handleAction('host', { kind: 'switchSeat', seat: seatNumber });
         game.handleAction('host', { kind: 'sheriffSignup', choice: seatNumber <= 2 ? 'run' : 'skip' });
@@ -748,6 +1369,10 @@ test('Werewolf does not deadlock when an isolated sheriff is auto-torn with no r
     game.sheriff.holderSeat = sheriff.number;
     sheriff.alive = false;
     game._beginDeathResolution([sheriff.number], 'night');
+    assert.equal(game.phase, 'lastWords');
+    game.handleAction('host', { kind: 'switchSeat', seat: sheriff.number });
+    assert.equal(game.handleAction('host', { kind: 'startLastWords' }).success, true);
+    assert.equal(game.handleAction('host', { kind: 'finishLastWords' }).success, true);
     assert.equal(game.status, 'ended');
     assert.equal(game.phase, 'ended');
     assert.equal(game.pendingBadge, null);
@@ -765,7 +1390,8 @@ test('Werewolf stores typed last words and server ticks timed turns', () => {
     assert.equal(game.handleAction('host', { kind: 'startLastWords' }).success, true);
     now += 60_000;
     assert.equal(game.handleSystemTick().success, true);
-    assert.equal(game.phase, 'nightGuard');
+    acknowledgeWerewolfPresentation(game);
+    assert.equal(game.phase, 'nightWolf');
     assert.equal(game.lastWordsHistory[0].text, '');
 
     game.phase = 'lastWords';
@@ -803,6 +1429,14 @@ test('Werewolf resolves a decisive edge exile immediately and publishes it to ev
 
     game._resolveVote();
 
+    assert.equal(game.status, 'playing');
+    assert.equal(game.phase, 'deathResolution');
+    const villagerPlayer = game._seat(villager.number).controllerId;
+    game.activeSeat[villagerPlayer] = villager.number;
+    assert.equal(game.handleAction(villagerPlayer, { kind: 'confirmDeathResolution' }).success, true);
+    assert.equal(game.phase, 'lastWords');
+    assert.equal(game.handleAction(villagerPlayer, { kind: 'startLastWords' }).success, true);
+    assert.equal(game.handleAction(villagerPlayer, { kind: 'finishLastWords', text: '最后的白天遗言' }).success, true);
     assert.equal(game.status, 'ended');
     assert.deepEqual(game.winner, {
         faction: 'wolf', name: '狼人阵营获胜', reason: 'allVillagersEliminated', text: '最后的平民已经倒下，狼人占领了小镇。', trigger: 'exile', eliminatedSeats: [villager.number],
@@ -813,8 +1447,9 @@ test('Werewolf resolves a decisive edge exile immediately and publishes it to ev
             { kind: 'exile', text: `${villager.number} 号玩家被放逐` },
             { kind: 'elimination', text: `${villager.number} 号已出局` },
         ]);
-        assert.equal(events[2].kind, 'identityReveal');
-        assert.match(events[2].text, /狼人：/);
+        assert.equal(events[2].kind, 'lastWordsStart');
+        assert.equal(events[3].kind, 'identityReveal');
+        assert.match(events[3].text, /狼人：/);
     }
 });
 
@@ -862,7 +1497,7 @@ test('Werewolf assigns orphaned seats when another paused controller reconnects'
 });
 
 test('Werewolf WebSocket lifecycle wires transient disconnect and resume hooks', () => {
-    const appSource = ['app.js', 'server/realtime/create-realtime-server.js']
+    const appSource = ['app.js', 'server/realtime/create-realtime-server.js', 'server/realtime/room-handlers.js', 'server/realtime/socket-lifecycle.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const session = Werewolf.create('werewolf-reconnect-adapter', players(['a', 'b']), 'a');
     assert.equal(session.start().success, true);
@@ -890,11 +1525,27 @@ test('Werewolf client uses player-facing copy, matching role art, and disposes c
     assert.match(client, /speechSynthesis/);
     assert.match(client, /transitionGlyphs/);
     assert.match(client, /showPersonalElimination/);
+    assert.match(client, /WEREWOLF_PRESENTATION_TIMING/);
+    assert.match(client, /fadeInMs: 240/);
+    assert.match(client, /holdMs: 900/);
+    assert.match(client, /fadeOutMs: PRESENTATION_FADE_MS/);
+    assert.match(client, /victory: 1600/);
+    assert.match(client, /elimination: 3600/);
     assert.match(client, /您已出局/);
-    assert.match(client, /enqueueScene\(\{ kind: 'victory'/);
+    assert.match(client, /enqueueEventPresentation\(\{ \.\.\.next\.winner/);
     assert.match(client, /sceneQueue/);
-    assert.match(client, /event\.eliminatedSeats\?\.includes\(next\.activeSeat\)/);
-    assert.match(client, /event\.kind === 'elimination'[\s\S]*enqueueScene\(\{ kind: 'event', data: event \}\)/);
+    assert.match(client, /event\.kind === 'nightFalls'/);
+    assert.match(client, /presentationComplete/);
+    assert.match(client, /gameEpoch/);
+    assert.match(client, /enqueueEliminationSlot/);
+    assert.match(client, /enqueueScene\(\{ kind: 'elimination'/);
+    assert.match(client, /presentationDurationMs: WEREWOLF_SCENE_VISIBLE_MS\.elimination/);
+    assert.doesNotMatch(client, /playConcurrentPersonalElimination/);
+    assert.match(client, /const visibleRole = current\.testMode \? seat\.role \|\| model\.testRoleBySeat\.get\(seat\.number\) : ''/);
+    assert.doesNotMatch(client, /knownWolf \? seat\.knownRole \|\| 'werewolf'/);
+    assert.match(client, /current\.wolfSeat != null/);
+    assert.match(client, /myTarget = current\.wolfVote\?\.myTarget/);
+    assert.match(client, /dialog\.selected != null/);
     assert.match(client, /formatVoteBallots/);
     assert.match(client, /data-ui="bulletins"/);
     assert.match(client, /data-action="voteAbstain"/);
@@ -903,6 +1554,8 @@ test('Werewolf client uses player-facing copy, matching role art, and disposes c
     assert.match(client, /confirmAllRolesForTest/);
     assert.match(client, /pendingSeats\.forEach/);
     assert.match(client, /testRoleBySeat/);
+    assert.match(client, /current\.testMode \|\| model\.roleIdentityVisible/);
+    assert.doesNotMatch(client, /current\.phase !== 'roleReveal' \|\| model\.hasViewedRole/);
     assert.match(client, /current\.testMode \? '测试席位' : '玩家席位'/);
     assert.match(client, /\$\('seatTools'\)\?\.classList\.toggle\('is-hidden', !current\.testMode\)/);
     assert.match(client, /你的秘密界面/);
@@ -912,13 +1565,22 @@ test('Werewolf client uses player-facing copy, matching role art, and disposes c
     assert.match(client, /confirmNightAction/);
     assert.match(client, /confirmSeerResult/);
     assert.match(style, /\.ww-transition\.is-peaceful \.ww-transition-result/);
-    assert.match(style, /\.ww-transition\.is-danger \.ww-transition-result \{[\s\S]*font: 600 clamp\(38px, 8vw, 78px\)/);
+    assert.match(style, /\.ww-transition-result \{[\s\S]*font: 600 clamp\(22px, 3\.6vw, 36px\)/);
+    assert.doesNotMatch(style, /\.ww-transition\.is-danger \.ww-transition-result \{[\s\S]*font: 600 clamp\(38px, 8vw, 78px\)/);
+    assert.match(style, /--ww-curtain-duration: 1\.14s/);
     assert.match(style, /\.ww-transition-title,\s*\.ww-transition-result \{[\s\S]*grid-area: 1 \/ 1;/);
     assert.match(style, /\.ww-transition-shard::after/);
+    assert.match(style, /\.ww-transition-result:empty \{ display: none; \}/);
+    assert.doesNotMatch(style, /\.ww-transition\.show-result \.ww-transition-title \.ww-transition-glyph b/);
+    assert.doesNotMatch(style, /@keyframes wwGlyphExit/);
     assert.match(style, /\.ww-elimination\.is-shattering \.ww-elimination-fragments i/);
     assert.match(style, /@keyframes wwEliminationFragment/);
     assert.match(client, /data-stage-night-choice="save"/);
     assert.match(client, /data-stage-night-choice="pass"/);
+    assert.match(client, /同守同救/);
+    assert.match(client, /挡不住女巫毒药/);
+    assert.match(client, /witchCanSaveSelf/);
+    assert.match(client, /自救规则/);
     assert.doesNotMatch(client, /data-open-skill="witch-(?:save|pass)"/);
     assert.doesNotMatch(client, /\$\('\[data-role=/, '角色查询辅助函数不能接收完整 CSS 选择器');
     assert.match(client, /data-role="targetModal"/);
@@ -928,6 +1590,10 @@ test('Werewolf client uses player-facing copy, matching role art, and disposes c
     assert.match(client, /data-role-hold/);
     assert.match(client, /data-role-secret/);
     assert.match(client, /setRoleIdentityVisible\(true\)/);
+    assert.match(client, /hasViewedRole/);
+    assert.match(client, /data-action="confirmRole".*disabled/);
+    assert.match(client, /ww-confirm-button\$\{model\.hasViewedRole \? ' is-ready' : ''\}/);
+    assert.match(style, /\.ww-confirm-button:disabled/);
     assert.match(client, /addEventListener\('pointerdown'/);
     assert.match(client, /addEventListener\('pointermove'/);
     assert.match(client, /addEventListener\('pointerout'/);
@@ -961,10 +1627,10 @@ test('Werewolf client uses player-facing copy, matching role art, and disposes c
 });
 
 test('Werewolf lobby requires host room configuration before listing and starting', () => {
-    const appServer = ['app.js', 'server/realtime/create-realtime-server.js']
+    const appServer = ['app.js', 'server/realtime/create-realtime-server.js', 'server/realtime/room-handlers.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     const room = fs.readFileSync('server/room.js', 'utf8');
-    const lobby = ['public/script.js', 'public/lobby/waiting-room-scene.js']
+    const lobby = ['public/script.js', 'public/lobby/message-handler.js', 'public/lobby/event-bindings.js', 'public/lobby/waiting-room-scene.js']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     assert.match(appServer, /case 'configureRoom'/);
     assert.match(appServer, /filter\(room => room\.isListed\(\)\)/);

@@ -6,7 +6,7 @@ import { createHanabiActions } from './actions.js';
 import { createHanabiTemplate } from './template.js';
 import { createHanabiRenderer } from './render.js';
 import { createHanabiScene } from './scene.js';
-import { createHanabiModel, currentTarget, normalizeClueValue } from './state.js';
+import { createHanabiModel, currentTarget, localizePresentation, normalizeClueValue } from './state.js';
 
 /** Thin protocol/lifecycle entry for 花火. */
 export function createGameClient({ mount, send, addLog }) {
@@ -50,17 +50,48 @@ export function createGameClient({ mount, send, addLog }) {
             }
             normalizeClueValue(model);
             renderer.render();
-            const actionId = Number(model.state.lastAction?.actionId) || 0;
-            if (firstState) {
-                model.lastPresentedActionId = actionId;
-            } else if (actionId > model.lastPresentedActionId) {
-                model.lastPresentedActionId = actionId;
-                scene.enqueuePresentation({
-                    action: JSON.parse(JSON.stringify(model.state.lastAction)),
-                    snapshot: JSON.parse(JSON.stringify(model.state)),
-                });
-            } else if (previousState.status === 'playing' && model.state.status === 'ended' && ['perfect', 'fuses', 'deck'].includes(model.state.endReason)) {
-                scene.enqueuePresentation({ finaleOnly: true, snapshot: JSON.parse(JSON.stringify(model.state)) });
+            const hasServerTimeline = Array.isArray(model.state.presentations) || Boolean(model.state.presentation);
+            if (hasServerTimeline) {
+                const presentation = model.state.presentation;
+                const presentations = model.state.presentations?.length
+                    ? model.state.presentations
+                    : presentation
+                        ? [presentation]
+                        : [];
+                const localNow = Date.now();
+                for (const batch of presentations.slice().sort((left, right) => Number(left.sequence) - Number(right.sequence))) {
+                    const localized = localizePresentation(batch, localNow);
+                    if (!localized) continue;
+                    const freshEvents = localized.events.filter((event, index) => {
+                        const sourceEvent = batch.events[index] || event;
+                        const key = `${batch.transactionId ?? batch.sequence ?? ''}:${sourceEvent.eventId ?? sourceEvent.sequence ?? ''}:${sourceEvent.kind}`;
+                        if (model.presentationEventIds.has(key)) return false;
+                        model.presentationEventIds.add(key);
+                        return true;
+                    });
+                    if (!freshEvents.length) continue;
+                    if (rulesModal.isOpen()) rulesModal.setOpen(false);
+                    model.targetId = null;
+                    model.pendingCardId = null;
+                    model.submittingCardAction = null;
+                    model.submittingClue = false;
+                    scene.enqueuePresentation({ ...localized, events: freshEvents });
+                }
+            } else {
+                // Keep the old state-diff scene only for servers that predate
+                // the authoritative presentation protocol.
+                const actionId = Number(model.state.lastAction?.actionId) || 0;
+                if (firstState) {
+                    model.lastPresentedActionId = actionId;
+                } else if (actionId > model.lastPresentedActionId) {
+                    model.lastPresentedActionId = actionId;
+                    scene.enqueuePresentation({
+                        action: JSON.parse(JSON.stringify(model.state.lastAction)),
+                        snapshot: JSON.parse(JSON.stringify(model.state)),
+                    });
+                } else if (previousState.status === 'playing' && model.state.status === 'ended') {
+                    scene.enqueuePresentation({ finaleOnly: true, snapshot: JSON.parse(JSON.stringify(model.state)) });
+                }
             }
         }
         if (message.type === 'error') {

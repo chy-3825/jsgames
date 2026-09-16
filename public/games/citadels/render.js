@@ -6,9 +6,10 @@ import { currentRoleMeta, decisionDetails, playerById, toggleSelection } from '.
 export function createCitadelsRenderer({ mount, model, getElement }) {
     const $ = getElement || (role => mount.querySelector(`[data-role="${role}"]`));
     const state = () => model.state;
+    const presentationLocked = () => model.presentationPlaying || Date.now() < Number(model.presentationLockedUntil || 0);
 
     function actionButton(label, action, value = '', className = '', disabled = false) {
-        return `<button class="citadels-button ${className}" data-action="${escapeHtml(action)}" data-value="${escapeHtml(value)}" type="button"${disabled || model.actionPending ? ' disabled' : ''}>${escapeHtml(model.actionPending ? '处理中…' : label)}</button>`;
+        return `<button class="citadels-button ${className}" data-action="${escapeHtml(action)}" data-value="${escapeHtml(value)}" type="button"${disabled || model.actionPending || presentationLocked() ? ' disabled' : ''}>${escapeHtml(model.actionPending ? '处理中…' : label)}</button>`;
     }
 
     function decisionButton(label, kind, value = '', className = '', disabled = false) {
@@ -46,7 +47,7 @@ export function createCitadelsRenderer({ mount, model, getElement }) {
         if (!current) return;
         syncSelection();
         const root = mount.querySelector('[data-game-root]');
-        root?.setAttribute('aria-busy', String(model.actionPending));
+        root?.setAttribute('aria-busy', String(model.actionPending || presentationLocked()));
         root?.classList.toggle('is-draft-phase', current.phase === 'role_selection' && current.status !== 'ended');
         root?.classList.toggle('is-ended-phase', current.status === 'ended');
         const phase = phaseLabels();
@@ -57,7 +58,7 @@ export function createCitadelsRenderer({ mount, model, getElement }) {
         $('room').textContent = current.roomId ? `房间 ${current.roomId}` : '富饶之城';
         renderCommand(); renderRoleTrack(); renderCities(); renderHand(); renderLedger(); renderPlayers(); renderLog();
         $('hint').textContent = hintText();
-        if (model.actionPending) mount.querySelectorAll('button[data-action]:not([data-action="skipPresentation"])').forEach(button => { button.disabled = true; });
+        if (model.actionPending || presentationLocked()) mount.querySelectorAll('button[data-action]:not([data-action="skipPresentation"]), input, select').forEach(control => { control.disabled = true; });
     }
 
     function clearError() {
@@ -142,8 +143,9 @@ export function createCitadelsRenderer({ mount, model, getElement }) {
         status.innerHTML = current.status === 'ended' ? '<span class="citadels-status-badge is-ended">已结算</span>' : `<span class="citadels-status-badge ${activeForMe ? 'is-mine' : ''}">${activeForMe ? '轮到我' : '等待中'}</span>`;
         if (current.status === 'ended') {
             const winnerNames = (current.winners?.length ? current.winners : current.winner ? [current.winner] : []).map(item => item.name).join('、');
-            title.textContent = `${winnerNames || '本局'} 获胜`;
-            copy.textContent = '终局城市账本已经结算，下面保留本局的最终排名。';
+            const personalWinner = current.winners?.some(item => String(item.id) === String(current.myId));
+            title.textContent = personalWinner ? '您已获胜' : `${winnerNames || '本局'} 获胜`;
+            copy.textContent = personalWinner ? '您建成了最辉煌的城市，终局城市账本已经结算。' : '终局城市账本已经结算，下面保留本局的最终排名。';
             body.innerHTML = `<div class="citadels-scoreboard">${(current.scores || []).map((score, index) => `<div class="citadels-score-row ${current.winners?.some(item => item.id === score.id) ? 'is-winner' : ''}"><b>${String(index + 1).padStart(2, '0')}</b><span><strong>${escapeHtml(score.name)}</strong><small>城区 ${score.districtSum} · 首建 +${score.firstFinisherBonus || 0} · 八城 +${score.eightCityBonus || 0} · 五色 +${score.colorBonus || 0} · 特殊 +${(score.treasuryBonus || 0) + (score.mapRoomBonus || 0)}</small></span><em>${score.score}<small>分</small></em></div>`).join('')}</div>`;
             return;
         }
@@ -226,7 +228,7 @@ export function createCitadelsRenderer({ mount, model, getElement }) {
             const revealed = player.roles?.length ? player.roles.map(item => `${item.name}${murderedRoleIds.has(item.id) ? '（缺席）' : ''}`).join('、') : player.murdered ? '本轮缺席' : '角色隐藏';
             const status = player.isOnline === false ? '离线' : player.isCurrentTurn ? '正在行动' : revealed;
             const onlyMurderedRolesRevealed = murderedRoleIds.size > 0 && murderedRoleIds.size === (player.roles?.length || 0);
-            return `<article class="citadels-player ${player.isCurrentTurn ? 'is-current' : ''} ${player.id === current.myId ? 'is-me' : ''} ${onlyMurderedRolesRevealed ? 'is-murdered' : ''}" data-player-id="${escapeHtml(player.id)}"><span class="citadels-player-index">${String(index + 1).padStart(2, '0')}</span><span class="citadels-avatar">${escapeHtml(String(player.name || '?').slice(0, 1))}${player.id === current.crownHolderId ? '<i>♛</i>' : ''}</span><span class="citadels-player-copy"><strong>${escapeHtml(player.name)}${player.id === current.myId ? '<em>我</em>' : ''}</strong><small>${escapeHtml(status)}</small></span><span class="citadels-player-assets"><b>${player.gold}</b><small>金</small><b>${player.cityCount}</b><small>区</small></span></article>`;
+            return `<article class="citadels-player ${player.isCurrentTurn ? 'is-current' : ''} ${player.id === current.myId ? 'is-me' : ''} ${onlyMurderedRolesRevealed ? 'is-murdered' : ''}" data-player-id="${escapeHtml(player.id)}"><span class="citadels-player-index">${String(index + 1).padStart(2, '0')}</span><span class="citadels-player-copy"><strong>${escapeHtml(player.name)}${player.id === current.myId ? '<em>我</em>' : ''}${player.id === current.crownHolderId ? '<i class="citadels-player-crown" title="皇冠持有者">♛</i>' : ''}</strong><small>${escapeHtml(status)}</small></span><span class="citadels-player-assets"><b>${player.gold}</b><small>金</small><b>${player.cityCount}</b><small>区</small></span></article>`;
         }).join('');
     }
 

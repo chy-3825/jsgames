@@ -11,6 +11,19 @@ const SCORE_RATINGS = [
     { max: 25, label: '传奇，完美烟花' },
 ];
 
+// The browser renders the visuals, but the engine owns every public
+// presentation slot.  Keeping the fade inside the slot duration means that
+// all viewers share the same deadline even when their local CSS differs.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    giveClue: 1650,
+    playCard: 2130,
+    discardCard: 2130,
+    finalRoundStarted: 1450,
+    finalSettlement: 2300,
+    finalClosure: 1400,
+};
+
 function clone(value) {
     return JSON.parse(JSON.stringify(value));
 }
@@ -45,10 +58,15 @@ function buildDeck() {
 }
 
 class HanabiEngine {
-    constructor(roomId, players, random = Math.random, options = {}) {
+    constructor(roomId, players, randomOrOptions = Math.random, extraOptions = {}) {
+        const suppliedOptions = typeof randomOrOptions === 'function' ? extraOptions : (randomOrOptions || {});
+        const random = typeof randomOrOptions === 'function'
+            ? randomOrOptions
+            : (suppliedOptions.random || Math.random);
         this.roomId = roomId;
         this.random = typeof random === 'function' ? random : Math.random;
-        this.options = options && typeof options === 'object' ? { ...options } : {};
+        this.options = suppliedOptions && typeof suppliedOptions === 'object' ? { ...suppliedOptions } : {};
+        this.now = typeof suppliedOptions.now === 'function' ? suppliedOptions.now : () => Date.now();
         this.players = players.map(player => ({ id: player.id, name: player.name, hand: [], isOnline: true }));
         this.playerMap = Object.fromEntries(this.players.map(player => [player.id, player]));
         this.deck = [];
@@ -67,6 +85,10 @@ class HanabiEngine {
         this.actionSequence = 0;
         // Hanabi is cooperative: a perfect display has no individual winner.
         this.winner = null;
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.presentationEventSequence = 0;
     }
 
     start() {
@@ -99,6 +121,10 @@ class HanabiEngine {
         this.phase = 'action';
         this.status = 'playing';
         this.actionLog = [`${this.players[this.currentTurnIndex].name} 先行动。记住：你看不到自己的牌。`];
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.presentationEventSequence = 0;
         return this._success('花火开始');
     }
 
@@ -118,6 +144,92 @@ class HanabiEngine {
         if (action.kind === 'playCard') return this._playCard(player, action.cardIndex);
         if (action.kind === 'discardCard') return this._discardCard(player, action.cardIndex);
         return { success: false, message: '未知操作：每回合必须提示、出牌或弃牌', state: this.getPlayerState(playerId) };
+    }
+
+    _now() {
+        const value = Number(this.now?.());
+        return Number.isFinite(value) ? value : Date.now();
+    }
+
+    _presentationContentDuration(kind) {
+        return PRESENTATION_CONTENT_DURATIONS[kind] || 900;
+    }
+
+    _startPresentation(action, data = {}, initialKind = action) {
+        if (this.presentation && !this.presentation.resolved) {
+            return this._appendPresentationEvent(initialKind, data);
+        }
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
+        this.presentation = {
+            sequence: ++this.presentationSequence,
+            transactionId: this.presentationSequence,
+            action,
+            actorId: data.playerId || null,
+            actorName: data.playerName || null,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
+            events: [],
+            resolved: false,
+            ended: false,
+            nextPhase: null,
+            nextPlayerId: null,
+            winner: null,
+        };
+        this.presentationQueue.push(this.presentation);
+        return this._appendPresentationEvent(initialKind, data);
+    }
+
+    _appendPresentationEvent(kind, data = {}) {
+        if (!this.presentation || this.presentation.resolved) {
+            return this._startPresentation(data.action || kind, data, kind);
+        }
+        const now = this._now();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || now;
+        const startedAt = Math.max(now, previousEnd);
+        const contentDurationMs = this._presentationContentDuration(kind);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const eventId = ++this.presentationEventSequence;
+        const event = {
+            ...clone(data),
+            sequence: eventId,
+            eventId,
+            kind,
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
+        this.presentation.events.push(event);
+        this.presentation.endsAt = event.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        return event;
+    }
+
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this.presentation.resolved = true;
+        this.presentation.ended = this.status === 'ended';
+        this.presentation.nextPhase = this.phase;
+        this.presentation.nextPlayerId = this.status === 'playing'
+            ? this.players[this.currentTurnIndex]?.id || null
+            : null;
+        this.presentation.winner = null;
+    }
+
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _startActionPresentation() {
+        if (!this.lastAction) return;
+        this._startPresentation(this.lastAction.kind, this.lastAction, this.lastAction.kind);
     }
 
     _giveClue(player, targetId, clueKind, value) {
@@ -192,6 +304,7 @@ class HanabiEngine {
             message: `${player.name} 给 ${target.name} 提供了${clueKind === 'color' ? COLOR_LABELS[normalizedValue] : normalizedValue}提示（完整指出所有符合的牌）`,
         };
         this.actionLog.push(this.lastAction.message);
+        this._startActionPresentation();
         return this._finishAction(player);
     }
 
@@ -235,6 +348,7 @@ class HanabiEngine {
                 message: `${player.name} 打出了一张正确的${COLOR_LABELS[card.color]}色 ${card.value}${card.value === 5 ? '，奖励一枚提示令牌' : ''}`,
             };
             this.actionLog.push(this.lastAction.message);
+            this._startActionPresentation();
             // Completing all five fireworks is an immediate victory only while
             // the normal draw phase is still active. Once the last card has
             // been drawn, the official final-round countdown must finish even
@@ -269,6 +383,7 @@ class HanabiEngine {
                 message: `${player.name} 打错了${COLOR_LABELS[card.color]}色 ${card.value}，引信增加（${this.strikes}/3）`,
             };
             this.actionLog.push(this.lastAction.message);
+            this._startActionPresentation();
             if (this.strikes >= 3) {
                 return this._end('fuses', '三次失误，引信爆炸，合作局失败');
             }
@@ -312,6 +427,7 @@ class HanabiEngine {
             message: `${player.name} 弃掉了一张牌，恢复一枚提示令牌`,
         };
         this.actionLog.push(this.lastAction.message);
+        this._startActionPresentation();
         this._drawIntoHand(player);
         return this._finishAction(player);
     }
@@ -335,6 +451,17 @@ class HanabiEngine {
 
         this.currentTurnIndex = this._nextOnlineIndex(this.currentTurnIndex);
         this._completeActionPresentation({ finalTurnsStarted });
+        this._syncPresentationActionEvent();
+        if (finalTurnsStarted) {
+            this._appendPresentationEvent('finalRoundStarted', {
+                actionId: this.lastAction?.actionId || null,
+                playerId: player.id,
+                playerName: player.name,
+                finalTurnsRemaining: this.finalTurnsRemaining,
+                deckCount: this.deck.length,
+            });
+        }
+        this._finishPresentation();
         return this._success(this.lastAction?.message || `${player.name} 完成行动`);
     }
 
@@ -354,6 +481,21 @@ class HanabiEngine {
             ended: this.status === 'ended',
             endReason: this.endReason,
         });
+    }
+
+    _syncPresentationActionEvent() {
+        const event = this.presentation?.events?.at(-1);
+        if (!event || !this.lastAction || event.actionId !== this.lastAction.actionId) return;
+        const timeline = {
+            sequence: event.sequence,
+            eventId: event.eventId,
+            kind: event.kind,
+            startedAt: event.startedAt,
+            endsAt: event.endsAt,
+            durationMs: event.durationMs,
+            contentDurationMs: event.contentDurationMs,
+        };
+        Object.assign(event, clone(this.lastAction), timeline);
     }
 
     _drawIntoHand(player) {
@@ -396,17 +538,48 @@ class HanabiEngine {
         return result;
     }
 
-    _end(reason, message) {
+    _end(reason, message, { attachToAction = true, playerId = null, playerName = null } = {}) {
         this.status = 'ended';
         this.phase = 'ended';
         this.endReason = reason;
         if (reason !== 'deck') this.finalTurnsRemaining = null;
         this.winner = null;
-        this._completeActionPresentation();
-        if (this.lastAction) {
-            this.lastAction.ended = true;
-            this.lastAction.endReason = reason;
+        if (attachToAction) {
+            this._completeActionPresentation();
+            if (this.lastAction) {
+                this.lastAction.ended = true;
+                this.lastAction.endReason = reason;
+            }
+            this._syncPresentationActionEvent();
         }
+        const score = this._score();
+        const outcome = reason === 'perfect'
+            ? 'perfect'
+            : reason === 'fuses'
+                ? 'failure'
+                : reason === 'players'
+                    ? 'aborted'
+                    : score === 25 ? 'perfect' : 'scored';
+        const settlementData = {
+            actionId: attachToAction ? this.lastAction?.actionId || null : null,
+            reason,
+            outcome,
+            playerId,
+            playerName,
+            score,
+            scoreRating: this._scoreRating(score).label,
+            fireworks: { ...this.fireworks },
+            strikes: this.strikes,
+            finalTurnsRemaining: this.finalTurnsRemaining,
+        };
+        if (attachToAction && this.presentation && !this.presentation.resolved) {
+            const actionEvent = this.presentation.events.at(-1);
+            if (actionEvent) Object.assign(actionEvent, { ended: true, endReason: reason });
+            this._appendPresentationEvent('finalSettlement', settlementData);
+        } else {
+            this._startPresentation(reason === 'players' ? 'finalClosure' : 'finalSettlement', settlementData, reason === 'players' ? 'finalClosure' : 'finalSettlement');
+        }
+        this._finishPresentation();
         if (message && this.actionLog[this.actionLog.length - 1] !== message) this.actionLog.push(message);
         return this._success(message);
     }
@@ -435,8 +608,12 @@ class HanabiEngine {
     getPublicState(viewerId = null) {
         const score = this._score();
         const rating = this._scoreRating(score);
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         return {
             roomId: this.roomId,
+            serverNow,
             status: this.status,
             phase: this.phase,
             variant: 'base',
@@ -464,6 +641,8 @@ class HanabiEngine {
             winner: null,
             score,
             scoreRating: rating.label,
+            presentations,
+            presentation,
         };
     }
 
@@ -486,7 +665,11 @@ class HanabiEngine {
         if (!player || !player.isOnline) return { success: false, message: '玩家不存在或已离线' };
         player.isOnline = false;
         if (this.players.filter(item => item.isOnline).length < 2 && this.status === 'playing') {
-            return this._end('players', '在线玩家不足，合作局结束');
+            return this._end('players', '在线玩家不足，合作局结束', {
+                attachToAction: false,
+                playerId: player.id,
+                playerName: player.name,
+            });
         }
         if (this.players[this.currentTurnIndex]?.id === playerId) {
             this.currentTurnIndex = this._nextOnlineIndex(this.currentTurnIndex);
@@ -514,3 +697,5 @@ module.exports.COLORS = COLORS;
 module.exports.VALUES = VALUES;
 module.exports.HAND_SIZE = HAND_SIZE;
 module.exports.buildDeck = buildDeck;
+module.exports.PRESENTATION_FADE_MS = PRESENTATION_FADE_MS;
+module.exports.PRESENTATION_CONTENT_DURATIONS = PRESENTATION_CONTENT_DURATIONS;

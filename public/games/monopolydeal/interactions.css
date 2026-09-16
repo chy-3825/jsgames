@@ -1,0 +1,170 @@
+.color-brown { background: #84533d !important; }
+.color-lightblue { background: #6badd0 !important; }
+.color-pink { background: #cc5d9b !important; }
+.color-orange { background: #dc793a !important; }
+.color-red { background: #c6423b !important; }
+.color-yellow { background: #e4b938 !important; }
+.color-green { background: #3f9a59 !important; }
+.color-blue { background: #3e61b2 !important; }
+.color-railroad { background: #303a3d !important; }
+.color-utility { background: #86b999 !important; }
+
+.deal-opponent.is-action-source,
+.deal-hand.is-action-source,
+.deal-self-seat-card.is-action-source {
+    border-color: rgba(239, 200, 119, .82);
+    box-shadow: 0 0 0 2px rgba(210, 170, 98, .16), inset 3px 0 var(--deal-brass);
+}
+.deal-opponent.is-action-target,
+.deal-hand.is-action-target,
+.deal-self-seat-card.is-action-target {
+    border-color: rgba(207, 100, 82, .9);
+    background-color: rgba(135, 53, 47, .18);
+    box-shadow: 0 0 0 3px rgba(173, 85, 73, .15);
+    animation: deal-target-breathe 1.5s ease-in-out infinite;
+}
+.deal-opponent.is-response-seat,
+.deal-hand.is-response-seat,
+.deal-self-seat-card.is-response-seat { outline: 1px solid rgba(91, 207, 211, .72); outline-offset: -4px; }
+
+.deal-event.is-public-stage {
+    min-height: 190px;
+    padding: 12px;
+    border-left-width: 1px;
+    background: linear-gradient(135deg, rgba(5, 30, 41, .88), rgba(21, 72, 82, .72));
+}
+.deal-event.is-public-stage::before { display: none; }
+.deal-public-interaction {
+    display: grid;
+    grid-template-columns: minmax(104px, .8fr) 122px minmax(180px, 1.35fr);
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    gap: 10px 18px;
+    min-height: 164px;
+}
+.deal-public-route {
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+    color: #aebbb1;
+    font-size: 8px;
+    text-align: right;
+}
+.deal-public-route > span { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+.deal-public-route i { color: var(--deal-brass-light); font-size: 13px; font-style: normal; }
+.deal-public-route strong { color: #f0dfbd; font: 700 12px "Noto Serif SC", serif; }
+.deal-public-route small { color: #6fc7ca; font-size: 7px; }
+.deal-public-card-stack {
+    position: relative;
+    display: grid;
+    min-height: 150px;
+    place-items: center;
+    isolation: isolate;
+}
+.deal-public-card {
+    position: absolute;
+    width: 92px;
+    height: 132px;
+    flex-basis: auto;
+    cursor: default;
+    transform: none;
+}
+.deal-public-card:hover { z-index: auto; border-color: #cfbea0; transform: none; box-shadow: 4px 9px 18px rgba(0, 0, 0, .38); }
+.deal-main-public-card { z-index: 4; box-shadow: 4px 9px 18px rgba(0, 0, 0, .38); }
+.deal-main-public-card.is-entering { animation: deal-card-to-center .58s cubic-bezier(.2, .78, .2, 1) both; }
+.deal-support-card { z-index: 1; opacity: .72; transform: translate(calc(-18px * var(--support-side, 1)), -4px) rotate(-7deg); }
+.deal-support-card.is-support-1 { --support-side: 1; transform: translate(-23px, -5px) rotate(-8deg); }
+.deal-support-card.is-support-2 { z-index: 2; transform: translate(23px, -5px) rotate(8deg); }
+.deal-no-card {
+    z-index: calc(6 + var(--no-index));
+    width: 61px;
+    height: 88px;
+    transform: translate(calc(34px + var(--no-index) * 9px), calc(27px - var(--no-index) * 4px)) rotate(calc(7deg + var(--no-index) * 3deg));
+    animation: deal-no-slap .38s cubic-bezier(.18, .78, .22, 1) both;
+}
+.deal-transfer-badge {
+    position: absolute;
+    z-index: 20;
+    right: -22px;
+    bottom: 1px;
+    padding: 5px 8px;
+    border: 1px solid rgba(102, 209, 212, .72);
+    border-radius: 20px;
+    background: #174f59;
+    box-shadow: 0 5px 13px rgba(0, 0, 0, .3);
+    color: #bff1ec;
+    font-size: 7px;
+    font-style: normal;
+    font-weight: 900;
+    animation: deal-transfer-pop .9s ease both;
+}
+.deal-public-copy {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+    padding-left: 17px;
+    border-left: 1px solid rgba(224, 197, 139, .27);
+}
+.deal-public-copy > span { color: var(--deal-brass); font-size: 7px; font-weight: 900; }
+.deal-public-copy > strong { overflow-wrap: anywhere; color: #f2e3c3; font: 700 clamp(17px, 2vw, 23px)/1.25 "Noto Serif SC", serif; }
+.deal-public-copy > p { margin: 0; color: #aebbb2; font-size: 8px; line-height: 1.5; }
+.deal-public-copy > small { color: #7fd0d1; font-size: 7px; }
+.deal-target-queue {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: center;
+    gap: 5px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(223, 199, 151, .12);
+}
+.deal-target-queue > span { display: flex; align-items: center; gap: 4px; padding: 3px 7px; border: 1px solid rgba(221, 202, 159, .15); border-radius: 20px; color: #82968b; font-size: 7px; }
+.deal-target-queue > span i { display: grid; width: 14px; height: 14px; place-items: center; border-radius: 50%; background: rgba(227, 207, 163, .1); font-style: normal; }
+.deal-target-queue > span.is-active { border-color: #c26a57; background: rgba(159, 69, 57, .2); color: #f1dcc0; }
+.deal-target-queue > span.is-paid,
+.deal-target-queue > span.is-transferred,
+.deal-target-queue > span.is-swapped { border-color: rgba(79, 196, 203, .5); color: #8fd8d6; }
+.deal-target-queue > span.is-cancelled,
+.deal-target-queue > span.is-no_assets,
+.deal-target-queue > span.is-skipped { opacity: .55; text-decoration: line-through; }
+
+.deal-action-links {
+    position: fixed;
+    z-index: 34;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+.deal-link-glow,
+.deal-link-stroke { fill: none; stroke-linecap: round; opacity: 0; transition: opacity .18s ease; }
+.deal-link-glow { stroke-width: 9; }
+.deal-link-stroke { stroke-width: 2; stroke-dasharray: 9 8; animation: deal-route-flow 1.1s linear infinite; }
+.deal-link-glow.is-action { stroke: rgba(197, 74, 64, .22); }
+.deal-link-stroke.is-action { stroke: #e3b55e; filter: drop-shadow(0 0 4px rgba(192, 70, 60, .65)); }
+.deal-link-glow.is-response { stroke: rgba(68, 185, 192, .22); }
+.deal-link-stroke.is-response { stroke: #67d1d2; stroke-dasharray: 5 7; filter: drop-shadow(0 0 4px rgba(66, 168, 174, .66)); }
+.deal-link-seal { opacity: 0; transition: opacity .18s ease; }
+.deal-link-seal.is-action { fill: #9d493f; stroke: #e9c476; stroke-width: 2; }
+.deal-link-seal.is-response { fill: #27737a; stroke: #91dbd9; stroke-width: 2; }
+.deal-action-links.has-action .is-action,
+.deal-action-links.has-response .is-response { opacity: 1; }
+
+.deal-reaction-wait { padding: 5px 8px; border: 1px solid rgba(98, 202, 204, .35); border-radius: 3px; background: rgba(49, 117, 119, .13); color: #83d2d0; font-size: 7px; font-weight: 900; text-align: center; }
+
+/* The public interaction is content inside the same borderless latest-action
+   slot as Love Letter; urgency is carried by the route/seat accents instead
+   of growing a second card around the slot. */
+.deal-event.is-public-stage {
+    min-height: 188px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.deal-game.is-urgent .deal-event.is-public-stage,
+.deal-game.is-ended .deal-event.is-public-stage { border: 0; background: transparent; box-shadow: none; }
+
+/* Multi-target actions share one compound path, without a lone end seal. */
+.deal-action-links .deal-link-seal.is-action { display: none; }

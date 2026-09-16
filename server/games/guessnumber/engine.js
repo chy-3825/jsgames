@@ -7,10 +7,32 @@ function makeSecret(random = Math.random) {
     return digits.slice(0, 4).join('');
 }
 
+// The single-player table still uses the shared presentation protocol.  There
+// is only one viewer, but keeping the result on an absolute server timeline
+// makes refresh/reconnect behavior deterministic and keeps the game compatible
+// with the room-level presentation gate used by the other games.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    finalSettlement: 2500,
+    finalClosure: 1200,
+};
+
+function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
+function presentationContentDuration(kind) {
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 900;
+}
+
 class GuessNumberEngine {
-    constructor(roomId, players, random = Math.random) {
+    constructor(roomId, players, randomOrOptions = Math.random, extraOptions = {}) {
+        const suppliedOptions = typeof randomOrOptions === 'function' ? extraOptions : (randomOrOptions || {});
+        const random = typeof randomOrOptions === 'function' ? randomOrOptions : (suppliedOptions.random || Math.random);
         this.roomId = roomId;
         this.random = typeof random === 'function' ? random : Math.random;
+        this.options = { ...suppliedOptions };
+        this.now = typeof suppliedOptions.now === 'function' ? suppliedOptions.now : () => Date.now();
         this.players = players.map((player, index) => ({
             id: player.id,
             name: player.name,
@@ -28,6 +50,10 @@ class GuessNumberEngine {
         this.lastAction = null;
         this.actionLog = [];
         this.winner = null;
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.presentationEventSequence = 0;
     }
 
     start() {
@@ -40,6 +66,10 @@ class GuessNumberEngine {
         this.lastResult = null;
         this.lastAction = null;
         this.winner = null;
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.presentationEventSequence = 0;
         this.players.forEach(player => {
             player.attempts = 0;
             player.history = [];
@@ -47,6 +77,100 @@ class GuessNumberEngine {
         });
         this.actionLog = [`${this.players[0].name} 先猜，答案是四位不重复数字`];
         return this._success('猜数字开始');
+    }
+
+    _now() {
+        const value = Number(this.now?.());
+        return Number.isFinite(value) ? value : Date.now();
+    }
+
+    _startPresentation(action = 'finalSettlement', data = {}, initialKind = action) {
+        if (this.presentation && !this.presentation.resolved) return this._appendPresentationEvent(initialKind, data);
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
+        this.presentation = {
+            sequence: ++this.presentationSequence,
+            transactionId: this.presentationSequence,
+            actorId: this.players[0]?.id || null,
+            actorName: this.players[0]?.name || null,
+            action,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
+            events: [],
+            resolved: false,
+            ended: false,
+            nextPhase: null,
+            nextPlayerId: null,
+            winner: null,
+        };
+        this.presentationQueue.push(this.presentation);
+        return this._appendPresentationEvent(initialKind, data);
+    }
+
+    _appendPresentationEvent(kind, data = {}) {
+        if (!this.presentation || this.presentation.resolved) return this._startPresentation(kind, data, kind);
+        const now = this._now();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || now;
+        const startedAt = Math.max(now, previousEnd);
+        const contentDurationMs = presentationContentDuration(kind);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const eventId = ++this.presentationEventSequence;
+        const event = {
+            ...clone(data),
+            sequence: eventId,
+            eventId,
+            kind,
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
+        this.presentation.events.push(event);
+        this.presentation.endsAt = event.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        return event;
+    }
+
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this.presentation.resolved = true;
+        this.presentation.ended = this.status === 'ended';
+        this.presentation.nextPhase = this.status === 'playing' ? 'playing' : 'ended';
+        this.presentation.nextPlayerId = this.status === 'playing' ? this.getCurrentPlayer()?.id || null : null;
+        this.presentation.winner = this.winner ? { id: this.winner.id, name: this.winner.name } : null;
+    }
+
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        if (!player || (event.kind !== 'finalSettlement' && event.kind !== 'finalClosure')) return projected;
+        if (event.kind === 'finalSettlement' && event.winnerId != null && String(event.winnerId) === String(player.id)) {
+            projected.viewerVariant = 'personalVictory';
+            projected.title = '您已获胜';
+            projected.detail = '您成功破解了隐藏密码。';
+        }
+        if (event.kind === 'finalClosure' && String(event.playerId) === String(player.id)) {
+            projected.viewerVariant = 'personalClosure';
+            projected.title = '本局已中止';
+            projected.detail = '当前破解者已离线，档案已经封存。';
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
     }
 
     handleAction(playerId, action = {}) {
@@ -73,6 +197,15 @@ class GuessNumberEngine {
             this.status = 'ended';
             this.winner = player;
             this.actionLog.push(`${player.name} 猜中了答案`);
+            this._startPresentation('finalSettlement', {
+                outcome: 'solved',
+                winnerId: player.id,
+                winnerName: player.name,
+                secret: this.secret,
+                attempts: player.attempts,
+                lastResult: clone(result),
+            }, 'finalSettlement');
+            this._finishPresentation();
         } else {
             const next = this._findNextAvailableIndex(this.currentTurnIndex);
             if (next === -1) {
@@ -101,8 +234,12 @@ class GuessNumberEngine {
     _syncTurnFlags() { this.players.forEach((player, index) => { player.isCurrentTurn = index === this.currentTurnIndex && this.status === 'playing'; }); }
 
     getPublicState() {
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         return {
             roomId: this.roomId,
+            serverNow,
             status: this.status,
             currentTurn: this.getCurrentPlayer()?.id || null,
             currentTurnName: this.getCurrentPlayer()?.name || null,
@@ -122,6 +259,8 @@ class GuessNumberEngine {
             })),
             secret: this.status === 'ended' ? this.secret : null,
             winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null,
+            presentations,
+            presentation,
         };
     }
 
@@ -130,6 +269,8 @@ class GuessNumberEngine {
         state.myId = playerId;
         state.myIsCurrentTurn = state.currentTurn === playerId;
         state.availableActions = { canGuess: state.status === 'playing' && state.myIsCurrentTurn && Boolean(this.playerMap[playerId]?.isOnline) };
+        state.presentation = this._projectPresentation(state.presentation, this.playerMap[playerId]);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, this.playerMap[playerId]));
         return state;
     }
 
@@ -140,7 +281,16 @@ class GuessNumberEngine {
         player.isOnline = false;
         if (wasCurrent && this.status === 'playing') {
             const next = this._findNextAvailableIndex(this.currentTurnIndex);
-            if (next === -1) this.status = 'ended'; else this.currentTurnIndex = next;
+            if (next === -1) {
+                this.status = 'ended';
+                this._appendPresentationEvent('finalClosure', {
+                    outcome: 'aborted',
+                    playerId,
+                    playerName: player.name,
+                    reason: 'playerLeave',
+                });
+                this._finishPresentation();
+            } else this.currentTurnIndex = next;
         }
         this._syncTurnFlags();
         return this._success(`${player.name} 离开了游戏`);
@@ -152,3 +302,5 @@ class GuessNumberEngine {
 
 module.exports = GuessNumberEngine;
 module.exports.makeSecret = makeSecret;
+module.exports.PRESENTATION_FADE_MS = PRESENTATION_FADE_MS;
+module.exports.PRESENTATION_CONTENT_DURATIONS = PRESENTATION_CONTENT_DURATIONS;

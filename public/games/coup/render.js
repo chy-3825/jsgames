@@ -1,6 +1,6 @@
-import { ACTIONS, ACTION_GROUPS, CARD_BACK_ART, ROLE_ART, ROLE_EFFECTS, ROLE_MARKS, ROLE_NAMES, SCENE_ACTION_NAMES, escapeHtml } from './constants.js';
+import { ACTIONS, ACTION_GROUPS, CARD_BACK_ART, ROLE_ART, ROLE_EFFECTS, ROLE_MARKS, ROLE_NAMES, ROLE_NOTES, SCENE_ACTION_NAMES, escapeHtml } from './constants.js';
 import { renderActionVisual, renderBlockDeclaration, renderInfluence } from './cards.js';
-import { challengeLabel, decisionReady, firstCharacter, getAction, getActionName, getPlayer, getSelf, isMyTurn, revealReason } from './state.js';
+import { challengeLabel, decisionReady, getAction, getActionName, getPlayer, getSelf, isMyTurn, revealReason } from './state.js';
 
 const esc = escapeHtml;
 
@@ -9,19 +9,72 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
     const $ = getElement || (role => mount.querySelector(`[data-role="${role}"]`));
     const root = mount.querySelector('.cp-app');
     const reducedMotion = windowRef.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+    const presentationLocked = () => model.presentationPlaying || Date.now() < Number(model.presentationLockedUntil || 0);
 
-    function syncPrivateIdentityVisibility() {
-        const state = model.state;
-        const visible = Boolean(model.privateIdentityVisible && state && !state.gameOver);
-        root.classList.toggle('is-identity-revealed', visible);
-        mount.querySelectorAll('[data-private-identity]').forEach(element => element.setAttribute('aria-hidden', String(!visible)));
-        mount.querySelectorAll('[data-private-role-label]').forEach(element => element.setAttribute('aria-label', visible ? element.dataset.privateRoleLabel : element.dataset.coveredRoleLabel));
-        mount.querySelectorAll('[data-identity-hold]').forEach(element => {
-            element.setAttribute('aria-pressed', String(visible));
-            element.setAttribute('aria-label', visible ? '正在显示私密身份，松开立即隐藏' : '按住查看私密身份，松开立即隐藏');
-            const label = element.querySelector('b');
-            if (label) label.textContent = visible ? '松开立即隐藏' : '按住查看身份';
-        });
+    function displayName(playerId, fallback = '玩家') {
+        if (String(playerId) === String(model.state?.myId)) return '您';
+        return getPlayer(model.state, playerId)?.name || fallback;
+    }
+
+    function viewerText(text) {
+        const ownName = getSelf(model.state)?.name;
+        if (!ownName) return String(text || '');
+        const protectedNames = (model.state?.players || [])
+            .filter(player => String(player.id) !== String(model.state?.myId) && player.name)
+            .sort((left, right) => right.name.length - left.name.length);
+        let value = String(text || '');
+        protectedNames.forEach((player, index) => { value = value.split(player.name).join(`\u0000${index}\u0000`); });
+        value = value.split(ownName).join('您');
+        protectedNames.forEach((player, index) => { value = value.split(`\u0000${index}\u0000`).join(player.name); });
+        return value;
+    }
+
+    // The server keeps Coup's public log as short, backwards-compatible
+    // sentences.  Turn those sentences into a stable three-part record for
+    // the table and the archive: action, factual detail, and current status.
+    // This keeps implementation wording (for example “行动继续”) out of the
+    // title while retaining the complete public result.
+    function coupHistoryCopy(message) {
+        const text = viewerText(message).trim();
+        if (!text) return { title: '公开记录', detail: '', status: '', tone: 'normal' };
+        const waiting = text.match(/(?:，|。)?(等待.*?)(?:…|\.\.\.)?$/)?.[1] || '';
+        const detail = (waiting ? text.slice(0, text.length - waiting.length).replace(/[，。]$/, '') : text).replace(/…$/, '').trim();
+        let title = '公开行动';
+        let tone = 'normal';
+        if (/游戏开始/.test(text)) title = '牌局开始';
+        else if (/获得 1 枚金币/.test(text)) title = '收入';
+        else if (/申请外援|外援/.test(text)) title = '外援';
+        else if (/发动政变/.test(text)) title = '政变';
+        else if (/暗杀/.test(text)) title = '暗杀';
+        else if (/偷窃|拿走 .*金币/.test(text)) title = '偷窃';
+        else if (/大使交换|抽取两张牌/.test(text)) title = '交换';
+        else if (/征税|获得 3 枚金币/.test(text)) title = '征税';
+        else if (/声称公爵/.test(text)) title = '征税';
+        else if (/声称刺客/.test(text)) title = '暗杀';
+        else if (/声称船长/.test(text)) title = '偷窃';
+        else if (/声称大使/.test(text)) title = '交换';
+        else if (/声称|声明/.test(text)) title = '角色声明';
+        else if (/阻挡/.test(text)) title = '阻挡';
+        else if (/质疑/.test(text)) title = '质疑';
+        else if (/揭示第|揭示一张影响力/.test(text)) title = '揭示影响力';
+        else if (/出示/.test(text)) title = '出示角色';
+        else if (/离开游戏/.test(text)) title = '玩家离开';
+        else if (/获胜|游戏结束/.test(text)) title = '牌局结束';
+        else if (/出局/.test(text)) title = '出局';
+
+        if (/获胜|游戏结束|出局|无法证明|未生效|取消/.test(text)) tone = 'critical';
+        else if (/质疑|阻挡|声明|等待/.test(text)) tone = 'response';
+        return {
+            title,
+            detail: detail || text,
+            status: waiting,
+            tone,
+        };
+    }
+
+    function historyMarkup(entry, index, className) {
+        const copy = coupHistoryCopy(entry);
+        return `<div class="${className} is-${copy.tone}"><i class="${index === 0 ? 'is-latest' : ''}"></i><span class="cp-history-copy"><strong>${esc(copy.title)}</strong><small>${esc(copy.detail)}</small>${copy.status ? `<em>${esc(copy.status)}</em>` : ''}</span></div>`;
     }
 
     function render() {
@@ -30,17 +83,14 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         const self = getSelf(state);
         const myTurn = isMyTurn(state);
         const alive = (state.players || []).filter(player => player.isAlive !== false).length;
-        const turnName = getPlayer(state, state.currentTurn)?.name || '其他玩家';
-        const phase = getPhaseLabel();
 
-        root.classList.toggle('is-my-turn', myTurn);
-        root.classList.toggle('is-decision', Boolean(state.challenge?.isMyTurn || state.influenceLoss?.isMyTurn || state.exchange?.isMyTurn));
+        root.classList.toggle('is-presentation-playing', presentationLocked());
+        root.setAttribute('aria-busy', String(presentationLocked() || model.submitting));
         root.classList.toggle('is-challenge-decision', Boolean(state.challenge?.isMyTurn));
+        root.classList.toggle('has-challenge', Boolean(state.challenge));
         root.classList.toggle('is-influence-decision', Boolean(state.influenceLoss?.isMyTurn));
         root.classList.toggle('is-exchange-decision', Boolean(state.exchange?.isMyTurn));
-        $('turn').textContent = getTurnStatus(myTurn, turnName);
-        $('phase').textContent = phase.long;
-        $('phaseShort').textContent = phase.short;
+        $('phaseShort').textContent = state.gameOver ? '结束' : state.exchange ? '交换' : state.influenceLoss ? '揭示' : state.challenge ? challengeLabel(state.challenge.phase) : myTurn ? '行动' : '等待';
         $('alive').textContent = String(alive);
 
         renderPlayers();
@@ -50,67 +100,82 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         renderCommand(self, myTurn);
         renderExchangeOverlay();
         renderEndOverlay();
-        syncPrivateIdentityVisibility();
         scheduleActionPresentation();
     }
 
     function renderPlayers() {
         const state = model.state;
         const opponents = (state.players || []).filter(player => player.id !== state.myId);
+        const interaction = activeSeatInteraction(state);
+        const decisionPlayerId = currentDecisionPlayerId(state);
         $('players').style.setProperty('--seat-count', String(Math.max(1, opponents.length)));
+        $('players').dataset.seatCount = String(opponents.length);
         $('players').innerHTML = opponents.map(player => {
-            const interaction = state.interaction;
-            const targetable = Boolean(model.pendingAction && player.isAlive !== false);
+            const targetable = Boolean(!model.submitting && model.pendingAction && getAction(model.pendingAction.kind)?.needsTarget && player.isAlive !== false);
             const selected = model.selectedTarget === player.id;
             const isSource = interaction?.actorId === player.id;
             const isTarget = interaction?.targetId === player.id;
             const isChallenger = interaction?.challengerId === player.id;
             const isBlocker = interaction?.blockerId === player.id;
+            const isResponding = decisionPlayerId === player.id;
             const tag = targetable ? 'button' : 'article';
-            const attrs = `data-player-id="${escapeHtml(player.id)}"${targetable ? ` type="button" data-target-player="${escapeHtml(player.id)}" aria-pressed="${selected}"` : ''}`;
+            const attrs = `data-player-id="${escapeHtml(player.id)}" data-player-anchor="${escapeHtml(player.id)}"${targetable ? ` type="button" data-target-player="${escapeHtml(player.id)}" aria-pressed="${selected}"` : ''}`;
             const influences = player.influences || [];
             const influenceCount = player.influenceCount ?? influences.filter(card => !card.revealed).length;
-            const status = player.isAlive === false ? '已出局' : player.id === state.currentTurn ? '正在行动' : `${influenceCount} 张影响力`;
-            return `<${tag} class="cp-seat ${player.isAlive === false ? 'is-out' : ''} ${player.id === state.currentTurn ? 'is-turn' : ''} ${targetable ? 'is-targetable' : ''} ${selected ? 'is-selected' : ''} ${isSource ? 'is-action-source' : ''} ${isTarget ? 'is-action-target' : ''} ${isChallenger ? 'is-challenger' : ''} ${isBlocker ? 'is-blocker' : ''}" ${attrs}>
-                <span class="cp-avatar" aria-hidden="true">${escapeHtml(firstCharacter(player.name))}</span>
-                <span class="cp-seat-copy"><strong>${escapeHtml(player.name)}</strong><small>${escapeHtml(status)}</small><span class="cp-seat-coins"><i></i><b>${player.coins ?? 0}</b> 金币</span></span>
+            const seatLabel = `${player.name || '玩家'}，${player.coins ?? 0} 枚金币，${influenceCount} 张影响力${player.id === state.currentTurn ? '，当前回合' : ''}`;
+            return `<${tag} class="cp-seat ${player.isAlive === false ? 'is-out' : ''} ${player.id === state.currentTurn ? 'is-turn' : ''} ${targetable ? 'is-targetable' : ''} ${selected ? 'is-selected' : ''} ${isSource ? 'is-action-source' : ''} ${isTarget ? 'is-action-target' : ''} ${isChallenger ? 'is-challenger' : ''} ${isBlocker ? 'is-blocker' : ''} ${isResponding ? 'is-responding' : ''}" ${attrs} aria-label="${escapeHtml(seatLabel)}">
+                <span class="cp-seat-copy"><strong>${escapeHtml(player.name)}</strong><span class="cp-seat-coins"><i aria-hidden="true"></i><b>${player.coins ?? 0}</b> 金币</span></span>
                 <span class="cp-seat-cards">${influences.map(card => renderInfluence(card, { mini: true })).join('')}</span>
                 ${targetable ? '<em class="cp-target-hint">选择目标</em>' : ''}
             </${tag}>`;
-        }).join('') || '<div class="cp-empty">等待其他玩家加入议会</div>';
+        }).join('') || '<div class="cp-empty">等待其他玩家加入</div>';
+    }
+
+    function activeSeatInteraction(state) {
+        const interaction = state?.interaction;
+        if (!interaction || ['resolved', 'cancelled'].includes(interaction.stage)) return null;
+        return interaction;
+    }
+
+    function currentDecisionPlayerId(state) {
+        const challenge = state?.challenge;
+        if (challenge?.phase === 'block') return challenge.currentBlockerId || null;
+        if (challenge?.phase === 'challenge') return challenge.currentChallengerId || null;
+        if (challenge?.phase === 'respond') return challenge.responderId || null;
+        return state?.influenceLoss?.playerId || state?.exchange?.playerId || null;
     }
 
     function renderEvent() {
         const state = model.state;
-        $('event').classList.remove('is-public-action');
-        const latest = state.actionLog?.[state.actionLog.length - 1];
-        let label = '当前局势';
+        $('event').classList.remove('is-public-action', 'is-selection-preview', 'is-hover-preview');
+        const latest = viewerText(state.actionLog?.[state.actionLog.length - 1]);
+        let label = '当前行动';
         let title = latest || '等待第一项行动';
-        let detail = isMyTurn(state) ? '选择一项行动，或声称你需要的角色。' : '观察金币、影响力与每一次角色声明。';
+        let detail = isMyTurn(state) ? '选择收入、角色行动或政变。' : '观察金币、影响力和角色声明。';
         let role = null;
         let sigil = '政';
 
-        if (model.pendingAction) {
-            const action = getAction(model.pendingAction.kind);
-            label = '选择目标';
-            title = `为${action?.name || '行动'}指定一名玩家`;
-            detail = model.selectedTarget ? `已选择 ${getPlayer(state, model.selectedTarget)?.name || '目标玩家'}，确认后才会提交行动。` : '从上方议会席位中选择一名仍在场的玩家。';
-            role = action?.role || null;
-            sigil = action?.icon || '!';
+        const previewKind = model.pendingAction?.kind || model.hoveredActionKind;
+        if (previewKind) {
+            const action = getAction(previewKind);
+            $('event').classList.add('is-selection-preview');
+            $('event').classList.toggle('is-hover-preview', !model.pendingAction);
+            $('event').innerHTML = renderPendingAction(action, Boolean(model.pendingAction));
+            return;
         } else if (state.gameOver) {
-            const winner = getPlayer(state, state.winner)?.name || '无人';
-            label = '最终裁决';
-            title = `${winner} 掌控了城邦`;
-            detail = '最后仍保有影响力的玩家赢得本局。';
+            const winner = displayName(state.winner, '无人');
+            label = '游戏结束';
+            title = `${winner}获胜`;
+            detail = '最后仍有影响力的玩家获胜。';
             sigil = '冠';
         } else if (state.interaction) {
             $('event').classList.add('is-public-action');
-            $('event').innerHTML = renderPublicInteraction(state.interaction, latest);
+            $('event').innerHTML = renderPublicInteraction(state.interaction);
             return;
         } else if (state.forceCoup) {
             label = '强制政变';
-            title = '你拥有至少 10 枚金币';
-            detail = '本回合只能支付 7 枚金币发动政变。';
+            title = '金币达到 10 枚';
+            detail = '本回合必须支付 7 枚金币发动政变。';
             sigil = '!';
         }
 
@@ -120,52 +185,73 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         $('event').innerHTML = `${visual}<div class="cp-event-copy"><span>${escapeHtml(label)}</span><strong>${escapeHtml(title)}</strong><p>${escapeHtml(detail)}</p></div>`;
     }
 
-    function renderPublicInteraction(interaction, latest) {
+    function renderPendingAction(action, locked) {
+        const state = model.state;
+        const target = model.selectedTarget ? getPlayer(state, model.selectedTarget) : null;
+        const role = action?.role;
+        const visual = role
+            ? `<span class="cp-event-card is-role-${role}" data-role-card="${role}"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}牌面"></span>`
+            : `<div class="cp-event-sigil">${escapeHtml(action?.icon || '!')}</div>`;
+        const cost = action?.needCoins ? `支付 ${action.needCoins} 枚金币 · ` : '';
+        const next = !locked ? '确认后提交行动。' : action?.needsTarget
+            ? target ? `目标：${target.name}。确认后提交，其他玩家可质疑或阻挡。` : '请从上方玩家席位选择一名仍在场的玩家。'
+            : role ? '确认后提交角色声明，其他玩家可质疑或阻挡。' : '确认后提交行动。';
+        return `${visual}<div class="cp-event-copy"><span>${role ? `${ROLE_NAMES[role]} · 角色行动` : '基础行动'}</span><strong>${escapeHtml(action?.name || '行动')}</strong><p>${escapeHtml(`${cost}${action?.desc || ''}`)}</p><small>${escapeHtml(next)}</small></div>`;
+    }
+
+    function renderPublicInteraction(interaction) {
         const state = model.state;
         const action = getAction(interaction.kind);
-        const actor = getPlayer(state, interaction.actorId)?.name || '玩家';
-        const target = interaction.targetId ? getPlayer(state, interaction.targetId)?.name || '目标玩家' : '';
+        const actor = displayName(interaction.actorId);
+        const target = interaction.targetId ? displayName(interaction.targetId, '目标玩家') : '';
         const role = interaction.claimedRole;
         const actionName = action?.name || getActionName(interaction.kind);
-        const stageCopy = interactionStageCopy(interaction, actor, target, actionName, latest);
+        const stageCopy = interactionStageCopy(interaction, actor, target, actionName);
         const mainCard = role && ROLE_ART[role]
-            ? `<span class="cp-event-card cp-declaration-card is-role-${role}" data-role="declaredCard" data-actor-id="${escapeHtml(interaction.actorId)}"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}声明牌"><b>声明</b></span>`
+            ? `<span class="cp-event-card cp-declaration-card is-role-${role}" data-role="declaredCard" data-role-card="${role}" data-actor-id="${escapeHtml(interaction.actorId)}"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}声明牌"><b>声明</b></span>`
             : `<span class="cp-action-token ${interaction.kind === 'coup' ? 'is-coup' : ''}" data-role="declaredCard" data-actor-id="${escapeHtml(interaction.actorId)}"><i>${escapeHtml(action?.icon || '政')}</i><b>${escapeHtml(actionName)}</b></span>`;
         const blockCard = interaction.blockerId && interaction.blockRole ? renderBlockDeclaration(interaction.blockRole) : '';
-        const challenger = interaction.challengerId ? getPlayer(state, interaction.challengerId)?.name || '玩家' : '';
-        const relation = target ? `${actor}<i>→</i><strong>${target}</strong>` : `${actor}<i>→</i><strong>中央议会</strong>`;
         return `<div class="cp-public-interaction" data-interaction-id="${Number(interaction.actionId) || 0}">
-            <div class="cp-interaction-route"><span>${relation}</span>${challenger ? `<em>${esc(challenger)}提出质疑</em>` : ''}</div>
             <div class="cp-claim-stack">${mainCard}${blockCard}</div>
-            <div class="cp-event-copy"><span>${esc(stageCopy.label)}</span><strong>${esc(stageCopy.title)}</strong><p>${esc(stageCopy.detail)}</p><small>${esc(stageCopy.status)}</small></div>
+            <div class="cp-event-copy"><span>${esc(stageCopy.label)}</span><strong>${esc(stageCopy.title)}</strong>${stageCopy.detail ? `<p>${esc(stageCopy.detail)}</p>` : ''}${stageCopy.status ? `<small>${esc(stageCopy.status)}</small>` : ''}</div>
         </div>`;
     }
 
-    function interactionStageCopy(interaction, actor, target, actionName, latest) {
+    function interactionStageCopy(interaction, actor, target, actionName) {
         const state = model.state;
-        const blocker = interaction.blockerId ? getPlayer(state, interaction.blockerId)?.name || '玩家' : '';
-        const challenger = interaction.challengerId ? getPlayer(state, interaction.challengerId)?.name || '玩家' : '';
-        const lossPlayer = interaction.lossPlayerId ? getPlayer(state, interaction.lossPlayerId)?.name || '玩家' : '';
-        const blockDecider = getPlayer(state, state.challenge?.currentBlockerId)?.name || target || '下一位玩家';
-        if (interaction.stage === 'challenge') return { label: '公开声明', title: `${actor}声称${ROLE_NAMES[interaction.claimedRole] || actionName}`, detail: target ? `准备对${target}执行${actionName}。` : `准备执行${actionName}。`, status: '等待议会决定是否质疑' };
+        const blocker = interaction.blockerId ? displayName(interaction.blockerId) : '';
+        const challenger = interaction.challengerId ? displayName(interaction.challengerId) : '';
+        const lossPlayer = interaction.lossPlayerId ? displayName(interaction.lossPlayerId) : '';
+        const blockDecider = state.challenge?.currentBlockerId ? displayName(state.challenge.currentBlockerId) : target || '下一位玩家';
+        const claimedRole = ROLE_NAMES[interaction.claimedRole] || '对应角色';
+        const action = getAction(interaction.kind);
+        const cost = action?.needCoins ? `已支付 ${action.needCoins} 枚金币；` : '';
+        const effect = `${cost}${action?.desc || '执行这项行动'}`;
+        if (interaction.stage === 'challenge') return { label: '等待质疑', title: actionName, detail: `${actor}发起${actionName}${target ? `，目标为${target}` : ''}：${effect}。`, status: state.challenge?.currentChallengerId ? `等待${displayName(state.challenge.currentChallengerId)}决定是否质疑` : '等待其他玩家质疑' };
         if (interaction.stage === 'challenged') {
             const claimant = blocker || actor;
-            return { label: '质疑成立', title: `${challenger}质疑${claimant}的声明`, detail: `${claimant}必须出示对应角色，或承认声明失败。`, status: '身份裁决即将发生' };
+            const challengedRole = ROLE_NAMES[interaction.blockRole || interaction.claimedRole] || '角色';
+            return { label: `质疑 · ${actionName}`, title: actionName, detail: `${challenger}质疑${claimant}的${challengedRole}声明。`, status: `等待${claimant}出示角色证明` };
         }
-        if (interaction.stage === 'block_offer') return { label: '反制窗口', title: `${blockDecider}可以阻挡${actionName}`, detail: `可声称${ROLE_NAMES[interaction.blockRole] || '对应角色'}进行阻挡。`, status: '原行动仍在中央等待结算' };
-        if (interaction.stage === 'block_challenge') return { label: '阻挡声明', title: `${blocker}声称${ROLE_NAMES[interaction.blockRole] || '对应角色'}阻挡`, detail: `${actor}的${actionName}暂时停止。`, status: '阻挡声明同样可以被质疑' };
+        if (interaction.stage === 'block_offer') return { label: '等待阻挡', title: actionName, detail: `${actor}发起${actionName}${target ? `，目标为${target}` : ''}。${blockDecider}可以声称${ROLE_NAMES[interaction.blockRole] || '对应角色'}进行阻挡。`, status: `等待${blockDecider}决定是否阻挡` };
+        if (interaction.stage === 'block_challenge') return { label: `阻挡 · ${actionName}`, title: actionName, detail: `${blocker}声称${ROLE_NAMES[interaction.blockRole] || '对应角色'}，阻挡${actor}的${actionName}。`, status: state.challenge?.currentChallengerId ? `等待${displayName(state.challenge.currentChallengerId)}决定是否质疑阻挡声明` : '等待其他玩家质疑阻挡声明' };
         if (interaction.stage === 'influence_loss') {
-            const provedBy = interaction.provedById ? getPlayer(state, interaction.provedById)?.name || '玩家' : '';
-            const failedBy = interaction.failedById ? getPlayer(state, interaction.failedById)?.name || '玩家' : '';
+            const provedBy = interaction.provedById ? displayName(interaction.provedById) : '';
+            const failedBy = interaction.failedById ? displayName(interaction.failedById) : '';
             const provedRole = ROLE_NAMES[interaction.provedRole || interaction.blockRole || interaction.claimedRole] || '对应角色';
-            if (interaction.verdict === 'claim_proved' || interaction.verdict === 'block_proved') return { label: '身份已证明', title: `${provedBy}证明了${provedRole}`, detail: `${lossPlayer}质疑失败，必须揭示一张影响力。`, status: '等待本人选择后才继续' };
-            if (interaction.verdict === 'claim_failed' || interaction.verdict === 'block_failed') return { label: '声明被拆穿', title: `${failedBy}未能证明角色`, detail: `${lossPlayer}必须揭示一张影响力，原声明将按裁决处理。`, status: '等待本人选择后才继续' };
-            return { label: '裁决结果', title: `${lossPlayer}必须揭示一张影响力`, detail: revealReason(interaction.lossReason), status: '等待本人选择后才继续' };
+            if (interaction.verdict === 'claim_proved' || interaction.verdict === 'block_proved') return { label: `质疑结果 · ${actionName}`, title: actionName, detail: `${provedBy}成功出示${provedRole}，${lossPlayer}质疑失败。`, status: `等待${lossPlayer}揭示一张影响力` };
+            if (interaction.verdict === 'claim_failed' || interaction.verdict === 'block_failed') return { label: `质疑结果 · ${actionName}`, title: actionName, detail: `${failedBy}无法证明${provedRole}，角色声明不成立。`, status: `等待${lossPlayer}揭示一张影响力` };
+            const lossAction = interaction.lossReason === 'coup' ? '遭到政变' : interaction.lossReason === 'assassination' ? '遭到暗杀' : revealReason(interaction.lossReason);
+            return { label: '失去影响力', title: actionName, detail: `${lossPlayer}${lossAction}，需要失去一张影响力。`, status: `等待${lossPlayer}选择一张牌揭示` };
         }
-        if (interaction.stage === 'exchange') return { label: '声明通过', title: `${actor}正在秘密交换影响力`, detail: '交换结果不会向其他玩家公开。', status: '等待大使完成选择' };
-        if (interaction.stage === 'cancelled') return { label: '声明失败', title: `${actor}的${actionName}被取消`, detail: latest || '行动未能通过质疑。', status: '本次行动已经结束' };
-        if (interaction.outcome === 'blocked') return { label: '阻挡成立', title: `${blocker}阻止了${actionName}`, detail: latest || '原行动没有生效。', status: '本次交锋已经结算' };
-        return { label: interaction.claimedRole ? '声明通过' : '公开行动', title: `${actor}完成${actionName}`, detail: latest || `${actionName}已经结算。`, status: '行动结果已写入局势记录' };
+        if (interaction.stage === 'exchange') return { label: '正在结算', title: actionName, detail: `${actor}正在与牌库交换影响力，交换内容保密。`, status: `等待${actor}完成选择` };
+        if (interaction.stage === 'cancelled') return { label: '行动取消', title: actionName, detail: `${actor}的${claimedRole}声明未通过，${actionName}未生效。`, status: '' };
+        if (interaction.outcome === 'blocked') return { label: '阻挡成功', title: actionName, detail: `${blocker}成功阻挡${actor}的${actionName}，原行动未生效。`, status: '' };
+        if (interaction.kind === 'income') return { label: '行动完成', title: actionName, detail: `${actor}从国库获得 1 枚金币。`, status: '' };
+        if (interaction.kind === 'foreign_aid') return { label: '行动完成', title: actionName, detail: `${actor}从国库获得 2 枚金币。`, status: '' };
+        if (interaction.kind === 'tax') return { label: '行动完成', title: actionName, detail: `${actor}的公爵声明成立，从国库获得 3 枚金币。`, status: '' };
+        if (interaction.kind === 'steal') return { label: '行动完成', title: actionName, detail: `${actor}从${target}处获得 ${interaction.amount ?? 2} 枚金币。`, status: '' };
+        return { label: '行动完成', title: actionName, detail: `${actor}完成${actionName}。`, status: '' };
     }
 
     function renderChallenge() {
@@ -177,24 +263,24 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         let title = '';
         let detail = '';
         let buttons = '';
-        const ready = decisionReady(model);
-        const waitLabel = ready ? '' : '<span class="cp-reaction-wait">声明送达中</span>';
+        const ready = decisionReady(model) && !presentationLocked() && !model.submitting;
+        const waitLabel = ready ? '' : '<span class="cp-reaction-wait">请稍候</span>';
         if (challenge.phase === 'block') {
-            const decider = getPlayer(state, challenge.currentBlockerId)?.name || '玩家';
-            title = challenge.isMyTurn ? `是否阻挡这次${actionName}？` : `等待 ${decider} 决定是否阻挡`;
-            detail = `阻挡意味着你声称自己拥有${role}，这项声明仍可被质疑。`;
-            if (challenge.isMyTurn) buttons = `${waitLabel}<button class="cp-danger" data-challenge="block" type="button" ${ready ? '' : 'disabled'}>用${escapeHtml(role)}阻挡</button><button class="cp-secondary" data-challenge="pass" type="button" ${ready ? '' : 'disabled'}>放行</button>`;
+            const decider = displayName(challenge.currentBlockerId);
+            title = challenge.isMyTurn ? `要阻挡这次${actionName}吗？` : `等待 ${decider} 决定是否阻挡`;
+            detail = `需要声称${role}，该声明也可能被质疑。`;
+            if (challenge.isMyTurn) buttons = `${waitLabel}<button class="cp-danger" data-challenge="block" type="button" ${ready ? '' : 'disabled'}>阻挡</button><button class="cp-secondary" data-challenge="pass" type="button" ${ready ? '' : 'disabled'}>不阻挡</button>`;
         } else if (challenge.phase === 'challenge') {
-            const claimant = getPlayer(state, challenge.responderId)?.name || '玩家';
-            const decider = getPlayer(state, challenge.currentChallengerId)?.name || '玩家';
-            title = challenge.isMyTurn ? `是否质疑 ${claimant}？` : `等待 ${decider} 回应声明`;
-            detail = `${claimant} 声称${role}来执行${actionName}；错误的一方将失去一张影响力。`;
-            if (challenge.isMyTurn) buttons = `${waitLabel}<button class="cp-danger" data-challenge="challenge" type="button" ${ready ? '' : 'disabled'}>质疑${escapeHtml(role)}</button><button class="cp-secondary" data-challenge="pass" type="button" ${ready ? '' : 'disabled'}>接受声明</button>`;
+            const claimant = displayName(challenge.responderId);
+            const decider = displayName(challenge.currentChallengerId);
+            title = challenge.isMyTurn ? `要质疑 ${claimant} 吗？` : `等待 ${decider} 回应声明`;
+            detail = '假声明：声明者失去一张影响力；真声明：质疑者失去一张。';
+            if (challenge.isMyTurn) buttons = `${waitLabel}<button class="cp-danger" data-challenge="challenge" type="button" ${ready ? '' : 'disabled'}>质疑</button><button class="cp-secondary" data-challenge="pass" type="button" ${ready ? '' : 'disabled'}>不质疑</button>`;
         } else {
-            const claimant = getPlayer(state, challenge.responderId)?.name || '玩家';
-            title = challenge.isMyTurn ? '你的身份受到质疑' : `等待 ${claimant} 回应质疑`;
-            detail = `若你确有${role}，出示后会洗回牌库并补抽；否则必须取消声明。`;
-            if (challenge.isMyTurn) buttons = `${waitLabel}<button class="cp-primary" data-challenge="show" type="button" ${ready ? '' : 'disabled'}>出示${escapeHtml(role)}</button><button class="cp-danger" data-challenge="cancel" type="button" ${ready ? '' : 'disabled'}>承认失败</button>`;
+            const claimant = displayName(challenge.responderId);
+            title = challenge.isMyTurn ? `您的${role}声明受到质疑` : `等待 ${claimant} 回应质疑`;
+            detail = `出示${role}并换牌，或承认无法证明、失去一张影响力。`;
+            if (challenge.isMyTurn) buttons = `${waitLabel}<button class="cp-primary" data-challenge="show" type="button" ${ready ? '' : 'disabled'}>出示${escapeHtml(role)}</button><button class="cp-danger" data-challenge="cancel" type="button" ${ready ? '' : 'disabled'}>无法证明</button>`;
         }
         $('challenge').innerHTML = `<div class="cp-decision-copy"><span>${challengeLabel(challenge.phase)}</span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></div><div class="cp-decision-actions">${buttons || '<span class="cp-wait">决策进行中</span>'}</div>`;
     }
@@ -230,15 +316,37 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         const svg = $('actionLinks');
         const state = model.state;
         const interaction = state?.interaction;
+        const presentationEvent = model.presentationEvent;
+        if (presentationEvent) {
+            svg.classList.remove('has-action', 'has-response');
+            const route = presentationEvent.route;
+            const from = route?.from ? playerAnchor(route.from) : null;
+            const to = route?.to ? playerAnchor(route.to) : null;
+            if (from && to) {
+                const kind = route.kind === 'response' ? 'response' : 'action';
+                drawLink(from, to, kind);
+                svg.classList.add(`has-${kind}`);
+            }
+            return;
+        }
         if (!interaction || state.gameOver) {
             svg.classList.remove('has-action', 'has-response');
             model.centeredInteractionId = null;
             return;
         }
         const actionSource = playerAnchor(interaction.actorId);
+        // Only connect actions between players. Resource actions already have a
+        // complete declaration in the central stage; routing them to the
+        // treasury makes the line terminate inside that stage while everyone
+        // is deciding whether to challenge or block.
         const actionTarget = interaction.targetId ? playerAnchor(interaction.targetId) : null;
-        if (actionSource && actionTarget) {
-            centerSeatIfNeeded(actionTarget, interaction.actionId);
+        // Once a declaration enters the challenge/block flow, the central
+        // stage already carries the action context. Keeping the original
+        // actor-to-target route visible cuts diagonally through the stage and
+        // its treasury. A later challenge/block gets its own response route.
+        const showActionRoute = !state.challenge;
+        if (showActionRoute && actionSource && actionTarget) {
+            if (interaction.targetId) centerSeatIfNeeded(actionTarget, interaction.actionId);
             drawLink(actionSource, actionTarget, 'action');
             svg.classList.add('has-action');
         } else svg.classList.remove('has-action');
@@ -284,13 +392,15 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
     }
 
     function playerAnchor(playerId) {
-        return [...mount.querySelectorAll('[data-player-id]')].find(element => element.dataset.playerId === String(playerId)) || null;
+        return [...mount.querySelectorAll('[data-player-anchor]')].find(element => element.dataset.playerAnchor === String(playerId)) || null;
     }
 
     function renderTimeline() {
         const state = model.state;
         const entries = (state.actionLog || []).slice(-7).reverse();
-        $('timeline').innerHTML = entries.length ? entries.map((entry, index) => `<div class="cp-timeline-entry"><i class="${index === 0 ? 'is-latest' : ''}"></i><span>${escapeHtml(entry)}</span></div>`).join('') : '<span class="cp-muted">行动后将在这里留下公开记录</span>';
+        $('timeline').innerHTML = entries.length ? entries.map((entry, index) => historyMarkup(entry, index, 'cp-timeline-entry')).join('') : '<span class="cp-muted">行动后将在这里留下公开记录</span>';
+        const history = (state.actionLog || []).slice().reverse();
+        $('historyList').innerHTML = history.length ? history.map((entry, index) => historyMarkup(entry, index, 'cp-history-entry')).join('') : '<span class="cp-muted">尚无公开行动记录</span>';
     }
 
     function renderCommand(self, myTurn) {
@@ -298,61 +408,56 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         if (!self) { $('command').innerHTML = '<div class="cp-command-message">等待玩家数据</div>'; return; }
         const influences = self.influences || [];
         if (state.gameOver) {
-            $('command').innerHTML = `<div class="cp-ended-command"><span>本局结束</span><strong>${escapeHtml(getPlayer(state, state.winner)?.name || '无人')} 赢得政变</strong><small>完整结果已在终局裁决中封存。</small></div>`;
+            const personalResult = String(state.winner) === String(state.myId) ? '您获胜了' : self.isAlive === false ? '您已出局' : `${displayName(state.winner, '无人')}获胜`;
+            $('command').innerHTML = `<div class="cp-ended-command"><span>游戏结束</span><strong>${escapeHtml(personalResult)}</strong><small>终局结果已显示。</small></div>`;
             return;
         }
         if (state.exchange?.isMyTurn) {
-            $('command').innerHTML = '<div class="cp-ended-command"><span>大使交换</span><strong>私密选牌窗口已打开</strong><small>从原有影响力与新抽牌中选择要保留的牌。</small></div>';
+            $('command').innerHTML = '<div class="cp-ended-command"><span>大使交换</span><strong>选择要保留的牌</strong><small>从原有影响力和新抽牌中选择指定数量。</small></div>';
             return;
         }
         if (state.influenceLoss?.isMyTurn) {
-            const ready = decisionReady(model);
-            const choices = influences.map((card, index) => card.revealed ? '' : `<button class="cp-private-choice-button" data-loss-index="${index}" type="button"${ready ? '' : ' disabled'}>揭示 ${index + 1} 号影响力</button>`).join('');
-            $('command').innerHTML = `<div class="cp-loss-panel ${state.interaction?.targetId === state.myId ? 'is-action-target' : ''}" data-player-id="${escapeHtml(state.myId)}"><div class="cp-loss-copy"><span>失去影响力</span><strong>${ready ? '选择一张牌永久揭示' : '先查看中央裁决'}</strong><small>${ready ? '先按住查看并记住编号，松开隐藏后再选择要揭示的牌。已揭示角色会公开留在席位上。' : '裁决展示结束后即可选择，牌效不能被拒绝。'}</small></div><div class="cp-loss-identity"><div class="cp-loss-cards ${ready ? '' : 'is-waiting'}">${influences.map((card, index) => renderInfluence(card, { privateIdentity: true, slotIndex: index }, model)).join('')}</div>${influences.some(card => !card.revealed) ? identityHoldControl('按住核对牌面，松开后再按编号选择') : ''}</div><div class="cp-private-choice-row">${choices}</div></div>`;
+            const ready = decisionReady(model) && !presentationLocked();
+            $('command').innerHTML = `<div class="cp-loss-panel ${state.interaction?.targetId === state.myId ? 'is-action-target' : ''}" data-player-id="${escapeHtml(state.myId)}"><div class="cp-loss-copy"><span>失去影响力</span><strong>${ready ? '选择一张影响力揭示' : '请稍候'}</strong><small>${ready ? '点击要失去的牌；揭示后对所有人可见。' : '结果播报结束后即可选择。'}</small></div><div class="cp-loss-identity"><div class="cp-loss-cards ${ready ? '' : 'is-waiting'}">${influences.map((card, index) => renderInfluence(card, { slotIndex: index, lossIndex: !card.revealed && ready ? index : undefined })).join('')}</div></div></div>`;
             return;
         }
         const target = model.selectedTarget ? getPlayer(state, model.selectedTarget) : null;
         const action = model.pendingAction ? getAction(model.pendingAction.kind) : null;
+        const interaction = activeSeatInteraction(state);
+        const selfIsResponding = currentDecisionPlayerId(state) === state.myId;
         const actionContent = model.pendingAction
-            ? `<div class="cp-target-panel"><div class="cp-target-action">${renderActionVisual(action)}<span><small>准备发动</small><strong>${escapeHtml(action?.name || '行动')}</strong></span></div><div class="cp-target-choice"><span>${target ? `目标：${escapeHtml(target.name)}` : '请从上方议会席位选择目标'}</span><div><button class="cp-secondary" data-action="cancel-target" type="button">取消</button><button class="cp-primary" data-action="confirm-target" type="button" ${target ? '' : 'disabled'}>确认${escapeHtml(action?.name || '行动')}</button></div></div></div>`
+            ? `<div class="cp-target-panel"><div class="cp-target-action">${renderActionVisual(action)}<span><small>${model.submitting ? '正在提交' : '准备提交'}</small><strong>${escapeHtml(action?.name || '行动')}</strong></span></div><div class="cp-target-choice"><span>${model.submitting ? '请稍候，等待服务器确认。' : action?.needsTarget ? target ? `目标：${escapeHtml(target.name)}` : '请从上方玩家席位选择目标' : '查看中央预览后确认行动'}</span><div><button class="cp-secondary" data-action="cancel-target" type="button" ${model.submitting ? 'disabled' : ''}>取消</button><button class="cp-primary" data-action="confirm-action" type="button" ${model.submitting || (action?.needsTarget && !target) ? 'disabled' : ''}>${model.submitting ? '提交中…' : `确认${escapeHtml(action?.name || '行动')}`}</button></div></div></div>`
             : `<div class="cp-action-groups">${ACTION_GROUPS.map(group => `<section class="cp-action-group is-${group.id}"><span>${group.name}</span><div>${ACTIONS.filter(actionItem => actionItem.group === group.id).map(actionItem => renderActionButton(actionItem, self, myTurn)).join('')}</div></section>`).join('')}</div>`;
-        const activeCount = influences.filter(card => !card.revealed).length;
-        const status = self.isAlive === false ? '你已出局，可继续旁观' : myTurn ? '你的回合' : `等待 ${getPlayer(state, state.currentTurn)?.name || '其他玩家'}`;
         $('command').innerHTML = `<div class="cp-command-inner">
-            <section class="cp-private ${state.interaction?.actorId === state.myId ? 'is-action-source' : ''} ${state.interaction?.targetId === state.myId ? 'is-action-target' : ''} ${state.interaction?.challengerId === state.myId ? 'is-challenger' : ''} ${state.interaction?.blockerId === state.myId ? 'is-blocker' : ''}" data-player-id="${escapeHtml(state.myId)}"><header><div><span>你的影响力</span><strong>${escapeHtml(self.name || '我')}</strong><small>${escapeHtml(status)} · ${activeCount} 张仍生效</small></div><div class="cp-wallet"><i></i><b>${self.coins ?? 0}</b><span>金币</span></div></header><div class="cp-private-identity"><div class="cp-self-cards">${influences.map((card, index) => renderInfluence(card, { privateIdentity: true, slotIndex: index }, model)).join('')}</div>${activeCount ? identityHoldControl() : ''}</div></section>
-            <section class="cp-action-console"><header><div><span>行动台</span><strong>${myTurn ? '选择本回合行动' : '查看可用行动'}</strong></div>${state.forceCoup ? '<em>必须政变</em>' : ''}</header>${actionContent}</section>
+            <section class="cp-private ${interaction?.actorId === state.myId ? 'is-action-source' : ''} ${interaction?.targetId === state.myId ? 'is-action-target' : ''} ${interaction?.challengerId === state.myId ? 'is-challenger' : ''} ${interaction?.blockerId === state.myId ? 'is-blocker' : ''}" data-player-id="${escapeHtml(state.myId)}"><header class="cp-self-summary ${myTurn ? 'is-turn' : ''} ${selfIsResponding ? 'is-responding' : ''}" data-player-anchor="${escapeHtml(state.myId)}" aria-label="${escapeHtml(self.name || state.myId)}，${self.coins ?? 0} 枚金币${myTurn ? '，当前回合' : ''}"><div><strong>${escapeHtml(self.name || state.myId)}</strong></div><div class="cp-wallet"><i aria-hidden="true"></i><b>${self.coins ?? 0}</b><span>金币</span></div></header><div class="cp-private-identity"><div class="cp-self-cards">${influences.map((card, index) => renderInfluence(card, { slotIndex: index })).join('')}</div></div></section>
+            <section class="cp-action-console"><header><strong>行动</strong>${state.forceCoup ? '<em>必须政变</em>' : ''}</header>${actionContent}</section>
         </div>`;
     }
 
-    function identityHoldControl(copy = '尚未公开的影响力仅本人可见') {
-        return `<button class="cp-identity-hold" data-identity-hold type="button" aria-pressed="${String(model.privateIdentityVisible)}" aria-label="${model.privateIdentityVisible ? '正在显示私密身份，松开立即隐藏' : '按住查看私密身份，松开立即隐藏'}"><i aria-hidden="true"></i><span><b>${model.privateIdentityVisible ? '松开立即隐藏' : '按住查看身份'}</b><small>${escapeHtml(copy)}</small></span></button>`;
-    }
-
     function renderActionButton(action, self, myTurn) {
-        let disabled = !myTurn || model.state.gameOver || model.state.challenge || model.state.influenceLoss || model.state.exchange || self.isAlive === false;
+        let disabled = model.submitting || presentationLocked() || !myTurn || model.state.gameOver || model.state.challenge || model.state.influenceLoss || model.state.exchange || self.isAlive === false;
         let reason = action.desc;
         let disabledReason = '';
-        if (!disabled && model.state.forceCoup && action.id !== 'coup') { disabled = true; disabledReason = '拥有 10 枚或更多金币时必须发动政变'; }
+        if (!disabled && model.state.forceCoup && action.id !== 'coup') { disabled = true; disabledReason = '金币达到 10 枚时必须发动政变'; }
         if (!disabled && action.needCoins && (self.coins || 0) < action.needCoins) { disabled = true; disabledReason = `金币不足：需要 ${action.needCoins} 枚，当前 ${self.coins || 0} 枚`; }
         if (disabledReason) reason = disabledReason;
-        return `<div class="cp-action-wrap"><button class="cp-action ${action.id === 'coup' ? 'is-coup' : ''}" data-action-kind="${action.id}" type="button" title="${escapeHtml(reason)}" ${disabled ? 'disabled' : ''} ${disabledReason ? `aria-describedby="cp-action-reason-${action.id}"` : ''}>${renderActionVisual(action)}<span><b>${action.name}</b><small>${action.needCoins ? `${action.needCoins} 金币 · ` : ''}${action.desc}</small></span></button>${disabledReason ? `<small class="cp-action-reason" id="cp-action-reason-${action.id}">${escapeHtml(disabledReason)}</small>` : ''}</div>`;
+        return `<div class="cp-action-wrap"><button class="cp-action ${action.id === 'coup' ? 'is-coup' : ''}" data-action-kind="${action.id}" type="button" title="${escapeHtml(reason)}" ${disabled ? 'disabled' : ''} ${disabledReason ? `aria-describedby="cp-action-reason-${action.id}"` : ''}>${renderActionVisual(action)}<span><b>${action.name}</b><small>${action.needCoins ? `${action.needCoins} 枚金币 · ` : ''}${action.desc}</small></span></button>${disabledReason ? `<small class="cp-action-reason" id="cp-action-reason-${action.id}">${escapeHtml(disabledReason)}</small>` : ''}</div>`;
     }
 
     function renderExchangeOverlay() {
         const state = model.state;
         const overlay = $('exchangeOverlay');
         const dialog = $('exchangeDialog');
+        if (presentationLocked()) {
+            setOverlay(overlay, false);
+            return;
+        }
         if (state.exchange?.isMyTurn) {
             model.exchangeMode = 'select';
             model.exchangeOpen = true;
             const options = state.exchange.options || [];
             const keepCount = state.exchange.keepCount || 0;
-            dialog.innerHTML = `<span class="cp-dialog-label">大使 · 私密交换</span><h2 id="cp-exchange-title">选择要保留的影响力</h2><p>按住查看全部牌面，记住编号后松开，再从原有手牌和新抽牌中保留 <strong>${keepCount}</strong> 张。</p><div class="cp-exchange-identity"><div class="cp-exchange-options">${options.map((card, index) => { const optionIndex = Number.isInteger(card.index) ? card.index : index; const source = card.source === 'drawn' ? '新抽牌' : '原有影响力'; return renderInfluence(card, { exchange: true, privateIdentity: true, slotIndex: index, selected: model.exchangeKeep.includes(optionIndex), source }, model); }).join('')}</div>${identityHoldControl('按住核对全部交换牌，松开立即隐藏')}</div><div class="cp-private-choice-row is-exchange">${options.map((card, index) => { const optionIndex = Number.isInteger(card.index) ? card.index : index; return `<button class="cp-private-choice-button ${model.exchangeKeep.includes(optionIndex) ? 'is-selected' : ''}" data-exchange-index="${optionIndex}" type="button" aria-pressed="${String(model.exchangeKeep.includes(optionIndex))}">${index + 1} 号 · ${card.source === 'drawn' ? '新抽牌' : '原有牌'}</button>`; }).join('')}</div><div class="cp-exchange-footer"><span>已选择 <b>${model.exchangeKeep.length}</b> / ${keepCount}</span><button class="cp-primary" data-action="confirm-exchange-select" type="button" ${model.exchangeKeep.length === keepCount ? '' : 'disabled'}>确认交换结果</button></div>`;
-            setOverlay(overlay, true);
-            return;
-        }
-        if (model.exchangeMode === 'confirm' && model.exchangeOpen && !state.gameOver) {
-            dialog.innerHTML = `<button class="cp-dialog-close" data-action="cancel-exchange" type="button" aria-label="关闭交换确认">x</button><span class="cp-dialog-label">大使声明</span><h2 id="cp-exchange-title">声称大使并交换？</h2><p>其他玩家可以质疑这项声明。若声明通过，你会从原有影响力与两张新牌中秘密选择保留牌。</p><div class="cp-dialog-actions"><button class="cp-secondary" data-action="cancel-exchange" type="button">取消</button><button class="cp-primary" data-action="confirm-exchange" type="button">确认声明</button></div>`;
+            dialog.innerHTML = `<span class="cp-dialog-label">大使 · 交换</span><h2 id="cp-exchange-title">选择要保留的牌</h2><p>从原有影响力和新抽牌中保留 <strong>${keepCount}</strong> 张。牌面仅您可见。</p><div class="cp-exchange-identity"><div class="cp-exchange-options">${options.map((card, index) => { const optionIndex = Number.isInteger(card.index) ? card.index : index; const source = card.source === 'drawn' ? '新抽牌' : '原有影响力'; return renderInfluence(card, { exchange: true, exchangeIndex: optionIndex, slotIndex: index, selected: model.exchangeKeep.includes(optionIndex), source }); }).join('')}</div></div><div class="cp-exchange-footer"><span>已选择 <b>${model.exchangeKeep.length}</b> / ${keepCount}</span><button class="cp-primary" data-action="confirm-exchange-select" type="button" ${model.exchangeKeep.length === keepCount ? '' : 'disabled'}>确认选择</button></div>`;
             setOverlay(overlay, true);
             return;
         }
@@ -363,39 +468,19 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         const state = model.state;
         const overlay = $('endOverlay');
         const dialog = $('endDialog');
-        if (!state.gameOver) { setOverlay(overlay, false); return; }
-        const winner = getPlayer(state, state.winner)?.name || '无人';
-        const recent = (state.actionLog || []).slice(-5).reverse().map(entry => `<li>${escapeHtml(entry)}</li>`).join('');
-        dialog.innerHTML = `<span class="cp-dialog-label">最终裁决</span><h2 id="cp-end-title">${escapeHtml(winner)} 掌控了城邦</h2><p>本局已经结束，所有角色与最后几项行动会留在当前房间供玩家复盘。</p><ol class="cp-end-log">${recent || '<li>没有额外终局记录</li>'}</ol><p class="cp-dialog-note">可使用顶部统一导航返回大厅</p>`;
+        if (!state.gameOver || presentationLocked()) { setOverlay(overlay, false); return; }
+        const winner = displayName(state.winner, '无人');
+        const self = getSelf(state);
+        const heading = String(state.winner) === String(state.myId) ? '您获胜了' : self?.isAlive === false ? '您已出局' : `${winner}获胜`;
+        const recent = (state.actionLog || []).slice(-5).reverse().map(entry => {
+            const copy = coupHistoryCopy(entry);
+            return `<li><strong>${esc(copy.title)}</strong><span>${esc(copy.detail)}${copy.status ? ` · ${copy.status}` : ''}</span></li>`;
+        }).join('');
+        dialog.innerHTML = `<span class="cp-dialog-label">游戏结束</span><h2 id="cp-end-title">${escapeHtml(heading)}</h2><p>本局已结束，以下是最后几条行动记录。</p><ol class="cp-end-log">${recent || '<li>没有额外行动记录</li>'}</ol><p class="cp-dialog-note">使用顶部导航返回大厅</p>`;
         setOverlay(overlay, true);
     }
 
-    function getPhaseLabel() {
-        const state = model.state;
-        if (state.gameOver) return { short: '终局', long: '本局已经结束' };
-        if (state.exchange) return { short: '交换', long: '大使正在交换影响力' };
-        if (state.influenceLoss) return { short: '揭示', long: '等待失去一张影响力' };
-        if (state.challenge) return { short: challengeLabel(state.challenge.phase), long: state.challenge.isMyTurn ? '现在需要你作出决定' : '等待玩家作出决定' };
-        if (isMyTurn(state)) return { short: '行动', long: '从七种行动中选择一项' };
-        return { short: '等待', long: '观察其他玩家的行动' };
-    }
-
-    function getTurnStatus(myTurn, turnName) {
-        const state = model.state;
-        if (state.gameOver) return `${getPlayer(state, state.winner)?.name || '无人'} 获胜`;
-        if (state.exchange?.isMyTurn) return '请选择要保留的影响力';
-        if (state.influenceLoss?.isMyTurn) return '请选择要揭示的影响力';
-        if (state.challenge?.isMyTurn) {
-            if (state.challenge.phase === 'block') return '请决定是否阻挡';
-            if (state.challenge.phase === 'challenge') return '请决定是否质疑';
-            return '请回应对方的质疑';
-        }
-        return myTurn ? '轮到你采取行动' : `轮到 ${turnName}`;
-    }
-
     function setOverlay(overlay, open) {
-        model.privateIdentityVisible = false;
-        syncPrivateIdentityVisibility();
         const wasOpen = !overlay.classList.contains('is-hidden');
         if (open && !wasOpen) model.overlayReturnFocus.set(overlay, documentRef.activeElement);
         overlay.classList.toggle('is-hidden', !open);
@@ -406,7 +491,13 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
     }
 
     function openOverlay() {
-        return [$('endOverlay'), $('exchangeOverlay'), $('rolesOverlay')].find(overlay => overlay && !overlay.classList.contains('is-hidden')) || null;
+        return [$('endOverlay'), $('exchangeOverlay'), $('roleDetailOverlay'), $('historyOverlay'), $('rolesOverlay')].find(overlay => overlay && !overlay.classList.contains('is-hidden')) || null;
+    }
+
+    function openRoleDetail(role) {
+        if (!ROLE_ART[role]) return;
+        $('roleDetailDialog').innerHTML = `<button class="cp-dialog-close" data-action="close-role-detail" type="button" aria-label="关闭角色说明">x</button><span class="cp-dialog-label">角色能力</span><div class="cp-role-detail"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}牌面"><div><span>${escapeHtml(ROLE_MARKS[role])} · 角色能力</span><h2 id="cp-role-detail-title">${escapeHtml(ROLE_NAMES[role])}</h2><p>${escapeHtml(ROLE_EFFECTS[role])}</p><small>${escapeHtml(ROLE_NOTES[role])}</small></div></div>`;
+        setOverlay($('roleDetailOverlay'), true);
     }
 
     function updateModalIsolation() {
@@ -434,7 +525,7 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         const previous = model.overlayReturnFocus.get(overlay);
         model.overlayReturnFocus.delete(overlay);
         const request = windowRef.requestAnimationFrame || (callback => windowRef.setTimeout(callback, 0));
-        request(() => { const fallback = mount.querySelector('[data-action="roles"], [data-action-kind="exchange"]'); (previous?.isConnected && !previous.disabled ? previous : fallback)?.focus(); });
+        request(() => { const fallback = mount.querySelector('[data-action="open-history"], [data-action="roles"], [data-action-kind="exchange"]'); (previous?.isConnected && !previous.disabled ? previous : fallback)?.focus(); });
     }
 
     function trapOverlayFocus(event) {
@@ -450,5 +541,5 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         return true;
     }
 
-    return { render, scheduleActionPresentation, syncPrivateIdentityVisibility, setOverlay, openOverlay, trapOverlayFocus, getPlayer: id => getPlayer(model.state, id), isMyTurn: () => isMyTurn(model.state), getAction: kind => getAction(kind), decisionReady: () => decisionReady(model) };
+    return { render, renderEvent, scheduleActionPresentation, setOverlay, openOverlay, openRoleDetail, trapOverlayFocus, getPlayer: id => getPlayer(model.state, id), isMyTurn: () => isMyTurn(model.state), getAction: kind => getAction(kind), decisionReady: () => decisionReady(model) };
 }

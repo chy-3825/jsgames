@@ -7,41 +7,41 @@
 const GROUP_DEFINITIONS = {
     'social-assist': {
         id: 'social-assist',
-        name: '社交推理与流程辅助',
-        description: '身份、沟通与自动流程',
+        name: '社交推理',
+        description: '身份、沟通与阵营博弈',
         order: 1,
     },
     codebreaking: {
         id: 'codebreaking',
-        name: '解密类',
-        description: '密码、线索与逻辑破译',
+        name: '解谜与破译',
+        description: '密码、线索与逻辑推理',
         order: 2,
     },
     board: {
         id: 'board',
-        name: '棋类与棋盘游戏',
-        description: '棋盘对弈与路线竞赛',
+        name: '棋盘对弈',
+        description: '落子、布局与路线竞赛',
         order: 3,
     },
     tabletop: {
         id: 'tabletop',
-        name: '卡牌与策略桌游',
-        description: '卡牌、经营、竞价与策略',
+        name: '卡牌与策略',
+        description: '经营、竞价与策略对抗',
         order: 4,
     },
 };
 
 const GAME_GROUPS = {
-    // 社交推理与流程辅助
+    // 社交推理
     avalon: { group: 'social-assist', playMode: 'online', sortOrder: 2 },
     witchtown: { group: 'social-assist', playMode: 'online', sortOrder: 3 },
     werewolf: { group: 'social-assist', playMode: 'auto-assist', sortOrder: 1 },
 
-    // 解密类
+    // 解谜与破译
     decrypto: { group: 'codebreaking', playMode: 'online', sortOrder: 1 },
     guessnumber: { group: 'codebreaking', playMode: 'solo', sortOrder: 2 },
 
-    // 棋类与棋盘游戏
+    // 棋盘对弈
     chess: { group: 'board', playMode: 'online', sortOrder: 1 },
     xiangqi: { group: 'board', playMode: 'online', sortOrder: 2 },
     jungle: { group: 'board', playMode: 'online', sortOrder: 3 },
@@ -51,7 +51,7 @@ const GAME_GROUPS = {
     checkers: { group: 'board', playMode: 'online', sortOrder: 7 },
     monopoly: { group: 'board', playMode: 'online', sortOrder: 8 },
 
-    // 卡牌与策略桌游
+    // 卡牌与策略
     loveletter: { group: 'tabletop', playMode: 'online', sortOrder: 1 },
     coup: { group: 'tabletop', playMode: 'online', sortOrder: 2 },
     monopolydeal: { group: 'tabletop', playMode: 'online', sortOrder: 4 },

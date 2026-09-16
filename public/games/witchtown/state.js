@@ -10,9 +10,13 @@ export function createWitchTownModel() {
         hasViewedDossier: false,
         selectDraft: new Map(),
         sceneTimer: null,
+        sceneStartTimer: null,
         scenePlaying: false,
         sceneQueue: [],
         lastPresentationEventId: null,
+        seenPresentationEventIds: new Set(),
+        presentationEpoch: null,
+        presentationClockOffset: 0,
         rulesScrollY: 0,
     };
 }

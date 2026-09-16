@@ -4,7 +4,7 @@ import { createModalController } from '../common/modal.js';
 import { loadStyles } from '../common/style-loader.js';
 import { ROLE_ART_ROOT, ROLE_META } from './constants.js';
 import { createAvalonActions } from './actions.js';
-import { createAvalonModel } from './state.js';
+import { createAvalonModel, localizePresentation } from './state.js';
 import { createAvalonTemplate } from './template.js';
 import { createAvalonRenderer } from './render.js';
 import { createAvalonScene } from './scene.js';
@@ -25,26 +25,56 @@ export function createGameClient({ mount, send, addLog }) {
     const rulesModal = createModalController({ root: app, overlay: getElement('rulesOverlay'), documentRef, windowRef, fallbackFocus: () => mount.querySelector('[data-ui="rules"]') });
     const renderer = createAvalonRenderer({ mount, model, getElement });
     const scene = createAvalonScene({ mount, model, getElement, renderer, windowRef });
-    const actions = createAvalonActions({ mount, model, renderer, rulesModal, send, documentRef });
+    const actions = createAvalonActions({ mount, model, renderer, scene, rulesModal, send, documentRef });
     mount.addEventListener('click', actions.handleClick, { signal: scope.signal });
     mount.addEventListener('pointerdown', actions.handlePointerDown, { signal: scope.signal });
+    windowRef.addEventListener('pointermove', actions.handlePointerMove, { signal: scope.signal });
     mount.addEventListener('pointerout', actions.handlePointerOut, { signal: scope.signal });
-    mount.addEventListener('pointercancel', actions.handlePointerEnd, { signal: scope.signal });
+    mount.addEventListener('keydown', actions.handleKeydown, { signal: scope.signal });
     mount.addEventListener('focusout', actions.handleFocusout, { signal: scope.signal });
-    documentRef.addEventListener('keydown', actions.handleKeydown, { signal: scope.signal });
-    documentRef.addEventListener('pointerup', actions.handlePointerEnd, { signal: scope.signal });
-    documentRef.addEventListener('keyup', actions.handleKeyup, { signal: scope.signal });
+    mount.addEventListener('contextmenu', actions.handleContextmenu, { signal: scope.signal });
+    windowRef.addEventListener('pointerup', actions.handlePointerUp, { signal: scope.signal });
+    windowRef.addEventListener('pointercancel', actions.handlePointerCancel, { signal: scope.signal });
+    windowRef.addEventListener('keyup', actions.handleKeyup, { signal: scope.signal });
     documentRef.addEventListener('visibilitychange', actions.handleVisibilityChange, { signal: scope.signal });
-    windowRef.addEventListener('blur', actions.hideRoleIdentity, { signal: scope.signal });
+    windowRef.addEventListener('blur', actions.handleBlur, { signal: scope.signal });
     function handleMessage(message) {
         if (message.state) {
             const previous = model.state;
-            if (previous && (previous.phase !== message.state.phase || previous.myRole !== message.state.myRole)) renderer.hideRoleIdentity();
+            const viewChanged = previous && (previous.phase !== message.state.phase || previous.myRole !== message.state.myRole);
+            if (viewChanged) renderer.hideRoleIdentity();
+            if (!previous || message.state.phase !== 'roleReveal' || viewChanged) model.hasViewedRole = false;
             model.state = message.state;
+            model.actionPending = false;
+            const presentations = model.state.presentations?.length
+                ? model.state.presentations
+                : model.state.presentation
+                    ? [model.state.presentation]
+                    : [];
+            const localNow = Date.now();
+            for (const batch of presentations.slice().sort((left, right) => Number(left.sequence) - Number(right.sequence))) {
+                const sequence = Number(batch.sequence) || 0;
+                const localized = localizePresentation(batch, localNow);
+                if (!localized) continue;
+                const freshEvents = localized.events.filter((event, index) => {
+                    const eventKey = `${batch.transactionId || sequence}:${event.eventId || event.sequence || `${index}:${event.kind || 'event'}`}`;
+                    if (model.presentationEventIds.has(eventKey)) return false;
+                    model.presentationEventIds.add(eventKey);
+                    return true;
+                });
+                model.lastPresentationSequence = Math.max(model.lastPresentationSequence, sequence);
+                if (freshEvents.length) {
+                    rulesModal.setOpen(false);
+                    scene.enqueuePresentation({ ...localized, events: freshEvents });
+                }
+            }
             renderer.render();
-            scene.maybePlaySceneTransition(previous, model.state);
         }
-        if (message.type === 'error') addLog?.(message.message || '这一步现在无法进行', 'error');
+        if (message.type === 'error') {
+            model.actionPending = false;
+            addLog?.(message.message || '这一步现在无法进行', 'error');
+            if (model.state) renderer.render();
+        }
     }
     return {
         gameType: 'avalon',
@@ -54,6 +84,7 @@ export function createGameClient({ mount, send, addLog }) {
             renderer.hideRoleIdentity();
             rulesModal.destroy();
             scope.destroy();
+            model.presentationEventIds.clear();
             roleArtPreloads.length = 0;
             documentRef.body.classList.remove('is-avalon-view');
             styleHandle.release();

@@ -14,16 +14,43 @@ export function createGameEntryTransition({
     windowRef = globalThis,
 } = {}) {
     let activeTransition = null;
+    let activeRoomElement = null;
+    let releaseActiveGeometry = null;
     let transitionToken = 0;
+    const pendingWaiters = new Set();
 
     function cancel() {
         transitionToken += 1;
+        for (const waiter of pendingWaiters) {
+            windowRef.clearTimeout(waiter.timer);
+            waiter.resolve(false);
+        }
+        pendingWaiters.clear();
+        activeRoomElement?.classList.remove('is-entry-transitioning');
+        activeRoomElement = null;
+        releaseActiveGeometry?.();
+        releaseActiveGeometry = null;
         activeTransition?.remove();
         activeTransition = null;
     }
 
     function wait(milliseconds) {
-        return new Promise(resolve => windowRef.setTimeout(resolve, milliseconds));
+        const delay = Math.max(0, Number(milliseconds) || 0);
+        return new Promise(resolve => {
+            const waiter = { timer: null, resolve };
+            waiter.timer = windowRef.setTimeout(() => {
+                pendingWaiters.delete(waiter);
+                resolve(true);
+            }, delay);
+            pendingWaiters.add(waiter);
+        });
+    }
+
+    async function waitUntil(deadline, now) {
+        const remaining = Number(deadline) - now();
+        if (!Number.isFinite(remaining) || remaining <= 0) return false;
+        await wait(remaining);
+        return true;
     }
 
     function isCurrent(token, roomId) {
@@ -76,39 +103,82 @@ export function createGameEntryTransition({
 
     function prepareStreams(transition, roomElement, targetX, targetY) {
         const streamMount = transition.querySelector('.game-entry-streams');
-        Array.from(roomElement.querySelectorAll('.pregame-seat.is-occupied .pregame-seat-fire')).forEach((fire, index) => {
+        const fires = Array.from(roomElement.querySelectorAll('.pregame-seat.is-occupied .pregame-seat-fire'));
+        while (streamMount.children.length > fires.length) streamMount.lastElementChild.remove();
+        fires.forEach((fire, index) => {
             const rect = fire.getBoundingClientRect();
             const startX = rect.left + rect.width / 2;
             const startY = rect.top + rect.height * .72;
             const deltaX = targetX - startX;
             const deltaY = targetY - startY;
-            const stream = documentRef.createElement('i');
+            const stream = streamMount.children[index] || documentRef.createElement('i');
             stream.style.setProperty('--stream-x', `${startX}px`);
             stream.style.setProperty('--stream-y', `${startY}px`);
             stream.style.setProperty('--stream-length', `${Math.hypot(deltaX, deltaY)}px`);
             stream.style.setProperty('--stream-angle', `${Math.atan2(deltaY, deltaX)}rad`);
             stream.style.setProperty('--stream-delay', `${(index % 4) * 24}ms`);
-            streamMount.appendChild(stream);
+            if (!stream.isConnected) streamMount.appendChild(stream);
         });
     }
 
-    async function play(gameType) {
+    function trackGeometry(transition, roomElement) {
+        let active = true;
+        let lastSignature = '';
+        const update = () => {
+            if (!active || !transition.isConnected || !roomElement.isConnected) return;
+            const tableRect = roomElement.querySelector('.pregame-table')?.getBoundingClientRect();
+            const portalX = tableRect ? tableRect.left + tableRect.width / 2 : windowRef.innerWidth / 2;
+            const portalY = tableRect ? tableRect.top + tableRect.height / 2 : windowRef.innerHeight / 2;
+            const signature = `${portalX}:${portalY}:${windowRef.innerWidth}:${windowRef.innerHeight}`;
+            if (signature === lastSignature) return;
+            lastSignature = signature;
+            transition.style.setProperty('--entry-core-x', `${portalX}px`);
+            transition.style.setProperty('--entry-core-y', `${portalY}px`);
+            prepareStreams(transition, roomElement, portalX, portalY);
+        };
+        const updateImmediately = () => update();
+        update();
+        windowRef.addEventListener('scroll', updateImmediately, true);
+        documentRef.addEventListener('scroll', updateImmediately, true);
+        windowRef.addEventListener('resize', updateImmediately);
+        windowRef.visualViewport?.addEventListener('resize', updateImmediately);
+        windowRef.visualViewport?.addEventListener('scroll', updateImmediately);
+        return () => {
+            active = false;
+            windowRef.removeEventListener('scroll', updateImmediately, true);
+            documentRef.removeEventListener('scroll', updateImmediately, true);
+            windowRef.removeEventListener('resize', updateImmediately);
+            windowRef.visualViewport?.removeEventListener('resize', updateImmediately);
+            windowRef.visualViewport?.removeEventListener('scroll', updateImmediately);
+        };
+    }
+
+    async function play(gameType, entryTransition = null, { openView = true } = {}) {
+        // A repeated starting snapshot must replace the previous overlay;
+        // otherwise two fixed layers can briefly retain different geometry.
+        cancel();
         const roomIdAtStart = getRoomId();
         const token = ++transitionToken;
+        const serverNowAtReceipt = Number(entryTransition?.serverNow);
+        const localReceipt = Date.now();
+        const clockOffset = Number.isFinite(serverNowAtReceipt) ? localReceipt - serverNowAtReceipt : 0;
+        const now = () => Date.now() - clockOffset;
+        const visibleAt = Number(entryTransition?.gameVisibleAt);
         const roomElement = roomMount.querySelector('.pregame-room');
         if (!roomElement || !isCurrent(token, roomIdAtStart)) {
-            if (isCurrent(token, roomIdAtStart)) openGameView();
+            if (openView && isCurrent(token, roomIdAtStart)) openGameView();
+            return;
+        }
+        if (Number.isFinite(visibleAt) && now() >= visibleAt) {
+            if (openView) openGameView();
             return;
         }
         const transition = createTransition(gameType);
-        const tableRect = roomElement.querySelector('.pregame-table')?.getBoundingClientRect();
-        const portalX = tableRect ? tableRect.left + tableRect.width / 2 : windowRef.innerWidth / 2;
-        const portalY = tableRect ? tableRect.top + tableRect.height / 2 : windowRef.innerHeight / 2;
-        transition.style.setProperty('--entry-core-x', `${portalX}px`);
-        transition.style.setProperty('--entry-core-y', `${portalY}px`);
-        prepareStreams(transition, roomElement, portalX, portalY);
         activeTransition = transition;
+        activeRoomElement = roomElement;
         documentRef.body.appendChild(transition);
+        const releaseGeometry = trackGeometry(transition, roomElement);
+        releaseActiveGeometry = releaseGeometry;
         roomElement.classList.add('is-entry-transitioning');
         try {
             const groups = buildGroups(roomElement);
@@ -118,11 +188,14 @@ export function createGameEntryTransition({
             const reducedMotion = windowRef.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
             if (!reducedMotion) {
                 await Promise.all(flashWaves.map(async (group, groupIndex) => {
-                    await wait(groupIndex * 420);
+                    const delay = Number.isFinite(visibleAt) ? Math.min(groupIndex * 420, Math.max(0, visibleAt - now())) : groupIndex * 420;
+                    await wait(delay);
                     if (!isCurrent(token, roomIdAtStart)) return;
+                    if (Number.isFinite(visibleAt) && now() >= visibleAt) return;
                     group.forEach(seat => seat.classList.add('is-entry-flash'));
-                    await wait(250);
+                    await wait(Number.isFinite(visibleAt) ? Math.min(250, Math.max(0, visibleAt - now())) : 250);
                     if (!isCurrent(token, roomIdAtStart)) return;
+                    if (Number.isFinite(visibleAt) && now() >= visibleAt) return;
                     group.forEach(seat => {
                         seat.classList.remove('is-entry-flash');
                         if (lastFlashWaveBySeat.get(seat) === groupIndex) seat.classList.add('is-entry-fading');
@@ -130,21 +203,42 @@ export function createGameEntryTransition({
                 }));
             }
             if (!isCurrent(token, roomIdAtStart)) return;
-            await wait(320);
-            if (!isCurrent(token, roomIdAtStart)) return;
-            if (!reducedMotion) {
-                transition.classList.add('is-gathering');
-                await wait(680);
+            if (Number.isFinite(visibleAt)) {
+                if (!reducedMotion) {
+                    const gatherAt = visibleAt - 960;
+                    await waitUntil(gatherAt, now);
+                    if (!isCurrent(token, roomIdAtStart)) return;
+                    if (now() < visibleAt) {
+                        transition.classList.add('is-gathering');
+                        await waitUntil(visibleAt - 280, now);
+                        if (!isCurrent(token, roomIdAtStart)) return;
+                        transition.classList.remove('is-gathering');
+                        transition.classList.add('is-bursting');
+                    }
+                }
+                await waitUntil(visibleAt, now);
+            } else {
+                await wait(320);
                 if (!isCurrent(token, roomIdAtStart)) return;
-                transition.classList.remove('is-gathering');
+                if (!reducedMotion) {
+                    transition.classList.add('is-gathering');
+                    await wait(680);
+                    if (!isCurrent(token, roomIdAtStart)) return;
+                    transition.classList.remove('is-gathering');
+                }
+                transition.classList.add('is-bursting');
+                if (!reducedMotion) await wait(280);
             }
-            transition.classList.add('is-bursting');
-            if (!reducedMotion) await wait(280);
             if (!isCurrent(token, roomIdAtStart)) return;
-            openGameView();
-            await wait(reducedMotion ? 120 : 560);
+            if (openView) openGameView();
+            await wait(Number.isFinite(visibleAt) ? 120 : (reducedMotion ? 120 : 560));
         } finally {
             roomElement.classList.remove('is-entry-transitioning');
+            if (activeRoomElement === roomElement) activeRoomElement = null;
+            releaseGeometry();
+            if (releaseActiveGeometry === releaseGeometry) {
+                releaseActiveGeometry = null;
+            }
             if (activeTransition === transition) {
                 activeTransition = null;
                 transition.remove();

@@ -8,7 +8,8 @@ const render = fs.readFileSync('public/games/hanabi/render.js', 'utf8');
 const scene = fs.readFileSync('public/games/hanabi/scene.js', 'utf8');
 const state = fs.readFileSync('public/games/hanabi/state.js', 'utf8');
 const template = fs.readFileSync('public/games/hanabi/template.js', 'utf8');
-const style = fs.readFileSync('public/games/hanabi/style.css', 'utf8');
+const style = ['style.css', 'table.css', 'actions.css', 'responsive.css', 'scenes.css', 'responsive-scenes.css']
+    .map(file => fs.readFileSync(`public/games/hanabi/${file}`, 'utf8')).join('\n');
 const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures/fixture-state.js', 'public/visual-fixtures/fixture-scenarios.js']
     .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 

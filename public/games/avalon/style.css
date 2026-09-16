@@ -1,5 +1,5 @@
 body.is-avalon-view {
-    background: #0b111b;
+    background: #090f18;
 }
 
 .avalon-app,
@@ -10,63 +10,42 @@ body.is-avalon-view {
 }
 
 .avalon-app {
-    --av-ink: #101927;
-    --av-night: #0b111b;
-    --av-panel: rgba(19, 29, 43, .94);
-    --av-panel-raised: #1b2a3c;
-    --av-paper: #f2e7ce;
-    --av-muted: #aaadad;
-    --av-gold: #d6a953;
-    --av-gold-light: #f0d38a;
-    --av-good: #629eb5;
-    --av-good-light: #9ed2dc;
-    --av-evil: #9e3f48;
-    --av-evil-light: #d47b7d;
-    --av-line: rgba(227, 206, 160, .2);
-    --av-line-soft: rgba(227, 206, 160, .105);
+    --av-night: #090f18;
+    --av-panel: rgba(16, 25, 37, .94);
+    --av-panel-raised: #172536;
+    --av-paper: #f1e7d0;
+    --av-muted: #a8aaa8;
+    --av-gold: #d5aa58;
+    --av-gold-light: #f0d48d;
+    --av-good: #609db5;
+    --av-good-light: #a1d9e3;
+    --av-evil: #9d424c;
+    --av-evil-light: #dc898b;
+    --av-line: rgba(226, 204, 155, .22);
+    --av-line-soft: rgba(226, 204, 155, .11);
     position: relative;
     isolation: isolate;
     min-height: calc(100dvh - var(--game-shell-offset, 48px));
     overflow: hidden;
-    padding: 22px clamp(12px, 3vw, 48px) 40px;
+    padding: 16px clamp(14px, 2.6vw, 38px) 34px;
     background:
-        radial-gradient(ellipse at 50% -8%, rgba(82, 113, 139, .25), transparent 38%),
-        radial-gradient(circle at 12% 42%, rgba(47, 91, 111, .13), transparent 28%),
-        radial-gradient(circle at 90% 48%, rgba(117, 40, 50, .13), transparent 28%),
-        linear-gradient(145deg, #0a1019, #111b28 48%, #0c121c);
+        radial-gradient(ellipse at 46% -12%, rgba(90, 112, 133, .22), transparent 42%),
+        linear-gradient(145deg, #080d15, #111a26 52%, #090e16);
     color: var(--av-paper);
     font-family: ui-sans-serif, system-ui, "Noto Sans SC", "Microsoft YaHei", sans-serif;
-    transition: background-color 1.4s ease, filter 1.4s ease;
 }
 
 .avalon-app.scene-identity {
-    background:
-        radial-gradient(circle at 50% 28%, rgba(214, 169, 83, .13), transparent 25%),
-        radial-gradient(ellipse at 50% 115%, rgba(54, 43, 70, .32), transparent 50%),
-        linear-gradient(145deg, #05080f, #0b0d17 52%, #090711);
-}
-
-.avalon-app.scene-roundtable {
-    background:
-        radial-gradient(ellipse at 50% -8%, rgba(117, 89, 48, .28), transparent 38%),
-        radial-gradient(circle at 12% 42%, rgba(47, 91, 111, .13), transparent 28%),
-        radial-gradient(circle at 90% 48%, rgba(117, 40, 50, .13), transparent 28%),
-        linear-gradient(145deg, #0a1019, #151c26 48%, #0c121c);
+    background: radial-gradient(circle at 27% 35%, rgba(199, 157, 77, .12), transparent 30%), linear-gradient(145deg, #080b12, #121522 54%, #0a0b12);
 }
 
 .avalon-app.scene-expedition {
-    background:
-        radial-gradient(ellipse at 50% -8%, rgba(72, 126, 142, .3), transparent 42%),
-        radial-gradient(circle at 14% 56%, rgba(49, 100, 114, .18), transparent 31%),
-        linear-gradient(145deg, #07121a, #102b35 50%, #09151c);
+    background: radial-gradient(circle at 78% 24%, rgba(66, 126, 145, .18), transparent 34%), linear-gradient(145deg, #071019, #102431 54%, #08121a);
 }
 
 .avalon-app.scene-assassin,
 .avalon-app.scene-ended {
-    background:
-        radial-gradient(circle at 78% 22%, rgba(143, 42, 53, .3), transparent 30%),
-        radial-gradient(ellipse at 50% 110%, rgba(78, 20, 31, .25), transparent 46%),
-        linear-gradient(145deg, #09080d, #1d1018 50%, #08080d);
+    background: radial-gradient(circle at 78% 24%, rgba(139, 41, 51, .2), transparent 34%), linear-gradient(145deg, #0a0a0f, #1b1119 54%, #09090e);
 }
 
 .avalon-app::before {
@@ -75,11 +54,11 @@ body.is-avalon-view {
     right: 0;
     bottom: 0;
     left: 0;
-    height: 280px;
-    background: #070b12;
-    clip-path: polygon(0 100%, 0 80%, 5% 80%, 5% 48%, 7% 48%, 7% 38%, 10% 38%, 10% 48%, 12% 48%, 12% 80%, 23% 80%, 23% 58%, 26% 53%, 29% 58%, 29% 80%, 40% 80%, 40% 35%, 42% 35%, 42% 24%, 46% 24%, 46% 35%, 48% 35%, 48% 80%, 59% 80%, 59% 58%, 62% 52%, 65% 58%, 65% 80%, 76% 80%, 76% 44%, 78% 44%, 78% 31%, 82% 31%, 82% 44%, 84% 44%, 84% 80%, 94% 80%, 94% 54%, 97% 48%, 100% 54%, 100% 100%);
+    height: 210px;
+    background: #060a10;
+    clip-path: polygon(0 100%, 0 78%, 8% 78%, 8% 54%, 11% 43%, 14% 54%, 14% 78%, 31% 78%, 31% 58%, 35% 46%, 39% 58%, 39% 78%, 56% 78%, 56% 38%, 60% 25%, 64% 38%, 64% 78%, 81% 78%, 81% 56%, 85% 45%, 89% 56%, 89% 78%, 100% 78%, 100% 100%);
     content: '';
-    opacity: .72;
+    opacity: .5;
     pointer-events: none;
 }
 
@@ -87,61 +66,54 @@ body.is-avalon-view {
     position: absolute;
     z-index: -1;
     inset: 0;
-    background:
-        repeating-linear-gradient(115deg, transparent 0 79px, rgba(235, 219, 180, .014) 80px 81px),
-        radial-gradient(circle at 50% 15%, rgba(226, 209, 159, .05), transparent 28%);
+    background: repeating-linear-gradient(116deg, transparent 0 94px, rgba(239, 221, 177, .014) 95px 96px);
     content: '';
     pointer-events: none;
 }
 
 .av-header,
 .av-layout {
-    width: min(1480px, 100%);
+    width: min(1180px, 100%);
     margin-inline: auto;
 }
 
 .av-header {
     display: grid;
-    grid-template-columns: minmax(260px, 1fr) auto minmax(160px, 1fr);
+    grid-template-columns: minmax(210px, 1fr) auto minmax(130px, 1fr);
     align-items: center;
-    gap: 20px;
-    min-height: 82px;
-    margin-bottom: 18px;
-    padding-bottom: 17px;
+    gap: 18px;
+    min-height: 68px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--av-line-soft);
 }
 
 .av-brand {
     display: flex;
     align-items: center;
-    gap: 13px;
-    min-width: 0;
-}
-
-.av-brand > div {
+    gap: 12px;
     min-width: 0;
 }
 
 .av-mark {
     position: relative;
     display: block;
-    width: 54px;
-    height: 58px;
+    width: 48px;
+    height: 52px;
     flex: 0 0 auto;
-    border: 1px solid #9d7b3f;
-    border-radius: 50% 50% 44% 44%;
-    background: radial-gradient(circle, rgba(214, 169, 83, .17), transparent 48%), #131e2b;
-    box-shadow: inset 0 0 0 4px #0c141f, 0 9px 20px rgba(0, 0, 0, .28);
+    border: 1px solid rgba(213, 170, 88, .65);
+    border-radius: 50% 50% 43% 43%;
+    background: radial-gradient(circle, rgba(213, 170, 88, .16), transparent 52%), #111b28;
+    box-shadow: inset 0 0 0 4px #0b121c;
 }
 
 .av-mark::before {
     position: absolute;
+    top: 7px;
     left: 50%;
-    top: 8px;
     color: var(--av-gold-light);
     content: '♕';
-    font: 700 27px/1 Georgia, serif;
-    text-shadow: 0 0 10px rgba(214, 169, 83, .42);
+    font: 700 23px/1 Georgia, serif;
     transform: translateX(-50%);
 }
 
@@ -151,9 +123,9 @@ body.is-avalon-view {
     bottom: 7px;
     left: 50%;
     width: 3px;
-    height: 27px;
-    border-radius: 2px;
-    background: linear-gradient(#eee0b8, #9a733d 72%, #e3bd69 73% 80%, #7a522f 81%);
+    height: 23px;
+    border-radius: 3px;
+    background: linear-gradient(#eadcb6, #8d6837 72%, #dcb865 73% 81%, #6f4a2b 82%);
     content: '';
     transform-origin: bottom;
 }
@@ -165,56 +137,44 @@ body.is-avalon-view {
 .av-kicker {
     display: block;
     color: var(--av-gold);
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: .18em;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: .12em;
     line-height: 1.3;
 }
 
 .av-brand h1 {
-    margin: 4px 0 0;
+    margin: 3px 0 0;
     color: var(--av-paper);
-    font: 600 28px/1 "Songti SC", "STSong", Georgia, serif;
-    white-space: nowrap;
-}
-
-.av-brand p {
-    margin: 7px 0 0;
-    overflow: hidden;
-    color: var(--av-muted);
-    font-size: 9px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font: 600 27px/1 "Songti SC", "STSong", Georgia, serif;
 }
 
 .av-round {
-    min-width: 260px;
-    padding: 10px 18px;
-    border: 1px solid rgba(214, 169, 83, .36);
-    background: linear-gradient(90deg, transparent, rgba(214, 169, 83, .08), transparent);
+    min-width: 250px;
+    padding: 9px 18px;
+    border: 1px solid rgba(213, 170, 88, .3);
+    background: linear-gradient(90deg, transparent, rgba(213, 170, 88, .07), transparent);
     color: var(--av-gold-light);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: .04em;
     text-align: center;
 }
 
 .av-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
 }
 
 .av-actions button,
 .av-overlay article > button {
-    min-height: 36px;
-    padding: 8px 13px;
+    min-height: 38px;
+    padding: 8px 14px;
     border: 1px solid var(--av-line);
     border-radius: 3px;
-    background: rgba(12, 20, 31, .72);
-    color: var(--av-muted);
+    background: rgba(10, 17, 27, .76);
+    color: #c4bfaf;
     font: inherit;
-    font-size: 10px;
+    font-size: 12px;
     cursor: pointer;
 }
 
@@ -224,286 +184,87 @@ body.is-avalon-view {
     color: var(--av-paper);
 }
 
-.av-actions button:last-child {
-    border-color: rgba(158, 63, 72, .44);
-    color: var(--av-evil-light);
-}
-
 .av-layout {
     display: grid;
-    grid-template-columns: 232px minmax(580px, 1fr) 248px;
-    align-items: start;
-    gap: 16px;
-}
-
-.av-players-panel,
-.av-table,
-.av-panel {
-    border: 1px solid var(--av-line);
-    border-radius: 5px;
-    background:
-        linear-gradient(145deg, rgba(240, 226, 190, .025), transparent 32%),
-        var(--av-panel);
-    box-shadow: 0 20px 46px rgba(0, 0, 0, .26), inset 0 0 0 1px rgba(255, 241, 204, .02);
-}
-
-.av-players-panel,
-.av-panel {
-    padding: 15px;
-}
-
-.av-panel-heading,
-.av-board-heading,
-.av-decision-heading,
-.av-section-title {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
     gap: 12px;
 }
 
-.av-panel-heading h2,
-.av-board-heading h2 {
-    margin: 5px 0 0;
-    color: var(--av-paper);
-    font: 600 18px/1 "Songti SC", "STSong", Georgia, serif;
-}
-
-.av-panel-heading > span,
-.av-panel-heading > div + span {
-    color: var(--av-muted);
-    font-size: 9px;
-}
-
-.av-players {
+.av-main-stage {
     display: grid;
-    gap: 3px;
-    margin-top: 14px;
+    grid-template-columns: minmax(286px, 31%) minmax(0, 1fr);
+    gap: 16px;
+    min-height: 610px;
 }
 
-.av-player {
-    position: relative;
-    display: grid;
-    grid-template-columns: 31px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 8px;
+.av-role-column,
+.av-play-column,
+.av-progress-panel,
+.av-action-panel,
+.av-records {
     min-width: 0;
-    padding: 9px 8px;
-    border: 1px solid transparent;
-    border-bottom-color: var(--av-line-soft);
-    transition: border-color .16s ease, background-color .16s ease;
 }
 
-.av-player.is-team {
-    border-color: rgba(98, 158, 181, .34);
-    background: linear-gradient(90deg, rgba(98, 158, 181, .15), transparent);
-}
-
-.av-player.is-leader {
-    border-color: rgba(214, 169, 83, .46);
-    background: linear-gradient(90deg, rgba(214, 169, 83, .15), transparent);
-}
-
-.av-player.is-me {
-    box-shadow: inset 3px 0 0 var(--av-gold);
-}
-
-.av-player.is-offline {
-    opacity: .54;
-}
-
-.av-player.is-role-confirmed > i {
-    border-color: rgba(214, 169, 83, .58);
-    background: rgba(214, 169, 83, .12);
-    color: var(--av-gold-light);
-}
-
-.av-seat {
+.av-role-column {
     display: grid;
-    width: 30px;
-    height: 30px;
-    place-items: center;
-    border: 1px solid #536372;
-    border-radius: 50%;
-    background: #182637;
-    color: var(--av-gold-light);
-    font: 700 10px Georgia, serif;
 }
 
-.av-player > div {
+.av-play-column {
     display: grid;
-    min-width: 0;
-    gap: 3px;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px;
 }
 
-.av-player strong,
-.av-player small,
-.av-player em {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.av-progress-panel,
+.av-action-panel,
+.av-records {
+    border: 1px solid var(--av-line);
+    border-radius: 5px;
+    background: linear-gradient(145deg, rgba(244, 225, 179, .025), transparent 34%), var(--av-panel);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .22), inset 0 0 0 1px rgba(255, 244, 213, .018);
 }
 
-.av-player strong {
-    color: var(--av-paper);
-    font-size: 10px;
+.av-progress-panel {
+    padding: 15px 18px 13px;
 }
 
-.av-player strong b {
-    margin-left: 5px;
-    color: var(--av-gold-light);
-    font-size: 7px;
-}
-
-.av-player small {
-    color: var(--av-muted);
-    font-size: 8px;
-}
-
-.av-player em {
-    color: var(--av-good-light);
-    font-size: 7px;
-    font-style: normal;
-}
-
-.av-player em.is-evil {
-    color: var(--av-evil-light);
-}
-
-.av-player > i {
-    display: grid;
-    min-width: 22px;
-    min-height: 22px;
-    place-items: center;
-    border: 1px solid rgba(214, 169, 83, .26);
-    border-radius: 50%;
-    color: var(--av-gold);
-    font-size: 8px;
-    font-style: normal;
-}
-
-.av-player > i.is-approve { border-color: rgba(98, 158, 181, .5); color: var(--av-good-light); }
-.av-player > i.is-reject { border-color: rgba(158, 63, 72, .52); color: var(--av-evil-light); }
-
-.av-table {
-    position: relative;
-    min-width: 0;
-    overflow: hidden;
-    padding: 17px;
-    background:
-        radial-gradient(ellipse at 50% 41%, rgba(75, 111, 125, .12), transparent 38%),
-        linear-gradient(145deg, rgba(29, 44, 59, .97), rgba(13, 21, 32, .98));
-}
-
-.av-table::before {
-    position: absolute;
-    z-index: 0;
-    left: 50%;
-    top: 106px;
-    width: 88%;
-    height: 380px;
-    border: 1px solid rgba(214, 169, 83, .11);
-    border-radius: 50%;
-    background: repeating-radial-gradient(ellipse, transparent 0 27px, rgba(225, 210, 170, .025) 28px 29px);
-    box-shadow: inset 0 0 70px rgba(3, 8, 13, .36), 0 30px 50px rgba(0, 0, 0, .16);
-    content: '';
-    pointer-events: none;
-    transform: translateX(-50%);
-}
-
-.av-table > * {
-    position: relative;
-    z-index: 1;
-}
-
-.av-status {
+.av-board-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-    min-height: 74px;
-    padding: 13px 15px;
-    border: 1px solid rgba(214, 169, 83, .28);
-    background: linear-gradient(90deg, rgba(214, 169, 83, .09), rgba(8, 15, 23, .54));
-    box-shadow: inset 3px 0 0 var(--av-gold);
+    margin-bottom: 12px;
 }
 
-.av-status > div {
-    min-width: 0;
-}
-
-.av-status h2 {
-    margin: 5px 0 0;
+.av-board-heading h2 {
+    margin: 3px 0 0;
     color: var(--av-paper);
-    font: 600 22px/1.1 "Songti SC", "STSong", Georgia, serif;
-}
-
-.av-status small {
-    display: block;
-    margin-top: 7px;
-    overflow: hidden;
-    color: var(--av-muted);
-    font-size: 9px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.av-status-seal {
-    display: grid;
-    width: 39px;
-    height: 39px;
-    flex: 0 0 auto;
-    place-items: center;
-    border: 1px solid #69747d;
-    border-radius: 50%;
-    background: #172331;
-    color: var(--av-muted);
-    font: 600 15px "Songti SC", serif;
-    box-shadow: inset 0 0 0 4px #101a26;
-}
-
-.av-status-seal.is-mine {
-    border-color: var(--av-gold);
-    color: var(--av-gold-light);
-    box-shadow: inset 0 0 0 4px #17202a, 0 0 14px rgba(214, 169, 83, .24);
-}
-
-.av-mission-board {
-    margin-top: 12px;
-    padding: 14px;
-    border: 1px solid var(--av-line);
-    background: rgba(8, 15, 23, .58);
-}
-
-.av-board-heading {
-    align-items: center;
+    font: 600 21px/1.15 "Songti SC", "STSong", serif;
 }
 
 .av-score-seals {
     display: flex;
-    gap: 12px;
+    gap: 14px;
+    color: var(--av-muted);
+    font-size: 11px;
 }
 
 .av-score-seals span {
     display: flex;
     align-items: center;
     gap: 5px;
-    color: var(--av-muted);
-    font-size: 8px;
 }
 
 .av-score-seals i {
-    display: block;
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: var(--av-good);
-    box-shadow: 0 0 7px rgba(98, 158, 181, .38);
+    box-shadow: 0 0 10px rgba(96, 157, 181, .6);
 }
 
 .av-score-seals span:last-child i {
     background: var(--av-evil);
-    box-shadow: 0 0 7px rgba(158, 63, 72, .38);
+    box-shadow: 0 0 10px rgba(157, 66, 76, .55);
 }
 
 .av-score-seals b {
@@ -515,113 +276,96 @@ body.is-avalon-view {
     position: relative;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 9px;
-    margin-top: 14px;
+    gap: 8px;
 }
 
 .av-mission-road::before {
     position: absolute;
-    z-index: -1;
-    top: 26px;
-    right: 5%;
-    left: 5%;
+    top: 23px;
+    right: 8%;
+    left: 8%;
     height: 1px;
-    background: linear-gradient(90deg, var(--av-good), var(--av-gold), var(--av-evil));
+    background: linear-gradient(90deg, rgba(96, 157, 181, .42), rgba(213, 170, 88, .3), rgba(157, 66, 76, .38));
     content: '';
-    opacity: .44;
 }
 
 .av-quest {
+    position: relative;
+    z-index: 1;
     display: grid;
     justify-items: center;
-    gap: 7px;
+    gap: 6px;
     min-width: 0;
-    padding: 3px;
+    color: var(--av-muted);
     text-align: center;
 }
 
 .av-quest > span {
     display: grid;
-    width: 48px;
-    height: 48px;
+    width: 46px;
+    height: 46px;
     place-items: center;
-    border: 1px solid #5b6873;
+    border: 1px solid rgba(188, 179, 156, .32);
     border-radius: 50%;
-    background: #172332;
-    color: #89939a;
-    font: 700 16px Georgia, serif;
-    box-shadow: inset 0 0 0 5px #101a26;
+    background: #111c29;
+    color: #c3c0b7;
+    font: 600 14px/1 Georgia, serif;
+    box-shadow: 0 0 0 5px rgba(9, 15, 24, .85);
 }
 
-.av-quest.is-current > span {
-    border-color: var(--av-gold);
-    background: #604926;
-    color: #ffe2a1;
-    box-shadow: inset 0 0 0 5px #18212a, 0 0 16px rgba(214, 169, 83, .34);
-}
-
-.av-quest.is-success > span {
-    border-color: var(--av-good-light);
-    background: #315d6b;
-    color: #d9f5f5;
-    box-shadow: inset 0 0 0 5px #14232d, 0 0 14px rgba(98, 158, 181, .28);
-}
-
-.av-quest.is-fail > span {
-    border-color: var(--av-evil-light);
-    background: #653039;
-    color: #ffd6cc;
-    box-shadow: inset 0 0 0 5px #211821, 0 0 14px rgba(158, 63, 72, .28);
-}
-
-.av-quest > div {
+.av-quest div {
     display: grid;
-    min-width: 0;
     gap: 2px;
+    min-width: 0;
 }
 
 .av-quest strong {
-    color: var(--av-paper);
-    font-size: 9px;
-}
-
-.av-quest small {
     overflow: hidden;
-    color: var(--av-muted);
-    font-size: 7px;
+    color: #d8d0be;
+    font: 600 14px/1.2 "Songti SC", "STSong", serif;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.av-reject-track {
-    display: grid;
-    grid-template-columns: auto auto minmax(130px, 1fr);
-    align-items: center;
-    gap: 12px;
-    margin-top: 13px;
-    padding-top: 10px;
-    border-top: 1px solid var(--av-line-soft);
-}
-
-.av-reject-track > div:first-child {
-    display: flex;
-    align-items: baseline;
-    gap: 7px;
-}
-
-.av-reject-track span,
-.av-reject-track small {
+.av-quest small {
     color: var(--av-muted);
-    font-size: 8px;
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.av-quest.is-current > span {
+    border-color: var(--av-gold);
+    color: var(--av-gold-light);
+    box-shadow: 0 0 0 5px rgba(9, 15, 24, .9), 0 0 20px rgba(213, 170, 88, .22);
+}
+
+.av-quest.is-success > span {
+    border-color: var(--av-good);
+    background: #17303b;
+    color: var(--av-good-light);
+}
+
+.av-quest.is-fail > span {
+    border-color: var(--av-evil);
+    background: #321820;
+    color: var(--av-evil-light);
+}
+
+.av-reject-track {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 11px;
+    padding-top: 9px;
+    border-top: 1px solid var(--av-line-soft);
+    color: var(--av-muted);
+    font-size: 11px;
 }
 
 .av-reject-track strong {
     color: var(--av-evil-light);
-    font-size: 11px;
-}
-
-.av-reject-track > small {
-    text-align: right;
+    font-size: 12px;
 }
 
 .av-reject-seals {
@@ -630,88 +374,489 @@ body.is-avalon-view {
 }
 
 .av-reject-seals i {
-    display: grid;
-    width: 20px;
-    height: 20px;
-    place-items: center;
-    border: 1px solid #58636c;
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(157, 66, 76, .48);
     border-radius: 50%;
-    color: #707b82;
-    font-size: 7px;
-    font-style: normal;
 }
 
 .av-reject-seals i.is-filled {
-    border-color: var(--av-evil);
-    background: #652e38;
-    color: #ffd2c7;
+    background: var(--av-evil);
+    box-shadow: 0 0 7px rgba(157, 66, 76, .55);
 }
 
-.av-private-action {
+.av-action-panel {
     display: grid;
-    grid-template-columns: minmax(286px, .84fr) minmax(320px, 1.16fr);
-    align-items: stretch;
-    gap: 12px;
-    margin-top: 12px;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 380px;
+    overflow: hidden;
 }
 
-.av-role,
 .av-decision {
-    min-width: 0;
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    gap: 12px;
+    padding: 17px 18px 18px;
+}
+
+.av-decision-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.av-decision-heading h3 {
+    margin: 4px 0 0;
+    color: var(--av-paper);
+    font: 600 24px/1.2 "Songti SC", "STSong", serif;
+}
+
+.av-decision-heading > b {
+    color: var(--av-gold-light);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.av-decision > p {
+    margin: -3px 0 0;
+    color: var(--av-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.av-select-players {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 7px;
+}
+
+.av-select-player,
+.av-choice-cards button {
     border: 1px solid var(--av-line);
-    background: rgba(8, 15, 23, .62);
+    border-radius: 4px;
+    background: rgba(9, 16, 25, .68);
+    color: var(--av-paper);
+    font: inherit;
+    cursor: pointer;
+}
+
+.av-select-player {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 1px 7px;
+    min-height: 64px;
+    padding: 8px;
+    text-align: left;
+}
+
+.av-select-player > span {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    grid-row: 1 / 3;
+    place-items: center;
+    border: 1px solid rgba(213, 170, 88, .42);
+    border-radius: 50%;
+    color: var(--av-gold-light);
+    font-size: 12px;
+}
+
+.av-select-player b {
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.av-select-player small {
+    min-height: 14px;
+    color: var(--av-muted);
+    font-size: 11px;
+}
+
+.av-select-player:hover,
+.av-select-player:focus-visible,
+.av-select-player.is-selected {
+    border-color: var(--av-good);
+    background: rgba(50, 105, 124, .17);
+}
+
+.av-select-player.is-assassin.is-selected {
+    border-color: var(--av-evil-light);
+    background: rgba(135, 43, 55, .2);
+}
+
+.av-current-team {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 8px 10px;
+    border: 1px solid var(--av-line-soft);
+    background: rgba(7, 13, 21, .38);
+}
+
+.av-current-team > span {
+    flex: 0 0 auto;
+    color: var(--av-muted);
+    font-size: 12px;
+}
+
+.av-current-team > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.av-current-team i {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px 4px 5px;
+    border: 1px solid rgba(96, 157, 181, .3);
+    border-radius: 20px;
+    color: #d5d2c8;
+    font-style: normal;
+}
+
+.av-current-team i b {
+    display: grid;
+    width: 21px;
+    height: 21px;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(96, 157, 181, .18);
+    color: var(--av-good-light);
+    font-size: 10px;
+}
+
+.av-current-team i em {
+    font-size: 12px;
+    font-style: normal;
+}
+
+.av-choice-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.av-choice-cards button {
+    display: grid;
+    grid-template-columns: 45px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 2px 12px;
+    min-height: 100px;
+    padding: 14px;
+    text-align: left;
+}
+
+.av-choice-cards button i {
+    display: grid;
+    width: 45px;
+    height: 45px;
+    grid-row: 1 / 3;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 18px;
+    font-style: normal;
+}
+
+.av-choice-cards button strong {
+    font-size: 16px;
+}
+
+.av-choice-cards button small {
+    color: var(--av-muted);
+    font-size: 12px;
+}
+
+.av-choice-cards .is-approve { color: var(--av-good-light); }
+.av-choice-cards .is-reject { color: var(--av-evil-light); }
+.av-choice-cards button.is-selected.is-approve { border-color: var(--av-good); background: rgba(53, 109, 128, .18); }
+.av-choice-cards button.is-selected.is-reject { border-color: var(--av-evil); background: rgba(137, 43, 55, .2); }
+
+.av-confirm {
+    display: grid;
+    grid-template-columns: 39px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 11px;
+    margin-top: auto;
+    padding: 10px;
+    border: 1px solid rgba(96, 157, 181, .28);
+    background: rgba(16, 34, 44, .38);
+}
+
+.av-confirm > span {
+    display: grid;
+    width: 39px;
+    height: 39px;
+    place-items: center;
+    border: 1px solid var(--av-good);
+    border-radius: 50%;
+    color: var(--av-good-light);
+    font: 600 13px/1 "Songti SC", serif;
+}
+
+.av-confirm > div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.av-confirm strong {
+    overflow: hidden;
+    color: var(--av-paper);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.av-confirm small {
+    color: var(--av-muted);
+    font-size: 11px;
+}
+
+.av-confirm.is-danger {
+    border-color: rgba(157, 66, 76, .4);
+    background: rgba(73, 22, 30, .3);
+}
+
+.av-confirm.is-danger > span {
+    border-color: var(--av-evil);
+    color: var(--av-evil-light);
+}
+
+.av-primary {
+    min-width: 124px;
+    min-height: 42px;
+    padding: 9px 16px;
+    border: 1px solid var(--av-gold);
+    border-radius: 3px;
+    background: linear-gradient(180deg, #d5aa58, #a77b37);
+    color: #11141a;
+    font: 750 13px/1.2 inherit;
+    cursor: pointer;
+}
+
+.av-primary:disabled {
+    border-color: rgba(156, 157, 155, .3);
+    background: #29333d;
+    color: #858b8d;
+    cursor: not-allowed;
+}
+
+.av-waiting {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    min-height: 150px;
+    margin: auto 0;
+    padding: 22px;
+    border: 1px solid var(--av-line-soft);
+    background: rgba(8, 14, 22, .35);
+}
+
+.av-waiting > span {
+    display: grid;
+    width: 58px;
+    height: 58px;
+    place-items: center;
+    border: 1px solid rgba(213, 170, 88, .52);
+    border-radius: 50%;
+    color: var(--av-gold-light);
+    font: 600 20px/1 "Songti SC", serif;
+}
+
+.av-waiting div {
+    display: grid;
+    gap: 6px;
+}
+
+.av-waiting strong {
+    color: var(--av-paper);
+    font: 600 20px/1.3 "Songti SC", serif;
+}
+
+.av-waiting small {
+    color: var(--av-muted);
+    font-size: 13px;
 }
 
 .av-role {
-    --role-focus-accent: rgba(98, 158, 181, .76);
-    --role-focus-glow: rgba(98, 158, 181, .15);
+    --role-focus-accent: rgba(213, 170, 88, .76);
+    --role-focus-glow: rgba(213, 170, 88, .14);
     position: relative;
-    display: grid;
-    align-content: start;
-    gap: 10px;
+    min-height: 610px;
     overflow: hidden;
-    padding: 11px;
+    border: 1px solid var(--av-line);
+    border-radius: 5px;
+    background: linear-gradient(145deg, rgba(244, 225, 179, .035), transparent 38%), #111c29;
+}
+
+.av-role.is-good {
+    --role-focus-accent: rgba(96, 157, 181, .8);
+    --role-focus-glow: rgba(96, 157, 181, .18);
+}
+
+.av-role.is-evil {
+    --role-focus-accent: rgba(157, 66, 76, .84);
+    --role-focus-glow: rgba(157, 66, 76, .2);
+}
+
+/* Faction accents are private too: while the cover is up, keep the frame on
+   the neutral palette even if an old render left a faction class behind. */
+.av-role:not(.is-revealed) {
+    --role-focus-accent: rgba(213, 170, 88, .76);
+    --role-focus-glow: rgba(213, 170, 88, .14);
+}
+
+.av-role.is-empty {
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    color: var(--av-muted);
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
 }
 
 .av-role-secret {
     display: grid;
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: 10px;
+    padding: 11px;
+    opacity: 0;
+    visibility: hidden;
     transition: none;
 }
 
-.av-role.is-evil {
-    --role-focus-accent: rgba(184, 74, 84, .8);
-    --role-focus-glow: rgba(158, 63, 72, .18);
+.av-role.is-revealed .av-role-secret {
+    opacity: 1;
+    visibility: visible;
 }
 
-.av-role-secret[aria-hidden="true"] {
-    visibility: hidden;
-    opacity: 0;
-    filter: blur(8px);
+.av-role-card {
+    display: grid;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 9px;
+    border: 1px solid rgba(213, 170, 88, .34);
+    background: #101a27;
+}
+
+.av-role-card header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--av-muted);
+    font-size: 11px;
+}
+
+.av-role-card header b {
+    color: var(--av-gold-light);
+    font-size: 11px;
+}
+
+.av-role-art {
+    min-height: 360px;
+    border: 1px solid rgba(213, 170, 88, .34);
+    background: #0a111a;
+}
+
+.av-role-emblem {
+    position: absolute;
+    z-index: 2;
+    right: 10px;
+    bottom: 10px;
+    display: grid;
+    width: 45px;
+    height: 45px;
+    place-items: center;
+    border: 1px solid var(--role-focus-accent);
+    border-radius: 50%;
+    background: rgba(8, 13, 20, .88);
+    color: var(--av-gold-light);
+}
+
+.av-role-emblem i {
+    font-size: 17px;
+    font-style: normal;
+}
+
+.av-role-copy {
+    display: grid;
+    gap: 5px;
+    padding: 3px 4px 2px;
+    text-align: center;
+}
+
+.av-role-copy > strong {
+    color: var(--av-paper);
+    font: 600 22px/1.2 "Songti SC", "STSong", serif;
+}
+
+.av-role-copy > p {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0;
+    color: var(--av-muted);
+    font-size: 12px;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.av-known {
+    display: grid;
+    gap: 4px;
+    padding: 10px 11px;
+    border: 1px solid rgba(213, 170, 88, .28);
+    background: rgba(213, 170, 88, .065);
+}
+
+.av-known span,
+.av-known small {
+    color: var(--av-muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.av-known strong {
+    color: var(--av-gold-light);
+    font-size: 13px;
+    line-height: 1.4;
 }
 
 .av-role-cover {
     position: absolute;
-    z-index: 5;
-    inset: 11px;
+    z-index: 4;
+    inset: 10px;
     display: grid;
-    min-height: 390px;
-    align-content: center;
+    place-content: center;
     justify-items: center;
-    gap: 9px;
-    padding: 18px;
-    border: 1px solid rgba(214, 169, 83, .62);
-    border-radius: 2px;
+    gap: 10px;
+    padding: 28px;
+    border: 1px solid rgba(213, 170, 88, .52);
     background:
-        radial-gradient(circle at 50% 42%, rgba(214, 169, 83, .13), transparent 24%),
-        repeating-radial-gradient(circle at 50% 42%, transparent 0 23px, rgba(214, 169, 83, .06) 24px 25px),
-        linear-gradient(150deg, #1b2634, #0b111a 70%);
-    box-shadow: inset 0 0 0 5px rgba(5, 9, 14, .55), 0 14px 30px rgba(0, 0, 0, .28);
+        radial-gradient(circle at center, rgba(213, 170, 88, .1), transparent 28%),
+        repeating-radial-gradient(circle at center, transparent 0 42px, rgba(213, 170, 88, .055) 43px 44px),
+        #0d1723;
     color: var(--av-paper);
-    font: inherit;
     text-align: center;
-    touch-action: pan-y;
     cursor: pointer;
+    touch-action: manipulation;
     transition: none;
 }
 
@@ -720,500 +865,250 @@ body.is-avalon-view {
     width: 78px;
     height: 78px;
     place-items: center;
-    border: 1px solid var(--av-gold);
+    border: 1px solid rgba(213, 170, 88, .7);
     border-radius: 50%;
     color: var(--av-gold-light);
-    content: '誓';
-    font: 600 31px "Songti SC", serif;
-    box-shadow: inset 0 0 0 6px rgba(214, 169, 83, .06), 0 0 24px rgba(214, 169, 83, .13);
+    content: '♕';
+    font: 600 35px/1 Georgia, serif;
+    box-shadow: 0 0 35px rgba(213, 170, 88, .12);
 }
 
 .av-role-cover span {
     color: var(--av-gold);
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .2em;
+    font-size: 11px;
+    letter-spacing: .12em;
 }
 
 .av-role-cover b {
-    font: 600 18px "Songti SC", "STSong", serif;
+    font: 600 22px/1.3 "Songti SC", serif;
 }
 
 .av-role-cover small {
+    max-width: 230px;
     color: var(--av-muted);
-    font-size: 7px;
+    font-size: 11px;
     line-height: 1.5;
 }
 
 .av-role.is-revealed .av-role-cover {
     opacity: 0;
-    filter: blur(7px);
-}
-
-.av-role.is-revealed .av-role-secret {
+    /* Keep the transparent hold target in the hit-test tree while the
+       pointer/key is held.  Switching to visibility:hidden here causes some
+       browsers to emit pointerout/focusout immediately after pointerdown,
+       which reseals the card before it can be read. */
     visibility: visible;
-    opacity: 1;
-    filter: none;
+    pointer-events: auto;
+    cursor: grabbing;
 }
 
-.av-role::before {
-    position: absolute;
-    right: -25px;
-    top: -25px;
-    width: 120px;
-    height: 120px;
-    border: 1px solid rgba(98, 158, 181, .17);
-    border-radius: 50%;
-    content: '';
+.av-records {
+    overflow: hidden;
 }
 
-.av-role.is-evil::before {
-    border-color: rgba(158, 63, 72, .2);
-}
-
-.av-role.is-empty {
-    min-height: 220px;
-    place-content: center;
-    color: var(--av-muted);
-    font-size: 9px;
-    text-align: center;
-}
-
-.av-role-card {
-    position: relative;
-    display: grid;
-    min-height: 390px;
-    align-content: start;
-    gap: 9px;
-    padding: 10px;
-    border: 1px solid rgba(98, 158, 181, .48);
-    background:
-        radial-gradient(circle at 50% 40%, rgba(98, 158, 181, .17), transparent 38%),
-        linear-gradient(155deg, #1e3547, #111d2a);
-    box-shadow: inset 0 0 0 4px rgba(7, 14, 22, .42);
-}
-
-.av-role.is-evil .av-role-card {
-    border-color: rgba(158, 63, 72, .56);
-    background: radial-gradient(circle at 50% 40%, rgba(158, 63, 72, .2), transparent 38%), linear-gradient(155deg, #43242d, #1d1720);
-}
-
-.av-role-card::before,
-.av-role-card::after {
-    position: absolute;
-    inset: 6px;
-    border: 1px solid rgba(225, 213, 176, .1);
-    content: '';
-    pointer-events: none;
-}
-
-.av-role-card::after {
-    inset: 10px;
-    border-radius: 50% 50% 43% 43%;
-}
-
-.av-role-card header {
-    position: relative;
-    z-index: 1;
+.av-records > summary {
     display: flex;
-    width: 100%;
+    min-height: 52px;
+    align-items: center;
     justify-content: space-between;
-    gap: 7px;
+    gap: 16px;
+    padding: 10px 15px;
+    color: var(--av-paper);
+    cursor: pointer;
+    list-style: none;
+}
+
+.av-records > summary::-webkit-details-marker { display: none; }
+
+.av-records > summary > span,
+.av-records > summary > i {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    min-width: 0;
+}
+
+.av-records > summary b {
+    font-size: 13px;
+}
+
+.av-records > summary small,
+.av-records > summary span span,
+.av-records > summary em {
     color: var(--av-muted);
-    font-size: 7px;
-}
-
-.av-role-art {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 4 / 5;
-    min-height: 248px;
-    border: 1px solid rgba(158, 210, 220, .38);
-    background: #102331;
-    box-shadow: inset 0 0 0 3px rgba(7, 14, 22, .32), 0 12px 24px rgba(0, 0, 0, .28);
-}
-
-.av-role.is-evil .av-role-art {
-    border-color: rgba(212, 123, 125, .42);
-    background: #2d1720;
-}
-
-.av-role-card header b {
-    color: var(--av-good-light);
-}
-
-.av-role.is-evil .av-role-card header b {
-    color: var(--av-evil-light);
-}
-
-.av-role-emblem {
-    position: absolute;
-    z-index: 2;
-    right: 9px;
-    bottom: 9px;
-    display: grid;
-    width: 48px;
-    height: 48px;
-    place-items: center;
-    border: 1px solid var(--av-good-light);
-    border-radius: 50% 50% 44% 44%;
-    background: radial-gradient(circle, rgba(117, 196, 214, .2), transparent 58%);
-    box-shadow: inset 0 0 0 5px rgba(10, 20, 28, .42), 0 0 18px rgba(98, 158, 181, .18);
-}
-
-.av-role.is-evil .av-role-emblem {
-    border-color: var(--av-evil-light);
-    background: radial-gradient(circle, rgba(179, 70, 81, .22), transparent 58%);
-    box-shadow: inset 0 0 0 5px rgba(26, 14, 20, .48), 0 0 18px rgba(158, 63, 72, .2);
-}
-
-.av-role-emblem i {
-    color: var(--av-good-light);
-    font: 600 21px "Songti SC", serif;
+    font-size: 11px;
     font-style: normal;
 }
 
-.av-role.is-evil .av-role-emblem i {
-    color: var(--av-evil-light);
+.av-records > summary em::before {
+    margin-right: 4px;
+    content: '纪事 ';
 }
 
-.av-role-copy {
-    position: relative;
-    z-index: 1;
+.av-records > summary::after {
+    margin-left: 2px;
+    color: var(--av-gold);
+    content: '＋';
+    font-size: 16px;
+}
+
+.av-records[open] > summary {
+    border-bottom: 1px solid var(--av-line-soft);
+}
+
+.av-records[open] > summary::after { content: '－'; }
+
+.av-records-grid {
     display: grid;
-    justify-items: center;
-    gap: 4px;
-    padding: 2px 6px 5px;
-    text-align: center;
+    grid-template-columns: 1.2fr 1fr 1.25fr 1.35fr;
+    gap: 1px;
+    background: var(--av-line-soft);
 }
 
-.av-role-copy > strong {
-    position: relative;
-    z-index: 1;
-    color: var(--av-paper);
-    font: 600 27px "Songti SC", "STSong", serif;
-}
-
-.av-role-copy p {
-    position: relative;
-    z-index: 1;
-    margin: 0;
-    color: var(--av-muted);
-    font-size: 10px;
-    line-height: 1.6;
-    text-align: center;
-}
-
-.av-known {
-    display: grid;
-    gap: 4px;
-    padding: 9px;
-    border: 1px solid rgba(214, 169, 83, .28);
-    background: rgba(214, 169, 83, .08);
-}
-
-.av-known span,
-.av-known small {
-    color: var(--av-muted);
-    font-size: 7px;
-    line-height: 1.45;
-}
-
-.av-known strong {
-    color: var(--av-gold-light);
-    font-size: 9px;
-}
-
-.av-decision {
-    padding: 14px;
-}
-
-.av-decision-heading {
-    align-items: flex-end;
-}
-
-.av-decision-heading h3 {
-    margin: 5px 0 0;
-    color: var(--av-paper);
-    font: 600 18px/1.1 "Songti SC", "STSong", Georgia, serif;
-}
-
-.av-decision-heading > b {
-    color: var(--av-gold-light);
-    font-size: 10px;
-}
-
-.av-decision > p {
-    margin: 9px 0 11px;
-    color: var(--av-muted);
-    font-size: 9px;
-    line-height: 1.55;
-}
-
-.av-select-players {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 6px;
-}
-
-.av-select-player {
-    display: grid;
-    grid-template-columns: 27px minmax(0, 1fr);
-    align-items: center;
-    gap: 7px;
-    min-height: 48px;
+.av-record-block {
     min-width: 0;
-    padding: 7px;
-    border: 1px solid rgba(227, 206, 160, .17);
-    border-radius: 3px;
-    background: rgba(255, 255, 255, .025);
-    color: var(--av-paper);
-    font: inherit;
-    cursor: pointer;
-}
-
-.av-select-player > span {
-    grid-row: 1 / 3;
-    display: grid;
-    width: 27px;
-    height: 27px;
-    place-items: center;
-    border: 1px solid #566675;
-    border-radius: 50%;
-    background: #182738;
-    color: var(--av-gold-light);
-    font: 700 9px Georgia, serif;
-}
-
-.av-select-player b,
-.av-select-player small {
-    overflow: hidden;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.av-select-player b {
-    align-self: end;
-    font-size: 9px;
-}
-
-.av-select-player small {
-    align-self: start;
-    color: var(--av-muted);
-    font-size: 7px;
-}
-
-.av-select-player:hover,
-.av-select-player:focus-visible,
-.av-select-player.is-selected {
-    border-color: var(--av-gold);
-    background: rgba(214, 169, 83, .12);
-}
-
-.av-select-player.is-selected {
-    box-shadow: inset 3px 0 0 var(--av-gold);
-}
-
-.av-select-player.is-assassin.is-selected {
-    border-color: var(--av-evil-light);
-    background: rgba(158, 63, 72, .16);
-    box-shadow: inset 3px 0 0 var(--av-evil);
-}
-
-.av-choice-cards {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-}
-
-.av-choice-cards button {
-    display: grid;
-    grid-template-columns: 38px minmax(0, 1fr);
-    align-items: center;
-    min-height: 72px;
-    padding: 9px;
-    border: 1px solid rgba(227, 206, 160, .17);
-    border-radius: 3px;
-    background: rgba(255, 255, 255, .025);
-    color: var(--av-paper);
-    font: inherit;
-    cursor: pointer;
-}
-
-.av-choice-cards button i {
-    grid-row: 1 / 3;
-    display: grid;
-    width: 35px;
-    height: 35px;
-    place-items: center;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-    font: 600 14px "Songti SC", serif;
-    font-style: normal;
-}
-
-.av-choice-cards button strong,
-.av-choice-cards button small {
-    padding-left: 8px;
-    text-align: left;
-}
-
-.av-choice-cards button strong {
-    align-self: end;
-    font-size: 10px;
-}
-
-.av-choice-cards button small {
-    align-self: start;
-    color: var(--av-muted);
-    font-size: 7px;
-}
-
-.av-choice-cards button.is-approve { color: var(--av-good-light); }
-.av-choice-cards button.is-reject { color: var(--av-evil-light); }
-.av-choice-cards button.is-approve.is-selected { border-color: var(--av-good-light); background: rgba(98, 158, 181, .17); box-shadow: inset 3px 0 0 var(--av-good); }
-.av-choice-cards button.is-reject.is-selected { border-color: var(--av-evil-light); background: rgba(158, 63, 72, .17); box-shadow: inset 3px 0 0 var(--av-evil); }
-
-.av-confirm {
-    display: grid;
-    grid-template-columns: 37px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 10px;
-    margin-top: 11px;
-    padding: 9px;
-    border: 1px solid rgba(98, 158, 181, .36);
-    background: linear-gradient(90deg, rgba(98, 158, 181, .13), transparent);
-}
-
-.av-confirm.is-danger {
-    border-color: rgba(158, 63, 72, .46);
-    background: linear-gradient(90deg, rgba(158, 63, 72, .16), transparent);
-}
-
-.av-confirm > span {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    border: 1px solid var(--av-good);
-    border-radius: 50%;
-    color: var(--av-good-light);
-    font: 600 14px "Songti SC", serif;
-}
-
-.av-confirm.is-danger > span {
-    border-color: var(--av-evil);
-    color: var(--av-evil-light);
-}
-
-.av-confirm > div {
-    display: grid;
-    min-width: 0;
-    gap: 3px;
-}
-
-.av-confirm strong,
-.av-confirm small {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.av-confirm strong {
-    color: var(--av-paper);
-    font-size: 9px;
-}
-
-.av-confirm small {
-    color: var(--av-muted);
-    font-size: 7px;
-}
-
-.av-primary {
-    min-height: 34px;
-    padding: 7px 12px;
-    border: 1px solid var(--av-gold);
-    border-radius: 3px;
-    background: linear-gradient(#d9ad59, #a97a34);
-    color: #121b25;
-    font: inherit;
-    font-size: 9px;
-    font-weight: 800;
-    cursor: pointer;
-}
-
-.av-primary:disabled {
-    border-color: #53606a;
-    background: #25313b;
-    color: #6f797f;
-    cursor: not-allowed;
-}
-
-.av-waiting {
-    display: grid;
-    grid-template-columns: 40px minmax(0, 1fr);
-    align-items: center;
-    gap: 11px;
-    min-height: 100%;
-    padding: 16px;
-    border: 1px solid var(--av-line-soft);
-    background: rgba(255, 255, 255, .02);
-}
-
-.av-waiting > span {
-    display: grid;
-    width: 38px;
-    height: 38px;
-    place-items: center;
-    border: 1px solid #566572;
-    border-radius: 50%;
-    color: var(--av-muted);
-    font: 600 15px "Songti SC", serif;
-}
-
-.av-waiting > div {
-    display: grid;
-    gap: 4px;
-}
-
-.av-waiting strong { color: var(--av-paper); font-size: 10px; }
-.av-waiting small { color: var(--av-muted); font-size: 8px; line-height: 1.5; }
-
-.av-history {
-    margin-top: 12px;
-    padding: 12px 13px;
-    border: 1px solid var(--av-line-soft);
-    background: rgba(7, 13, 20, .36);
+    min-height: 180px;
+    padding: 13px;
+    background: rgba(12, 20, 31, .96);
 }
 
 .av-section-title {
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
     color: var(--av-gold-light);
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 12px;
 }
 
 .av-section-title small {
     color: var(--av-muted);
-    font-size: 8px;
-    font-weight: 400;
+    font-size: 10px;
 }
 
-.av-history-list {
+.av-players,
+.av-ledger-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
-    margin-top: 9px;
+}
+
+.av-player {
+    display: grid;
+    grid-template-columns: 25px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    min-height: 43px;
+    padding: 5px 7px;
+    border: 1px solid var(--av-line-soft);
+    background: rgba(9, 15, 24, .46);
+}
+
+.av-seat {
+    display: grid;
+    width: 25px;
+    height: 25px;
+    place-items: center;
+    border: 1px solid rgba(213, 170, 88, .36);
+    border-radius: 50%;
+    color: var(--av-gold-light);
+    font-size: 10px;
+}
+
+.av-player div {
+    display: grid;
+    min-width: 0;
+}
+
+.av-player strong {
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.av-player strong b {
+    margin-left: 4px;
+    color: var(--av-gold);
+    font-size: 9px;
+}
+
+.av-player small,
+.av-player em {
+    color: var(--av-muted);
+    font-size: 9px;
+    font-style: normal;
+}
+
+.av-player em.is-good { color: var(--av-good-light); }
+.av-player em.is-evil { color: var(--av-evil-light); }
+.av-player.is-leader { border-color: rgba(213, 170, 88, .4); }
+.av-player.is-team { border-color: rgba(96, 157, 181, .4); }
+.av-player.is-offline { opacity: .5; }
+
+.av-ledger-grid span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 5px 7px;
+    border: 1px solid var(--av-line-soft);
+}
+
+.av-ledger-grid i {
+    display: grid;
+    width: 23px;
+    height: 23px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 9px;
+    font-style: normal;
+}
+
+.av-ledger-grid b { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.av-ledger-grid .is-approve i { border: 1px solid var(--av-good); color: var(--av-good-light); }
+.av-ledger-grid .is-reject i { border: 1px solid var(--av-evil); color: var(--av-evil-light); }
+
+.av-ledger-empty,
+.av-empty,
+.av-log-empty {
+    color: var(--av-muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.av-ledger-empty {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.av-ledger-empty span {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--av-line);
+    border-radius: 50%;
+}
+
+.av-history-list,
+.av-log {
+    display: grid;
+    gap: 6px;
+    max-height: 190px;
+    overflow: auto;
+    scrollbar-width: thin;
 }
 
 .av-mission {
     display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
     align-items: center;
     gap: 7px;
-    min-width: 0;
-    padding: 7px;
+    padding: 6px;
     border: 1px solid var(--av-line-soft);
 }
 
@@ -1228,125 +1123,33 @@ body.is-avalon-view {
 
 .av-mission.is-success { color: var(--av-good-light); }
 .av-mission.is-fail { color: var(--av-evil-light); }
-
-.av-mission > div {
-    display: grid;
-    min-width: 0;
-    gap: 3px;
-}
-
-.av-mission b { color: var(--av-paper); font-size: 8px; }
-.av-mission small { overflow: hidden; color: var(--av-muted); font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
-.av-mission em { color: currentColor; font-size: 7px; font-style: normal; white-space: nowrap; }
-.av-empty { margin: 0; color: var(--av-muted); font-size: 8px; }
-
-.av-side {
-    display: grid;
-    align-content: start;
-    gap: 12px;
-}
-
-.av-vote-ledger [data-role="voteLedger"] {
-    margin-top: 13px;
-}
-
-.av-ledger-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 5px;
-}
-
-.av-ledger-grid > span {
-    display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
-    align-items: center;
-    gap: 6px;
-    padding: 6px;
-    border: 1px solid var(--av-line-soft);
-}
-
-.av-ledger-grid i {
-    display: grid;
-    width: 23px;
-    height: 23px;
-    place-items: center;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-    font-size: 7px;
-    font-style: normal;
-}
-
-.av-ledger-grid b {
-    overflow: hidden;
-    color: var(--av-paper);
-    font-size: 8px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.av-ledger-grid .is-approve { color: var(--av-good-light); }
-.av-ledger-grid .is-reject { color: var(--av-evil-light); }
-
-.av-ledger-empty {
-    display: grid;
-    justify-items: center;
-    gap: 8px;
-    padding: 13px 6px;
-    text-align: center;
-}
-
-.av-ledger-empty span {
-    display: grid;
-    width: 37px;
-    height: 37px;
-    place-items: center;
-    border: 1px solid var(--av-gold);
-    border-radius: 50%;
-    color: var(--av-gold-light);
-    font: 600 15px "Songti SC", serif;
-}
-
-.av-ledger-empty p {
-    margin: 0;
-    color: var(--av-muted);
-    font-size: 8px;
-    line-height: 1.55;
-}
-
-.av-log {
-    display: grid;
-    gap: 0;
-    max-height: 390px;
-    margin-top: 13px;
-    overflow: auto;
-    scrollbar-color: #485766 transparent;
-}
+.av-mission div { display: grid; min-width: 0; gap: 2px; }
+.av-mission b { color: #ded6c4; font-size: 10px; }
+.av-mission small { overflow: hidden; color: var(--av-muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.av-mission em { font-size: 9px; font-style: normal; white-space: nowrap; }
 
 .av-log p {
     display: grid;
-    grid-template-columns: 6px minmax(0, 1fr);
-    gap: 8px;
+    grid-template-columns: 7px minmax(0, 1fr);
+    gap: 7px;
     margin: 0;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--av-line-soft);
     color: var(--av-muted);
-    font-size: 8px;
-    line-height: 1.5;
+    font-size: 10px;
+    line-height: 1.45;
 }
 
-.av-log p > i {
+.av-log p i {
     width: 5px;
     height: 5px;
-    margin-top: 4px;
+    margin-top: 5px;
     border-radius: 50%;
-    background: #66737d;
+    background: rgba(213, 170, 88, .35);
 }
 
-.av-log p.is-latest {
-    color: var(--av-gold-light);
-}
+.av-log p.is-latest { color: #ded6c4; }
 
-.av-log p.is-latest > i {
-    background: var(--av-gold);
-    box-shadow: 0 0 0 4px rgba(214, 169, 83, .1);
+.avalon-app button:focus-visible,
+.av-records > summary:focus-visible {
+    outline: 3px solid rgba(240, 212, 141, .82);
+    outline-offset: 2px;
 }

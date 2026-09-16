@@ -52,6 +52,13 @@ export function createAcquireActions({ mount, model, renderer, scene, send, rule
         const uiButton = event.target.closest('[data-ui]');
         if (uiButton) {
             const ui = uiButton.dataset.ui;
+            if (ui === 'closeDetails') $('detailDialog').close();
+            if (ui === 'playerDetails' || ui === 'chainDetails') {
+                model.detailKind = ui === 'playerDetails' ? 'player' : 'chain';
+                model.detailId = ui === 'playerDetails' ? uiButton.dataset.playerId : uiButton.dataset.chainId;
+                renderer.renderDetails();
+                if (!$('detailDialog').open) $('detailDialog').showModal();
+            }
             if (ui === 'rules') rulesModal.setOpen(true);
             if (ui === 'closeRules') rulesModal.setOpen(false);
             if (ui === 'cancelDecision') closeDecision();
@@ -74,7 +81,15 @@ export function createAcquireActions({ mount, model, renderer, scene, send, rule
         const actionButton = event.target.closest('[data-action]');
         if (!actionButton || actionButton.disabled || model.actionPending) return;
         const action = actionButton.dataset.action;
-        if (action === 'confirmTile' && model.pendingTileId) { const tileId = model.pendingTileId; model.pendingTileId = null; renderer.renderHand(); sendAction('placeTile', { tileId }); }
+        if (action === 'confirmTile' && model.pendingTileId) {
+            const tileId = model.pendingTileId;
+            const tileElement = [...mount.querySelectorAll('[data-tile-id]')].find(element => element.dataset.tileId === tileId);
+            const rect = tileElement?.getBoundingClientRect();
+            model.pendingTileOrigin = rect ? { tileId, left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height } : null;
+            model.pendingTileId = null;
+            renderer.renderHand();
+            sendAction('placeTile', { tileId });
+        }
         if (action === 'foundChain') {
             const chain = getChain(state(), actionButton.dataset.chainId);
             openDecision({ action: { kind: action, chainId: chain?.id }, mark: chain?.short, kicker: '集团成立决议', title: `成立${chain?.name || '新'}集团`, copy: '确认后，相连的中立建筑会归入该集团；若股票库存充足，你将获得一股创始人股票。', summary: `${chainHeadquartersMarkup(chain, 'is-option')}<span><strong>${escapeHtml(chain?.name || '')}</strong><small>创始人股票 ×1</small></span>`, confirmLabel: '确认成立集团' }, actionButton);
@@ -96,6 +111,8 @@ export function createAcquireActions({ mount, model, renderer, scene, send, rule
     }
 
     function handleKeydown(event) {
+        if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.acquire-cell[data-ui="chainDetails"]')) { event.preventDefault(); event.target.click(); return; }
+
         if (rulesModal.trapFocus(event) || decisionModal.trapFocus(event)) return;
         if (event.key === 'Escape' && rulesModal.isOpen()) rulesModal.setOpen(false);
         else if (event.key === 'Escape' && decisionModal.isOpen()) closeDecision();

@@ -46,6 +46,9 @@ function main() {
         'security.md',
         'asset-license-clearance.md',
         'release-baseline.md',
+        'monopolydeal-code-health.md',
+        'monopolydeal-original-properties.md',
+        'preview-readiness.md',
     ];
     requiredReports.forEach(file => check(`required report ${file}`, fs.existsSync(path.join(reportDir, file))));
 

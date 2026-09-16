@@ -1,10 +1,31 @@
-export function createLasVegasActions({ mount, model, renderer, scene, send, addLog, documentRef = globalThis.document, windowRef = globalThis.window || globalThis }) {
+export function createLasVegasActions({ mount, model, renderer, scene, rulesModal, send, addLog, documentRef = globalThis.document, windowRef = globalThis.window || globalThis }) {
     const state = () => model.state; const $ = role => mount.querySelector(`[data-role="${role}"]`);
-    function sendAction(action) { if (model.actionPending) return false; model.actionPending = true; renderer.clearError(); send({ type: 'gameAction', action }); renderer.render(); return true; }
-    function openRules() { const overlay = $('rulesOverlay'); model.rulesTrigger = documentRef.activeElement; model.bodyOverflow = documentRef.body.style.overflow; documentRef.body.style.overflow = 'hidden'; overlay.classList.remove('is-hidden'); overlay.setAttribute('aria-hidden', 'false'); [...mount.querySelector('.lasvegas-app').children].forEach(child => { child.inert = child !== overlay; }); overlay.querySelector('[data-ui="closeRules"]')?.focus(); }
-    function closeRules() { const overlay = $('rulesOverlay'); if (overlay.classList.contains('is-hidden')) return; overlay.classList.add('is-hidden'); overlay.setAttribute('aria-hidden', 'true'); [...mount.querySelector('.lasvegas-app').children].forEach(child => { child.inert = false; }); documentRef.body.style.overflow = model.bodyOverflow; model.rulesTrigger?.focus?.(); model.rulesTrigger = null; }
-    function trapRulesFocus(event) { const overlay = $('rulesOverlay'); if (event.key !== 'Tab' || overlay.classList.contains('is-hidden')) return false; const focusable = [...overlay.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')].filter(element => !element.hidden && element.getClientRects().length); if (!focusable.length) return false; const first = focusable[0]; const last = focusable[focusable.length - 1]; if (event.shiftKey && (documentRef.activeElement === first || !overlay.contains(documentRef.activeElement))) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && (documentRef.activeElement === last || !overlay.contains(documentRef.activeElement))) { event.preventDefault(); first.focus(); } return true; }
-    function handleClick(event) { const control = event.target.closest('[data-ui]'); const ui = control?.dataset.ui; if (ui === 'rules') openRules(); if (ui === 'closeRules' || event.target === $('rulesOverlay')) closeRules(); if (ui === 'skipPresentation') scene.skipPresentations(); if (ui === 'roll' && !control.disabled && !model.presentationPlaying && !model.actionPending) sendAction({ kind: 'rollDice' }); if (ui === 'place' && model.selectedFace && !model.presentationPlaying && !model.actionPending) { sendAction({ kind: 'placeDice', face: model.selectedFace }); return; } const faceButton = event.target.closest('[data-face]'); if (faceButton && !faceButton.disabled && !model.presentationPlaying) { model.selectedFace = Number(faceButton.dataset.face); renderer.renderFaces(); renderer.renderCasinos(); mount.querySelector(`.lv-face-actions [data-face="${model.selectedFace}"]`)?.focus({ preventScroll: true }); } }
-    function handleKeydown(event) { if (trapRulesFocus(event)) return; if (event.key === 'Escape' && !$('rulesOverlay').classList.contains('is-hidden')) closeRules(); }
+    const presentationLocked = () => scene.isPlaying();
+    function sendAction(action) { if (presentationLocked() || model.actionPending) return false; model.actionPending = true; renderer.clearError(); send({ type: 'gameAction', action }); renderer.render(); return true; }
+    function openRules() { if (presentationLocked()) return; rulesModal?.setOpen(true); }
+    function closeRules() { rulesModal?.setOpen(false); }
+    function handleClick(event) {
+        if (presentationLocked()) {
+            if (event.target.closest('[data-ui="skipPresentation"]')) scene.skipPresentations();
+            return;
+        }
+        const control = event.target.closest('[data-ui]'); const ui = control?.dataset.ui;
+        if (ui === 'rules') openRules();
+        if (ui === 'closeRules' || event.target === $('rulesOverlay')) closeRules();
+        if (ui === 'skipPresentation') scene.skipPresentations();
+        if (ui === 'roll' && !control.disabled) sendAction({ kind: 'rollDice' });
+        if (ui === 'place' && model.selectedFace) { sendAction({ kind: 'placeDice', face: model.selectedFace }); return; }
+        const faceButton = event.target.closest('[data-face]');
+        if (faceButton && !faceButton.disabled && !presentationLocked()) {
+            model.selectedFace = Number(faceButton.dataset.face);
+            renderer.renderFaces(); renderer.renderCasinos();
+            mount.querySelector(`.lv-face-actions [data-face="${model.selectedFace}"]`)?.focus({ preventScroll: true });
+        }
+    }
+    function handleKeydown(event) {
+        if (presentationLocked()) { if (event.key === 'Escape') scene.skipPresentations(); return; }
+        if (rulesModal?.trapFocus(event)) return;
+        if (event.key === 'Escape' && rulesModal?.isOpen()) closeRules();
+    }
     return { handleClick, handleKeydown, sendAction, openRules, closeRules };
 }

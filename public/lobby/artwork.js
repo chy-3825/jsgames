@@ -65,15 +65,21 @@ export function createLobbyArtwork({
         const variable = element.dataset.cardArtVariable === 'room' ? '--room-art' : '--card-art';
         element.dataset.cardArtLoading = 'true';
         element.classList.add('is-art-loading');
-        loadCoverArt(source).then(() => {
+        const request = loadCoverArt(source);
+        request.then(() => {
             if (!element.isConnected) return;
             element.style.setProperty(variable, `url(${JSON.stringify(source)})`);
             element.dataset.cardArtLoaded = 'true';
             element.dataset.cardArtLoading = 'false';
+            element.classList.remove('is-art-loading');
             windowRef.requestAnimationFrame(() => element.classList.add('is-art-ready'));
         }).catch(() => {
+            // A transient CDN/network failure must not poison the shared
+            // promise forever; a later lobby snapshot can retry the asset.
+            if (coverArtPromises.get(source) === request) coverArtPromises.delete(source);
             if (!element.isConnected) return;
             element.dataset.cardArtLoading = 'false';
+            element.classList.remove('is-art-loading');
             element.dataset.cardArtError = 'true';
             element.classList.add('is-art-error');
         });

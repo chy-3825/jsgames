@@ -3,7 +3,7 @@ import { createClientScope } from '../common/lifecycle.js';
 import { createModalController } from '../common/modal.js';
 import { loadStyles } from '../common/style-loader.js';
 import { createCitadelsActions } from './actions.js';
-import { createCitadelsModel } from './state.js';
+import { createCitadelsModel, localizePresentation } from './state.js';
 import { createCitadelsTemplate } from './template.js';
 import { createCitadelsRenderer } from './render.js';
 import { createCitadelsScene } from './scene.js';
@@ -21,7 +21,7 @@ export function createGameClient({ mount, send, addLog }) {
     const app = mount.querySelector('.citadels-app');
     const rulesModal = createModalController({ root: app, overlay: getElement('rulesOverlay'), documentRef, windowRef, fallbackFocus: () => mount.querySelector('[data-ui="rules"]') });
     const renderer = createCitadelsRenderer({ mount, model, getElement });
-    const scene = createCitadelsScene({ mount, model, getElement, windowRef });
+    const scene = createCitadelsScene({ mount, model, getElement, windowRef, renderer, onPresentationStart: () => rulesModal.setOpen(false) });
     const actions = createCitadelsActions({ mount, model, renderer, scene, send, rulesModal });
 
     mount.addEventListener('click', actions.handleClick, { signal: scope.signal });
@@ -29,16 +29,23 @@ export function createGameClient({ mount, send, addLog }) {
 
     function handleMessage(message) {
         if (message.state) {
-            const firstState = !model.state;
             model.state = message.state;
             model.actionPending = false;
             renderer.clearError();
             renderer.render();
-            const sequence = Number(model.state.presentation?.sequence) || 0;
-            if (firstState) model.lastPresentationSequence = sequence;
-            else if (sequence > model.lastPresentationSequence) {
-                model.lastPresentationSequence = sequence;
-                scene.enqueuePresentation(model.state.presentation);
+            const presentation = model.state.presentation;
+            const presentations = model.state.presentations?.length
+                ? model.state.presentations
+                : presentation
+                    ? [presentation]
+                    : [];
+            const localNow = Date.now();
+            for (const batch of presentations.slice().sort((left, right) => Number(left.sequence) - Number(right.sequence))) {
+                const sequence = Number(batch.sequence) || 0;
+                if (sequence && sequence <= model.lastPresentationSequence) continue;
+                const localized = localizePresentation(batch, localNow);
+                if (sequence) model.lastPresentationSequence = sequence;
+                if (localized) scene.enqueuePresentation(localized);
             }
         }
         if (message.type === 'error') {

@@ -51,7 +51,7 @@
 | `aeroplane` | 飞行棋 | `online` | 2–4 | 5 |
 | `gobang` | 五子棋 | `online` | 2 | 6 |
 | `checkers` | 跳棋 | `online` | 2–6 | 7 |
-| `monopoly` | 环城大富翁 | `online` | 2–8 | 8 |
+| `monopoly` | 环城大富翁 | `online` | 2–6 | 8 |
 
 ### 卡牌与策略桌游
 

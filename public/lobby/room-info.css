@@ -1,0 +1,34 @@
+/* Compact room metadata entry and the shared embedded-game header contract. */
+
+.room-info-button { display: inline-flex; min-width: 44px; min-height: 36px; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid rgba(189,138,69,.32); border-radius: 999px; background: transparent; color: var(--gold); font-size: 9px; }
+.room-info-button span { font-size: 14px; line-height: 1; }.room-info-button b { font: inherit; }.room-info-button:hover { border-color: var(--gold-light); color: var(--gold-light); }
+.is-waiting-room-view .room-info-button { border-color: rgba(228,191,122,.32); color: #d5b679; }
+.is-game-view .room-info-button { border-color: rgba(228,191,122,.32); color: var(--gold-light); }
+
+.room-info-overlay { position: fixed; z-index: 12000; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(5, 15, 19, .72); backdrop-filter: blur(10px); }
+.room-info-overlay.is-hidden { display: none; }
+.room-info-dialog { position: relative; width: min(440px, 100%); padding: 27px; border: 1px solid rgba(213, 183, 119, .48); border-radius: 18px; background: #f8f3e8; color: #243b42; box-shadow: 0 30px 90px rgba(3, 12, 16, .46); }
+.room-info-close { position: absolute; top: 11px; right: 11px; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(35, 57, 64, .16); border-radius: 50%; background: transparent; color: #52666a; font-size: 21px; }
+.room-info-kicker { display: block; color: #a67a3d; font-size: 8px; font-weight: 800; letter-spacing: .18em; }
+.room-info-dialog h2 { margin: 5px 0 18px; color: #1c373f; font: 600 25px/1.2 "Songti SC", SimSun, serif; }
+.room-info-list { display: grid; margin: 0; border-top: 1px solid rgba(35, 57, 64, .13); }
+.room-info-list > div { display: grid; grid-template-columns: 78px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 46px; border-bottom: 1px solid rgba(35, 57, 64, .1); }
+.room-info-list dt { color: #7c8988; font-size: 9px; }.room-info-list dd { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; margin: 0; color: #263f45; font-size: 11px; }
+.room-info-list dd, .room-info-list strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.room-info-list strong { font: 700 11px/1 Georgia, serif; letter-spacing: .08em; }
+.room-info-list button { flex: none; min-height: 30px; padding: 0 9px; border: 1px solid rgba(166, 122, 61, .3); border-radius: 8px; background: rgba(166, 122, 61, .06); color: #8d652f; font-size: 8px; }
+
+/* The shared shell is the only game identity surface in embedded rooms. */
+.is-game-view #gameMount :is(
+    .acquire-brand, .flight-brand, .av-brand, .cm-brand, .checkers-brand, .chess3d-title, .citadels-brand,
+    .cp-brand, .dc-brand, .gobang-brand, .gn-brand, .hb-brand, .jungle-brand, .junqi3d-title, .kd-brand,
+    .lv-brand, .ll-status-signature, .ma-brand, .mn-brand, .art-brand, .mono-brand, .deal-brand, .sc-brand,
+    .sp-brand, .tf-brand, .ww-brand, .witchtown-brand, .xiangqi3d-title
+) { display: none !important; }
+.is-game-view #gameMount :is(.chess3d-room, .witchtown-room, .xiangqi3d-actions > span, .junqi3d-actions > span) { display: none !important; }
+.is-game-view #gameMount :is(
+    .acquire-topbar, .flight-header, .av-header, .cm-header, .checkers-header, .chess3d-header,
+    .citadels-topbar, .dc-header, .gobang-header, .gn-statusbar, .jungle-header, .junqi3d-header,
+    .lv-header, .ma-header, .mn-header, .art-header, .deal-header, .sc-header, .sp-header, .ww-header,
+    .witchtown-topbar, .xiangqi3d-header
+) { grid-template-columns: minmax(0, 1fr) auto !important; }
+.is-game-view #gameMount :is(.cp-statusbar, .hb-header, .kd-header, .ll-statusbar, .mono-topbar, .tf-header) { grid-template-columns: minmax(0, 1fr) auto auto !important; }

@@ -2,7 +2,7 @@ import { getGameStyleHrefs } from '../common/game-manifest.js';
 import { createClientScope } from '../common/lifecycle.js';
 import { loadStyles } from '../common/style-loader.js';
 import { createCoupActions } from './actions.js';
-import { createCoupModel, updateDecisionWindow } from './state.js';
+import { createCoupModel, localizePresentation, updateDecisionWindow } from './state.js';
 import { createCoupTemplate } from './template.js';
 import { createCoupRenderer } from './render.js';
 import { createCoupScene } from './scene.js';
@@ -18,21 +18,13 @@ export function createGameClient({ mount, send, addLog }) {
     mount.innerHTML = createCoupTemplate();
     const getElement = role => mount.querySelector(`[data-role="${role}"]`);
     const renderer = createCoupRenderer({ mount, model, getElement, windowRef, documentRef });
-    const scene = createCoupScene({ mount, model, getElement, windowRef });
-    const actions = createCoupActions({ mount, model, renderer, scene, send, documentRef });
+    const scene = createCoupScene({ mount, model, getElement, windowRef, renderer });
+    const actions = createCoupActions({ mount, model, renderer, scene, send });
 
     mount.addEventListener('click', actions.handleClick, { signal: scope.signal });
+    mount.addEventListener('mouseover', actions.handlePointerOver, { signal: scope.signal });
+    mount.addEventListener('mouseout', actions.handlePointerOut, { signal: scope.signal });
     mount.addEventListener('keydown', actions.handleKeydown, { signal: scope.signal });
-    mount.addEventListener('pointerdown', actions.handleIdentityPointerDown, { signal: scope.signal });
-    mount.addEventListener('pointermove', actions.handleIdentityPointerMove, { signal: scope.signal });
-    mount.addEventListener('pointerout', actions.handleIdentityPointerOut, { signal: scope.signal });
-    mount.addEventListener('focusout', actions.handleFocusOut, { signal: scope.signal });
-    mount.addEventListener('contextmenu', actions.handleContextMenu, { signal: scope.signal });
-    documentRef.addEventListener('pointerup', actions.handleIdentityPointerEnd, { signal: scope.signal });
-    documentRef.addEventListener('pointercancel', actions.handleIdentityPointerEnd, { signal: scope.signal });
-    documentRef.addEventListener('keyup', actions.handleIdentityKeyup, { signal: scope.signal });
-    documentRef.addEventListener('visibilitychange', actions.handleIdentityVisibilityChange, { signal: scope.signal });
-    windowRef.addEventListener('blur', actions.hidePrivateIdentity, { signal: scope.signal });
     windowRef.addEventListener('resize', renderer.scheduleActionPresentation, { signal: scope.signal });
     mount.addEventListener('scroll', renderer.scheduleActionPresentation, { capture: true, signal: scope.signal });
 
@@ -40,8 +32,8 @@ export function createGameClient({ mount, send, addLog }) {
         if (message.state) {
             const previousState = model.state;
             const previousInteractionId = model.state?.interaction?.actionId ?? null;
-            actions.hidePrivateIdentity();
             model.state = message.state;
+            model.submitting = false;
             const currentInteractionId = model.state.interaction?.actionId ?? null;
             if (previousState && currentInteractionId && currentInteractionId !== previousInteractionId) model.animateInteractionId = currentInteractionId;
             updateDecisionWindow(model, previousState, model.state, windowRef, renderer.render);
@@ -54,13 +46,49 @@ export function createGameClient({ mount, send, addLog }) {
             }
             if (!renderer.isMyTurn() || model.state.challenge || model.state.influenceLoss || model.state.exchange || model.state.gameOver) {
                 model.pendingAction = null;
+                model.hoveredActionKind = null;
                 model.selectedTarget = null;
             }
+
+            // Presentation events are server-authoritative.  Keep a per-event
+            // cursor instead of a per-batch cursor because a challenge can
+            // append more events to the same transaction after the first state
+            // update has already reached this browser.
+            const hasServerTimeline = Array.isArray(model.state.presentations) || Boolean(model.state.presentation);
+            if (hasServerTimeline) {
+                const presentation = model.state.presentation;
+                const presentations = model.state.presentations?.length
+                    ? model.state.presentations
+                    : presentation
+                        ? [presentation]
+                        : [];
+                const localNow = Date.now();
+                for (const batch of presentations.slice().sort((left, right) => Number(left.sequence) - Number(right.sequence))) {
+                    const sequence = Number(batch.sequence) || 0;
+                    if (sequence) model.lastPresentationSequence = Math.max(model.lastPresentationSequence, sequence);
+                    const localized = localizePresentation(batch, localNow);
+                    if (!localized) continue;
+                    const freshEvents = localized.events.filter(event => {
+                        const key = String(event.eventId ?? `${sequence}:${event.sequence ?? ''}:${event.kind}:${event.startedAt}`);
+                        if (model.presentationEventIds.has(key)) return false;
+                        model.presentationEventIds.add(key);
+                        return true;
+                    });
+                    if (freshEvents.length) scene.enqueuePresentation({ ...localized, events: freshEvents });
+                }
+            }
             renderer.render();
-            scene.enqueueScenes(scene.deriveScenes(previousState, model.state));
+            // Older servers did not publish a timeline.  Retain their local
+            // derivation as a compatibility path, but never run it alongside
+            // server events (which would duplicate every public animation).
+            if (!hasServerTimeline) scene.enqueueScenes(scene.deriveScenes(previousState, model.state));
         }
         if (message.type === 'gameEnded' && message.winner) addLog?.(`${message.winner.name} 获胜`, 'system');
-        if (message.type === 'error') addLog?.(message.message || '操作失败', 'error');
+        if (message.type === 'error') {
+            model.submitting = false;
+            renderer.render();
+            addLog?.(message.message || '操作失败', 'error');
+        }
         else {
             const text = message.action?.message || (message.type !== 'gameState' ? message.message : '');
             if (text) addLog?.(text, 'info');
@@ -71,7 +99,6 @@ export function createGameClient({ mount, send, addLog }) {
         gameType: 'coup',
         handleMessage,
         destroy() {
-            actions.hidePrivateIdentity();
             scene.destroy();
             scope.destroy();
             documentRef.body.classList.remove('is-coup-view');

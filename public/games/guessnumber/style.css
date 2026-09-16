@@ -689,25 +689,13 @@ body.is-guessnumber-view {
 
 .gn-player-record {
     display: grid;
-    grid-template-columns: 35px minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 9px;
     margin: 14px 14px 4px;
     padding: 10px;
     border-left: 3px solid #b18445;
     background: rgba(255, 255, 255, .42);
-}
-
-.gn-player-avatar {
-    display: grid;
-    width: 32px;
-    height: 32px;
-    place-items: center;
-    border-radius: 5px;
-    background: #315f64;
-    color: #e4d8b7;
-    font-family: "Noto Serif SC", serif;
-    font-size: 14px;
 }
 
 .gn-player-copy {

@@ -17,7 +17,7 @@
 | 情书 | `loveletter` | 2–4 |
 | 政变 | `coup` | 2–6 |
 | 猜数字 | `guessnumber` | 单人 |
-| 环城大富翁 | `monopoly` | 2–8 |
+| 环城大富翁 | `monopoly` | 2–6 |
 | 大富翁纸牌 | `monopolydeal` | 2–5 |
 | 飞行棋 | `aeroplane` | 2–4 |
 | 五子棋 | `gobang` | 2 |
@@ -149,20 +149,27 @@ npm run test:acceptance
 
 ```text
 app.js                         # Express 静态资源和实时服务兼容入口
-server/realtime/               # 可实例化实时服务、局域网地址工具、广播和存储边界
+server/realtime/               # 可实例化实时服务、房间命令、WebSocket 生命周期、广播和存储边界
+server/realtime/create-realtime-server.js # 实时服务组合根与依赖装配
+server/realtime/room-handlers.js # 创建/加入/重连、设置、准备和对局命令
+server/realtime/socket-lifecycle.js # WebSocket 建连、心跳、消息接收和清理
 server/realtime/protocol.js    # 实时消息归一化与路由边界
 server/realtime/broadcast.js   # 大厅/房间广播边界
-server/room.js                 # 通用房间生命周期
+server/room.js                 # 通用房间生命周期与对局编排
+server/room-study.js           # 棋谱模式虚拟座位、摆棋和视角控制
 server/games/registry.js       # 游戏注册表
 server/games/<game>/index.js   # 游戏大厅适配层
 server/games/<game>/engine.js  # 游戏规则引擎
 public/index.html              # 大厅页面
-public/script.js               # 大厅组合入口：连接、房间和游戏加载编排
+public/script.js               # 大厅组合入口：状态、连接、房间和游戏加载编排（约 890 行）
+public/lobby/message-handler.js # WebSocket 消息到大厅状态/反馈动作的转换
+public/lobby/event-bindings.js # 大厅入口、房间、棋谱和弹层 DOM 事件绑定
 public/game-details.js         # 28 款游戏的创建前规则摘要
 public/assets/covers/          # 28 张高清横版封面与 thumbs/ 下的大厅缩略图
 deploy/                        # systemd、Nginx 与云安全组部署模板
 scripts/complexity-audit.js    # 热点文件复杂度增长门禁
-public/style.css               # 大厅基础样式
+public/style.css               # 大厅基础 tokens、入口和目录样式
+public/lobby/*.css             # 游戏壳层、共享原语和响应式样式层
 public/lobby/                  # 大厅目录、传输、加载器、视图、弹层、等待房间和转场模块
 public/games/<game>/           # 每款游戏的独立前端模块
   client.js                    # 协议入口与生命周期，导出 createGameClient
@@ -182,7 +189,7 @@ test/*-official.test.js        # 各游戏官方规则专项测试
 PROJECT_REPORT.md              # 新游戏开发和大厅协议说明
 ```
 
-需要多层呈现的游戏会在 `game-manifest.js` 中按固定级联顺序加载基础、版图/私有信息、交互、场景和响应式样式；例如并购、富饶之城、政变和阿瓦隆的后置样式不会再塞回单一 `style.css`。胡闹运动会服务端还将常量、移动/特殊格、回合结算和状态投影分别放在同目录模块中，`engine.js` 只负责组装权威流程。
+需要多层呈现的游戏会在 `game-manifest.js` 中按固定级联顺序加载基础、版图/私有信息、交互、场景和响应式样式；例如猎巫镇、拉斯维加斯、花火、大富翁纸牌、并购、富饶之城、政变和阿瓦隆的后置样式不会再塞回单一 `style.css`。花火额外保留场景后的移动端后置层，以维持原有响应式覆盖顺序；大富翁纸牌的选择弹窗继续作为独立交互层加载。大厅全局样式同样按基础、游戏壳层、共享原语、响应式和等待房间顺序加载。胡闹运动会服务端还将常量、移动/特殊格、回合结算和状态投影分别放在同目录模块中，`engine.js` 只负责组装权威流程。
 
 国际象棋使用了额外的渲染隔离层：
 

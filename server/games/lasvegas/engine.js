@@ -4,6 +4,48 @@ const NEUTRAL_ID = 'neutral';
 const COLORS = ['red', 'blue', 'gold', 'green', 'violet'];
 const CASINO_NAMES = ['黄金宫', '海市蜃楼', '星光金字塔', '皇家塔楼', '赤沙宫', '霓虹穹顶'];
 const BILL_COUNTS = new Map([[10, 6], [20, 8], [30, 8], [40, 6], [50, 6], [60, 5], [70, 5], [80, 5], [90, 5]]);
+// The browser renders these scenes, but the server owns their time slots so
+// every connected viewer enters and leaves a scene together.  The common fade
+// is part of the slot rather than an optional local delay.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    roundStarted: 1150,
+    diceRolled: 900,
+    dicePlaced: 950,
+    betsClosed: 1150,
+    roundSettlement: 1500,
+    roundTransition: 850,
+    finalSettlement: 2800,
+    playerLeft: 900,
+};
+
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'casinoSettlement') {
+        const review = (data.ties || []).length ? 800 : 520;
+        const payouts = (data.payouts || []).length;
+        return review + (payouts ? payouts * 850 : 500);
+    }
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 820;
+}
+
+function presentationSegments(kind, data, startedAt) {
+    if (kind !== 'casinoSettlement') return null;
+    const segments = [];
+    let cursor = startedAt;
+    const reviewDuration = (data.ties || []).length ? 800 : 520;
+    segments.push({ kind: 'review', startedAt: cursor, endsAt: cursor + reviewDuration });
+    cursor += reviewDuration;
+    if ((data.payouts || []).length) {
+        for (const [index] of data.payouts.entries()) {
+            segments.push({ kind: 'payout', index, startedAt: cursor, endsAt: cursor + 850 });
+            cursor += 850;
+        }
+    } else {
+        segments.push({ kind: 'returnToBank', startedAt: cursor, endsAt: cursor + 500 });
+        cursor += 500;
+    }
+    return segments;
+}
 
 function clone(value) {
     return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -20,10 +62,16 @@ function buildMoneyDeck() {
 }
 
 class LasVegasEngine {
-    constructor(roomId, players, random = Math.random) {
+    constructor(roomId, players, randomOrOptions = Math.random, extraOptions = {}) {
+        const suppliedOptions = typeof randomOrOptions === 'function' ? extraOptions : (randomOrOptions || {});
+        const random = typeof randomOrOptions === 'function' ? randomOrOptions : (suppliedOptions.random || Math.random);
         this.roomId = roomId;
-        this.random = random;
-        this.players = players.slice(0, 5).map((player, index) => ({ id: player.id, name: player.name, color: COLORS[index], money: 0, banknotes: [], diceRemaining: DICE_PER_PLAYER, roll: [], placed: {}, isOnline: true }));
+        this.random = typeof random === 'function' ? random : Math.random;
+        this.options = { ...suppliedOptions };
+        this.now = typeof suppliedOptions.now === 'function' ? suppliedOptions.now : () => Date.now();
+        // Keep the full roster so start() rejects an unsupported room instead
+        // of silently dropping seats above the official five-player limit.
+        this.players = players.map((player, index) => ({ id: player.id, name: player.name, color: COLORS[index] || '#777', money: 0, banknotes: [], diceRemaining: DICE_PER_PLAYER, neutralDiceRemaining: 0, roll: [], placed: {}, isOnline: true }));
         this.playerMap = Object.fromEntries(this.players.map(player => [player.id, player]));
         this.participants = this.players;
         this.neutral = null;
@@ -41,20 +89,28 @@ class LasVegasEngine {
         this.actionLog = [];
         this.winner = null;
         this.winners = [];
+        this.endReason = null;
+        this.outcome = null;
         this.startPlayerIndex = 0;
         this.roundHistory = [];
         this.presentation = null;
+        this.presentationQueue = [];
         this.presentationSequence = 0;
         this.presentationEventSequence = 0;
+        this.presentationPrivate = {};
+        this.neutralEnabled = false;
+        this.neutralDiceTotal = 0;
     }
 
     start() {
         if (this.status !== 'waiting') return { success: false, message: '游戏已经开始或已经结束' };
         if (this.players.length < 2 || this.players.length > 5) return { success: false, message: '拉斯维加斯需要 2–5 名玩家' };
-        this.players.forEach(player => { player.money = 0; player.banknotes = []; player.isOnline = true; });
+        this.players.forEach(player => { player.money = 0; player.banknotes = []; player.isOnline = true; player.neutralDiceRemaining = 0; player.roll = []; player.placed = {}; });
         this.participants = this.players;
-        this.neutralDicePerPlayer = this.players.length <= 4 ? (this.players.length === 2 ? 4 : 2) : 0;
-        this.neutral = this.neutralDicePerPlayer ? { id: NEUTRAL_ID, name: '中立骰子', color: 'neutral', money: 0, diceRemaining: 0, roll: [], placed: {}, isOnline: true, isNeutral: true } : null;
+        this.neutralEnabled = this.players.length <= 4;
+        this.neutralDiceTotal = this.neutralEnabled ? 8 : 0;
+        this.neutralDicePerPlayer = this.neutralEnabled ? (this.players.length === 2 ? 4 : 2) : 0;
+        this.neutral = this.neutralEnabled ? { id: NEUTRAL_ID, name: '中立骰子', color: 'neutral', money: 0, diceRemaining: 0, roll: [], placed: {}, isOnline: true, isNeutral: true } : null;
         // Keep the neutral participant in the public participant list for
         // compatibility with existing room state, but it never receives an
         // independent turn: its dice are rolled by real players.
@@ -67,17 +123,22 @@ class LasVegasEngine {
         this.lastPayouts = [];
         this.winner = null;
         this.winners = [];
+        this.endReason = null;
+        this.outcome = null;
         this.roundHistory = [];
         this.presentation = null;
+        this.presentationQueue = [];
         this.presentationSequence = 0;
         this.presentationEventSequence = 0;
+        this.presentationPrivate = {};
         this._startRound();
-        this._log(`第 ${this.round} 轮开始，${this.players[0].name} 先掷骰`);
+        const starter = this._onlinePlayerAtOrAfter(this.startPlayerIndex);
+        this._log(`第 ${this.round} 轮开始，${starter?.name || '无人'} 先掷骰`);
         this._appendPresentationEvent({
             kind: 'roundStarted',
             round: this.round,
-            starterId: this.players[0]?.id || null,
-            starterName: this.players[0]?.name || '',
+            starterId: starter?.id || null,
+            starterName: starter?.name || '',
             casinos: this.casinos.map(casino => ({ face: casino.face, money: casino.money.slice() })),
             neutralDiceTotal: this.players.reduce((sum, player) => sum + player.neutralDiceRemaining, 0),
         });
@@ -89,17 +150,23 @@ class LasVegasEngine {
     _startRound() {
         this.casinos = Array.from({ length: 6 }, (_, index) => ({ face: index + 1, money: [], dice: {} }));
         this.neutralAssignments = {};
+        const activePlayers = this._activePlayers();
         this.players.forEach(player => {
-            player.diceRemaining = DICE_PER_PLAYER;
-            player.neutralDiceRemaining = this.neutralDicePerPlayer;
+            player.diceRemaining = player.isOnline ? DICE_PER_PLAYER : 0;
+            player.neutralDiceRemaining = 0;
             player.roll = [];
             player.placed = {};
-            this.neutralAssignments[player.id] = this.neutralDicePerPlayer;
         });
-        if (this.players.length === 3 && this.neutral) {
-            const starter = this.players[this.startPlayerIndex % this.players.length];
-            starter.neutralDiceRemaining += 2;
-            this.neutralAssignments[starter.id] += 2;
+        if (this.neutral) {
+            // Keep the eight neutral dice in play after a permanent departure,
+            // redistributing them according to the remaining active seats.
+            if (activePlayers.length === 2) activePlayers.forEach(player => { this.neutralAssignments[player.id] = 4; });
+            else if (activePlayers.length === 3) {
+                activePlayers.forEach(player => { this.neutralAssignments[player.id] = 2; });
+                const starter = this._onlinePlayerAtOrAfter(this.startPlayerIndex);
+                if (starter) this.neutralAssignments[starter.id] = (this.neutralAssignments[starter.id] || 0) + 2;
+            } else activePlayers.forEach(player => { this.neutralAssignments[player.id] = 2; });
+            for (const player of activePlayers) player.neutralDiceRemaining = this.neutralAssignments[player.id] || 0;
         }
         if (this.neutral) {
             this.neutral.diceRemaining = Object.values(this.neutralAssignments).reduce((sum, count) => sum + count, 0);
@@ -111,11 +178,34 @@ class LasVegasEngine {
             while (total < 50 && this.moneyDeck.length) { const bill = this.moneyDeck.pop(); casino.money.push(bill); total += bill; }
             casino.money.sort((a, b) => b - a);
         }
-        this.currentTurnIndex = this.startPlayerIndex % this.players.length;
+        const starter = this._onlinePlayerAtOrAfter(this.startPlayerIndex);
+        this.currentTurnIndex = starter ? this.participants.indexOf(starter) : 0;
         this.phase = 'roll';
         this.currentRoll = null;
         this.currentRollOwn = null;
         this.currentRollNeutral = null;
+    }
+
+    _now() {
+        const value = Number(this.now?.());
+        return Number.isFinite(value) ? value : Date.now();
+    }
+
+    _activePlayers() { return this.players.filter(player => player.isOnline); }
+
+    _onlinePlayerAtOrAfter(index) {
+        if (!this.players.length) return null;
+        const start = ((Number(index) || 0) % this.players.length + this.players.length) % this.players.length;
+        for (let offset = 0; offset < this.players.length; offset += 1) {
+            const player = this.players[(start + offset) % this.players.length];
+            if (player?.isOnline) return player;
+        }
+        return null;
+    }
+
+    _currentOnlinePlayer() {
+        const current = this._currentParticipant();
+        return current && !current.isNeutral && current.isOnline ? current : null;
     }
 
     handleAction(playerId, action = {}) {
@@ -200,13 +290,18 @@ class LasVegasEngine {
         return this._success(this.status === 'ended' ? '本轮结算完成' : '骰子已放置');
     }
 
-    _advanceTurnIndex() { this.currentTurnIndex = (this.currentTurnIndex + 1) % this.participants.length; }
+    _advanceTurnIndex() {
+        if (!this.participants.length) return;
+        this.currentTurnIndex = (this.currentTurnIndex + 1) % this.participants.length;
+    }
 
     _advanceToAction() {
         while (this.status === 'playing') {
-            if (this.players.every(player => player.diceRemaining === 0 && (player.neutralDiceRemaining || 0) === 0)) { this._settleRound(); return; }
+            const activePlayers = this._activePlayers();
+            if (activePlayers.length < 2) { this._finishByDeparture(); return; }
+            if (activePlayers.every(player => player.diceRemaining === 0 && (player.neutralDiceRemaining || 0) === 0)) { this._settleRound(); return; }
             const current = this._currentParticipant();
-            if (!current || current.isNeutral || current.diceRemaining + (current.neutralDiceRemaining || 0) === 0) { this._advanceTurnIndex(); continue; }
+            if (!current || current.isNeutral || !current.isOnline || current.diceRemaining + (current.neutralDiceRemaining || 0) === 0) { this._advanceTurnIndex(); continue; }
             this.phase = 'roll';
             return;
         }
@@ -303,14 +398,18 @@ class LasVegasEngine {
         if (this.round >= ROUNDS) {
             const standings = this._standings();
             const best = standings[0] || { money: 0, banknoteCount: 0 };
-            this.winners = this.players.filter(player => player.money === best.money && player.banknotes.length === best.banknoteCount);
+            this.winners = this._activePlayers().filter(player => player.money === best.money && player.banknotes.length === best.banknoteCount);
             this.winner = this.winners[0] || null;
+            this.endReason = 'rounds';
+            this.outcome = 'completed';
             this.status = 'ended'; this.phase = 'ended';
             this._appendPresentationEvent({
                 kind: 'finalSettlement',
                 round: settlingRound,
+                reason: 'rounds',
+                outcome: 'completed',
                 standings,
-            winnerIds: this.winners.map(player => player.id),
+                winnerIds: this.winners.map(player => player.id),
                 roundHistory: this.roundHistory.map(entry => ({
                     round: entry.round,
                     players: entry.players.map(player => ({ id: player.id, name: player.name, color: player.color, gained: player.gained, money: player.money, banknoteCount: player.banknoteCount })),
@@ -323,7 +422,8 @@ class LasVegasEngine {
         const completedRound = this.round;
         this.round += 1;
         this.startPlayerIndex = (this.startPlayerIndex + 1) % this.players.length;
-        const nextStarter = this.players[this.startPlayerIndex];
+        const nextStarter = this._onlinePlayerAtOrAfter(this.startPlayerIndex);
+        if (nextStarter) this.startPlayerIndex = this.players.indexOf(nextStarter);
         this._appendPresentationEvent({ kind: 'roundTransition', completedRound, nextRound: this.round, nextStarterId: nextStarter?.id || null, nextStarterName: nextStarter?.name || '' });
         this._startRound();
         this._appendPresentationEvent({
@@ -341,55 +441,197 @@ class LasVegasEngine {
     handlePlayerLeave(playerId) {
         const player = this.playerMap[playerId];
         if (!player || !player.isOnline) return { success: false, message: '玩家不存在或已经离开' };
+        const phaseBefore = this.phase;
+        const wasCurrent = this._currentParticipant()?.id === playerId;
         player.isOnline = false;
-        if (this.status === 'playing' && this.players.filter(item => item.isOnline).length <= 1) {
-            this.status = 'ended'; this.phase = 'ended'; this.winner = this.players.find(item => item.isOnline) || null; this.winners = this.winner ? [this.winner] : [];
-        } else if (this.status === 'playing' && this._currentParticipant()?.id === playerId) { this._advanceTurnIndex(); this._advanceToAction(); }
+        // A permanent departure forfeits unplaced dice and removes the
+        // departing player's own dice from the public casino stacks.  Neutral
+        // dice already placed remain public; unrolled neutral assignments are
+        // discarded and redistributed on the next round.
+        for (const casino of this.casinos) delete casino.dice[playerId];
+        if (this.neutral) this.neutral.diceRemaining = Math.max(0, this.neutral.diceRemaining - (player.neutralDiceRemaining || 0));
+        player.diceRemaining = 0;
+        player.neutralDiceRemaining = 0;
+        player.roll = [];
+        player.placed = {};
+        if (wasCurrent) {
+            this.currentRoll = null;
+            this.currentRollOwn = null;
+            this.currentRollNeutral = null;
+        }
         this._log(`${player.name} 离开了赌场`);
+        if (this.status !== 'playing') return this._success(`${player.name} 已离开`);
+
+        this._startPresentation(player.id, 'playerLeave');
+        this._appendPresentationEvent({
+            kind: 'playerLeft',
+            playerId: player.id,
+            playerName: player.name,
+            phase: phaseBefore,
+            wasCurrent,
+            remainingPlayerCount: this._activePlayers().length,
+        });
+        if (this._activePlayers().length < 2) {
+            this._finishByDeparture();
+            return this._success(`${player.name} 离开后，赌场结束营业`);
+        }
+        if (wasCurrent) {
+            this._advanceTurnIndex();
+            this._advanceToAction();
+        }
+        this._finishPresentation();
         return this._success(`${player.name} 已离开`);
+    }
+
+    _finishByDeparture() {
+        const active = this._activePlayers();
+        const standings = this._standings();
+        const best = standings[0] || null;
+        this.winners = best ? active.filter(player => player.money === best.money && player.banknotes.length === best.banknoteCount) : [];
+        this.winner = this.winners[0] || null;
+        this.status = 'ended';
+        this.phase = 'ended';
+        this.endReason = 'players';
+        this.outcome = 'lastPlayerStanding';
+        if (!this.presentation || this.presentation.resolved) this._startPresentation(null, 'playerLeave');
+        this._appendPresentationEvent({
+            kind: 'finalSettlement',
+            forced: true,
+            reason: 'players',
+            outcome: 'lastPlayerStanding',
+            standings,
+            winnerIds: this.winners.map(player => player.id),
+        });
+        this._finishPresentation();
+        this._log(`${this.winners.map(player => player.name).join('、') || '无人'} 在离场收束中获胜`);
     }
 
     _currentParticipant() { return this.participants[this.currentTurnIndex] || null; }
     _publicCasino(casino) { return { face: casino.face, money: casino.money.slice(), dice: { ...casino.dice } }; }
-    _publicPlayer(player) { return { id: player.id, name: player.name, color: player.color, money: player.money, banknoteCount: player.banknotes?.length || 0, diceRemaining: player.diceRemaining, neutralDiceRemaining: player.neutralDiceRemaining || 0, placedCount: DICE_PER_PLAYER - player.diceRemaining, isOnline: player.isOnline, isNeutral: Boolean(player.isNeutral) }; }
+    _publicPlayer(player) { return { id: player.id, name: player.name, color: player.color, money: player.money, banknoteCount: player.banknotes?.length || 0, diceRemaining: player.diceRemaining, neutralDiceRemaining: player.neutralDiceRemaining || 0, placedCount: Object.values(player.placed || {}).reduce((sum, count) => sum + Number(count || 0), 0), isOnline: player.isOnline, isNeutral: Boolean(player.isNeutral) }; }
     getPublicState() {
         const current = this._currentParticipant();
-        return { roomId: this.roomId, status: this.status, phase: this.phase, round: this.round, maxRounds: ROUNDS, rules: { players: '2–5', casinos: 6, dicePerPlayer: 8, casinoMinimum: 50, tie: '并列最高者不拿该张，下一位非并列最高者拿最高剩余钞票', twoPlayerNeutral: '2 人每人 4 枚中立骰；3–4 人每人 2 枚，3 人起始玩家另掷 2 枚', moneyDeck: 54 }, currentTurn: current?.isNeutral ? null : current?.id || null, currentTurnName: current?.isNeutral ? null : current?.name || null, currentRoll: this.phase === 'place' ? this.currentRoll?.slice() : null, currentRollOwn: this.phase === 'place' ? this.currentRollOwn?.slice() : null, currentRollNeutral: this.phase === 'place' ? this.currentRollNeutral?.slice() : null, casinos: this.casinos.map(casino => this._publicCasino(casino)), players: this.players.map(player => this._publicPlayer(player)), neutral: this.neutral ? this._publicPlayer(this.neutral) : null, moneyDeckCount: this.moneyDeck.length, lastPayouts: this.lastPayouts.map(item => ({ ...item })), roundHistory: this.roundHistory.map(entry => ({ round: entry.round, players: entry.players.map(player => ({ ...player })) })), presentation: clone(this.presentation), actionLog: this.actionLog.slice(-18), winner: this.winner ? { id: this.winner.id, name: this.winner.name, money: this.winner.money, banknoteCount: this.winner.banknotes.length } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, money: player.money, banknoteCount: player.banknotes.length })) };
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
+        return { roomId: this.roomId, status: this.status, phase: this.phase, round: this.round, maxRounds: ROUNDS, rules: { players: '2–5', casinos: 6, dicePerPlayer: 8, casinoMinimum: 50, tie: '并列最高者不拿该张，下一位非并列最高者拿最高剩余钞票', twoPlayerNeutral: '2 人每人 4 枚中立骰；3–4 人每人 2 枚，3 人起始玩家另掷 2 枚', moneyDeck: 54 }, currentTurn: current?.isNeutral || !current?.isOnline ? null : current?.id || null, currentTurnName: current?.isNeutral || !current?.isOnline ? null : current?.name || null, currentRoll: this.phase === 'place' ? this.currentRoll?.slice() : null, currentRollOwn: this.phase === 'place' ? this.currentRollOwn?.slice() : null, currentRollNeutral: this.phase === 'place' ? this.currentRollNeutral?.slice() : null, casinos: this.casinos.map(casino => this._publicCasino(casino)), players: this.players.map(player => this._publicPlayer(player)), neutral: this.neutral ? this._publicPlayer(this.neutral) : null, moneyDeckCount: this.moneyDeck.length, lastPayouts: this.lastPayouts.map(item => ({ ...item })), roundHistory: this.roundHistory.map(entry => ({ round: entry.round, players: entry.players.map(player => ({ ...player })) })), serverNow, presentation, presentations, actionLog: this.actionLog.slice(-18), winner: this.winner ? { id: this.winner.id, name: this.winner.name, money: this.winner.money, banknoteCount: this.winner.banknotes.length } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, money: player.money, banknoteCount: player.banknotes.length })) };
     }
 
     getPlayerState(playerId) {
         const state = this.getPublicState();
+        const player = this.playerMap[playerId];
         state.myId = playerId;
-        state.myTurn = this._currentParticipant()?.id === playerId;
+        state.myTurn = Boolean(player?.isOnline && this._currentParticipant()?.id === playerId);
         state.availableActions = { canRoll: Boolean(state.myTurn && this.phase === 'roll'), canPlace: Boolean(state.myTurn && this.phase === 'place'), canPlaceFaces: state.myTurn && this.phase === 'place' ? [...new Set(this.currentRoll)] : [] };
+        state.presentation = this._projectPresentation(state.presentation, player);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, player));
         return state;
     }
 
-    _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null }; }
+    _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, money: player.money, banknoteCount: player.banknotes.length })) }; }
     _standings() {
-        return this.players.map(player => ({ id: player.id, name: player.name, color: player.color, money: player.money, banknoteCount: player.banknotes.length })).sort((left, right) => right.money - left.money || right.banknoteCount - left.banknoteCount);
+        return this._activePlayers().map(player => ({ id: player.id, name: player.name, color: player.color, money: player.money, banknoteCount: player.banknotes.length })).sort((left, right) => right.money - left.money || right.banknoteCount - left.banknoteCount);
     }
-    _startPresentation(actorId, action, firstEvent) {
+
+    _startPresentation(actorId, action, firstEvent = null, privateByPlayer = null) {
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
         this.presentation = {
             sequence: ++this.presentationSequence,
+            transactionId: this.presentationSequence,
             actorId,
             action,
-            resolved: false,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
             events: [],
+            resolved: false,
+            ended: false,
+            endReason: null,
+            outcome: null,
+            nextPhase: null,
+            nextPlayerId: null,
+            winner: null,
         };
+        this.presentationQueue.push(this.presentation);
+        if (privateByPlayer) this.presentationPrivate[this.presentation.sequence] = clone(privateByPlayer);
         if (firstEvent) this._appendPresentationEvent(firstEvent);
+        return this.presentation;
     }
-    _appendPresentationEvent(event) {
+
+    _appendPresentationEvent(event, privateByPlayer = null) {
         if (!this.presentation || this.presentation.resolved) this._startPresentation(event.actorId || null, event.kind || 'system');
-        this.presentation.events.push({ sequence: ++this.presentationEventSequence, ...clone(event) });
+        const now = this._now();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || now;
+        const startedAt = Math.max(now, previousEnd);
+        const segments = presentationSegments(event.kind, event, startedAt);
+        const contentDurationMs = segments?.length ? segments.at(-1).endsAt - startedAt : presentationContentDuration(event.kind, event);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const sequence = ++this.presentationEventSequence;
+        const eventId = sequence;
+        const entry = { ...clone(event), sequence, eventId, startedAt, endsAt: startedAt + durationMs, durationMs, contentDurationMs };
+        if (segments?.length) entry.segments = segments;
+        this.presentation.events.push(entry);
+        this.presentation.endsAt = entry.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        if (privateByPlayer) {
+            this.presentationPrivate[this.presentation.sequence] ||= {};
+            Object.assign(this.presentationPrivate[this.presentation.sequence], clone(privateByPlayer));
+        }
+        return entry;
     }
-    _finishPresentation() { if (this.presentation) this.presentation.resolved = true; }
+
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this.presentation.resolved = true;
+        this.presentation.ended = this.status === 'ended';
+        this.presentation.endReason = this.endReason || null;
+        this.presentation.outcome = this.outcome || null;
+        this.presentation.nextPhase = this.phase;
+        this.presentation.nextPlayerId = this.status === 'playing' ? this._currentOnlinePlayer()?.id || null : null;
+        this.presentation.winner = this.winner ? { id: this.winner.id, name: this.winner.name, money: this.winner.money, banknoteCount: this.winner.banknotes.length } : null;
+    }
+
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        const viewerId = String(player?.id ?? '');
+        if (event.kind === 'playerLeft' && String(event.playerId) === viewerId) {
+            projected.viewerVariant = 'personalDeparture';
+            projected.title = '您已离开本局';
+            projected.detail = '您的座位已退出，其他玩家将继续完成结算。';
+        }
+        if (event.kind === 'finalSettlement' && (event.winnerIds || []).map(String).includes(viewerId)) {
+            const tied = (event.winnerIds || []).length > 1;
+            projected.viewerVariant = 'personalVictory';
+            projected.title = tied ? '您已并列获胜' : '您已获胜';
+            projected.detail = tied ? '您与其他玩家共享本局最终胜利。' : '您以最高现金完成了四轮赌场结算。';
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
+    }
     _log(message) { this.actionLog.push(message); }
     _shuffle(values) { const result = values.slice(); for (let index = result.length - 1; index > 0; index -= 1) { const other = Math.floor(this.random() * (index + 1)); [result[index], result[other]] = [result[other], result[index]]; } return result; }
-    getWinner() { return this.winner ? { id: this.winner.id, name: this.winner.name, money: this.winner.money } : null; }
+    getWinner() { return this.winner ? { id: this.winner.id, name: this.winner.name, money: this.winner.money, banknoteCount: this.winner.banknotes.length, shared: this.winners.length > 1, winners: this.winners.map(player => ({ id: player.id, name: player.name, money: player.money, banknoteCount: player.banknotes.length })) } : null; }
 }
 
 module.exports = LasVegasEngine;
 module.exports.buildMoneyDeck = buildMoneyDeck;
 module.exports.ROUNDS = ROUNDS;
 module.exports.DICE_PER_PLAYER = DICE_PER_PLAYER;
+module.exports.PRESENTATION_FADE_MS = PRESENTATION_FADE_MS;
+module.exports.PRESENTATION_CONTENT_DURATIONS = PRESENTATION_CONTENT_DURATIONS;

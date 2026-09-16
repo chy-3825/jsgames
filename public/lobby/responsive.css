@@ -1,0 +1,105 @@
+/* Lobby, room-shell and mobile responsive overrides. */
+
+@media (max-width: 1080px) {
+    .lobby-shell { width: min(940px, calc(100% - 32px)); }
+    .lobby-layout { grid-template-columns: minmax(0, 1fr) 285px; gap: 20px; }
+    .game-catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+    .lobby-entry { padding: 0 14px 28px; }
+    .entry-header { min-height: 66px; }.entry-header strong { font-size: 16px; }.entry-connection { font-size: 8px; }
+    .entry-shell { grid-template-columns: 1fr; gap: 28px; min-height: auto; padding: 36px 0 18px; }
+    .entry-eyebrow { font-size: 8px; }.entry-intro h1 { margin: 15px 0 15px; font-size: clamp(39px, 12vw, 52px); }.entry-intro > p { font-size: 11px; line-height: 1.75; }
+    .entry-identity { margin-top: 22px; padding: 10px; }.entry-avatar { width: 41px; height: 41px; }.entry-identity small { overflow: hidden; max-width: 220px; text-overflow: ellipsis; white-space: nowrap; }
+    .entry-routes { gap: 9px; padding: 10px; border-radius: 19px; }
+    .entry-route { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; min-height: 105px; padding: 15px 13px; border-radius: 14px; }.entry-route strong { font-size: 23px; }.entry-route em { font-size: 8px; }.entry-route > i { font-size: 21px; }
+    .entry-join-panel { padding: 13px 12px 10px; }.entry-join-panel input { padding: 10px; font-size: 13px; }.entry-join-panel button { padding: 9px 11px; }
+    .entry-routes > footer { padding: 5px 0 2px; }
+    .site-header { grid-template-columns: 1fr auto; min-height: 67px; padding: 0 17px; }.top-nav { display: none; }.header-tools { gap: 8px; }.connection-status { display: inline-flex; padding: 4px 7px; font-size: 8px; }
+    .lobby-shell { width: min(100% - 28px, 580px); gap: 30px; padding-top: 35px; }.lobby-hero { display: grid; align-items: start; gap: 23px; }.hero-actions { width: 100%; }.hero-copy h1 { font-size: 42px; }.hero-copy p { font-size: 12px; }
+    .lobby-layout { grid-template-columns: 1fr; }.catalog-column { order: 1; }.lobby-sidebar { order: 2; }.current-room-panel { order: -1; }.rooms-card { display: none; }.game-catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }.game-symbol { font-size: 38px; }.game-card-body { padding: 11px; }.game-card-title h3 { font-size: 15px; }.game-card-title p { font-size: 10px; }.game-card-meta { font-size: 10px; }.game-mode-badge { font-size: 9px; }.catalog-footer { align-items: stretch; flex-direction: column; }
+    .mobile-open-rooms { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 11px 13px; border: 1px solid rgba(189,138,69,.31); border-radius: 13px; background: #fff9eb; color: var(--navy); box-shadow: 0 7px 25px rgba(35,52,54,.05); text-align: left; }
+    .mobile-open-rooms > span { display: grid; gap: 3px; }.mobile-open-rooms b { font-size: 11px; }.mobile-open-rooms small { color: #84918d; font-size: 8px; }.mobile-open-rooms i { color: var(--gold); font-size: 18px; font-style: normal; }
+    .is-game-view .room-page-header { padding-right: max(8px, var(--safe-area-right)); padding-left: max(8px, var(--safe-area-left)); }
+    .is-game-view .room-page-title { max-width: 42vw; }
+    .is-game-view .room-page-title span { font-size: 13px; }
+    .is-game-view .back-button { gap: 5px; padding-inline: 4px; font-size: 10px; }
+    .room-info-button { width: 40px; min-width: 40px; padding: 0; }.room-info-button b { display: none; }
+    .is-waiting-room-view .room-page-header { min-height: 58px; padding: 0 13px; }.is-waiting-room-view .room-page-title span { max-width: 160px; overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }.is-waiting-room-view .back-button span:last-child { display: none; }
+    .pregame-room { min-height: 100dvh; padding: 73px 8px max(96px, calc(76px + env(safe-area-inset-bottom))); }
+    .pregame-backdrop { background-position: center top; }
+    .pregame-stage { width: calc(100% - 4px); height: min(570px, calc(100dvh - 156px)); min-height: 500px; }
+    .pregame-table { width: 69%; height: 37%; }
+    .pregame-seat,
+    .pregame-stage[data-seat-count="9"] .pregame-seat,
+    .pregame-stage[data-seat-count="10"] .pregame-seat,
+    .pregame-stage[data-seat-count="11"] .pregame-seat,
+    .pregame-stage[data-seat-count="12"] .pregame-seat { grid-template-columns: 32px minmax(0, 1fr); gap: 5px; width: 91px; min-height: 44px; padding: 5px; border-radius: 10px; }
+    .pregame-avatar,
+    .pregame-stage[data-seat-count="9"] .pregame-avatar,
+    .pregame-stage[data-seat-count="10"] .pregame-avatar,
+    .pregame-stage[data-seat-count="11"] .pregame-avatar,
+    .pregame-stage[data-seat-count="12"] .pregame-avatar { width: 31px; height: 31px; font-size: 12px; }
+    .pregame-seat-copy strong { font-size: 8px; }.pregame-seat-copy small { font-size: 7px; }.pregame-seat > b { display: none; }.pregame-chair { bottom: -6px; height: 9px; }.pregame-seat.is-host .pregame-avatar::after { top: -6px; left: 22px; width: 14px; height: 14px; font-size: 7px; }
+    .pregame-room-footer { margin-top: -4px; padding: 10px 8px 0; }.pregame-room-footer > div:last-child > span { display: none; }.pregame-resource-state small { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .room-info-dialog { padding: 23px 17px 16px; }.room-info-list > div { grid-template-columns: 65px minmax(0, 1fr); gap: 8px; }.room-info-list dd { font-size: 10px; }
+    .pregame-room > .room-configuration { margin: -245px auto 105px; }
+    .join-lobby-view { overflow: visible; }
+    .join-lobby-header { grid-template-columns: 1fr auto; min-height: 67px; padding: 0 17px; }
+    .join-lobby-header .header-tools { display: none; }
+    .join-lobby-nav { gap: 9px; }
+    .join-lobby-nav-button { font-size: 8px; }
+    .join-lobby-nav-active { display: none; }
+    .join-lobby-start-button { padding: 8px 10px; font-size: 8px; }
+    .join-lobby-shell { width: calc(100% - 28px); padding: 35px 0 30px; }
+    .join-lobby-hero { grid-template-columns: 1fr; gap: 25px; padding-bottom: 38px; }
+    .join-lobby-copy h1 { margin: 13px 0 14px; font-size: clamp(39px, 12vw, 52px); }
+    .join-lobby-copy p { font-size: 11px; line-height: 1.75; }
+    .join-lobby-code-card { padding: 21px 18px; border-radius: 17px; }
+    .join-lobby-code-card h2 { font-size: 22px; }
+    .join-lobby-code-row input { padding: 12px 11px; font-size: 17px; }
+    .join-lobby-code-row button { padding: 11px 12px; }
+    .join-lobby-tables { padding-top: 28px; }
+    .join-lobby-section-header h2 { font-size: 27px; }
+    .join-lobby-section-header p { max-width: 230px; line-height: 1.5; }
+    .join-lobby-table-count strong { font-size: 27px; }
+    .join-lobby-toolbar { align-items: stretch; flex-direction: column; gap: 10px; margin-top: 19px; }
+    .join-lobby-toolbar label { justify-content: space-between; }
+    .join-lobby-toolbar select { flex: 1; max-width: 190px; }
+    .join-room-list { grid-template-columns: 1fr; gap: 10px; }
+    .join-room-list .room-item { min-height: 108px; }
+    .join-lobby-footer { align-items: center; flex-direction: column; gap: 3px; margin-top: 27px; }
+}
+@media (max-width: 430px) { .game-catalog { grid-template-columns: 1fr; }.game-card { display: block; }.game-card-art { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.13); }.game-card-body { display: grid; align-content: center; }.hero-copy h1 { font-size: 37px; }.lobby-shell { width: calc(100% - 22px); }.profile-card, .invite-card { padding: 9px; } }
+@media (prefers-reduced-motion: reduce) {
+    body.is-entry-view .lobby-entry,
+    body.is-entry-view .lobby-entry::before,
+    body.is-entry-view .lobby-entry::after,
+    body.is-entry-view .entry-atmosphere,
+    body.is-entry-view .entry-atmosphere i,
+    body.is-entry-view .entry-header,
+    body.is-entry-view .entry-intro,
+    body.is-entry-view .entry-routes,
+    body.is-entry-view .entry-routes > *,
+    .lobby-entry.is-exiting,
+    body.is-entry-view.is-entry-returning .lobby-entry,
+    .game-card.is-revealing,
+    [data-card-art],
+    .room-item-art[data-card-art]::before,
+    .room-item-art[data-card-art]::after,
+    .game-card-art[data-card-art]::before,
+    .game-card-art[data-card-art]::after,
+    .create-room-dialog,
+    .create-room-shell,
+    .create-room-track { animation: none !important; transition: none !important; }
+    body.is-entry-view .lobby-entry::before,
+    body.is-entry-view .lobby-entry::after,
+    body.is-entry-view .entry-atmosphere,
+    body.is-entry-view .entry-header,
+    body.is-entry-view .entry-intro,
+    body.is-entry-view .entry-routes,
+    body.is-entry-view .entry-routes > *,
+    .game-card.is-reveal-pending,
+    .game-card.is-revealing,
+    [data-card-art].is-art-ready { opacity: 1; transform: none; filter: none; }
+}

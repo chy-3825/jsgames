@@ -4,6 +4,8 @@ export function createCoupModel() {
     return {
         state: null,
         pendingAction: null,
+        submitting: false,
+        hoveredActionKind: null,
         selectedTarget: null,
         exchangeOpen: false,
         exchangeMode: null,
@@ -19,11 +21,41 @@ export function createCoupModel() {
         scenePlaying: false,
         sceneToken: 0,
         sceneQueue: [],
-        privateIdentityVisible: false,
-        identityRevealPointerId: null,
-        identityRevealKey: null,
-        identityRevealElement: null,
         sceneWaiters: new Set(),
+        // Server-timed public broadcasts.  `sceneQueue` remains as a
+        // compatibility buffer for older local scene callers, while these
+        // fields drive the authoritative FIFO timeline.
+        presentationQueue: [],
+        presentationPlaying: false,
+        presentationToken: 0,
+        lastPresentationSequence: 0,
+        presentationEventIds: new Set(),
+        presentationWaiters: new Set(),
+        presentationLockedUntil: 0,
+        presentationSkipCurrent: false,
+        presentationEvent: null,
+    };
+}
+
+/** Translate server absolute deadlines to this browser's clock. */
+export function localizePresentation(batch, localNow = Date.now()) {
+    if (!batch?.events?.length) return null;
+    const serverNow = Number(batch.serverNow);
+    const batchEnd = Number(batch.endsAt);
+    if (!Number.isFinite(serverNow) || !Number.isFinite(batchEnd)) return batch;
+    if (batchEnd <= serverNow) return null;
+    const toLocalTime = value => Number.isFinite(Number(value))
+        ? localNow + (Number(value) - serverNow)
+        : value;
+    return {
+        ...batch,
+        startedAt: toLocalTime(batch.startedAt),
+        endsAt: toLocalTime(batch.endsAt),
+        events: batch.events.map(event => ({
+            ...event,
+            startedAt: toLocalTime(event.startedAt),
+            endsAt: toLocalTime(event.endsAt),
+        })),
     };
 }
 
@@ -67,12 +99,12 @@ export function firstCharacter(value) {
 }
 
 export function revealReason(reason) {
-    if (reason === 'coup') return '政变迫使其公开一张影响力。';
-    if (reason === 'assassination') return '暗杀结算，必须失去一张影响力。';
-    if (reason === 'challenge_failed') return '质疑失败，质疑者承担代价。';
-    if (reason === 'challenge_success') return '角色声明未能得到证明。';
+    if (reason === 'coup') return '因政变失去一张影响力。';
+    if (reason === 'assassination') return '暗杀结算，失去一张影响力。';
+    if (reason === 'challenge_failed') return '质疑失败，失去一张影响力。';
+    if (reason === 'challenge_success') return '声明未通过，失去一张影响力。';
     if (reason === 'left') return '玩家离开了本局。';
-    return '一张隐藏影响力已经公开。';
+    return '一张影响力已揭示。';
 }
 
 export function currentDecisionKey(value) {

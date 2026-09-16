@@ -13,11 +13,13 @@
     "test:lint": "eslint .",
     "test:type": "tsc -p tsconfig.check.json",
     "test:coverage": "c8 --reporter=text-summary --reporter=lcov --check-coverage --lines=60 --functions=60 --branches=45 --statements=60 npm test",
+    "test:presentation": "node scripts/presentation-event-audit.js",
     "test:complexity": "node scripts/complexity-audit.js",
     "test:reports": "node scripts/report-audit.js",
     "test:release": "node scripts/release-audit.js",
     "test:deploy": "node scripts/deployment-smoke.js",
-    "test:acceptance": "node scripts/acceptance-gate.js"
+    "test:acceptance": "node scripts/acceptance-gate.js",
+    "package:preview": "node scripts/package-preview.js"
   },
   "dependencies": {
     "debug": "~2.6.9",
@@ -32,5 +34,8 @@
     "eslint": "^9.39.5",
     "globals": "^15.15.0",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "qs": "6.16.0"
   }
 }

@@ -3,7 +3,7 @@ import { createClientScope } from '../common/lifecycle.js';
 import { createModalController } from '../common/modal.js';
 import { loadStyles } from '../common/style-loader.js';
 import { createDecryptoActions } from './actions.js';
-import { createDecryptoModel } from './state.js';
+import { createDecryptoModel, localizePresentation } from './state.js';
 import { createDecryptoTemplate } from './template.js';
 import { createDecryptoRenderer } from './render.js';
 import { createDecryptoScene } from './scene.js';
@@ -21,8 +21,18 @@ export function createGameClient({ mount, send, addLog }) {
     const app = mount.querySelector('.decrypto-app');
     const rulesModal = createModalController({ root: app, overlay: getElement('rulesOverlay'), documentRef, windowRef, fallbackFocus: () => mount.querySelector('[data-ui="rules"]') });
     const renderer = createDecryptoRenderer({ mount, model, getElement });
-    const scene = createDecryptoScene({ getElement, model, windowRef });
-    const actions = createDecryptoActions({ mount, model, renderer, scene, rulesModal, send, documentRef, windowRef });
+    let actions;
+    const scene = createDecryptoScene({
+        getElement,
+        model,
+        windowRef,
+        renderer,
+        onPresentationStart: () => {
+            actions?.concealPrivateInformation?.();
+            if (model.activeOverlay) actions?.closeOverlay?.(model.activeOverlay, false);
+        },
+    });
+    actions = createDecryptoActions({ mount, model, renderer, scene, rulesModal, send, documentRef, windowRef });
     mount.addEventListener('click', actions.handleClick, { signal: scope.signal });
     mount.addEventListener('input', actions.handleInput, { signal: scope.signal });
     mount.addEventListener('submit', actions.handleSubmit, { signal: scope.signal });
@@ -37,10 +47,38 @@ export function createGameClient({ mount, send, addLog }) {
     function handleMessage(message) {
         if (message.state) {
             const previous = model.state;
+            actions.concealPrivateInformation();
             model.state = message.state;
+            const hasServerTimeline = Array.isArray(model.state.presentations) || Boolean(model.state.presentation);
+            if (hasServerTimeline) {
+                const presentation = model.state.presentation;
+                const presentations = model.state.presentations?.length
+                    ? model.state.presentations
+                    : presentation
+                        ? [presentation]
+                        : [];
+                const localNow = Date.now();
+                for (const batch of presentations.slice().sort((left, right) => Number(left.sequence) - Number(right.sequence))) {
+                    const sequence = Number(batch.sequence) || 0;
+                    if (sequence) model.lastPresentationSequence = Math.max(model.lastPresentationSequence, sequence);
+                    const localized = localizePresentation(batch, localNow);
+                    if (!localized) continue;
+                    const freshEvents = localized.events.filter(event => {
+                        const key = String(event.eventId ?? `${sequence}:${event.sequence ?? ''}:${event.kind}:${event.startedAt}`);
+                        if (model.presentationEventIds.has(key)) return false;
+                        model.presentationEventIds.add(key);
+                        return true;
+                    });
+                    if (freshEvents.length) scene.enqueuePresentation({ ...localized, events: freshEvents });
+                }
+            }
             renderer.render();
-            const scenes = scene.transitionScenes(previous, model.state);
-            if (scenes.length) scene.playScenes(scenes);
+            // Keep the old state-diff scenes only for servers that predate the
+            // authoritative presentation protocol.
+            if (!hasServerTimeline) {
+                const scenes = scene.transitionScenes(previous, model.state);
+                if (scenes.length) scene.playScenes(scenes);
+            }
             if (actions.shouldShowTutorial()) { model.tutorialOpened = true; actions.openOverlay(getElement('tutorialOverlay')); }
         }
         if (message.type === 'error') addLog?.(message.message || '操作失败', 'error');

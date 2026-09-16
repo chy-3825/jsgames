@@ -124,8 +124,11 @@ function resolveStops(racer) {
                 kind: 'eliminationThreatened', source: this._publicRacer(racer), victim: this._publicRacer(victim),
                 position: racer.position, targetPlayerId: victim.playerId,
             });
+            const createdAt = Number(warning.startedAt) || this._now();
+            const deadlineAt = (Number(warning.endsAt) || createdAt) + 8000;
             this.pendingAcknowledgements.push({
-                id: `elimination-${warning.sequence}`, eventSequence: warning.sequence,
+                id: `elimination-${warning.eventId || warning.sequence}`, eventSequence: warning.eventId || warning.sequence,
+                createdAt, deadlineAt,
                 playerId: victim.playerId, playerName: this.playerMap[victim.playerId]?.name || '',
                 racerId: victim.id, athleteId: victim.athleteId, athleteName: this._athlete(victim.athleteId)?.name || victim.athleteId,
                 sourceRacerId: racer.id, sourceAthleteName: this._athlete(racer.athleteId)?.name || racer.athleteId,

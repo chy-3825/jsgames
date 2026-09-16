@@ -291,7 +291,7 @@ test('Monopoly Deal keeps same-colour property sets independent and never overfi
     assert.equal(game._completedSets(player), 1, '同色两组也只计一种胜利颜色');
 });
 
-test('Monopoly Deal attaches real building cards, banks them when their set breaks, and never duplicates them', () => {
+test('Monopoly Deal locks built property groups against manual splitting without duplicating buildings', () => {
     const game = new MonopolyDealEngine('deal-real-buildings', players(['a', 'b'])); game.start();
     const player = game.players[0]; game.phase = 'play'; game.currentTurnIndex = 0; game.cardsPlayed = 0;
     player.properties.brown = [
@@ -303,12 +303,16 @@ test('Monopoly Deal attaches real building cards, banks them when their set brea
         { id: 'hotel-card', kind: 'action', action: 'hotel', value: 4, name: '酒店' },
     ];
     assert.equal(game.handleAction('a', { kind: 'playCard', cardIndex: 0, color: 'brown', groupId: 'brown-set' }).success, true);
+    assert.equal(game.handleAction('a', { kind: 'moveProperty', cardId: 'brown-wild', fromColor: 'brown', fromGroupId: 'brown-set', toColor: 'lightblue', toGroupId: 'new' }).success, false, '房子建成后立即锁组');
     assert.equal(game.handleAction('a', { kind: 'playCard', cardIndex: 0, color: 'brown', groupId: 'brown-set' }).success, true);
     assert.equal(game.discard.some(card => ['house-card', 'hotel-card'].includes(card.id)), false, '已建设的建筑不应同时进弃牌堆');
-    assert.equal(game.handleAction('a', { kind: 'moveProperty', cardId: 'brown-wild', fromColor: 'brown', fromGroupId: 'brown-set', toColor: 'lightblue', toGroupId: 'new' }).success, true);
-    assert.deepEqual(player.bank.filter(card => ['house-card', 'hotel-card'].includes(card.id)).map(card => card.id), ['house-card', 'hotel-card']);
+    assert.equal(game.handleAction('a', { kind: 'moveProperty', cardId: 'brown-wild', fromColor: 'brown', fromGroupId: 'brown-set', toColor: 'lightblue', toGroupId: 'new' }).success, false);
+    assert.deepEqual(player.bank.filter(card => ['house-card', 'hotel-card'].includes(card.id)).map(card => card.id), []);
     assert.equal(game.discard.some(card => ['house-card', 'hotel-card'].includes(card.id)), false);
-    assert.equal(game.players[0].buildings['brown-set'], undefined);
+    assert.equal(game.players[0].buildings['brown-set'].house.id, 'house-card');
+    assert.equal(game.players[0].buildings['brown-set'].hotel.id, 'hotel-card');
+    assert.equal(player.properties.brown.length, 2);
+    assert.equal(player.properties.lightblue.length, 0);
 });
 
 test('Monopoly Deal does not let attached buildings be selected as debt payment', () => {

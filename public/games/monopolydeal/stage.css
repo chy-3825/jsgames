@@ -1,0 +1,177 @@
+/* One canonical central action stage for hover, selection, recent play and
+   public interactions. */
+/* A stable divider separates card art from its rules. */
+.deal-card-preview,
+.deal-public-interaction {
+    grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
+    grid-template-rows: auto 1fr auto;
+    width: 100%;
+    max-width: none;
+    min-height: 180px;
+    margin: 0;
+    gap: 4px 0;
+}
+.deal-preview-label {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 16px;
+    gap: 10px;
+    padding: 0;
+    color: #b99560;
+    font-size: 9px;
+    letter-spacing: .24em;
+    line-height: 1;
+    text-align: center;
+}
+.deal-preview-label::before,
+.deal-preview-label::after {
+    display: block;
+    width: clamp(24px, 7vw, 78px);
+    height: 1px;
+    flex: 0 1 auto;
+    background: linear-gradient(90deg, transparent, rgba(217, 183, 118, .35));
+    content: "";
+}
+.deal-preview-label::after { transform: scaleX(-1); }
+.deal-preview-card-shell,
+.deal-public-card-stack {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-height: 150px;
+    justify-self: stretch;
+    box-sizing: border-box;
+    padding-right: 12px;
+    place-items: center end;
+}
+.deal-card-preview .deal-preview-card,
+.deal-main-public-card {
+    width: 104px;
+    height: 150px;
+    min-width: 104px;
+    flex-basis: 104px;
+}
+.deal-preview-copy,
+.deal-public-copy {
+    display: grid;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: stretch;
+    align-content: center;
+    justify-self: stretch;
+    min-width: 0;
+    gap: 6px;
+    padding: 12px 0 12px 20px;
+    border-left: 1px solid rgba(208, 170, 99, .42);
+    text-align: left;
+}
+.deal-preview-copy > span,
+.deal-public-copy > span { color: #b99560; font-size: 9px; line-height: 1.35; }
+.deal-preview-copy > strong,
+.deal-public-copy > strong { overflow-wrap: anywhere; color: #f3dba9; font: 600 clamp(16px, 2vw, 22px)/1.35 "Noto Serif SC", serif; }
+.deal-preview-copy > p,
+.deal-public-copy > p { margin: 0; color: #b9aaa0; font-size: 11px; line-height: 1.55; }
+.deal-preview-copy > em,
+.deal-public-copy > small { padding-top: 4px; border-top: 1px solid rgba(208, 170, 99, .14); color: #d8bd86; font-size: 10px; font-style: normal; line-height: 1.45; }
+
+@media (max-width: 900px) {
+    .deal-card-preview,
+    .deal-public-interaction { grid-template-columns: minmax(0, 42fr) minmax(0, 58fr); gap: 4px 0; }
+    .deal-preview-card-shell,
+    .deal-public-card-stack { min-height: 134px; padding-right: 12px; }
+    .deal-card-preview .deal-preview-card,
+    .deal-main-public-card { width: 88px; height: 126px; min-width: 88px; flex-basis: 88px; }
+    .deal-preview-copy,
+    .deal-public-copy { padding-left: 16px; }
+}
+@media (max-width: 760px) {
+    .deal-card-preview,
+    .deal-public-interaction { grid-template-columns: minmax(0, 42fr) minmax(0, 58fr); min-height: 142px; gap: 3px 0; }
+    .deal-preview-label { min-height: 13px; gap: 6px; font-size: 7px; }
+    .deal-preview-label::before,
+    .deal-preview-label::after { width: clamp(18px, 6vw, 40px); }
+    .deal-preview-card-shell,
+    .deal-public-card-stack { min-height: 110px; padding-right: 10px; }
+    .deal-card-preview .deal-preview-card,
+    .deal-main-public-card { width: 68px; height: 98px; min-width: 68px; flex-basis: 68px; }
+    .deal-preview-copy,
+    .deal-public-copy { gap: 3px; padding: 5px 0 5px 12px; }
+    .deal-preview-copy > span,
+    .deal-public-copy > span { font-size: 7px; }
+    .deal-preview-copy > strong,
+    .deal-public-copy > strong { font-size: 14px; }
+    .deal-preview-copy > p,
+    .deal-public-copy > p { font-size: 11px; line-height: 1.5; }
+    .deal-preview-copy > em,
+    .deal-public-copy > small { font-size: 10px; }
+}
+
+
+/* Canonical central-stage placement: the nested preview owns the card/copy grid. */
+.deal-event,
+.deal-event.is-card-preview,
+.deal-event.is-public-stage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    justify-self: stretch;
+    justify-items: stretch;
+    width: 100%;
+    min-width: 0;
+}
+
+.deal-event > .deal-card-preview,
+.deal-event > .deal-public-interaction {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: stretch;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+.deal-discard-stage { width: 100%; min-width: 0; grid-column: 1 / -1; }
+.deal-discard-cards { display: flex; justify-content: center; gap: 5px; align-items: center; min-height: 150px; padding: 8px 0; }
+.deal-discard-cards .deal-discard-card { position: relative; flex: 0 1 104px; width: calc((100% - 20px) / 5); min-width: 0; height: auto; max-height: none; aspect-ratio: 104 / 150; margin: 0; transform: none; }
+
+/* Center empty-state copy within the event column, after the deck column. */
+.deal-event > .deal-event-idle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    place-items: center;
+    width: 100%;
+    min-height: 180px;
+    margin: 0;
+    gap: 0;
+    padding: 18px 24px;
+    box-sizing: border-box;
+}
+.deal-event-idle > div {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    text-align: center;
+}
+.deal-event-idle > div > strong {
+    color: #eadbc0;
+    font: 500 clamp(18px, 2vw, 22px)/1.5 "Noto Sans SC", sans-serif;
+    overflow-wrap: anywhere;
+}
+.deal-event-idle > div > small {
+    max-width: 100%;
+    color: #aaa397;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+    .deal-event > .deal-event-idle { min-height: 142px; padding: 12px; }
+    .deal-event-idle > div > strong { font-size: 17px; }
+    .deal-event-idle > div > small { font-size: 11px; }
+}

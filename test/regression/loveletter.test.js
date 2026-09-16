@@ -75,6 +75,8 @@ test('two-player Love Letter sets aside three public cards', () => {
     const result = session.start();
     assert.equal(result.state.setAsideCards.length, 3);
     assert.equal(result.state.setAsideCount, 3);
+    assert.equal(result.state.setAsideCards.every(card => Number.isInteger(card.id)), true);
+    assert.equal(Object.hasOwn(result.state, 'reservedCard'), false, '暗置预留牌不能公开');
 });
 
 test('Love Letter permits a protected player to use Prince on themself', () => {
@@ -91,7 +93,7 @@ test('Love Letter rejects the non-standard face-down discard action', () => {
     assert.match(result.message, /必须打出/);
 });
 
-test('Love Letter showdown tie uses discarded values', () => {
+test('Love Letter showdown awards every player tied for highest hand', () => {
     const session = LoveLetter.create('tie', players(['a', 'b']));
     const game = session.engine;
     game.status = 'playing'; game.deck = []; game.players[1].favorTokens = game.targetFavor - 1;
@@ -99,8 +101,8 @@ test('Love Letter showdown tie uses discarded values', () => {
     game.players[1].hand = [{ id: 6, name: '国王', value: 6 }];
     game.publicDiscard = [{ ownerId: 'a', card: { value: 1 } }, { ownerId: 'b', card: { value: 5 } }];
     assert.equal(game.checkGameEnd(), true);
-    assert.equal(game.winner.id, 'b');
-    assert.equal(game.roundWinner.id, 'b');
+    assert.deepEqual(game.winners.map(player => player.id), ['b']);
+    assert.deepEqual(game.roundWinners.map(player => player.id), ['a', 'b']);
 });
 
 test('Love Letter priest reveal stays private to the acting player', () => {
@@ -148,7 +150,7 @@ test('Love Letter completes an official four-player match across rounds', () => 
         }
         if (game.status === 'round_end') {
             assert.ok(game.roundWinner);
-            assert.equal(game.startNextRound(game.roundWinner.id).success, true);
+            for (const player of game.players) assert.equal(game.startNextRound(player.id).success, true);
             continue;
         }
         const current = game.getCurrentPlayer();
@@ -178,7 +180,7 @@ test('Love Letter completes an official four-player match across rounds', () => 
     assert.ok(steps < 5000);
 });
 
-test('Love Letter pauses at round end and only the round winner or host can continue', () => {
+test('Love Letter pauses at round end until every player is ready', () => {
     const session = LoveLetter.create('ll-round-pause', players(['a', 'b', 'c']));
     session.start();
     const game = session.engine;
@@ -190,9 +192,12 @@ test('Love Letter pauses at round end and only the round winner or host can cont
     assert.equal(game.status, 'round_end');
     assert.equal(game.roundWinner.id, 'b');
     assert.ok(Array.isArray(session.getPlayerState('a').players[0].hand));
-    assert.equal(session.handleAction('c', { kind: 'startNextRound' }).success, false);
+    assert.equal(session.handleAction('c', { kind: 'startNextRound' }).success, true);
+    assert.equal(game.status, 'round_end');
     assert.equal(session.handleAction('b', { kind: 'startNextRound' }).success, true);
+    assert.equal(game.status, 'round_end');
+    assert.equal(session.getPlayerState('a').nextRoundReadyCount, 2);
+    assert.equal(session.handleAction('a', { kind: 'startNextRound' }).success, true);
     assert.equal(game.status, 'playing');
     assert.equal(game.currentTurnIndex, 1);
 });
-

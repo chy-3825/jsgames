@@ -1,0 +1,137 @@
+/* Public asset view: money is a denomination summary, while properties keep
+   the physical-table feeling of one overlapping stack per property group. */
+.deal-asset-dialog-section {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(100, 87, 61, .18);
+}
+
+.deal-asset-dialog-section > header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.deal-asset-dialog-section h3 {
+    margin: 0;
+    color: #3b493f;
+    font-family: "Noto Serif SC", "Songti SC", serif;
+    font-size: 14px;
+}
+
+.deal-asset-dialog-section > header > b {
+    color: #996537;
+    font: 700 13px Georgia, serif;
+}
+
+.deal-money-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 7px;
+}
+
+.deal-money-denomination {
+    display: grid;
+    min-height: 55px;
+    place-items: center;
+    gap: 2px;
+    padding: 7px 4px;
+    border: 1px solid rgba(106, 91, 61, .22);
+    border-radius: 5px;
+    background: rgba(255, 250, 236, .7);
+}
+
+.deal-money-denomination > strong { color: #3e4b43; font: 700 15px Georgia, serif; }
+.deal-money-denomination > span { color: #996537; font: 700 10px Georgia, serif; }
+.deal-money-denomination.is-empty { opacity: .45; }
+.deal-asset-note { display: block; margin-top: 8px; color: #8a8878; font-size: 8px; line-height: 1.45; }
+.deal-asset-property-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+.deal-asset-property-group {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--deal-property-color) 42%, #6a5b3d 58%);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--deal-property-color) 7%, #fffaf0 93%);
+}
+
+.deal-asset-property-group > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.deal-asset-property-group > header > strong { overflow: hidden; color: #3e4b43; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.deal-asset-property-group > header > span { flex: 0 0 auto; color: #746b5d; font: 700 9px Georgia, serif; }
+
+.deal-asset-property-stack {
+    display: flex;
+    align-items: flex-end;
+    min-height: 124px;
+    padding: 8px 5px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.deal-asset-property-card {
+    /* publicCardMarkup also adds .deal-public-card. That class is absolutely
+       positioned for the central action stack, but asset cards belong to this
+       horizontal stack and must stay in its scrollable flex flow. */
+    position: relative !important;
+    z-index: var(--deal-stack-index);
+    width: 76px !important;
+    min-width: 76px !important;
+    height: 110px !important;
+    min-height: 110px !important;
+    flex: 0 0 76px !important;
+    margin-left: -43px;
+    cursor: default;
+    border-color: color-mix(in srgb, var(--deal-property-color) 58%, #6a5b3d 42%) !important;
+    box-shadow: 1px 3px 7px rgba(70, 53, 31, .16);
+    transform: translateY(calc(var(--deal-stack-index) * -1px)) !important;
+}
+
+.deal-asset-property-card:first-child { margin-left: 0; }
+.deal-asset-property-card:hover { z-index: 20 !important; transform: translateY(-5px) !important; }
+.deal-asset-property-card[role="button"] { cursor: pointer; }
+.deal-asset-property-card[role="button"]::after {
+    position: absolute;
+    z-index: 2;
+    right: 5px;
+    bottom: 5px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: rgba(50, 32, 22, .84);
+    color: #f1d18b;
+    content: "调整";
+    font-size: 6px;
+}
+.deal-asset-property-card[role="button"]:focus-visible { z-index: 21 !important; outline: 2px solid #996537; outline-offset: 2px; transform: translateY(-5px) !important; }
+.deal-asset-property-group > footer { display: flex; align-items: center; gap: 7px; min-height: 17px; color: #746b5d; font-size: 9px; }
+.deal-asset-property-group > footer > b { color: #7e9b51; font-size: 8px; }
+.deal-asset-property-group > footer > small { color: #996537; font-size: 8px; }
+.deal-asset-property-group.is-complete { box-shadow: inset 0 0 0 1px rgba(126, 155, 81, .2); }
+.deal-asset-property-group > .deal-asset-property-stack > em { color: #8a8878; font-size: 8px; font-style: normal; }
+
+@media (max-width: 760px) {
+    .deal-money-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+    .deal-money-denomination { min-height: 47px; }
+    .deal-asset-property-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .deal-asset-property-card { width: 67px !important; min-width: 67px !important; height: 97px !important; min-height: 97px !important; flex-basis: 67px !important; margin-left: -38px; }
+    .deal-asset-property-stack { min-height: 111px; }
+}
+
+/* Building rings sit outside the group without changing layout dimensions. */
+.deal-asset-property-group.has-house { box-shadow: inset 0 0 0 .5px #fff, 0 0 0 1px #65bd8c, 0 0 0 1.5px #fff; }
+.deal-asset-property-group.has-hotel { box-shadow: inset 0 0 0 .5px #fff, 0 0 0 1px #65bd8c, 0 0 0 2px #d85a4f, 0 0 0 2.5px #fff; }
+
+/* Attached buildings inherit the same overlap and sizing as properties. */
+
+[data-asset-pick] { cursor: pointer; }
+[data-asset-pick][aria-pressed="true"] { outline: 2px solid #b48c43; outline-offset: -2px; }
+.deal-asset-property-card[data-asset-pick]:hover { z-index: 25 !important; }
+.deal-asset-pick-controls { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 8px; padding: 10px; background: #fffaf0; }
+
+.deal-payment-denomination { display: grid; gap: 5px; }
+.deal-payment-denomination > button:first-child { padding: 4px; border: 1px solid #b4a989; background: #fffaf0; color: #344538; cursor: pointer; }
+.deal-payment-properties { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 4px; }
+.deal-payment-properties .deal-payment-property { width: 76px; height: 110px; flex: 0 0 76px; max-height: none; }
+.deal-payment-properties .is-selected { outline: 2px solid #b48c43; }
+.deal-asset-pick-controls > span { flex: 1; color: #344538; font-size: 12px; }

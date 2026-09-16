@@ -79,7 +79,7 @@ test('断线玩家需凭房间号、玩家 ID 和会话令牌恢复原座位，�
     const guest = await openClient(url);
     clients.push(guest);
     const guestSession = await guest.waitFor(message => message.type === 'session');
-    guest.sendJson({ type: 'joinRoom', roomId: created.roomId });
+    guest.sendJson({ type: 'joinRoom', roomId: created.roomId, inviteToken: created.room.inviteToken });
     const joined = await guest.waitFor(message => message.type === 'joinSuccess');
     assert.equal(created.room.players.length, 1);
     assert.equal(joined.room.players.length, 2);
@@ -114,7 +114,7 @@ test('断线玩家需凭房间号、玩家 ID 和会话令牌恢复原座位，�
     const reconnecting = await openClient(url);
     clients.push(reconnecting);
     await reconnecting.waitFor(message => message.type === 'session');
-    reconnecting.sendJson({ type: 'joinRoom', roomId: created.roomId });
+    reconnecting.sendJson({ type: 'joinRoom', roomId: created.roomId, inviteToken: created.room.inviteToken });
     const required = await reconnecting.waitFor(message => message.type === 'reconnectRequired');
     assert.equal(required.roomId, created.roomId);
     reconnecting.sendJson({ type: 'reconnectRoom', roomId: created.roomId, playerId: hostSession.playerId });

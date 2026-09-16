@@ -69,5 +69,5 @@ test('所有游戏支持的 2–12 人档位都能完成等待房间准备与开
         }
     }
 
-    assert.equal(cases.length, 111);
+    assert.equal(cases.length, 109);
 });

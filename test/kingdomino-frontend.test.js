@@ -19,8 +19,17 @@ test('多米诺王国规则弹层隔离背景、限定焦点并归还焦点', ()
 
 test('多米诺王国普通行动演出也能跳过', () => {
     assert.match(template, /data-action="skipPresentation"/);
-    assert.match(actions, /stopPresentation/);
+    assert.match(actions, /scene\.skipPresentation\(\)/);
+    assert.doesNotMatch(actions, /scene\.stopPresentation\(\)/);
     assert.match(style, /\.kd-presentation-layer\.is-active \.kd-presentation-skip\s*\{\s*display:\s*block/);
+});
+
+test('多米诺王国选牌时只移动王冠，不再让整张多米诺往返飞行', () => {
+    const claimScene = scene.slice(scene.indexOf('async function playClaimPresentation'), scene.indexOf('async function playGameStartPresentation'));
+    assert.doesNotMatch(claimScene, /kd-domino-motion/);
+    assert.match(claimScene, /setMotionOrigin\(actor, crown\)/);
+    assert.match(claimScene, /setMotionDestination\(target, crown\)/);
+    assert.match(claimScene, /target\?\.classList\.add\('is-event-impact'\)/);
 });
 
 test('多米诺王国非行动回合仍可聚焦阅读公开领地', () => {

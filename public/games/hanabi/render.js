@@ -11,10 +11,12 @@ export function createHanabiRenderer({ mount, model, scene, getElement }) {
         if (!state) return;
         const app = mount.querySelector('.hb-app');
         const sceneState = scene.getViewState();
+        const presentationLocked = Boolean(sceneState.presentationPlaying || sceneState.presentationQueue?.length || Date.now() < Number(sceneState.presentationLockedUntil || 0));
         app.dataset.status = state.status || 'waiting';
         app.classList.toggle('is-my-turn', state.currentTurn === state.myId && state.status === 'playing');
         app.classList.toggle('is-ended', state.status === 'ended');
-        app.classList.toggle('is-action-presenting', sceneState.presentationPlaying);
+        app.classList.toggle('is-action-presenting', presentationLocked);
+        app.setAttribute('aria-busy', String(presentationLocked));
         $('turn').innerHTML = `<span class="hb-live-dot ${state.status === 'ended' ? 'is-ended' : ''}"></span>${esc(turnCopy(state))}`;
         $('headerScore').textContent = state.score || 0;
         $('score').textContent = state.score || 0;
@@ -66,9 +68,10 @@ export function createHanabiRenderer({ mount, model, scene, getElement }) {
     function renderTeammates() {
         const state = model.state;
         const target = currentTarget(state, model.targetId);
-        mount.querySelector('.hb-app')?.classList.toggle('is-clue-targeting', Boolean(target && state.availableActions?.canGiveClue));
+        const presentationLocked = scene.getViewState().presentationPlaying || scene.getViewState().presentationQueue?.length || Date.now() < Number(scene.getViewState().presentationLockedUntil || 0);
+        mount.querySelector('.hb-app')?.classList.toggle('is-clue-targeting', Boolean(target && state.availableActions?.canGiveClue && !presentationLocked));
         const teammates = (state.players || []).filter(player => player.id !== state.myId);
-        const canTarget = Boolean(state.availableActions?.canGiveClue && state.status === 'playing' && !model.submittingClue);
+        const canTarget = Boolean(state.availableActions?.canGiveClue && state.status === 'playing' && !model.submittingClue && !presentationLocked);
         $('teammateHint').textContent = model.submittingClue ? '正在发送提示' : canTarget ? '点击一位队友准备提示' : '队友牌面始终公开';
         $('teammates').innerHTML = teammates.length ? teammates.map((player, index) => {
             const selected = player.id === model.targetId;
@@ -79,7 +82,7 @@ export function createHanabiRenderer({ mount, model, scene, getElement }) {
                 return `<span class="hb-teammate-card-wrap" data-card-id="${esc(card.id)}"><span class="hb-card-position">${cardIndex + 1}</span>${publicCardMarkup(card, { matched, dimmed: selected && !matched })}</span>`;
             }).join('');
             return `<${tag} class="hb-teammate ${selected ? 'is-target' : ''} ${player.isCurrentTurn ? 'is-current' : ''} ${player.isOnline === false ? 'is-offline' : ''}" data-player-id="${esc(player.id)}" ${actionable ? `type="button" data-target-id="${esc(player.id)}" aria-pressed="${selected}"` : ''}>
-                <span class="hb-teammate-header"><span class="hb-avatar">${esc(player.name.slice(0, 1))}</span><span><strong>${esc(player.name)}</strong><small>${player.isOnline === false ? '已离线' : player.isCurrentTurn ? '正在行动' : selected ? '当前提示对象' : `${player.handCount || player.hand?.length || 0} 张公开牌`}</small></span><em>${String(index + 1).padStart(2, '0')}</em></span>
+                <span class="hb-teammate-header"><span><strong>${esc(player.name)}</strong><small>${player.isOnline === false ? '已离线' : player.isCurrentTurn ? '正在行动' : selected ? '当前提示对象' : `${player.handCount || player.hand?.length || 0} 张公开牌`}</small></span><em>${String(index + 1).padStart(2, '0')}</em></span>
                 <span class="hb-visible-cards">${cards}</span>
             </${tag}>`;
         }).join('') : '<div class="hb-empty">等待队友加入</div>';
@@ -87,8 +90,10 @@ export function createHanabiRenderer({ mount, model, scene, getElement }) {
 
     function renderHand() {
         const state = model.state;
-        const canPlay = Boolean(state.availableActions?.canPlay);
-        const canDiscard = Boolean(state.availableActions?.canDiscard);
+        const sceneState = scene.getViewState();
+        const presentationLocked = Boolean(sceneState.presentationPlaying || sceneState.presentationQueue?.length || Date.now() < Number(sceneState.presentationLockedUntil || 0));
+        const canPlay = Boolean(state.availableActions?.canPlay && !presentationLocked);
+        const canDiscard = Boolean(state.availableActions?.canDiscard && !presentationLocked);
         const cards = state.myHand || [];
         let selectedIndex = cards.findIndex(card => card.id === model.pendingCardId);
         if (selectedIndex < 0) {
@@ -97,6 +102,8 @@ export function createHanabiRenderer({ mount, model, scene, getElement }) {
         }
         $('handHint').textContent = state.status === 'ended'
             ? '演出已经结束'
+            : presentationLocked
+                ? '正在播报，行动将在播报结束后恢复'
             : model.submittingCardAction
                 ? '正在提交本回合行动'
                 : canPlay
@@ -137,10 +144,18 @@ export function createHanabiRenderer({ mount, model, scene, getElement }) {
             command.innerHTML = `<header><small>最终结果</small><h2>演出结束</h2></header><div class="hb-result-score"><strong>${state.score || 0}</strong><span>/ 25</span></div><p>${esc(endLabel(state))}</p><b>${esc(state.scoreRating || '')}</b>`;
             return;
         }
+        const sceneState = scene.getViewState();
+        const presentationLocked = Boolean(sceneState.presentationPlaying || sceneState.presentationQueue?.length || Date.now() < Number(sceneState.presentationLockedUntil || 0));
+        if (presentationLocked) {
+            command.className = 'hb-command-panel is-waiting';
+            const last = state.lastAction?.message || (state.actionLog || []).at(-1) || '上一行动正在播报';
+            command.innerHTML = `<header><small>公共播报</small><h2>正在演出</h2></header><div class="hb-last-action"><small>播报结束后继续行动</small><p>${esc(last)}</p></div>`;
+            return;
+        }
         if (!state.availableActions?.canAct) {
             command.className = 'hb-command-panel is-waiting';
             const last = state.lastAction?.message || (state.actionLog || []).at(-1) || '等待第一位玩家行动';
-            command.innerHTML = `<header><small>当前行动</small><h2>等待队友</h2></header><div class="hb-waiting-player"><span>${esc((state.currentTurnName || '队').slice(0, 1))}</span><div><strong>${esc(state.currentTurnName || '队友')}</strong><small>正在决定本回合行动</small></div></div><div class="hb-last-action"><small>上一行动</small><p>${esc(last)}</p></div>`;
+            command.innerHTML = `<header><small>当前行动</small><h2>等待队友</h2></header><div class="hb-waiting-player"><div><strong>${esc(state.currentTurnName || '队友')}</strong><small>正在决定本回合行动</small></div></div><div class="hb-last-action"><small>上一行动</small><p>${esc(last)}</p></div>`;
             return;
         }
         const target = currentTarget(state, model.targetId);
@@ -171,7 +186,7 @@ export function createHanabiRenderer({ mount, model, scene, getElement }) {
     function renderPlayers() {
         const state = model.state;
         $('players').innerHTML = (state.players || []).map((player, index) => `<article class="hb-player ${player.isCurrentTurn ? 'is-current' : ''} ${player.id === state.myId ? 'is-me' : ''} ${player.isOnline === false ? 'is-offline' : ''}" data-player-id="${esc(player.id)}">
-            <span class="hb-player-order">${String(index + 1).padStart(2, '0')}</span><span class="hb-avatar">${esc(player.name.slice(0, 1))}</span><span><strong>${esc(player.name)}${player.id === state.myId ? '<em>我</em>' : ''}</strong><small>${player.isOnline === false ? '离线' : player.isCurrentTurn ? '当前行动' : `${player.handCount || 0} 张牌`}</small></span><i></i>
+            <span class="hb-player-order">${String(index + 1).padStart(2, '0')}</span><span><strong>${esc(player.name)}${player.id === state.myId ? '<em>我</em>' : ''}</strong><small>${player.isOnline === false ? '离线' : player.isCurrentTurn ? '当前行动' : `${player.handCount || 0} 张牌`}</small></span><i></i>
         </article>`).join('');
     }
 

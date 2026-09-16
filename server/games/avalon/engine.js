@@ -1,6 +1,23 @@
 const MISSION_SIZES = {
     5: [2, 3, 2, 3, 3], 6: [2, 3, 4, 3, 4], 7: [2, 3, 3, 4, 4], 8: [3, 4, 4, 5, 5], 9: [3, 4, 4, 5, 5], 10: [3, 4, 4, 5, 5],
 };
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    identityBriefing: 1100,
+    roundStart: 1100,
+    teamProposal: 1300,
+    teamVote: 1600,
+    leaderTransfer: 1100,
+    expeditionStart: 1100,
+    missionResult: 1600,
+    twoFailRule: 1400,
+    assassinPhase: 1600,
+    assassination: 1800,
+    targetRoleReveal: 1800,
+    identityReveal: 2000,
+    outcome: 2600,
+    playerLeft: 900,
+};
 const ROLE_INFO = {
     merlin: { name: '梅林', faction: 'good' }, percival: { name: '派西维尔', faction: 'good' }, loyal: { name: '忠臣', faction: 'good' },
     assassin: { name: '刺客', faction: 'evil' }, minion: { name: '爪牙', faction: 'evil' }, morgana: { name: '莫甘娜', faction: 'evil' }, mordred: { name: '莫德雷德', faction: 'evil' }, oberon: { name: '奥伯伦', faction: 'evil' },
@@ -24,15 +41,20 @@ function roleSetup(playerCount, options = {}) {
 }
 
 function shuffle(values, random = Math.random) { const result = values.slice(); for (let index = result.length - 1; index > 0; index -= 1) { const other = Math.floor(random() * (index + 1)); [result[index], result[other]] = [result[other], result[index]]; } return result; }
+function clone(value) { return value == null ? value : JSON.parse(JSON.stringify(value)); }
+function presentationContentDuration(kind) { return PRESENTATION_CONTENT_DURATIONS[kind] || 1000; }
 
 class AvalonEngine {
     constructor(roomId, players, random = Math.random, options = {}) {
-        if (typeof random === 'object') { options = random; random = Math.random; }
-        this.roomId = roomId; this.random = random; this.options = options || {};
+        if (typeof random === 'object') { options = random; random = options.random || Math.random; }
+        this.roomId = roomId; this.random = typeof random === 'function' ? random : Math.random; this.options = options || {};
+        this.now = typeof this.options.now === 'function' ? this.options.now : () => Date.now();
         this.players = (Array.isArray(players) ? players : []).map((player, index) => ({ id: player.id, name: player.name, seat: index + 1, role: null, isOnline: true }));
         this.playerMap = Object.fromEntries(this.players.map(player => [player.id, player]));
-        this.status = 'waiting'; this.phase = 'waiting'; this.round = 0; this.leaderIndex = 0; this.rejectedTeams = 0; this.team = []; this.votes = {}; this.missionVotes = {}; this.missionHistory = []; this.successfulMissions = 0; this.failedMissions = 0; this.lastVote = null; this.lastMission = null; this.publicEvent = null; this.publicEvents = []; this.eventSequence = 0; this.roleConfirmed = {}; this.actionLog = []; this.winner = null; this.winners = [];
+        this.status = 'waiting'; this.phase = 'waiting'; this.round = 0; this.leaderIndex = 0; this.rejectedTeams = 0; this.team = []; this.votes = {}; this.missionVotes = {}; this.missionHistory = []; this.successfulMissions = 0; this.failedMissions = 0; this.lastVote = null; this.lastMission = null; this.publicEvent = null; this.publicEvents = []; this.eventSequence = 0; this.presentationSequence = 0; this.presentation = null; this.presentationQueue = []; this.roleConfirmed = {}; this.actionLog = []; this.winner = null; this.winners = []; this.endReason = null; this.outcome = null;
     }
+
+    _now() { return this.now(); }
 
     start() {
         if (this.status !== 'waiting') return { success: false, message: '阿瓦隆已经开始或已经结束' };
@@ -41,9 +63,11 @@ class AvalonEngine {
         let roles;
         try { roles = roleSetup(this.players.length, this.options); } catch (error) { return { success: false, message: error.message }; }
         shuffle(roles, this.random).forEach((role, index) => { this.players[index].role = role; this.players[index].isOnline = true; });
-        this.status = 'playing'; this.phase = 'roleReveal'; this.round = 1; this.leaderIndex = 0; this.rejectedTeams = 0; this.successfulMissions = 0; this.failedMissions = 0; this.team = []; this.votes = {}; this.missionVotes = {}; this.missionHistory = []; this.publicEvent = null; this.publicEvents = []; this.eventSequence = 0; this.roleConfirmed = {}; this.winner = null; this.winners = [];
+        this.status = 'playing'; this.phase = 'roleReveal'; this.round = 1; this.leaderIndex = 0; this.rejectedTeams = 0; this.successfulMissions = 0; this.failedMissions = 0; this.team = []; this.votes = {}; this.missionVotes = {}; this.missionHistory = []; this.publicEvent = null; this.publicEvents = []; this.eventSequence = 0; this.presentationSequence = 0; this.presentation = null; this.presentationQueue = []; this.roleConfirmed = {}; this.winner = null; this.winners = []; this.endReason = null; this.outcome = null;
         this.actionLog = ['身份已经分发，请各自查看并记住自己的秘密'];
+        this._beginPresentation();
         this._publishEvent('identityBriefing', '身份确认', '请查看并记住自己的身份', `全部 ${this.players.length} 名玩家确认后，圆桌议事开始`);
+        this._updatePresentation({ resolved: true, nextPhase: 'roleReveal', nextPlayerId: null });
         return this._success('身份已经分发，请先查看你的身份');
     }
 
@@ -78,9 +102,12 @@ class AvalonEngine {
             const firstOnline = this._nextOnlineIndex(this.leaderIndex, true);
             if (firstOnline >= 0) this.leaderIndex = firstOnline;
         }
+        this._beginPresentation();
+        if (!this._hasEnoughOnlineForTeam(this.round)) return this._finishAbandoned('在线玩家不足以组成第一支远征队', 'insufficientOnline', true);
         this.phase = 'team';
         this._log(`所有人都已记下身份，第1项任务开始，${this.players[this.leaderIndex]?.name || '在线玩家'} 担任队长`);
         this._publishRoundStart();
+        this._updatePresentation({ resolved: true, nextPhase: 'team', nextPlayerId: this.players[this.leaderIndex]?.id || null });
         return this._success('身份已经封存，圆桌议事开始');
     }
 
@@ -88,13 +115,16 @@ class AvalonEngine {
         if (player.id !== this.players[this.leaderIndex]?.id) return { success: false, message: '只有当前队长可以组队', state: this.getPlayerState(player.id) };
         if (action.kind !== 'proposeTeam' || !Array.isArray(action.playerIds)) return { success: false, message: '请选择任务队伍', state: this.getPlayerState(player.id) };
         const size = MISSION_SIZES[this.players.length][this.round - 1];
+        if (this._onlineCount() < size) return this._finishAbandoned('在线玩家不足以组成当前远征队', 'insufficientOnline');
         const ids = [...new Set(action.playerIds)];
         if (ids.length !== size || ids.some(id => !this.playerMap[id] || !this.playerMap[id].isOnline)) return { success: false, message: `本轮需要选择 ${size} 名在线玩家`, state: this.getPlayerState(player.id) };
         this.team = ids;
         this.votes = Object.fromEntries(this.players.filter(item => !item.isOnline).map(item => [item.id, false]));
         this.phase = 'vote'; this.lastVote = null;
         this._log(`${player.name} 提议由 ${ids.map(id => this.playerMap[id].name).join('、')} 执行第${this.round}项任务`);
+        this._beginPresentation();
         this._publishEvent('teamProposal', `第 ${this.round} 项任务`, `${player.seat} 号队长公布远征队伍`, ids.map(id => `${this.playerMap[id].seat} 号`).join('·'), { leaderId: player.id, teamIds: ids.slice() });
+        this._updatePresentation({ resolved: true, nextPhase: 'vote', nextPlayerId: null });
         return this._success('队伍已经公布，请充分讨论后再投票');
     }
 
@@ -120,20 +150,23 @@ class AvalonEngine {
         const approvalSeats = this.players.filter(item => this.lastVote[item.id]).map(item => item.seat);
         const rejectionSeats = this.players.filter(item => !this.lastVote[item.id]).map(item => item.seat);
         const ballotDetail = `${approvalSeats.length ? `${approvalSeats.join('、')} 号赞成` : '无人赞成'}；${rejectionSeats.length ? `${rejectionSeats.join('、')} 号反对` : '无人反对'}`;
+        this._beginPresentation();
         this._publishEvent('teamVote', '圆桌表决', `${approved ? '提案获得通过' : '提案遭到否决'} · ${approvals} 比 ${rejections}`, ballotDetail, { approved, approvals, rejections, ballots: { ...this.lastVote } });
         this.actionLog.push(approved ? '队伍投票通过，进入任务' : '队伍投票未通过，队长顺时针轮换');
         if (!approved) {
             this.rejectedTeams += 1;
-            if (this.rejectedTeams >= 5) return this._finish('evil', '连续五次组队被拒绝，邪恶阵营获胜', 'fiveRejectedTeams', '圆桌连续五次否决提案，邪恶阵营趁乱夺取了阿瓦隆。');
+            if (this.rejectedTeams >= 5) return this._finish('evil', '连续五次组队被拒绝，邪恶阵营获胜', 'fiveRejectedTeams', '圆桌连续五次否决提案，邪恶阵营趁乱夺取了阿瓦隆。', {}, true);
             const nextLeader = this._nextOnlineIndex(this.leaderIndex);
-            if (nextLeader < 0) return this._finish('evil', '没有在线玩家继续远征，邪恶阵营获胜');
+            if (nextLeader < 0 || !this._hasEnoughOnlineForTeam(this.round)) return this._finishAbandoned('在线玩家不足以继续组成远征队', 'insufficientOnline', true);
             this.leaderIndex = nextLeader; this.phase = 'team'; this.team = []; this.votes = {};
             const leader = this.players[this.leaderIndex];
             this._publishEvent('leaderTransfer', `提案否决 · ${this.rejectedTeams} / 5`, `队长移交给 ${leader.seat} 号`, `第 ${this.round} 项任务将重新组队`, { leaderId: leader.id, rejectedTeams: this.rejectedTeams });
+            this._updatePresentation({ resolved: true, nextPhase: 'team', nextPlayerId: leader.id });
             return this._success('队伍被拒绝');
         }
         this.rejectedTeams = 0; this.phase = 'mission'; this.missionVotes = {};
         this._publishEvent('expeditionStart', `第 ${this.round} 项任务`, '远征队伍已经出发', '任务队员将秘密投入任务牌');
+        this._updatePresentation({ resolved: true, nextPhase: 'mission', nextPlayerId: null });
         return this._success('队伍获得圆桌批准，远征即将出发');
     }
 
@@ -161,18 +194,25 @@ class AvalonEngine {
         const missionDetail = success
             ? fails ? `${fails} 张失败牌，不足 ${requiredFails} 张，任务仍然成功` : '所有任务牌均宣告成功'
             : `${fails} 张失败牌浮出水面`;
+        this._beginPresentation();
         this._publishEvent('missionResult', `第 ${this.round} 项任务`, success ? '远征得胜' : '任务失败', missionDetail, { mission: { ...this.lastMission } });
         this.missionHistory.push({ ...this.lastMission });
         if (success) this.successfulMissions += 1; else this.failedMissions += 1;
         this._log(`第${this.round}项任务${success ? '成功' : `失败（${fails} 张失败牌）`}`);
-        if (!success && this.failedMissions >= 3) return this._finish('evil', '三项任务失败，邪恶阵营获胜', 'threeFailedMissions', '三项远征已经失败，阿瓦隆落入邪恶阵营之手。');
-        if (success && this.successfulMissions >= 3) { this.phase = 'assassin'; this._log('三项任务成功，但最后一把匕首仍未落下'); this._publishEvent('assassinPhase', '三项任务已经成功', '善良阵营即将赢得阿瓦隆', '刺客获得最后一次翻盘机会'); return this._success('刺客请作出本局最后的选择'); }
-        if (this.round >= 5) return this._finish(this.successfulMissions > this.failedMissions ? 'good' : 'evil', '五项任务完成');
+        if (!success && this.failedMissions >= 3) return this._finish('evil', '三项任务失败，邪恶阵营获胜', 'threeFailedMissions', '三项远征已经失败，阿瓦隆落入邪恶阵营之手。', {}, true);
+        if (success && this.successfulMissions >= 3) {
+            const assassin = this.players.find(player => player.role === 'assassin');
+            if (!assassin?.isOnline) return this._finish('good', '刺客已经离开，善良阵营赢得终局', 'assassinUnavailable', '刺客已经离开，善良阵营赢得阿瓦隆。', {}, true);
+            if (!this.players.some(player => player.isOnline && ROLE_INFO[player.role]?.faction === 'good')) return this._finishAbandoned('没有在线善良玩家接受终局刺杀', 'insufficientOnline', true);
+            this.phase = 'assassin'; this._log('三项任务成功，但最后一把匕首仍未落下'); this._publishEvent('assassinPhase', '三项任务已经成功', '善良阵营即将赢得阿瓦隆', '刺客获得最后一次翻盘机会'); this._updatePresentation({ resolved: true, nextPhase: 'assassin', nextPlayerId: assassin.id }); return this._success('刺客请作出本局最后的选择');
+        }
+        if (this.round >= 5) return this._finish(this.successfulMissions > this.failedMissions ? 'good' : 'evil', '五项任务完成', 'gameComplete', '五项任务完成', {}, true);
         this.round += 1;
         const nextLeader = this._nextOnlineIndex(this.leaderIndex);
-        if (nextLeader < 0) return this._finish('evil', '没有在线玩家继续远征，邪恶阵营获胜');
+        if (nextLeader < 0 || !this._hasEnoughOnlineForTeam(this.round)) return this._finishAbandoned('在线玩家不足以组成下一支远征队', 'insufficientOnline', true);
         this.leaderIndex = nextLeader; this.phase = 'team'; this.team = []; this.votes = {}; this.missionVotes = {};
         this._publishRoundStart();
+        this._updatePresentation({ resolved: true, nextPhase: 'team', nextPlayerId: this.players[this.leaderIndex]?.id || null });
         return this._success('远征结果已经揭晓，圆桌议事重新开始');
     }
 
@@ -180,17 +220,39 @@ class AvalonEngine {
         if (player.role !== 'assassin') return { success: false, message: '只有刺客可以执行终局刺杀', state: this.getPlayerState(player.id) };
         if (action.kind !== 'assassinate' || !this.playerMap[action.targetId]) return { success: false, message: '请选择一名玩家', state: this.getPlayerState(player.id) };
         const target = this.playerMap[action.targetId];
-        if (ROLE_INFO[target.role]?.faction !== 'good') return { success: false, message: '刺客只能选择一名善良阵营玩家', state: this.getPlayerState(player.id) };
+        if (!target.isOnline || ROLE_INFO[target.role]?.faction !== 'good') return { success: false, message: '刺客只能选择一名在线善良阵营玩家', state: this.getPlayerState(player.id) };
         const hit = target.role === 'merlin';
+        this._beginPresentation();
         this._publishEvent('assassination', '最终刺杀', `刺客选择了 ${target.seat} 号 · ${target.name}`, hit ? '匕首命中了梅林' : '梅林仍隐藏在圆桌之中', { targetId: target.id, targetName: target.name, targetSeat: target.seat, hit });
         this._publishEvent('targetRoleReveal', '刺杀结果', `${target.seat} 号的身份是${ROLE_INFO[target.role].name}`, hit ? '梅林倒在了黎明之前' : '刺客选错了目标', { targetId: target.id, targetRole: target.role, hit });
-        return this._finish(hit ? 'evil' : 'good', hit ? '刺客成功找出梅林，邪恶阵营获胜' : '刺客没有找出梅林，善良阵营获胜', hit ? 'assassinatedMerlin' : 'missedMerlin', hit ? '梅林倒在黎明之前，邪恶阵营赢得阿瓦隆。' : '刺客选错了目标，梅林守住秘密，善良阵营获胜。', { targetId: target.id, targetName: target.name, targetSeat: target.seat });
+        return this._finish(hit ? 'evil' : 'good', hit ? '刺客成功找出梅林，邪恶阵营获胜' : '刺客没有找出梅林，善良阵营获胜', hit ? 'assassinatedMerlin' : 'missedMerlin', hit ? '梅林倒在黎明之前，邪恶阵营赢得阿瓦隆。' : '刺客选错了目标，梅林守住秘密，善良阵营获胜。', { targetId: target.id, targetName: target.name, targetSeat: target.seat }, true);
     }
 
     _publishEvent(kind, kicker, title, detail, data = {}) {
-        this.publicEvent = { id: ++this.eventSequence, kind, kicker, title, detail, ...data };
+        if (!this.presentation || !Array.isArray(this.presentation.events)) this._beginPresentation();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || this._now();
+        const startedAt = Math.max(this._now(), previousEnd);
+        const contentDurationMs = presentationContentDuration(kind);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const id = ++this.eventSequence;
+        this.publicEvent = {
+            id,
+            eventId: id,
+            kind,
+            kicker,
+            title,
+            detail,
+            ...clone(data),
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
         this.publicEvents.push(this.publicEvent);
         if (this.publicEvents.length > 40) this.publicEvents.shift();
+        this.presentation.events.push(this.publicEvent);
+        this.presentation.endsAt = this.publicEvent.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
     }
 
     _publishRoundStart() {
@@ -200,25 +262,104 @@ class AvalonEngine {
         if (this.players.length >= 7 && this.round === 4) this._publishEvent('twoFailRule', '王国危局', '本项任务需要 2 张失败牌才会失败', '只出现 1 张失败牌时，任务仍然成功');
     }
 
-    _finish(faction, message, reason = 'gameComplete', text = message, details = {}) {
+    _finish(faction, message, reason = 'gameComplete', text = message, details = {}, appendToCurrent = false) {
+        if (!appendToCurrent || !this.presentation || !Array.isArray(this.presentation.events) || !this.presentation.events.length) this._beginPresentation();
         const roles = this.players.map(player => `${player.seat} 号${ROLE_INFO[player.role]?.name || '未知'}`).join('·');
         this._publishEvent('identityReveal', '全员身份揭晓', '忠诚与背叛已经现身', roles);
-        this.status = 'ended'; this.phase = 'ended'; this.winner = { faction, name: faction === 'good' ? '善良阵营' : '邪恶阵营', reason, text, ...details }; this.winners = [this.winner]; this._log(message); return this._success(message);
+        this.status = 'ended'; this.phase = 'ended'; this.endReason = reason; this.outcome = 'winner'; this.winner = { faction, name: faction === 'good' ? '善良阵营' : '邪恶阵营', reason, text, ...details }; this.winners = [this.winner];
+        this._publishEvent('outcome', '终局揭晓', `${this.winner.name}获胜`, text, { winnerFaction: faction, winnerName: this.winner.name, reason, ...details });
+        this._updatePresentation({ resolved: true, ended: true, endReason: reason, outcome: 'winner', nextPhase: 'ended', nextPlayerId: null, winner: this.winner });
+        this._log(message); return this._success(message);
+    }
+
+    _finishAbandoned(message, reason = 'abandoned', appendToCurrent = false) {
+        if (!appendToCurrent || !this.presentation || !Array.isArray(this.presentation.events) || !this.presentation.events.length) this._beginPresentation();
+        const roles = this.players.map(player => `${player.seat} 号${ROLE_INFO[player.role]?.name || '未知'}`).join('·');
+        this._publishEvent('identityReveal', '本局结束', '忠诚与背叛已经现身', roles);
+        this.status = 'ended'; this.phase = 'ended'; this.endReason = reason; this.outcome = 'abandoned'; this.winner = null; this.winners = [];
+        this._publishEvent('outcome', '本局结束', '本局未能继续', message, { winnerFaction: null, winnerName: null, reason, outcome: 'abandoned' });
+        this._updatePresentation({ resolved: true, ended: true, nextPhase: 'ended', nextPlayerId: null, winner: null, endReason: reason, outcome: 'abandoned' });
+        this._log(message); return this._success(message);
     }
 
     _publicEvent() {
         if (!this.publicEvent) return null;
-        const event = { ...this.publicEvent };
-        if (event.ballots) event.ballots = { ...event.ballots };
-        if (event.mission) event.mission = { ...event.mission, team: event.mission.team.slice() };
-        return event;
+        return clone(this.publicEvent);
     }
 
-    _publicEvents() { return this.publicEvents.map(item => ({ ...item, ballots: item.ballots ? { ...item.ballots } : undefined, mission: item.mission ? { ...item.mission, team: item.mission.team.slice() } : undefined })); }
+    _publicEvents() { return clone(this.publicEvents); }
+
+    _beginPresentation() {
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
+        this.presentation = {
+            sequence: ++this.presentationSequence,
+            transactionId: `${this.roomId}:${this.presentationSequence}`,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
+            events: [],
+            resolved: false,
+            pending: null,
+            nextPhase: null,
+            nextPlayerId: null,
+            ended: false,
+            winner: null,
+            endReason: null,
+            outcome: null,
+        };
+        this.presentationQueue.push(this.presentation);
+        return this.presentation;
+    }
+
+    _updatePresentation(values = {}) {
+        if (this.presentation) Object.assign(this.presentation, clone(values));
+    }
+
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        const faction = ROLE_INFO[player?.role]?.faction;
+        if (event.kind === 'playerLeft' && String(event.playerId) === String(player?.id ?? '')) {
+            projected.title = '您已离开本局';
+            projected.detail = '您的座位已退出，其他玩家将继续完成结算。';
+            projected.viewerVariant = 'personalDeparture';
+        }
+        if (event.kind === 'outcome' && faction && faction === event.winnerFaction) {
+            projected.title = '您已获胜';
+            projected.detail = '您的阵营赢得了阿瓦隆。';
+            projected.viewerVariant = 'personalVictory';
+        }
+        if (event.kind === 'targetRoleReveal' && event.hit && event.targetId === player?.id) {
+            projected.title = '您已出局';
+            projected.detail = '刺客命中了您，阿瓦隆的终局已经揭晓。';
+            projected.viewerVariant = 'personalElimination';
+            delete projected.targetRole;
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
+    }
 
     getPublicState() {
         const currentLeader = this.players[this.leaderIndex];
-        return { roomId: this.roomId, status: this.status, phase: this.phase, round: this.round, missionSize: this.status === 'playing' ? MISSION_SIZES[this.players.length][this.round - 1] : null, leaderId: currentLeader?.id || null, leaderName: currentLeader?.name || null, team: this.team.map(id => ({ id, name: this.playerMap[id]?.name })), voteCount: Object.keys(this.votes).length, missionVoteCount: Object.keys(this.missionVotes).length, roleConfirmCount: Object.keys(this.roleConfirmed).length, rejectedTeams: this.rejectedTeams, successfulMissions: this.successfulMissions, failedMissions: this.failedMissions, lastVote: this.lastVote, lastMission: this.lastMission, publicEvent: this._publicEvent(), publicEvents: this._publicEvents(), missionHistory: this.missionHistory.map(item => ({ ...item, team: item.team.map(id => ({ id, name: this.playerMap[id]?.name })) })), players: this.players.map(player => ({ id: player.id, name: player.name, seat: player.seat, isOnline: player.isOnline, roleConfirmed: Boolean(this.roleConfirmed[player.id]), role: this.status === 'ended' ? player.role : null, isLeader: player.id === currentLeader?.id })), actionLog: this.actionLog.slice(-20), winner: this.winner ? { ...this.winner } : null };
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
+        return { roomId: this.roomId, status: this.status, phase: this.phase, endReason: this.endReason, outcome: this.outcome, round: this.round, missionSize: this.status === 'playing' ? MISSION_SIZES[this.players.length][this.round - 1] : null, onlinePlayerCount: this.players.filter(player => player.isOnline).length, leaderId: currentLeader?.id || null, leaderName: currentLeader?.name || null, team: this.team.map(id => ({ id, name: this.playerMap[id]?.name })), voteCount: Object.keys(this.votes).length, missionVoteCount: Object.keys(this.missionVotes).length, roleConfirmCount: Object.keys(this.roleConfirmed).length, rejectedTeams: this.rejectedTeams, successfulMissions: this.successfulMissions, failedMissions: this.failedMissions, lastVote: clone(this.lastVote), lastMission: clone(this.lastMission), publicEvent: this._publicEvent(), publicEvents: this._publicEvents(), presentations, presentation, serverNow, missionHistory: this.missionHistory.map(item => ({ ...item, team: item.team.map(id => ({ id, name: this.playerMap[id]?.name })) })), players: this.players.map(player => ({ id: player.id, name: player.name, seat: player.seat, isOnline: player.isOnline, roleConfirmed: Boolean(this.roleConfirmed[player.id]), role: this.status === 'ended' ? player.role : null, isLeader: player.id === currentLeader?.id })), actionLog: this.actionLog.slice(-20), winner: this.winner ? { ...this.winner } : null };
     }
 
     getPlayerState(playerId) {
@@ -227,11 +368,21 @@ class AvalonEngine {
         // Merlin sees evil agents except the two hidden-evil variants:
         // Mordred and Oberon are invisible to Merlin in the base rules.
         const visibleEvil = item => ROLE_INFO[item.role]?.faction === 'evil' && !['mordred', 'oberon'].includes(item.role);
-        state.knownPlayers = player?.role === 'merlin' ? this.players.filter(visibleEvil).map(item => ({ id: item.id, name: item.name, seat: item.seat, faction: 'evil' })) : player?.role === 'percival' ? this.players.filter(item => item.role === 'merlin' || item.role === 'morgana').map(item => ({ id: item.id, name: item.name, seat: item.seat, faction: item.role === 'morgana' ? 'evil' : 'good', possible: true })) : ['assassin', 'minion', 'morgana', 'mordred'].includes(player?.role) ? this.players.filter(item => item.id !== playerId && ['assassin', 'minion', 'morgana', 'mordred'].includes(item.role)).map(item => ({ id: item.id, name: item.name, seat: item.seat, faction: 'evil' })) : [];
+        state.knownPlayers = player?.role === 'merlin' ? this.players.filter(visibleEvil).map(item => ({ id: item.id, name: item.name, seat: item.seat, faction: 'evil' })) : player?.role === 'percival' ? this.players.filter(item => item.role === 'merlin' || item.role === 'morgana').map(item => ({ id: item.id, name: item.name, seat: item.seat, possible: true })) : ['assassin', 'minion', 'morgana', 'mordred'].includes(player?.role) ? this.players.filter(item => item.id !== playerId && ['assassin', 'minion', 'morgana', 'mordred'].includes(item.role)).map(item => ({ id: item.id, name: item.name, seat: item.seat, faction: 'evil' })) : [];
         state.myRoleConfirmed = Boolean(this.roleConfirmed[playerId]); state.myVote = this.votes[playerId]; state.myMissionVote = this.missionVotes[playerId];
-        state.assassinationTargets = player?.role === 'assassin' && this.phase === 'assassin' ? this.players.filter(item => ROLE_INFO[item.role]?.faction === 'good').map(item => ({ id: item.id, name: item.name, seat: item.seat })) : [];
-        state.availableActions = { confirmRole: this.phase === 'roleReveal' && !state.myRoleConfirmed, proposeTeam: this.phase === 'team' && this.leaderIndex === this.players.findIndex(item => item.id === playerId), castVote: this.phase === 'vote' && this.votes[playerId] === undefined, missionVote: this.phase === 'mission' && this.team.includes(playerId) && this.missionVotes[playerId] === undefined, assassinate: this.phase === 'assassin' && player?.role === 'assassin' };
+        state.assassinationTargets = player?.isOnline && player.role === 'assassin' && this.phase === 'assassin' ? this.players.filter(item => item.isOnline && ROLE_INFO[item.role]?.faction === 'good').map(item => ({ id: item.id, name: item.name, seat: item.seat })) : [];
+        state.availableActions = { confirmRole: Boolean(player?.isOnline && this.phase === 'roleReveal' && !state.myRoleConfirmed), proposeTeam: Boolean(player?.isOnline && this.phase === 'team' && this.leaderIndex === this.players.findIndex(item => item.id === playerId)), castVote: Boolean(player?.isOnline && this.phase === 'vote' && this.votes[playerId] === undefined), missionVote: Boolean(player?.isOnline && this.phase === 'mission' && this.team.includes(playerId) && this.missionVotes[playerId] === undefined), assassinate: Boolean(player?.isOnline && this.phase === 'assassin' && player.role === 'assassin' && state.assassinationTargets.length) };
+        state.myFaction = ROLE_INFO[player?.role]?.faction || null;
+        state.presentation = this._projectPresentation(state.presentation, player);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, player));
         return state;
+    }
+
+    _onlineCount() { return this.players.filter(player => player.isOnline).length; }
+
+    _hasEnoughOnlineForTeam(round = this.round) {
+        const size = MISSION_SIZES[this.players.length]?.[round - 1];
+        return Number.isInteger(size) && this._onlineCount() >= size;
     }
 
     _nextOnlineIndex(fromIndex, includeCurrent = false) {
@@ -245,31 +396,77 @@ class AvalonEngine {
     handlePlayerLeave(playerId) {
         const player = this.playerMap[playerId];
         if (!player || !player.isOnline) return { success: false, message: '玩家不存在或已离线' };
+        if (this.status === 'ended') {
+            player.isOnline = false;
+            return this._success(`${player.name} 已离开`);
+        }
+        const phaseBefore = this.phase;
         const wasLeader = this.phase === 'team' && this.players[this.leaderIndex]?.id === playerId;
         player.isOnline = false;
         this._log(`${player.name} 离开了阿瓦隆`);
+
+        if (this.status !== 'playing') return this._success(`${player.name} 已离开`);
+
+        this._beginPresentation();
+        const leavePresentation = this.presentation;
+        this._publishEvent('playerLeft', '席位变动', `${player.name} 已离开本局`, '在线玩家将继续完成当前远征流程', {
+            playerId: player.id,
+            playerName: player.name,
+            phase: phaseBefore,
+            wasLeader,
+            remainingPlayerCount: this._onlineCount(),
+        });
+        const closeLeavePresentation = () => {
+            if (this.presentation === leavePresentation && this.status === 'ended') return;
+            Object.assign(leavePresentation, {
+                resolved: true,
+                ended: this.status === 'ended',
+                endReason: this.endReason,
+                outcome: this.outcome,
+                nextPhase: this.phase,
+                nextPlayerId: this.status === 'playing' && this.players[this.leaderIndex]?.isOnline ? this.players[this.leaderIndex].id : null,
+            });
+        };
+
+        if (this._onlineCount() === 0) return this._finishAbandoned('所有玩家均已离线，本局结束', 'noOnlinePlayers', true);
 
         // A permanent leave must never remain in a phase's required-action
         // count.  Its role is still kept for the finished-game audit, while
         // all pending decisions are resolved with the neutral safe default.
         if (this.phase === 'roleReveal') {
-            this.roleConfirmed[playerId] = true;
-            return this._resolveRoleReveal();
+            if (!this.roleConfirmed[playerId]) this.roleConfirmed[playerId] = true;
+            if (!this._hasEnoughOnlineForTeam(this.round)) return this._finishAbandoned('在线玩家不足以组成第一支远征队', 'insufficientOnline', true);
+            const result = this._resolveRoleReveal();
+            closeLeavePresentation();
+            return result;
         }
-        if (this.phase === 'team' && wasLeader) {
-            const next = this._nextOnlineIndex(this.leaderIndex);
-            if (next >= 0) this.leaderIndex = next;
-            return this._success(`${player.name} 离开，队长已交给在线玩家`);
+        if (this.phase === 'team') {
+            if (!this._hasEnoughOnlineForTeam(this.round)) return this._finishAbandoned('在线玩家不足以组成当前远征队', 'insufficientOnline', true);
+            if (wasLeader) {
+                const next = this._nextOnlineIndex(this.leaderIndex);
+                if (next < 0) return this._finishAbandoned('没有在线玩家继续远征', 'noOnlinePlayers', true);
+                this.leaderIndex = next;
+                const leader = this.players[next];
+                this._publishEvent('leaderTransfer', `席位变动 · 第 ${this.round} 项任务`, `队长移交给 ${leader.seat} 号`, '在线队长将重新组建远征队伍', { leaderId: leader.id, rejectedTeams: this.rejectedTeams, reason: 'playerLeft' });
+            }
+            closeLeavePresentation();
+            return this._success(`${player.name} 离开，${wasLeader ? '队长已交给在线玩家' : '远征队伍继续等待组建'}`);
         }
         if (this.phase === 'vote') {
-            this.votes[playerId] = false;
-            return this._resolveVote();
+            if (this.votes[playerId] === undefined) this.votes[playerId] = false;
+            const result = this._resolveVote();
+            closeLeavePresentation();
+            return result;
         }
         if (this.phase === 'mission' && this.team.includes(playerId)) {
-            this.missionVotes[playerId] = 'success';
-            return this._resolveMission();
+            if (this.missionVotes[playerId] === undefined) this.missionVotes[playerId] = 'success';
+            const result = this._resolveMission();
+            closeLeavePresentation();
+            return result;
         }
-        if (this.phase === 'assassin' && player.role === 'assassin') return this._finish('good', '刺客离开，善良阵营赢得终局');
+        if (this.phase === 'assassin' && player.role === 'assassin') return this._finish('good', '刺客离开，善良阵营赢得终局', 'assassinUnavailable', '刺客已经离开，善良阵营赢得阿瓦隆。', {}, true);
+        if (this.phase === 'assassin' && !this.players.some(item => item.isOnline && ROLE_INFO[item.role]?.faction === 'good')) return this._finishAbandoned('没有在线善良玩家接受终局刺杀', 'insufficientOnline', true);
+        closeLeavePresentation();
         return this._success(`${player.name} 已离开`);
     }
     _log(message) { this.actionLog.push(message); }

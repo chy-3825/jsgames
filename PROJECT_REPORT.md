@@ -104,7 +104,7 @@ room.handleGameAction(player.id, action)
 
 所以服务端游戏一定要相信参数里的 `playerId`，不要相信前端 action 里伪造的身份字段。
 
-正式大厅不会在点击游戏卡片时立即创建房间。它先从 `public/game-details.js` 展示规则摘要，再让房主设置房间名称、人数上限、公开状态和游戏专属选项；只有最后确认时才发送 `createRoom`。`seatLimit` 必须位于游戏 `minPlayers` 与 `maxPlayers` 之间；仅邀请房间不会出现在公开列表，但仍可通过房间号或邀请链接加入。狼人杀的 `playerCount`、`sheriffEnabled`、`winCondition` 和谍报风云的 `encryptorMode` 均放在 `gameOptions` 中，由服务端再次验证。
+正式大厅不会在点击游戏卡片时立即创建房间。它先从 `public/game-details.js` 展示规则摘要，再让房主设置房间名称、人数上限、公开状态和游戏专属选项；只有最后确认时才发送 `createRoom`。`seatLimit` 必须位于游戏 `minPlayers` 与 `maxPlayers` 之间；仅邀请房间不会出现在公开列表，也不能只靠猜中房间号加入，必须使用房主生成且带服务端随机令牌的邀请链接。狼人杀的 `playerCount`、`sheriffEnabled`、`winCondition` 和谍报风云的 `encryptorMode` 均放在 `gameOptions` 中，由服务端再次验证。
 
 ## 4. 服务器会发给前端哪些消息
 

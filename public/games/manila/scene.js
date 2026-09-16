@@ -1,9 +1,16 @@
 import { escapeHtml, GOODS, GOOD_META } from './constants.js';
+import { beginPresentationFade, clearPresentationFade, PRESENTATION_FADE_MS } from '../common/presentation-fade.js';
 
 /** Presentation queue and voyage animations for 马尼拉. */
-export function createManilaScene({ mount, model, getElement, windowRef = globalThis.window || globalThis, renderCommand }) {
+export function createManilaScene({ mount, model, getElement, windowRef = globalThis.window || globalThis, renderCommand, renderer = null, onPresentationStart = () => {} }) {
     const $ = role => getElement(role);
+    model.presentationWaiters ||= new Set();
+    model.presentationQueue ||= [];
+    model.presentationToken ||= 0;
+    model.presentationLockedUntil ||= 0;
     const reducedMotion = windowRef.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    let currentEventDeadline = Number.POSITIVE_INFINITY;
+    let currentContentDeadline = Number.POSITIVE_INFINITY;
 
     function playerName(playerId, fallback = '商人') { return model.state?.players?.find(player => player.id === playerId)?.name || fallback; }
     function boatName(boatId, fallback = '货船') { const boat = model.state?.boats?.find(candidate => Number(candidate.id) === Number(boatId)); return boat?.good ? `${boat.good}货船` : fallback; }
@@ -28,12 +35,19 @@ export function createManilaScene({ mount, model, getElement, windowRef = global
         svg.classList.toggle('is-danger', tone === 'danger'); svg.classList.toggle('is-profit', tone === 'profit');
         (windowRef.requestAnimationFrame || (callback => windowRef.setTimeout(callback, 0)))(() => svg.classList.add('is-visible'));
     }
-    function cancelPresentationWait() { if (model.waitTimer) windowRef.clearTimeout(model.waitTimer); model.waitTimer = null; const release = model.releaseWait; model.releaseWait = null; release?.(false); }
-    function presentationWait(duration, token) { if (reducedMotion) duration = Math.min(duration, 180); if (token !== model.presentationToken) return Promise.resolve(false); return new Promise(resolve => { const finish = value => { model.waitTimer = null; model.releaseWait = null; resolve(value); }; model.releaseWait = finish; model.waitTimer = windowRef.setTimeout(() => finish(token === model.presentationToken), Math.max(0, duration)); }); }
-    function showPresentation(mode, tone, kicker, title, body = '') { const layer = $('presentationLayer'); layer.hidden = false; layer.className = `mn-presentation-layer is-${mode || 'compact'} ${tone ? `is-${tone}` : ''}`; $('presentationScene').innerHTML = `<div class="mn-scene-heading"><span>${escapeHtml(kicker)}</span><h2>${escapeHtml(title)}</h2></div>${body}`; }
-    function hidePresentation() { const layer = $('presentationLayer'); if (!layer) return; layer.hidden = true; layer.className = 'mn-presentation-layer'; $('presentationScene').innerHTML = ''; $('movingLayer').innerHTML = ''; mount.querySelectorAll('.mn-route-row.is-reenacting').forEach(row => row.classList.remove('is-reenacting')); clearHighlights(); }
+    function cancelPresentationWait() { for (const waiter of model.presentationWaiters || []) { windowRef.clearTimeout(waiter.timer); waiter.resolve(false); } model.presentationWaiters?.clear(); if (model.waitTimer) windowRef.clearTimeout(model.waitTimer); model.waitTimer = null; const release = model.releaseWait; model.releaseWait = null; release?.(false); }
+    function waitUntil(timestamp, token) { if (token !== model.presentationToken) return Promise.resolve(false); const target = Number(timestamp); if (!Number.isFinite(target) || target <= Date.now()) return Promise.resolve(true); return new Promise(resolve => { const waiter = { timer: windowRef.setTimeout(() => { model.presentationWaiters.delete(waiter); resolve(token === model.presentationToken); }, Math.max(0, target - Date.now())), resolve }; model.presentationWaiters.add(waiter); }); }
+    function presentationWait(duration, token) {
+        if (reducedMotion) duration = Math.min(duration, 180);
+        const relativeTarget = Date.now() + Math.max(0, Number(duration) || 0);
+        const target = Number.isFinite(currentContentDeadline) ? Math.min(relativeTarget, currentContentDeadline) : relativeTarget;
+        return waitUntil(target, token);
+    }
+    function showPresentation(mode, tone, kicker, title, body = '') { onPresentationStart?.(); const layer = $('presentationLayer'); clearPresentationFade(layer); layer.hidden = false; layer.setAttribute('aria-hidden', 'false'); layer.className = `mn-presentation-layer is-${mode || 'compact'} ${tone ? `is-${tone}` : ''}`; $('presentationScene').innerHTML = `<div class="mn-scene-heading"><span>${escapeHtml(kicker)}</span><h2>${escapeHtml(title)}</h2></div>${body}`; windowRef.requestAnimationFrame?.(() => layer.classList.add('is-visible')); }
+    function hidePresentation() { const layer = $('presentationLayer'); if (!layer) return; clearPresentationFade(layer); layer.hidden = true; layer.className = 'mn-presentation-layer'; layer.setAttribute('aria-hidden', 'true'); $('presentationScene').innerHTML = ''; $('movingLayer').innerHTML = ''; mount.querySelectorAll('.mn-route-row.is-reenacting').forEach(row => row.classList.remove('is-reenacting')); clearHighlights(); }
+    async function fadeThenHide(token) { const layer = $('presentationLayer'); beginPresentationFade(layer); const deadline = Number.isFinite(currentEventDeadline) ? currentEventDeadline : Date.now() + PRESENTATION_FADE_MS; if (!await waitUntil(deadline, token)) return false; hidePresentation(); return true; }
     function goodBadge(good, detail = '') { const meta = GOOD_META[good] || GOOD_META.人参; return `<span class="mn-scene-good" style="--good:${meta.accent}"><i>${meta.mark}</i><b>${escapeHtml(good || '货物')}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ''}</span>`; }
-    function playerBadge(playerId, name, detail = '') { const player = model.state?.players?.find(candidate => candidate.id === playerId); return `<span class="mn-scene-player" style="--player:${escapeHtml(player?.color || '#c49a5a')}"><i>${escapeHtml((name || player?.name || '商').slice(0, 1))}</i><b>${escapeHtml(name || player?.name || '商人')}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ''}</span>`; }
+    function playerBadge(playerId, name, detail = '') { const player = model.state?.players?.find(candidate => candidate.id === playerId); return `<span class="mn-scene-player" style="--player:${escapeHtml(player?.color || '#c49a5a')}"><b>${escapeHtml(name || player?.name || '商人')}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ''}</span>`; }
 
     async function animateBoatMove(move, token) {
         const row = boatAnchor(move.boatId); if (!row) return presentationWait(280, token);
@@ -49,7 +63,8 @@ export function createManilaScene({ mount, model, getElement, windowRef = global
     async function playPresentationEvent(event, token) {
         const actor = event.actorName || playerName(event.actorId); let mode = 'compact'; let tone = ''; let kicker = '南洋商路'; let title = ''; let body = ''; let from = null; let to = null; let duration = 650;
         if (event.kind === 'boatsSailed') return playMovementEvent(event, token, false); if (event.kind === 'pilotMoved') return playMovementEvent(event, token, true); if (event.kind === 'voyageSettlement') return playVoyageSettlement(event, token);
-        if (event.kind === 'finalSettlement') { const winners = new Set(event.winnerIds || []); const winnerNames = (event.standings || []).filter(player => winners.has(player.id)).map(player => player.name).join('、') || '最高财富玩家'; const rows = (event.standings || []).map((player, index) => `<span class="${winners.has(player.id) ? 'is-winner' : ''}"><i>${index + 1}</i><b>${escapeHtml(player.name)}</b><small>现金 ${player.cash} + 股份 ${player.shareValue} − 贷款 ${player.loanPenalty}</small><em>${player.fortune}</em></span>`).join(''); showPresentation('major', 'final', '航运季最终清算', `${winnerNames}${winners.size > 1 ? '共享马尼拉商会荣光' : '赢得马尼拉商会'}`, `<div class="mn-final-ledger">${rows}</div>`); drawActionLine($('master'), playerAnchor(event.winnerIds?.[0]), 'profit'); await presentationWait(2600, token); return; }
+        if (event.kind === 'playerLeft') { const personal = event.viewerVariant === 'personalDeparture'; showPresentation('major', 'final', '商会席位变动', event.title || (personal ? '您已离开本局' : `${event.playerName} 离开了马尼拉商会`), `<p class="mn-scene-note">${escapeHtml(event.detail || `${event.playerName} 的席位已退出，剩余 ${event.remainingPlayerCount || 0} 位商人继续。`)}</p>`); drawActionLine(playerAnchor(event.playerId), $('presentationScene'), ''); await presentationWait(900, token); return; }
+        if (event.kind === 'finalSettlement') { const winners = new Set((event.winnerIds || []).map(String)); const winnerNames = (event.standings || []).filter(player => winners.has(String(player.id))).map(player => player.name).join('、') || '最高财富玩家'; const rows = (event.standings || []).map((player, index) => `<span class="${winners.has(String(player.id)) ? 'is-winner' : ''}"><i>${index + 1}</i><b>${escapeHtml(player.name)}</b><small>现金 ${player.cash} + 股份 ${player.shareValue} − 贷款 ${player.loanPenalty}</small><em>${player.fortune}</em></span>`).join(''); const title = event.title || `${winnerNames}${winners.size > 1 ? '共享马尼拉商会荣光' : '赢得马尼拉商会'}`; const detail = event.detail || '所有在线商人的最终财富已经结算。'; showPresentation('major', 'final', '航运季最终清算', title, `<div class="mn-final-ledger">${rows}</div><p class="mn-scene-note">${escapeHtml(detail)}</p>`); drawActionLine($('master'), playerAnchor(event.winnerIds?.[0]), 'profit'); await presentationWait(2600, token); return; }
         if (event.kind === 'auctionBid') { kicker = '港务长竞价'; title = `${actor}出价 ${event.amount} 比索`; body = playerBadge(event.actorId, actor, `现金 ${event.cash}·可抵押 ${event.mortgageCapacity}`); from = playerAnchor(event.actorId); to = $('master'); }
         else if (event.kind === 'auctionPassed') { kicker = '港务长竞价'; title = `${actor}退出本轮竞价`; body = `<p class="mn-scene-note">仍有 ${event.remaining} 人保留竞价资格</p>`; from = playerAnchor(event.actorId); duration = 420; }
         else if (event.kind === 'harborMasterAppointed') { mode = 'medium'; tone = 'appointed'; kicker = '任命书'; title = `${event.playerName}成为港务长`; body = `${playerBadge(event.playerId, event.playerName, event.winningBid ? `成交价 ${event.winningBid}比索` : '续任')}${event.mortgagesAdded ? `<p class="mn-scene-note">自动抵押 ${event.mortgagesAdded} 张股份</p>` : ''}`; from = $('master'); to = playerAnchor(event.playerId); duration = 1100; }
@@ -75,10 +90,49 @@ export function createManilaScene({ mount, model, getElement, windowRef = global
         showPresentation(mode, tone, kicker, title, body); if (from && to) drawActionLine(from, to, tone === 'danger' ? 'danger' : tone === 'sailing' ? 'profit' : ''); await presentationWait(duration, token);
     }
 
-    async function drainPresentations() { if (model.presentationPlaying || !model.presentationQueue.length) return; model.presentationPlaying = true; const token = ++model.presentationToken; renderCommand?.(); while (model.presentationQueue.length && token === model.presentationToken) { const presentation = model.presentationQueue.shift(); for (const event of presentation.events || []) { if (token !== model.presentationToken) break; await playPresentationEvent(event, token); clearHighlights(); } } if (token !== model.presentationToken) return; hidePresentation(); model.presentationPlaying = false; renderCommand?.(); }
-    function enqueuePresentation(presentation) { if (presentation?.events?.length) { model.presentationQueue.push(presentation); void drainPresentations(); } }
-    function skipPresentation() { model.presentationQueue = []; model.presentationPlaying = false; model.presentationToken += 1; cancelPresentationWait(); hidePresentation(); renderCommand?.(); }
-    function stop() { model.presentationToken += 1; cancelPresentationWait(); model.presentationQueue = []; hidePresentation(); model.presentationPlaying = false; }
+    async function holdPresentationLock(token) { const deadline = Number(model.presentationLockedUntil) || 0; if (deadline > Date.now() && !await waitUntil(deadline, token)) return; if (token !== model.presentationToken) return; model.presentationPlaying = false; model.presentationEvent = null; renderer?.render?.(); renderCommand?.(); if (model.presentationQueue.length) void drainPresentations(); }
+    async function drainPresentations() {
+        if (model.presentationPlaying || !model.presentationQueue.length) return;
+        model.presentationPlaying = true;
+        const token = ++model.presentationToken;
+        renderer?.render?.(); renderCommand?.();
+        while (model.presentationQueue.length && token === model.presentationToken) {
+            const batch = model.presentationQueue.shift();
+            for (const event of batch.events || []) {
+                if (token !== model.presentationToken) break;
+                if (Number.isFinite(Number(event.endsAt)) && Number(event.endsAt) <= Date.now()) continue;
+                if (Number.isFinite(Number(event.startedAt)) && !await waitUntil(event.startedAt, token)) break;
+                currentEventDeadline = Number.isFinite(Number(event.endsAt)) ? Number(event.endsAt) : Number.POSITIVE_INFINITY;
+                currentContentDeadline = Number.isFinite(currentEventDeadline) ? Math.max(Date.now(), currentEventDeadline - PRESENTATION_FADE_MS) : Number.POSITIVE_INFINITY;
+                model.presentationEvent = event;
+                if (currentContentDeadline > Date.now() && !await playPresentationEvent(event, token)) break;
+                if (token !== model.presentationToken) break;
+                if (Number.isFinite(currentContentDeadline) && !await waitUntil(currentContentDeadline, token)) break;
+                if (!await fadeThenHide(token)) break;
+            }
+        }
+        if (token !== model.presentationToken) return;
+        currentEventDeadline = Number.POSITIVE_INFINITY; currentContentDeadline = Number.POSITIVE_INFINITY; model.presentationEvent = null; hidePresentation();
+        if (Date.now() < Number(model.presentationLockedUntil || 0)) { void holdPresentationLock(token); return; }
+        model.presentationPlaying = false; renderer?.render?.(); renderCommand?.();
+    }
+    function enqueuePresentation(presentation) {
+        if (!presentation?.events?.length) return;
+        if (Number.isFinite(Number(presentation.endsAt))) { if (Number(presentation.endsAt) <= Date.now()) return; model.presentationLockedUntil = Math.max(Number(model.presentationLockedUntil) || 0, Number(presentation.endsAt)); }
+        for (const event of presentation.events) {
+            if (Number.isFinite(Number(event.endsAt)) && Number(event.endsAt) <= Date.now()) continue;
+            model.presentationQueue.push({ ...presentation, events: [event] });
+        }
+        void drainPresentations();
+    }
+    function skipPresentation() {
+        const token = ++model.presentationToken;
+        cancelPresentationWait(); hidePresentation(); model.presentationEvent = null; currentEventDeadline = Number.POSITIVE_INFINITY; currentContentDeadline = Number.POSITIVE_INFINITY; model.presentationPlaying = false;
+        renderer?.render?.(); renderCommand?.();
+        if (model.presentationQueue.length) void drainPresentations();
+        else if (Date.now() < Number(model.presentationLockedUntil || 0)) { model.presentationPlaying = true; renderer?.render?.(); void holdPresentationLock(token); }
+    }
+    function stop() { model.presentationToken += 1; cancelPresentationWait(); model.presentationQueue = []; hidePresentation(); model.presentationPlaying = false; model.presentationEvent = null; model.presentationLockedUntil = 0; currentEventDeadline = Number.POSITIVE_INFINITY; currentContentDeadline = Number.POSITIVE_INFINITY; renderer?.render?.(); renderCommand?.(); }
 
-    return { enqueuePresentation, skipPresentation, stop, isPlaying: () => model.presentationPlaying };
+    return { enqueuePresentation, skipPresentation, skipPresentations: skipPresentation, stop, isPlaying: () => model.presentationPlaying || Date.now() < Number(model.presentationLockedUntil || 0) };
 }

@@ -1,20 +1,15 @@
+const crypto = require('node:crypto');
 const games = require('./games/registry');
-
+const studyMethods = require('./room-study');
 const ROOM_NAME_MAX_LENGTH = 24;
-
-const STUDY_SIDE_LABELS = {
-    chess: { white: '白方', black: '黑方' },
-    xiangqi: { red: '红方', black: '黑方' },
-    jungle: { red: '红方', blue: '蓝方' },
-    junqi: { red: '红方', blue: '蓝方' },
-    gobang: { black: '黑方', white: '白方' },
-    checkers: { red: '红方', blue: '蓝方', green: '绿方', yellow: '黄方', purple: '紫方', orange: '橙方' },
-};
-
-function studySideLabel(gameType, color, fallback = '当前阵营') {
-    return STUDY_SIDE_LABELS[gameType]?.[color] || fallback || (color ? `${color}方` : '当前阵营');
+const DEFAULT_GAME_ENTRY_DURATION_MS = 2800;
+function gameEntryDurationForPlayerCount(playerCount) {
+    // The client groups occupied seats into at most four opposing waves. Each
+    // extra wave starts 420ms later; the remaining pause/gather/burst timing is
+    // fixed. Keep a small 10ms scheduling margin at the server deadline.
+    const waveCount = Math.min(4, Math.max(2, Math.ceil(Math.max(1, Number(playerCount) || 1) / 2)));
+    return 1120 + waveCount * 420;
 }
-
 function normalizeRoomName(value, hostName, gameName) {
     const clean = String(value ?? '')
         .replace(/[\u0000-\u001f\u007f]/g, ' ')
@@ -26,7 +21,6 @@ function normalizeRoomName(value, hostName, gameName) {
     if (clean) return clean;
     return [...`${hostName || '房主'}的${gameName}房间`].slice(0, ROOM_NAME_MAX_LENGTH).join('');
 }
-
 function normalizeRoomSettingDefinitions(definitions) {
     if (!Array.isArray(definitions)) return [];
     return definitions
@@ -49,14 +43,12 @@ function normalizeRoomSettingDefinitions(definitions) {
                 : [],
         }));
 }
-
 class Room {
     constructor(roomId, hostId, hostName, gameType = 'loveletter', gameOptions = {}, roomProperties = {}) {
         const gameModule = games.getGame(gameType);
         if (!gameModule) {
             throw new Error(`\u672a\u77e5\u6e38\u620f\u7c7b\u578b: ${gameType}`);
         }
-
         this.id = roomId;
         this.gameType = gameType;
         this.gameName = gameModule.metadata.name;
@@ -77,6 +69,10 @@ class Room {
         this.readyCheckEnabled = properties.readyCheckEnabled === true;
         this.roomName = normalizeRoomName(properties.roomName, hostName, this.gameName);
         this.isPublic = properties.isPublic !== false;
+        // Invite-only rooms must not be joinable by guessing the sequential
+        // room number.  Keep the token server-generated and expose it only in
+        // room-scoped snapshots; public-room listings never contain it.
+        this.inviteToken = this.isPublic ? null : crypto.randomBytes(24).toString('base64url');
         this.hostId = hostId;
         this.players = [];
         this.status = 'waiting';
@@ -128,8 +124,9 @@ class Room {
         this.studyControl = new Map();
         this.studyPhase = null;
         this.studySetupSelection = new Map();
+        this.gameStartSequence = 0;
+        this.gameStartTransition = null;
     }
-
     _refreshStudyLimits() {
         if (!this.studyModeSupported) return;
         if (this.gameOptions.gameMode === 'study') {
@@ -142,7 +139,6 @@ class Room {
             if (!this.allowedPlayerCounts.length) this.targetPlayers = null;
         }
     }
-
     addPlayer(player) {
         if (this.configurationRequired && !this.configurationConfirmed && player.id !== this.hostId) {
             return { success: false, message: '房主尚未确认房间设置' };
@@ -153,7 +149,7 @@ class Room {
         if (this.players.find(p => p.id === player.id)) {
             return { success: false, message: '\u4f60\u5df2\u7ecf\u5728\u8fd9\u4e2a\u623f\u95f4\u4e2d' };
         }
-        if (this.status === 'playing') {
+        if (this.status !== 'waiting') {
             return { success: false, message: '\u6e38\u620f\u5df2\u5f00\u59cb\uff0c\u65e0\u6cd5\u52a0\u5165' };
         }
         const occupiedSeats = new Set(this.players.map(item => item.seatIndex));
@@ -169,11 +165,9 @@ class Room {
         this.players.push(seatedPlayer);
         return { success: true, message: '\u52a0\u5165\u6210\u529f', seatIndex };
     }
-
     _settingDefinition(key) {
         return this.roomSettingDefinitions.find(definition => definition.key === key) || null;
     }
-
     _validateRoomSettings(settings) {
         const source = settings && typeof settings === 'object' ? settings : {};
         const entries = Object.entries(source).filter(([, value]) => value !== undefined);
@@ -211,7 +205,6 @@ class Room {
         }
         return { success: true, settings: normalized };
     }
-
     _applyRoomSettings(settings) {
         for (const [key, value] of Object.entries(settings)) {
             if (key === 'playerCount') this._setPlayerCount(value);
@@ -221,7 +214,6 @@ class Room {
         this._refreshStudyLimits();
         this._refreshConfiguration();
     }
-
     _setPlayerCount(playerCount) {
         const target = Number(playerCount);
         if (!this.allowedPlayerCounts.includes(target)) {
@@ -237,7 +229,6 @@ class Room {
         this._refreshConfiguration();
         return { success: true, message: `已确认 ${target} 人房间` };
     }
-
     _setEncryptorMode(mode) {
         const value = String(mode || '');
         if (!this.allowedEncryptorModes.includes(value)) return { success: false, message: '请选择有效的加密员产生方式' };
@@ -246,13 +237,11 @@ class Room {
         const labels = { fixed_vote: '固定投票', rotation: '轮流', random: '每轮随机' };
         return { success: true, message: `已选择“${labels[value] || value}”加密员规则` };
     }
-
     _refreshConfiguration() {
         const playerCountReady = !this.allowedPlayerCounts.length || this.targetPlayers != null;
         const encryptorModeReady = !this.allowedEncryptorModes.length || this.allowedEncryptorModes.includes(this.gameOptions.encryptorMode);
         this.configurationConfirmed = playerCountReady && encryptorModeReady;
     }
-
     configure(playerId, options = {}) {
         if (!this.configurationRequired) return { success: false, message: '该游戏无需额外设置' };
         if (playerId !== this.hostId) return { success: false, message: '只有房主可以确认房间设置' };
@@ -269,7 +258,6 @@ class Room {
         this._applyRoomSettings(validation.settings);
         return { success: true, message: '房间设置已确认' };
     }
-
     updateSettings(playerId, settings = {}) {
         if (playerId !== this.hostId) return { success: false, message: '只有房主可以修改房间设置' };
         if (this.status !== 'waiting') return { success: false, message: '游戏已开始，无法修改设置' };
@@ -280,7 +268,6 @@ class Room {
         this.players.forEach(player => { player.ready = player.id === this.hostId; });
         return { success: true, message: '房间设置已更新，成员需要重新准备', settings: { ...this.gameOptions } };
     }
-
     setPlayerReady(playerId, ready) {
         if (this.status !== 'waiting') return { success: false, message: '游戏已开始，无法修改准备状态' };
         const player = this.players.find(item => item.id === playerId);
@@ -296,17 +283,24 @@ class Room {
             totalCount: connectedPlayers.length,
         };
     }
-
     isListed() {
         return this.configurationConfirmed && this.isPublic && this.status === 'waiting';
     }
-
+    isInviteTokenValid(token) {
+        if (this.isPublic) return true;
+        const expected = Buffer.from(this.inviteToken || '');
+        const actual = Buffer.from(String(token || ''));
+        return expected.length > 0
+            && expected.length === actual.length
+            && crypto.timingSafeEqual(expected, actual);
+    }
     removePlayer(playerId) {
         const index = this.players.findIndex(p => p.id === playerId);
         if (index === -1) return null;
 
         const removed = this.players.splice(index, 1)[0];
         this.disconnectedPlayers.delete(playerId);
+        if (this.status === 'starting') { this.gameStartTransition = null; this.status = 'waiting'; }
         if (this.hostId === playerId && this.players.length > 0) {
             this.hostId = this.players[0].id;
             this.players[0].ready = true;
@@ -316,7 +310,6 @@ class Room {
         }
         return removed;
     }
-
     getPlayerInfo() {
         return [...this.players].sort((a, b) => a.seatIndex - b.seatIndex).map(p => ({
             id: p.id,
@@ -327,7 +320,6 @@ class Room {
             ready: p.ready === true,
         }));
     }
-
     getConnectionState() {
         const disconnected = [...this.disconnectedPlayers.values()].map(player => ({
             id: player.id,
@@ -339,17 +331,16 @@ class Room {
             disconnected,
         };
     }
-
     markPlayerDisconnected(playerId) {
         const player = this.players.find(item => item.id === playerId);
         if (!player) return { success: false, message: '玩家不存在' };
         player.connected = false;
+        if (this.status === 'starting') { this.gameStartTransition = null; this.status = 'waiting'; }
         if (this.status === 'playing') {
             this.disconnectedPlayers.set(playerId, { id: player.id, name: player.name, since: Date.now() });
         }
         return { success: true, player };
     }
-
     markPlayerReconnected(playerId) {
         const player = this.players.find(item => item.id === playerId);
         if (!player) return { success: false, message: '玩家不存在' };
@@ -357,9 +348,8 @@ class Room {
         this.disconnectedPlayers.delete(playerId);
         return { success: true, player, connectionState: this.getConnectionState() };
     }
-
     getInfo() {
-        return {
+        const info = {
             id: this.id,
             gameType: this.gameType,
             gameName: this.gameName,
@@ -389,10 +379,54 @@ class Room {
             connectionState: this.getConnectionState(),
             players: this.getPlayerInfo(),
             createdAt: this.createdAt,
+            entryTransition: this.gameStartTransition ? { ...this.gameStartTransition } : null,
         };
+        if (!this.isPublic) info.inviteToken = this.inviteToken;
+        return info;
+    }
+    getGameEntryDurationMs() {
+        return gameEntryDurationForPlayerCount(this.players.filter(player => player.connected !== false).length);
+    }
+    beginGameStart({ durationMs = null, transitionId = null } = {}) {
+        if (this.gameStartTransition || this.status === 'starting') return { success: false, message: '游戏正在进入，请稍候' };
+        if (this.status !== 'waiting') return { success: false, message: this.status === 'playing' ? '\u6e38\u620f\u5df2\u5f00\u59cb' : '\u6e38\u620f\u5df2\u7ed3\u675f' };
+        if (this.configurationRequired && !this.configurationConfirmed) return { success: false, message: this.allowedPlayerCounts.length ? '请先确认房间人数' : '请先确认房间设置' };
+        const connectedPlayers = this.players.filter(player => player.connected !== false);
+        if (this.targetPlayers && connectedPlayers.length !== this.targetPlayers) {
+            return { success: false, message: `需要 ${this.targetPlayers} 名玩家全部到齐才能开始（当前 ${connectedPlayers.length}/${this.targetPlayers}）` };
+        }
+        if (connectedPlayers.length < this.minPlayers) {
+            return { success: false, message: `\u81f3\u5c11\u9700\u8981 ${this.minPlayers} \u540d\u73a9\u5bb6` };
+        }
+        if (connectedPlayers.length > this.maxPlayers) {
+            return { success: false, message: `\u6700\u591a\u652f\u6301 ${this.maxPlayers} \u540d\u73a9\u5bb6` };
+        }
+        if (this.readyCheckEnabled) {
+            const requiredPlayers = connectedPlayers.filter(player => player.id !== this.hostId);
+            const unreadyPlayers = requiredPlayers.filter(player => player.ready !== true);
+            if (unreadyPlayers.length) {
+                return { success: false, message: `请等待所有成员准备（已准备 ${requiredPlayers.length - unreadyPlayers.length}/${requiredPlayers.length}）` };
+            }
+        }
+        const entryStartsAt = Date.now();
+        const requestedDuration = durationMs == null ? this.getGameEntryDurationMs() : Number(durationMs);
+        const safeDuration = Number.isFinite(requestedDuration) ? Math.max(0, Math.min(15_000, requestedDuration)) : DEFAULT_GAME_ENTRY_DURATION_MS;
+        const id = String(transitionId || `${this.id}:${++this.gameStartSequence}:${entryStartsAt}`);
+        const entryTransition = { transitionId: id, serverNow: entryStartsAt, entryStartsAt, gameVisibleAt: entryStartsAt + safeDuration, playableAt: entryStartsAt + safeDuration, durationMs: safeDuration };
+        this.status = 'starting';
+        this.gameStartTransition = entryTransition;
+        return { success: true, message: '游戏即将开始', entryTransition: { ...entryTransition } };
     }
 
-    startGame() {
+    cancelGameStartTransition() {
+        if (this.status !== 'starting' && !this.gameStartTransition) return false;
+        this.gameStartTransition = null;
+        if (this.status === 'starting') this.status = 'waiting';
+        return true;
+    }
+
+    startGame(options = {}) {
+        if (options?.defer === true) return this.beginGameStart(options);
         if (this.status === 'playing') {
             return { success: false, message: '\u6e38\u620f\u5df2\u5f00\u59cb' };
         }
@@ -409,7 +443,6 @@ class Room {
         if (connectedPlayers.length > this.maxPlayers) {
             return { success: false, message: `\u6700\u591a\u652f\u6301 ${this.maxPlayers} \u540d\u73a9\u5bb6` };
         }
-
         if (this.readyCheckEnabled) {
             const requiredPlayers = connectedPlayers.filter(player => player.id !== this.hostId);
             const unreadyPlayers = requiredPlayers.filter(player => player.ready !== true);
@@ -417,7 +450,6 @@ class Room {
                 return { success: false, message: `请等待所有成员准备（已准备 ${requiredPlayers.length - unreadyPlayers.length}/${requiredPlayers.length}）` };
             }
         }
-
         try {
             // The optional third argument lets games with an inter-round
             // pause authorize the room host without changing older adapters.
@@ -434,6 +466,7 @@ class Room {
                 this.studyPhase = this.gameType === 'junqi' ? 'engine-setup' : 'setup';
             }
             this.status = 'playing';
+            this.gameStartTransition = null;
             if (this.studyModeSupported && this.gameOptions.gameMode === 'study') return { ...result, state: this.getPlayerGameState(this.hostId) };
             return result;
         } catch (error) {
@@ -444,6 +477,10 @@ class Room {
     handleGameAction(playerId, action) {
         if (!this.game) {
             return { success: false, message: '\u6e38\u620f\u672a\u5f00\u59cb' };
+        }
+        const presentation = this.game.getPlayerState?.(playerId)?.presentation;
+        if (this.readyCheckEnabled && presentation?.blocking && Date.now() < Number(presentation.endsAt)) {
+            return { success: false, message: '请等待当前播报结束', state: this.getPlayerGameState(playerId) };
         }
         // Perspective changes are read-only and remain available after a
         // study table reaches a terminal position, so the author can inspect
@@ -509,110 +546,6 @@ class Room {
         return result;
     }
 
-    _enginePlayersForStart(seatedPlayers) {
-        if (!(this.studyModeSupported && this.gameOptions.gameMode === 'study')) return seatedPlayers;
-        const count = Number(this.gameModule.metadata.studyPlayerCount || this.gameModule.metadata.minPlayers || 2);
-        const players = seatedPlayers.slice(0, count);
-        const names = this.gameModule.metadata.studySeatNames || [];
-        for (let index = players.length; index < count; index += 1) {
-            players.push({
-                id: `study-${this.id}-${index + 1}`,
-                name: names[index] || `研究方 ${index + 1}`,
-                seatIndex: index,
-                connected: true,
-            });
-        }
-        return players;
-    }
-
-    _studyPlayers() {
-        return this.game?.engine?.players || [];
-    }
-
-    _studyEnginePlayerId(playerId) {
-        const players = this._studyPlayers();
-        const index = Number(this.studyControl.get(playerId) ?? 0);
-        return players[index]?.id || null;
-    }
-
-    _studyViewerForEngine(enginePlayerId) {
-        for (const [viewerId] of this.studyControl) if (this._studyEnginePlayerId(viewerId) === enginePlayerId) return viewerId;
-        return this.hostId;
-    }
-
-    _switchStudySeat(playerId, action = {}) {
-        const players = this._studyPlayers();
-        if (!players.length) return { success: false, message: '研究棋局尚未准备好' };
-        let index = Number.isInteger(action.seatIndex) ? action.seatIndex : NaN;
-        if (!Number.isInteger(index) && action.color) index = players.findIndex(player => player.color === action.color);
-        if (!Number.isInteger(index)) {
-            const current = Number(this.studyControl.get(playerId) ?? 0);
-            index = (current + 1) % players.length;
-        }
-        if (index < 0 || index >= players.length) return { success: false, message: '研究阵营不存在' };
-        this.studyControl.set(playerId, index);
-        const selected = players[index];
-        const side = studySideLabel(this.gameType, selected.color, selected.name);
-        return {
-            success: true,
-            message: `已切换到${side}`,
-            state: this.getPlayerGameState(playerId),
-            action: { kind: 'studySwitchSeat', seatIndex: index, color: selected.color, side, playerName: selected.name },
-        };
-    }
-
-    _handleStudySetup(enginePlayerId, action = {}, viewerId) {
-        if (!action || typeof action !== 'object') return null;
-        if (action.kind === 'studySetup') action = { ...action, kind: action.op || action.operation };
-        if (!['move', 'place', 'remove', 'clear', 'reset', 'setTurn'].includes(action.kind)) return null;
-        if (typeof this.game.handleStudySetup !== 'function') {
-            return { success: false, message: `${this.gameName} 的摆棋编辑器尚未支持该操作`, state: this.getPlayerGameState(viewerId) };
-        }
-        // A study action is routed to the currently selected virtual seat.
-        // Do not let a crafted payload place or move the other side without
-        // switching perspective first.
-        const enginePlayer = this._studyPlayers().find(player => player.id === enginePlayerId);
-        if (enginePlayer && (action.kind === 'place' || action.kind === 'move')) action = { ...action, color: enginePlayer.color };
-        return this.game.handleStudySetup(enginePlayerId, action, viewerId);
-    }
-
-    _applyStudySetupActions(state, enginePlayerId) {
-        if (!state || this.studyPhase !== 'setup') return;
-        state.myIsCurrentTurn = true;
-        state.availableActions = { canMove: true, canPlace: true, canSetup: true };
-        const player = state.players?.find(item => item.id === enginePlayerId);
-        if (!player) return;
-        const pieces = state.pieces || [];
-        const empty = [];
-        const board = state.rules?.board || {};
-        const dimensions = {
-            chess: [8, 8],
-            xiangqi: [9, 10],
-            jungle: [7, 9],
-            gobang: [15, 15],
-        }[this.gameType] || [Number(board.width || 0), Number(board.height || 0)];
-        const width = Number(board.width || dimensions[0] || 0);
-        const height = Number(board.height || dimensions[1] || 0);
-        if (width && height) for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) if (!pieces.some(piece => piece.x === x && piece.y === y)) empty.push({ x, y });
-        if (this.gameType === 'gobang') {
-            state.legalMoves = { place: empty };
-            return;
-        }
-        if (this.gameType === 'checkers') {
-            const grid = [];
-            for (let y = 0; y <= 16; y += 1) for (let x = 0; x <= 24; x += 1) if (!pieces.some(piece => piece.x === x && piece.y === y)) grid.push({ x, y });
-            const own = pieces.filter(piece => piece.color === player.color);
-            const viewerId = this._studyViewerForEngine(enginePlayerId);
-            const selectedId = this.studySetupSelection.get(viewerId);
-            state.legalMoves = { select: own.map(piece => piece.id), step: grid, jump: [] };
-            const selected = own.find(piece => piece.id === selectedId);
-            state.selectedPiece = selected ? { pieceId: selected.id, x: selected.x, y: selected.y, current: { x: selected.x, y: selected.y } } : null;
-            return;
-        }
-        const own = pieces.filter(piece => piece.color === player.color);
-        const targets = empty;
-        state.legalMoves = Object.fromEntries(own.map(piece => [piece.id, targets.map(target => ({ ...target }))]));
-    }
 
     handleSystemTick() {
         if (this.status !== 'playing' || this.disconnectedPlayers.size || !this.game?.handleSystemTick) return null;
@@ -656,4 +589,8 @@ class Room {
     }
 }
 
+Object.assign(Room.prototype, studyMethods);
+
 module.exports = Room;
+module.exports.DEFAULT_GAME_ENTRY_DURATION_MS = DEFAULT_GAME_ENTRY_DURATION_MS;
+module.exports.gameEntryDurationForPlayerCount = gameEntryDurationForPlayerCount;

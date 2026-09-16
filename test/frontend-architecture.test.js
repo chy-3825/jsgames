@@ -66,6 +66,11 @@ test('高复杂度游戏样式按职责拆层并由资源清单保持级联顺�
         avalon: ['style.css', 'scenes.css'],
         citadels: ['style.css', 'roles.css', 'interactions.css', 'responsive.css', 'scenes.css'],
         coup: ['style.css', 'private.css', 'scenes.css', 'responsive.css'],
+        hanabi: ['style.css', 'table.css', 'actions.css', 'responsive.css', 'scenes.css', 'responsive-scenes.css'],
+        lasvegas: ['style.css', 'board.css', 'responsive.css', 'scenes.css'],
+        monopolydeal: ['style.css', 'choice.css', 'assets.css', 'interactions.css', 'scenes.css', 'responsive-scenes.css', 'responsive.css', 'table.css', 'records.css', 'stage.css', 'seats.css'],
+        splendor: ['style.css', 'table.css', 'scenes.css', 'responsive.css'],
+        witchtown: ['style.css', 'table.css', 'dossier.css', 'scenes.css', 'responsive.css'],
     };
     for (const [game, files] of Object.entries(splitStyles)) {
         const positions = files.map(file => manifest.indexOf(`style('/games/${game}/${file}',`));
@@ -76,6 +81,7 @@ test('高复杂度游戏样式按职责拆层并由资源清单保持级联顺�
         for (const file of files) {
             const source = fs.readFileSync(path.join(gamesRoot, game, file), 'utf8');
             assert.ok(source.trim(), `${game}/${file} 不能为空`);
+            assert.doesNotMatch(source, /@import\s/i, `${game}/${file} 不应通过隐式 @import 叠加样式`);
         }
         const client = read(game, 'client.js');
         assert.match(client, /getGameStyleHrefs\(/, `${game} 客户端必须通过统一清单加载样式`);
@@ -87,6 +93,11 @@ test('高复杂度游戏样式按职责拆层并由资源清单保持级联顺�
         avalon: 'public/__game_shell_visual_test.html',
         citadels: 'public/__cardfaces_visual_test.html',
         coup: 'public/__coup_cards_visual_test.html',
+        hanabi: 'public/__game_shell_visual_test.html',
+        lasvegas: 'public/__game_shell_visual_test.html',
+        monopolydeal: 'public/__game_shell_visual_test.html',
+        splendor: 'public/__game_shell_visual_test.html',
+        witchtown: 'public/__game_shell_visual_test.html',
     };
     for (const [game, fixturePath] of Object.entries(visualFixtures)) {
         const fixture = fs.readFileSync(path.join(root, fixturePath), 'utf8');
@@ -94,14 +105,39 @@ test('高复杂度游戏样式按职责拆层并由资源清单保持级联顺�
             assert.match(fixture, new RegExp(`/games/${game}/${file.replace('.', '\\.')}`), `${fixturePath} 缺少 ${file}`);
         }
     }
+
+    const lobbyStyles = ['style.css', 'lobby/game-shell.css', 'lobby/utilities.css', 'lobby/responsive.css', 'lobby/waiting-room.css'];
+    const lobbyPage = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+    const lobbyFixture = fs.readFileSync(path.join(root, 'public', '__game_shell_visual_test.html'), 'utf8');
+    const lobbyPositions = lobbyStyles.map(file => lobbyPage.indexOf(`href="${file}`));
+    assert.ok(lobbyPositions.every(position => position >= 0), '大厅页面必须登记所有全局 CSS 层');
+    for (let index = 1; index < lobbyPositions.length; index += 1) {
+        assert.ok(lobbyPositions[index] > lobbyPositions[index - 1], '大厅全局 CSS 应按基础到壳层、工具、响应式和等待房间顺序加载');
+    }
+    for (const file of lobbyStyles.slice(1)) {
+        assert.match(lobbyFixture, new RegExp(`/` + file.replace('/', '\\/').replace('.', '\\.')), `统一外壳验收页缺少 ${file}`);
+    }
+    for (const file of lobbyStyles) {
+        const source = fs.readFileSync(path.join(root, 'public', file), 'utf8');
+        assert.doesNotMatch(source, /@import\s/i, `public/${file} 不应通过隐式 @import 叠加样式`);
+    }
 });
 
 test('大厅入口与胡闹运动会引擎保持组合根和领域模块边界', () => {
     const lobbyEntry = fs.readFileSync(path.join(root, 'public', 'script.js'), 'utf8');
-    assert.ok(lobbyEntry.split('\n').length < 1300, '大厅入口不应重新堆积为单体脚本');
-    for (const module of ['catalog-data', 'catalog-view', 'game-loader', 'transport', 'artwork', 'room-dialog', 'waiting-room-scene', 'game-entry-transition', 'study-controls']) {
+    assert.ok(lobbyEntry.split('\n').length < 1000, '大厅入口应保持在编排层规模内');
+    for (const module of ['catalog-data', 'catalog-view', 'game-loader', 'transport', 'artwork', 'room-dialog', 'waiting-room-scene', 'game-entry-transition', 'study-controls', 'message-handler', 'event-bindings']) {
         assert.match(lobbyEntry, new RegExp(`from ['"]\\./lobby/${module}\\.js['"]`), `大厅入口缺少 ${module} 模块`);
     }
+
+    const realtimeEntry = fs.readFileSync(path.join(root, 'server', 'realtime', 'create-realtime-server.js'), 'utf8');
+    assert.match(realtimeEntry, /require\(['"]\.\/room-handlers['"]\)/);
+    assert.match(realtimeEntry, /require\(['"]\.\/socket-lifecycle['"]\)/);
+    assert.ok(realtimeEntry.split('\n').length < 500, '实时服务工厂应只保留依赖装配与统计');
+    const roomEntry = fs.readFileSync(path.join(root, 'server', 'room.js'), 'utf8');
+    assert.match(roomEntry, /require\(['"]\.\/room-study['"]\)/);
+    assert.match(roomEntry, /Object\.assign\(Room\.prototype, studyMethods\)/);
+    assert.ok(roomEntry.split('\n').length < 600, '通用房间应只保留房间状态与生命周期');
 
     const engine = fs.readFileSync(path.join(root, 'server', 'games', 'magicalathlete', 'engine.js'), 'utf8');
     for (const module of ['constants', 'turn-resolution', 'movement', 'state']) {

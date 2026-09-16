@@ -1,15 +1,50 @@
 import { escapeHtml, camelMeta, camelGlyph, finishCardBack } from './constants.js';
+import { beginPresentationFade, clearPresentationFade, PRESENTATION_FADE_MS } from '../common/presentation-fade.js';
 
 /** Presentation queue for 狂野骆驼 race and settlement events. */
-export function createCamelUpScene({ mount, model, getElement, windowRef = globalThis.window || globalThis, renderer }) {
-    const $ = role => getElement(role); const state = () => model.state; const findData = (attribute, value) => [...mount.querySelectorAll(`[${attribute}]`)].find(element => String(element.getAttribute(attribute)) === String(value)) || null; const playerAnchor = id => findData('data-player-id', id); const trackAnchor = position => findData('data-track-cell', position); const legAnchor = id => findData('data-leg-anchor', id); const overallAnchor = outcome => findData('data-overall-pile', outcome); const pyramidAnchor = () => mount.querySelector('[data-stage-anchor="pyramid"]'); const centerOf = element => { if (!element?.isConnected) return null; const box = element.getBoundingClientRect(); return { x: box.left + box.width / 2, y: box.top + box.height / 2 }; }; const reducedMotion = windowRef.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    function clearPresentationMarks() { mount.querySelectorAll('.is-presentation-source, .is-presentation-target, .is-presentation-destination').forEach(element => element.classList.remove('is-presentation-source', 'is-presentation-target', 'is-presentation-destination')); $('actionLine')?.classList.remove('is-visible', 'is-money', 'is-secret', 'is-danger'); }
-    function drawActionLine(fromElement, toElement, tone = '') { clearPresentationMarks(); const from = centerOf(fromElement); const to = centerOf(toElement); if (!from || !to) return; fromElement.classList.add('is-presentation-source'); toElement.classList.add('is-presentation-target'); const svg = $('actionLine'); svg.setAttribute('viewBox', `0 0 ${windowRef.innerWidth || 1} ${windowRef.innerHeight || 1}`); const line = svg.querySelector('line'); const circle = svg.querySelector('circle'); line.setAttribute('x1', from.x); line.setAttribute('y1', from.y); line.setAttribute('x2', to.x); line.setAttribute('y2', to.y); circle.setAttribute('cx', to.x); circle.setAttribute('cy', to.y); svg.classList.toggle('is-money', tone === 'money'); svg.classList.toggle('is-secret', tone === 'secret'); svg.classList.toggle('is-danger', tone === 'danger'); (windowRef.requestAnimationFrame || (callback => windowRef.setTimeout(callback, 0)))(() => svg.classList.add('is-visible')); }
-    function cancelPresentationWait() { if (model.presentationTimer) windowRef.clearTimeout(model.presentationTimer); model.presentationTimer = null; const release = model.presentationRelease; model.presentationRelease = null; release?.(false); }
-    function presentationWait(duration, token) { if (reducedMotion) duration = Math.min(duration, 150); if (token !== model.presentationToken) return Promise.resolve(false); return new Promise(resolve => { const finish = value => { model.presentationTimer = null; model.presentationRelease = null; resolve(value); }; model.presentationRelease = finish; model.presentationTimer = windowRef.setTimeout(() => finish(token === model.presentationToken), Math.max(0, duration)); }); }
-    function showPresentation(mode, tone, kicker, title, body = '') { const layer = $('presentationLayer'); layer.hidden = false; layer.className = `cm-presentation-layer is-${mode || 'compact'} ${tone ? `is-${tone}` : ''}`; $('presentationStage').innerHTML = `<header class="cm-event-heading"><span>${escapeHtml(kicker)}</span><h2>${escapeHtml(title)}</h2></header>${body}`; }
-    function hidePresentation() { const layer = $('presentationLayer'); if (!layer) return; layer.hidden = true; layer.className = 'cm-presentation-layer'; $('presentationStage').innerHTML = ''; $('floatingLayer').innerHTML = ''; clearPresentationMarks(); }
-    function eventPlayer(playerId, name, detail = '') { const player = state()?.players?.find(candidate => candidate.id === playerId); return `<span class="cm-event-player" style="--player:${escapeHtml(player?.color || '#8c755d')}"><i>${escapeHtml((name || player?.name || '客').slice(0, 1))}</i><b>${escapeHtml(name || player?.name || '玩家')}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ''}</span>`; }
+export function createCamelUpScene({ mount, model, getElement, windowRef = globalThis.window || globalThis, renderer, onPresentationStart = () => {} }) {
+    const $ = role => getElement(role); const state = () => model.state; const findData = (attribute, value) => [...mount.querySelectorAll(`[${attribute}]`)].find(element => String(element.getAttribute(attribute)) === String(value)) || null; const playerAnchor = id => findData('data-player-id', id); const trackAnchor = position => findData('data-track-cell', position); const legAnchor = id => findData('data-leg-anchor', id); const overallAnchor = outcome => findData('data-overall-pile', outcome); const pyramidAnchor = () => mount.querySelector('[data-stage-anchor="pyramid"]'); const centerOf = element => { if (!element?.isConnected) return null; const box = element.getBoundingClientRect(); return { x: box.left + box.width / 2, y: box.top + box.height / 2 }; }; const reducedMotion = Boolean(windowRef.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+    model.presentationWaiters ||= new Set();
+    let currentEventDeadline = Number.POSITIVE_INFINITY;
+    let currentContentDeadline = Number.POSITIVE_INFINITY;
+    let actionLineToken = 0;
+    function clearPresentationMarks() { actionLineToken += 1; mount.querySelectorAll('.is-presentation-source, .is-presentation-target, .is-presentation-destination').forEach(element => element.classList.remove('is-presentation-source', 'is-presentation-target', 'is-presentation-destination')); $('actionLine')?.classList.remove('is-visible', 'is-money', 'is-secret', 'is-danger'); }
+    function drawActionLine(fromElement, toElement, tone = '') { clearPresentationMarks(); const from = centerOf(fromElement); const to = centerOf(toElement); if (!from || !to) return; fromElement.classList.add('is-presentation-source'); toElement.classList.add('is-presentation-target'); const svg = $('actionLine'); svg.setAttribute('viewBox', `0 0 ${windowRef.innerWidth || 1} ${windowRef.innerHeight || 1}`); const line = svg.querySelector('line'); const circle = svg.querySelector('circle'); line.setAttribute('x1', from.x); line.setAttribute('y1', from.y); line.setAttribute('x2', to.x); line.setAttribute('y2', to.y); circle.setAttribute('cx', to.x); circle.setAttribute('cy', to.y); svg.classList.toggle('is-money', tone === 'money'); svg.classList.toggle('is-secret', tone === 'secret'); svg.classList.toggle('is-danger', tone === 'danger'); const lineToken = actionLineToken; (windowRef.requestAnimationFrame || (callback => windowRef.setTimeout(callback, 0)))(() => { if (lineToken === actionLineToken) svg.classList.add('is-visible'); }); }
+    function cancelPresentationWait() {
+        if (model.presentationTimer) windowRef.clearTimeout(model.presentationTimer);
+        model.presentationTimer = null;
+        const release = model.presentationRelease;
+        model.presentationRelease = null;
+        release?.(false);
+        for (const waiter of model.presentationWaiters || []) {
+            windowRef.clearTimeout(waiter.timer);
+            waiter.resolve(false);
+        }
+        model.presentationWaiters?.clear();
+    }
+    function waitUntil(timestamp, token) {
+        const wait = Number(timestamp) - Date.now();
+        if (!Number.isFinite(wait) || wait <= 0) return Promise.resolve(token === model.presentationToken);
+        if (token !== model.presentationToken) return Promise.resolve(false);
+        return new Promise(resolve => {
+            const waiter = {
+                timer: windowRef.setTimeout(() => {
+                    model.presentationWaiters.delete(waiter);
+                    resolve(token === model.presentationToken);
+                }, wait),
+                resolve,
+            };
+            model.presentationWaiters.add(waiter);
+        });
+    }
+    function presentationWait(duration, token) {
+        if (reducedMotion) duration = Math.min(duration, 150);
+        return waitUntil(Date.now() + Math.max(0, duration), token);
+    }
+    function showPresentation(mode, tone, kicker, title, body = '') { onPresentationStart?.(); const layer = $('presentationLayer'); clearPresentationFade(layer); layer.hidden = false; layer.setAttribute('aria-hidden', 'false'); layer.className = `cm-presentation-layer is-${mode || 'compact'} ${tone ? `is-${tone}` : ''}`; $('presentationStage').innerHTML = `<header class="cm-event-heading"><span>${escapeHtml(kicker)}</span><h2>${escapeHtml(title)}</h2></header>${body}`; }
+    function hidePresentation() { const layer = $('presentationLayer'); if (!layer) return; clearPresentationFade(layer); layer.hidden = true; layer.setAttribute('aria-hidden', 'true'); layer.className = 'cm-presentation-layer'; $('presentationStage').innerHTML = ''; $('floatingLayer').innerHTML = ''; clearPresentationMarks(); }
+    async function fadeThenHide(token) { const layer = $('presentationLayer'); beginPresentationFade(layer); if (Number.isFinite(currentEventDeadline)) { if (!await waitUntil(currentEventDeadline, token)) return false; } else if (!await presentationWait(PRESENTATION_FADE_MS, token)) return false; hidePresentation(); return true; }
+    function eventPlayer(playerId, name, detail = '') { const player = state()?.players?.find(candidate => candidate.id === playerId); return `<span class="cm-event-player" style="--player:${escapeHtml(player?.color || '#8c755d')}"><b>${escapeHtml(name || player?.name || '玩家')}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ''}</span>`; }
     function eventCamel(camel, detail = '') { const meta = camelMeta(camel?.id); return `<span class="cm-event-camel" style="--camel:${meta.color}">${camelGlyph('cm-event-camel-glyph')}<b>${escapeHtml(meta.name)}</b>${detail ? `<small>${escapeHtml(detail)}</small>` : ''}</span>`; }
     function eventLegCard(camel, payout) { const meta = camelMeta(camel?.id); return `<span class="cm-event-leg-card" style="--camel:${meta.color}">${camelGlyph('cm-event-card-camel')}<b>${payout}</b><small>${escapeHtml(meta.name)}·赛段</small></span>`; }
     function eventFinishCard(camelId = null, outcome = 'winner', faceDown = true) { if (faceDown || !camelId) return `<span class="cm-event-finish-back">${finishCardBack('is-event')}<small>${outcome === 'loser' ? '垫底区' : '冠军区'}</small></span>`; const meta = camelMeta(camelId); return `<span class="cm-event-finish-face" style="--camel:${meta.color}">${camelGlyph('cm-event-card-camel')}<b>${escapeHtml(meta.name)}</b><small>${outcome === 'loser' ? '垫底' : '冠军'}</small></span>`; }
@@ -29,12 +64,83 @@ export function createCamelUpScene({ mount, model, getElement, windowRef = globa
         if (event.kind === 'legSettlement') { const ranking = (event.ranking || []).map((camel, index) => `<span style="--camel:${camelMeta(camel.id).color}"><i>${index + 1}</i>${camelGlyph('cm-settlement-camel')}<b>${escapeHtml(camel.name)}</b></span>`).join(''); const results = (event.playerResults || []).map(player => `<span class="${player.change > 0 ? 'is-profit' : player.change < 0 ? 'is-loss' : ''}">${eventPlayer(player.playerId, player.playerName)}<small>${player.bets.length ? player.bets.map(bet => `${escapeHtml(bet.camelName)} ${bet.reward > 0 ? '+' : ''}${bet.reward}`).join('·') : '无赛段下注'}${player.pyramidReward ? `·金字塔 +${player.pyramidReward}` : ''}</small><b>${player.change > 0 ? '+' : ''}${player.change}</b><em>${player.cashBefore} → ${player.cashAfter}</em></span>`).join(''); showPresentation('major', 'settlement', event.final ? '最后赛段结算' : `第 ${event.leg} 赛段结束`, '驼队顺位与金币结算', `<div class="cm-leg-ranking">${ranking}</div><div class="cm-player-settlements">${results}</div>`); await presentationWait(event.final ? 2300 : 2000, token); return; }
         if (event.kind === 'raceFinished') { showPresentation('major', 'finish', '骆驼冲线', `${event.camel?.name || '领先骆驼'}越过终点`, `<div class="cm-finish-hero">${eventCamel(event.camel, '全场比赛结束')}<b>FINISH</b></div><p class="cm-event-note">先结算最后赛段，再逐张揭开终局暗注</p>`); drawActionLine(trackAnchor(16), $('presentationStage'), 'danger'); await presentationWait(1500, token); return; }
         if (event.kind === 'overallBetsRevealed') { const groups = [{ key: 'winner', label: '冠军暗注', bets: event.winnerBets || [] }, { key: 'loser', label: '垫底暗注', bets: event.loserBets || [] }]; const groupMarkup = groups.map(group => `<section data-reveal-group="${group.key}"><header>${group.label}<small>${group.bets.length} 张</small></header><div>${group.bets.map((bet, index) => `<span class="cm-reveal-row" data-reveal-index="${group.key}-${index}">${eventFinishCard(bet.camelId, group.key, false)}${eventPlayer(bet.playerId, bet.playerName)}<b class="${bet.correct ? 'is-correct' : 'is-wrong'}">${bet.correct ? '命中' : '失败'}</b><em>${bet.reward > 0 ? '+' : ''}${bet.reward}</em></span>`).join('') || '<p>本区没有暗注</p>'}</div></section>`).join(''); showPresentation('major', 'reveal', '终局开牌', '冠军与垫底暗注', `<div class="cm-overall-reveals">${groupMarkup}</div>`); for (const group of groups) { for (let index = 0; index < group.bets.length; index += 1) { if (token !== model.presentationToken) return; const row = $('presentationStage').querySelector(`[data-reveal-index="${group.key}-${index}"]`); row?.classList.add('is-revealed'); row?.scrollIntoView?.({ block: 'nearest' }); if (!await presentationWait(260, token)) return; } if (!await presentationWait(280, token)) return; } await presentationWait(650, token); return; }
-        if (event.kind === 'finalSettlement') { const winners = new Set(event.winnerIds || []); const rows = (event.standings || []).map(player => `<span class="${winners.has(player.id) ? 'is-winner' : ''}"><i>${player.rank}</i><b>${escapeHtml(player.name)}</b><em>${player.cash} 金币</em></span>`).join(''); const winnerNames = (event.standings || []).filter(player => winners.has(player.id)).map(player => player.name).join('、'); showPresentation('major', 'final', '沙漠大赛落幕', `${winnerNames || '最高金币玩家'}${winners.size > 1 ? '共享沙漠冠军' : '赢得沙漠大赛'}`, `<div class="cm-final-ranking">${rows}</div>`); await presentationWait(2700, token); return; }
+        if (event.kind === 'finalSettlement') { const winners = new Set(event.winnerIds || []); const rows = (event.standings || []).map(player => `<span class="${winners.has(player.id) ? 'is-winner' : ''}"><i>${player.rank}</i><b>${escapeHtml(player.name)}</b><em>${player.cash} 金币</em></span>`).join(''); const winnerNames = (event.standings || []).filter(player => winners.has(player.id)).map(player => player.name).join('、'); const personalVictory = event.viewerVariant === 'personalVictory'; const title = personalVictory ? '您已获胜' : `${winnerNames || '最高金币玩家'}${winners.size > 1 ? '共享沙漠冠军' : '赢得沙漠大赛'}`; const detail = personalVictory ? '您以最高金币赢得了狂野骆驼。' : ''; showPresentation('major', 'final', '沙漠大赛落幕', title, `<div class="cm-final-ranking">${rows}</div>${detail ? `<p class="cm-event-note">${detail}</p>` : ''}`); await presentationWait(2700, token); return; }
         if (event.kind === 'legStarted') { showPresentation('medium', 'start', '新赛段发令', `第 ${event.leg} 赛段开始`, `<p class="cm-event-note">${escapeHtml(event.currentPlayerName || '下一位玩家')}首先行动·骰子、下注牌与板块已重置</p>`); await presentationWait(850, token); }
     }
-    async function drainPresentations() { if (model.presentationPlaying || !model.presentationQueue.length) return; model.presentationPlaying = true; const token = ++model.presentationToken; renderer.render(); while (model.presentationQueue.length && token === model.presentationToken) { const presentation = model.presentationQueue.shift(); for (const event of presentation.events || []) { if (token !== model.presentationToken) break; await playPresentationEvent(event, token); clearPresentationMarks(); } } if (token !== model.presentationToken) return; hidePresentation(); model.presentationPlaying = false; renderer.render(); }
-    function enqueuePresentation(presentation) { if (presentation?.events?.length) { model.presentationQueue.push(presentation); void drainPresentations(); } }
-    function skipPresentation() { model.presentationQueue = []; model.presentationPlaying = false; model.presentationToken += 1; cancelPresentationWait(); hidePresentation(); renderer.render(); }
-    function stop() { model.presentationToken += 1; model.presentationQueue = []; cancelPresentationWait(); hidePresentation(); model.presentationPlaying = false; }
-    return { enqueuePresentation, skipPresentation, stop, isPlaying: () => model.presentationPlaying };
+    async function holdPresentationLock(token) {
+        while (token === model.presentationToken && Date.now() < Number(model.presentationLockedUntil || 0)) {
+            if (!await waitUntil(model.presentationLockedUntil, token)) return;
+        }
+        if (token !== model.presentationToken) return;
+        model.presentationPlaying = false;
+        renderer.render();
+        if (model.presentationQueue.length) void drainPresentations();
+    }
+    async function drainPresentations() {
+        if (model.presentationPlaying || !model.presentationQueue.length) return;
+        model.presentationPlaying = true;
+        const token = ++model.presentationToken;
+        renderer.render();
+        while (model.presentationQueue.length && token === model.presentationToken) {
+            const presentation = model.presentationQueue.shift();
+            for (const event of presentation.events || []) {
+                if (token !== model.presentationToken) break;
+                if (Number.isFinite(Number(event.endsAt)) && Number(event.endsAt) <= Date.now()) continue;
+                if (Number.isFinite(Number(event.startedAt)) && !await waitUntil(event.startedAt, token)) break;
+                currentEventDeadline = Number.isFinite(Number(event.endsAt)) ? Number(event.endsAt) : Number.POSITIVE_INFINITY;
+                currentContentDeadline = Number.isFinite(currentEventDeadline)
+                    ? Math.max(Date.now(), currentEventDeadline - PRESENTATION_FADE_MS)
+                    : Number.POSITIVE_INFINITY;
+                await playPresentationEvent(event, token);
+                clearPresentationMarks();
+                if (token !== model.presentationToken) break;
+                if (Number.isFinite(currentContentDeadline) && !await waitUntil(currentContentDeadline, token)) break;
+                if (!await fadeThenHide(token)) break;
+            }
+        }
+        if (token !== model.presentationToken) return;
+        currentEventDeadline = Number.POSITIVE_INFINITY;
+        currentContentDeadline = Number.POSITIVE_INFINITY;
+        hidePresentation();
+        if (Date.now() < Number(model.presentationLockedUntil || 0)) {
+            void holdPresentationLock(token);
+            return;
+        }
+        model.presentationPlaying = false;
+        renderer.render();
+    }
+    function enqueuePresentation(presentation) {
+        if (!presentation?.events?.length) return;
+        if (Number.isFinite(Number(presentation.endsAt))) {
+            if (Number(presentation.endsAt) <= Date.now()) return;
+            model.presentationLockedUntil = Math.max(Number(model.presentationLockedUntil) || 0, Number(presentation.endsAt));
+        }
+        model.presentationQueue.push(presentation);
+        void drainPresentations();
+    }
+    function skipPresentation() {
+        model.presentationQueue = [];
+        const token = ++model.presentationToken;
+        cancelPresentationWait();
+        hidePresentation();
+        if (Date.now() < Number(model.presentationLockedUntil || 0)) {
+            model.presentationPlaying = true;
+            renderer.render();
+            void holdPresentationLock(token);
+        } else {
+            model.presentationPlaying = false;
+            renderer.render();
+        }
+    }
+    function stop() {
+        model.presentationToken += 1;
+        model.presentationQueue = [];
+        cancelPresentationWait();
+        hidePresentation();
+        model.presentationPlaying = false;
+        model.presentationLockedUntil = 0;
+        currentEventDeadline = Number.POSITIVE_INFINITY;
+        currentContentDeadline = Number.POSITIVE_INFINITY;
+    }
+    return { enqueuePresentation, skipPresentation, stop, isPlaying: () => model.presentationPlaying || Date.now() < Number(model.presentationLockedUntil || 0) };
 }

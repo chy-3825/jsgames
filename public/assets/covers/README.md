@@ -1,5 +1,17 @@
 # 大厅游戏封面
 
+2026-09-10：五子棋启用 `gobang-v4.webp`（棋盘与棋子区域居中），中国象棋启用 `xiangqi-v5.webp`（拉远镜头，露出完整棋盘与周围桌面）。同步同名缩略图，保留旧版。内置 image_gen 提示词见 [构图调整记录](2026-09-10-framing-prompts.md)。
+
+2026-09-10：跳棋改用 `checkers-v13.webp` 及同名缩略图。布局由项目规则引擎从标准开局走出 22 手并回放验证，包含 9 次连续跳跃；Three.js 按最终坐标生成底稿，内置 image_gen 润色材质。逐枚目视比对最终棋位，旧版保留。完整走法、渲染源与提示词见 [跳棋封面记录](../../../review/checkers-cover/README.md)。
+
+2026-09-10：跳棋启用 `checkers-v12.webp`，五子棋启用 `gobang-v3.webp`，同步同名缩略图并保留旧版。跳棋改为双方交错推进的中盘；五子棋取消金色连线，改为黑白各十枚的攻防布局，黑四连两端被封堵。完整提示词及目视检查范围见 [对局感修正记录](2026-09-10-board-midgame-prompts.md)。
+
+2026-09-10：璀璨宝石启用 `splendor-v3.webp` 及同名缩略图。重新设计为文艺复兴珠宝商向贵族展示珠宝的交易场景，宝石使用自然小尺寸，保留华丽织物与金饰质感。高清 1280×720，缩略图 640×360，旧版保留。内置 image_gen 完整提示词见 [splendor-v3-prompt.md](splendor-v3-prompt.md)。
+
+2026-09-10：四款封面调整启用军棋 `junqi-v14.webp`、环城大富翁 `monopoly-v3.webp`、中国象棋 `xiangqi-v4.webp`、跳棋 `checkers-v11.webp`，并同步同名缩略图。分别强化棋盘构图、简化城市与移除人物、提亮棋字、提高六角星辨识度。旧版保留。内置 image_gen 提示词、修正过程与检查范围见 [四款封面调整记录](2026-09-10-four-covers-prompts.md)。
+
+2026-09-10：谍报风云启用 `decrypto-v3.webp` 与对应缩略图，保留 v2。使用内置 image_gen 将底部四根粗红蓝管线及插孔改成密码机出纸口和自然垂落的打孔纸带，保留密码转轮、耳机、电台及冷战瑞士平面风格。提示词见 [decrypto-v3-prompt.md](decrypto-v3-prompt.md)。
+
 本目录保存 28 款游戏的本地横版高清封面，统一为 `1280 × 720` WebP。`thumbs/` 子目录保存同名 `640 × 360` WebP 缩略图：大厅游戏卡片和公开房间列表按可见范围懒加载缩略图，创建房间规则浮窗与预开局房间继续使用高清封面；BGG 资源仅继续用于部分游戏内部的组件和牌面参考。
 
 封面不采用单一画风，只统一横版规格、缩略图可读性、界面文字留白和无标题/无标识约束。各游戏的主要艺术方向如下：
@@ -13,6 +25,12 @@
 
 缩略图生成：使用 `ffmpeg` 以 Lanczos 缩放到 `640 × 360`，WebP quality 76；28 张缩略图总计约 `1.03 MiB`。文件名与高清封面一一对应，便于大厅按游戏类型切换资源而不引入额外映射文件。
 
-现行带版本号的封面为：`werewolf-v5.webp`、`avalon-v4.webp`、`decrypto-v2.webp`、`chess-v6.webp`、`xiangqi-v3.webp`、`junqi-v10.webp`、`checkers-v10.webp`、`takefive-v3.webp` 和 `magicalathlete-v3.webp`；其余游戏使用无版本后缀的正式文件。`public/script.js` 中的 `GAME_COVERS` 是唯一运行时清单。
+现行封面以 `public/lobby/catalog-data.js` 中的 `GAME_COVERS` 为唯一运行时清单，缩略图路径由同一清单自动派生。版本更新保留旧文件供对比。
+
+2026-09-10 批量调整：猜数字 `guessnumber-v2.webp`、环城大富翁 `monopoly-v2.webp`、牛头王 `takefive-v4.webp`、五子棋 `gobang-v2.webp`、阿瓦隆 `avalon-v5.webp`、璀璨宝石 `splendor-v2.webp`、富饶之城 `citadels-v2.webp`、狂野骆驼 `camelup-v2.webp`、政变 `coup-v2.webp`、多米诺王国 `kingdomino-v2.webp`，均包含同名缩略图。采用内置 image_gen 编辑，逐张保留原画风并强化主体或玩法辨识；提示词见 [2026-09-10-edit-prompts.md](2026-09-10-edit-prompts.md)。
 
 2026-08-28 体积整理后，本目录只保留 28 张现行高清封面和 28 张同名缩略图。旧候选版本已从运行仓库移至桌面 `tmp/jsgames-unused-20260828/legacy-covers/`，不再进入部署包；归档清单和恢复约定见该目录的 `README.md`。
+
+2026-09-10：军棋现启用 junqi-v13.webp 及对应缩略图，保留 v12 精确建模底稿供对比。v12 为 Three.js 沙盘渲染，棋盘线路直接取自 server/games/junqi/engine.js 的连接判定，含 60 个棋位、10 个行营、4 个大本营及左中右三条中央铁路。棋子按坐标居中摆放，文字为字体渲染。采用稀疏残局示意，不声称已验证完整对局可达性。源场景、渲染脚本和 v12 原图保存在 review/junqi-cover/。v13 使用内置 image_gen 以 v12 为输入，加强外围沙丘、扬沙、风蚀岩石和三枚半埋旧棋子；提示词要求锁定棋盘几何、线路、棋位与文字。已目视核对主要结构，生成版不等同于 v12 的程序级几何保证。完整提示词见 [junqi-v13-prompt.md](junqi-v13-prompt.md)。成品为 1280 × 720 WebP，缩略图为 640 × 360 WebP。
+
+2026-09-10：斗兽棋启用 jungle-v3.webp 及对应缩略图，保留 jungle.webp、jungle-v2.webp 供对比。使用内置 image_gen 编辑，初版提示词要点：保留自然志版画与暖色羊皮纸风格；放大大象与老虎，形成隔河对峙；保留兽穴、狮子和老鼠；弱化森林与远景细节，增强动物轮廓及河流色彩；横版 16:9，无文字或标识。v3 最终编辑提示词：将中景至前景河道加宽至约原来的 1.6–1.8 倍，收退两岸内缘，减少阻断水面的岩石；保留版画风格、色调、动物大小与对峙构图，动物仍完整站在岸上。高清版为 1280 × 720，缩略图为 640 × 360。运行时引用位于 public/lobby/catalog-data.js 的 GAME_COVERS。

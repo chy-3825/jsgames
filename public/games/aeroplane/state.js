@@ -1,7 +1,7 @@
-import { BASE_CENTERS, COLOR_STARTS, FINISH_PROGRESS, FLIGHT_DISTANCE, FLIGHT_PROGRESS, HOME_START_PROGRESS, LAST_ROUTE_PROGRESS, READY_CENTERS, ROUTE_CENTERS } from './constants.js';
+import { BASE_CENTERS, COLOR_STARTS, FINISH_CENTERS, FINISH_PROGRESS, FLIGHT_DISTANCE, FLIGHT_PROGRESS, HOME_CENTERS, HOME_START_PROGRESS, LAST_ROUTE_PROGRESS, READY_CENTERS, ROUTE_CENTERS } from './constants.js';
 
 export function createAeroplaneModel() {
-    return { state: null, latestMoveKey: '', animatedPlaneId: null, latestRollKey: '', visibleDiceValue: 0, diceAnimationTimer: null, diceAnimationToken: 0, diceAnimationFinalValue: 0, diceAnimationStartedAt: 0, diceValueBeforeAnimation: 0, isDiceAnimating: false, isRollPending: false, selectedPlaneId: null, movementAnimationTimer: null, movementAnimationToken: 0, movementAnimation: null, isMoveAnimating: false, destroyed: false };
+    return { state: null, latestMoveKey: '', animatedPlaneId: null, latestRollKey: '', visibleDiceValue: 0, diceAnimationTimer: null, diceAnimationToken: 0, diceAnimationFinalValue: 0, diceAnimationStartedAt: 0, diceValueBeforeAnimation: 0, isDiceAnimating: false, isRollPending: false, selectedPlaneId: null, selectedColor: null, movementAnimationTimer: null, movementAnimationToken: 0, movementAnimation: null, isMoveAnimating: false, destroyed: false };
 }
 
 export function currentPlayer(model) { return model.state?.players?.find(player => player.id === model.state.currentTurn) || null; }

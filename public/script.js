@@ -1,6 +1,6 @@
 import { getGameDetails } from './game-details.js';
 import { escapeHtml } from './games/common/html.js';
-import { getGameClientPath as getManifestClientPath, getGameStyleHrefs } from './games/common/game-manifest.js';
+import { getGameClientPath as getManifestClientPath, getGameStyleHrefs } from './games/common/game-manifest.js?v=20260910-game-feedback-1';
 import { GAME_PRESENTATION, GROUP_PRESENTATION, PLAY_MODE_LABELS, GAME_COVERS, GAME_COVER_THUMBS, BGG_ART, SELF_STYLED_GAME_ART, BGG_BACKGROUND_ART, BGG_COMPONENT_ART, BGG_COMPONENT_LABELS } from './lobby/catalog-data.js';
 import { createGameLoader } from './lobby/game-loader.js';
 import { createLobbyTransport } from './lobby/transport.js';
@@ -10,8 +10,11 @@ import { createRoomDialogController } from './lobby/room-dialog.js';
 import { createWaitingRoomScene } from './lobby/waiting-room-scene.js';
 import { createGameEntryTransition } from './lobby/game-entry-transition.js';
 import { createStudyControls } from './lobby/study-controls.js';
+import { createMessageHandler } from './lobby/message-handler.js';
+import { bindLobbyEvents } from './lobby/event-bindings.js';
+import { createRoomInfoController } from './lobby/room-info.js';
 
-const ASSET_VERSION = '20260829-architecture-1';
+const ASSET_VERSION = '20260910-game-feedback-1';
 window.__JSGAMES_ASSET_VERSION__ = ASSET_VERSION;
 
 const statusEl = document.getElementById('status');
@@ -43,8 +46,16 @@ const lobbyLeaveRoomBtn = document.getElementById('lobbyLeaveRoomBtn');
 const profileAvatar = document.getElementById('profileAvatar');
 const roomCountLabel = document.getElementById('roomCountLabel');
 const roomPageGame = document.getElementById('roomPageGame');
-const roomPageCode = document.getElementById('roomPageCode');
-const roomPageIdentity = document.getElementById('roomPageIdentity');
+const roomInfoBtn = document.getElementById('roomInfoBtn');
+const roomInfoDialog = document.getElementById('roomInfoDialog');
+const roomInfoClose = document.getElementById('roomInfoClose');
+const roomInfoCopyRoom = document.getElementById('roomInfoCopyRoom');
+const roomInfoGame = document.getElementById('roomInfoGame');
+const roomInfoName = document.getElementById('roomInfoName');
+const roomInfoCode = document.getElementById('roomInfoCode');
+const roomInfoStatus = document.getElementById('roomInfoStatus');
+const roomInfoPlayer = document.getElementById('roomInfoPlayer');
+const roomInfoPlayerId = document.getElementById('roomInfoPlayerId');
 const gameCountEl = document.getElementById('gameCount');
 const gameFilterEl = document.getElementById('gameFilter');
 const roomCodeInput = document.getElementById('roomCodeInput');
@@ -120,19 +131,24 @@ let joinLobbyJoinPending = false;
 let reconnectRequestPending = false;
 let reconnectRoomId = null;
 let sessionResumePending = false;
+let startGameRequestPending = false;
 let entryExitTimer = null;
+const roomInfo = createRoomInfoController({
+    root: roomViewEl, trigger: roomInfoBtn, overlay: roomInfoDialog,
+    fields: { game: roomInfoGame, name: roomInfoName, code: roomInfoCode, status: roomInfoStatus, player: roomInfoPlayer, playerId: roomInfoPlayerId },
+    getRoom: () => currentRoom, getRoomId: () => currentRoomId, getMyId: () => myId, getMyName: () => myName,
+    getGamePresentation: type => GAME_PRESENTATION[type],
+});
 let entryReturnTimer = null;
 let waitingRoomScene = null;
 let roomFeedbackTimer = null;
 let roomFeedbackHideTimer = null;
-
 // Session identity is intentionally scoped to this browser tab.  A second
 // tab must not silently take over the first tab's player seat.
 const sessionStorageKey = 'jsgames.sessionToken';
 let sessionToken = sessionStorage.getItem(sessionStorageKey) || '';
-let pendingUrlRoom = /^\d{6}$/.test(new URLSearchParams(location.search).get('room') || '')
-    ? new URLSearchParams(location.search).get('room')
-    : null;
+const initialUrlParams = new URLSearchParams(location.search); let pendingUrlRoom = /^\d{6}$/.test(initialUrlParams.get('room') || '') ? initialUrlParams.get('room') : null;
+let pendingUrlInviteToken = pendingUrlRoom ? String(initialUrlParams.get('invite') || '') : '';
 sessionResumePending = Boolean(sessionToken);
 
 const lobbyArtwork = createLobbyArtwork({
@@ -203,186 +219,80 @@ function setRoomConnectionState(connectionState, message = '') {
     roomConnectionStateEl.textContent = message || `游戏已暂停 · 等待 ${names.join('、') || '断线玩家'} 重连`;
 }
 
-async function handleMessage(data) {
-    switch (data.type) {
-        case 'session':
-            if (!sessionToken && data.sessionToken) sessionToken = data.sessionToken;
-            if (sessionToken) sessionStorage.setItem(sessionStorageKey, sessionToken);
-            if (data.playerId) myId = data.playerId;
-            break;
-        case 'resumeSuccess':
-            sessionResumePending = false;
-            sessionToken = sessionToken || sessionStorage.getItem(sessionStorageKey) || '';
-            if (data.room) {
-                setCreateRoomRequestPending(false);
-                closeCreateRoomDialog(true);
-                setRoom(data);
-                currentRoom = data.room;
-                if (data.room.status === 'waiting') enterWaitingRoom();
-            } else if (currentRoomId) {
-                currentRoomId = null;
-                currentRoom = null;
-                updateInviteLink();
-                returnToLobby();
-            }
-            addLog(data.room ? `已恢复房间 ${data.roomId}` : '会话已恢复', 'system');
-            break;
-        case 'resumeFailed':
-            sessionResumePending = false;
-            sessionStorage.removeItem(sessionStorageKey);
-            sessionToken = '';
-            addLog(data.message || '会话已过期', 'error');
-            break;
-        case 'gameList':
-            renderGameList(data.games);
-            break;
-        case 'roomList':
-            renderRoomList(data.rooms);
-            break;
-        case 'playerCount':
-            playerCountEl.textContent = `在线 ${data.count}`;
-            if (joinLobbyPlayerCountEl) joinLobbyPlayerCountEl.textContent = playerCountEl.textContent;
-            break;
-        case 'roomCreated':
-            setCreateRoomRequestPending(false);
-            closeCreateRoomDialog(true);
-            setRoom(data);
-            addLog(`${data.room?.roomName || '房间'}（${data.roomId}）创建成功`, 'system');
-            enterWaitingRoom();
-            break;
-        case 'reconnectRequired':
-            setJoinLobbyPending(false);
-            reconnectRoomId = data.roomId;
-            reconnectForm.hidden = false;
-            reconnectError.textContent = '';
-            joinLobbyCodeError.textContent = '';
-            addLog(data.message || '请输入断线玩家 ID 进行重连', 'info');
-            requestAnimationFrame(() => reconnectPlayerIdInput?.focus());
-            break;
-        case 'reconnectSuccess':
-            reconnectRequestPending = false;
-            reconnectRoomId = null;
-            if (reconnectBtn) { reconnectBtn.disabled = false; reconnectBtn.innerHTML = '恢复座位 <span>→</span>'; }
-            reconnectForm.hidden = true;
-            setRoom(data);
-            currentRoom = data.room || currentRoom;
-            setRoomConnectionState(currentRoom?.connectionState, '已恢复原来的座位，正在回到对局…');
-            addLog(`已恢复 ${data.playerName || data.playerId} 的座位`, 'system');
-            break;
-        case 'reconnectFailed':
-            reconnectRequestPending = false;
-            if (reconnectBtn) { reconnectBtn.disabled = false; reconnectBtn.innerHTML = '恢复座位 <span>→</span>'; }
-            if (reconnectError) reconnectError.textContent = data.message || '重连失败，请检查房间号和玩家 ID。';
-            addLog(data.message || '重连失败', 'error');
-            break;
-        case 'joinSuccess':
-            setJoinLobbyPending(false);
-            pendingUrlRoom = null;
-            setRoom(data);
-            addLog(`成功加入房间 ${data.roomId}`, 'system');
-            enterWaitingRoom();
-            break;
-        case 'roomConfigured':
-            currentRoom = data.room || currentRoom;
-            pendingRoomPlayerCount = Number(currentRoom?.targetPlayers || pendingRoomPlayerCount);
-            pendingEncryptorMode = currentRoom?.gameOptions?.encryptorMode || pendingEncryptorMode;
-            pendingRoomSettings = getRoomSettingValues(currentRoom);
-            updateInviteLink();
-            renderWaitingRoomPanel();
-            addLog(data.message || '房间人数已确认，现已公开', 'system');
-            break;
-        case 'playerJoined':
-            currentRoom = data.room || currentRoom;
-            addLog(`${data.player.name} 加入了房间`, 'info');
-            renderWaitingRoomPanel();
-            break;
-        case 'playerLeft':
-            currentRoom = data.room || currentRoom;
-            addLog(data.message || '有玩家离开了房间', 'info');
-            renderWaitingRoomPanel();
-            break;
-        case 'playerReady':
-            currentRoom = data.room || currentRoom;
-            addLog(data.message || '准备状态已更新', 'info');
-            renderWaitingRoomPanel();
-            break;
-        case 'roomSettingsUpdated':
-            currentRoom = data.room || currentRoom;
-            pendingRoomSettings = getRoomSettingValues(currentRoom);
-            pendingRoomPlayerCount = Number(currentRoom?.targetPlayers || pendingRoomPlayerCount);
-            pendingEncryptorMode = currentRoom?.gameOptions?.encryptorMode || pendingEncryptorMode;
-            addLog(data.message || '房间设置已更新', 'system');
-            renderWaitingRoomPanel();
-            break;
-        case 'playerKicked':
-            currentRoomId = null;
-            currentRoom = null;
-            pendingRoomSettings = {};
-            updateInviteLink();
-            returnToLobby();
-            showRoomFeedback(data.message || '你已被房主移出房间', 'warning');
-            addLog(data.message || '你已被房主移出房间', 'error');
-            break;
-        case 'playerRenamed':
-            currentRoom = data.room || currentRoom;
-            renderWaitingRoomPanel();
-            break;
-        case 'playerDisconnected':
-            currentRoom = data.room || currentRoom;
-            setRoomConnectionState(data.room?.connectionState, `${data.player?.name || '玩家'} 已断开连接`);
-            addLog(data.message || `${data.player?.name || '玩家'} 已断线`, 'error');
-            renderWaitingRoomPanel();
-            break;
-        case 'playerReconnected':
-            currentRoom = data.room || currentRoom;
-            setRoomConnectionState(data.connectionState || currentRoom?.connectionState, data.message);
-            addLog(data.message || `${data.player?.name || '玩家'} 已重连`, 'system');
-            if (currentRoom?.status === 'waiting') renderWaitingRoomPanel();
-            break;
-        case 'roomPaused':
-            currentRoom = data.room || currentRoom;
-            setRoomConnectionState(data.connectionState || currentRoom?.connectionState, data.message);
-            addLog(data.message || '游戏已暂停，等待断线玩家重连', 'error');
-            break;
-        case 'roomResumed':
-            currentRoom = data.room || currentRoom;
-            setRoomConnectionState(data.connectionState || currentRoom?.connectionState);
-            addLog(data.message || '玩家已重连，游戏恢复', 'system');
-            break;
-        case 'chat':
-            addLog(`${data.player.id === myId ? '我' : data.player.name}: ${data.message}`, 'chat');
-            break;
-        case 'gameStarted':
-            if (currentRoom) currentRoom.status = 'playing';
-            await showGameMessage(data);
-            break;
-        case 'gameState':
-        case 'gameEnded':
-            setRoomConnectionState(data.state?.roomConnection || currentRoom?.connectionState);
-            await showGameMessage(data);
-            if (data.type === 'gameEnded' && data.winner) {
-                const winnerNames = data.winner.winners?.map(winner => winner.name).join('、') || data.winner.name;
-                addLog(`${winnerNames} 获胜`, 'system');
-            }
-            break;
-        case 'error':
-            // Active games receive authoritative rejected-action state so they
-            // can clear pending controls and render the server snapshot.
-            if (joinLobbyJoinPending) {
-                setJoinLobbyPending(false, data.message || '无法加入该房间，请核对房间号。');
-                addLog(data.message || '加入房间失败', 'error');
-            } else if (createRoomRequestPending) {
-                setCreateRoomRequestPending(false);
-                createRoomFormError.textContent = data.message || '房间创建失败，请检查设置后重试';
-                createRoomDialog?.classList.add('is-settings');
-                addLog(data.message || '房间创建失败', 'error');
-            } else if (currentGameClient?.handleMessage) currentGameClient.handleMessage(data);
-            else addLog(data.message, 'error');
-            break;
-        default:
-            break;
-    }
-}
+const messageState = {
+    get sessionToken() { return sessionToken; },
+    set sessionToken(value) { sessionToken = value; },
+    get myId() { return myId; },
+    set myId(value) { myId = value; },
+    get currentRoomId() { return currentRoomId; },
+    set currentRoomId(value) { currentRoomId = value; },
+    get currentRoom() { return currentRoom; },
+    set currentRoom(value) { currentRoom = value; },
+    get pendingRoomPlayerCount() { return pendingRoomPlayerCount; },
+    set pendingRoomPlayerCount(value) { pendingRoomPlayerCount = value; },
+    get pendingEncryptorMode() { return pendingEncryptorMode; },
+    set pendingEncryptorMode(value) { pendingEncryptorMode = value; },
+    get pendingRoomSettings() { return pendingRoomSettings; },
+    set pendingRoomSettings(value) { pendingRoomSettings = value; },
+    get createRoomRequestPending() { return createRoomRequestPending; },
+    set createRoomRequestPending(value) { createRoomRequestPending = value; },
+    get joinLobbyJoinPending() { return joinLobbyJoinPending; },
+    set joinLobbyJoinPending(value) { joinLobbyJoinPending = value; },
+    get reconnectRequestPending() { return reconnectRequestPending; },
+    set reconnectRequestPending(value) { reconnectRequestPending = value; },
+    get reconnectRoomId() { return reconnectRoomId; },
+    set reconnectRoomId(value) { reconnectRoomId = value; },
+    get sessionResumePending() { return sessionResumePending; },
+    set sessionResumePending(value) { sessionResumePending = value; },
+    get startGameRequestPending() { return startGameRequestPending; },
+    set startGameRequestPending(value) { startGameRequestPending = Boolean(value); },
+    get myName() { return myName; },
+    set myName(value) { myName = value; },
+    get pendingUrlRoom() { return pendingUrlRoom; }, set pendingUrlRoom(value) { pendingUrlRoom = value; },
+    get pendingUrlInviteToken() { return pendingUrlInviteToken; }, set pendingUrlInviteToken(value) { pendingUrlInviteToken = String(value || ''); },
+    get selectedJoinRoomFilter() { return selectedJoinRoomFilter; },
+    set selectedJoinRoomFilter(value) { selectedJoinRoomFilter = value; },
+    get selectedGameFilter() { return selectedGameFilter; },
+    set selectedGameFilter(value) { selectedGameFilter = value; },
+};
+const handleMessage = createMessageHandler({
+    state: messageState,
+    elements: {
+        sessionStorageKey,
+        playerCountEl,
+        joinLobbyPlayerCountEl,
+        reconnectForm,
+        reconnectError,
+        joinLobbyCodeError,
+        reconnectPlayerIdInput,
+        reconnectBtn,
+        createRoomFormError,
+        createRoomDialog,
+    },
+    actions: {
+        setCreateRoomRequestPending,
+        closeCreateRoomDialog,
+        setRoom,
+        enterWaitingRoom,
+        addLog,
+        renderGameList: (...args) => renderGameList(...args),
+        renderRoomList: (...args) => renderRoomList(...args),
+        setJoinLobbyPending,
+        getRoomSettingValues: (...args) => getRoomSettingValues(...args),
+        updateInviteLink,
+        renderWaitingRoomPanel,
+        returnToLobby,
+        showRoomFeedback,
+        setRoomConnectionState,
+        cancelGameEntryTransition,
+        showGameStarting,
+        showGameMessage,
+        setStartGameRequestPending,
+        getGameClient: () => currentGameClient,
+        applyServerName,
+    },
+    storage: sessionStorage,
+});
 
 function setRoom(data) {
     myId = data.playerId || myId;
@@ -393,10 +303,9 @@ function setRoom(data) {
     pendingEncryptorMode = currentRoom?.gameOptions?.encryptorMode || 'rotation';
     pendingRoomSettings = getRoomSettingValues(currentRoom);
     if (currentRoom) {
-        roomPageGame.textContent = currentRoom.roomName || currentRoom.gameName || currentRoom.gameType;
-        roomPageCode.textContent = `${currentRoom.gameName || currentRoom.gameType} · 房间 ${currentRoom.id}`;
+        roomPageGame.textContent = currentRoom.gameName || GAME_PRESENTATION[currentRoom.gameType]?.title || currentRoom.gameType;
     }
-    roomPageIdentity.textContent = myId ? `玩家 ID ${myId}` : '访客 ID';
+    roomInfo.render();
     setRoomConnectionState(currentRoom?.connectionState);
     updateInviteLink();
 }
@@ -571,6 +480,7 @@ waitingRoomScene = createWaitingRoomScene({
     getGameCovers: () => GAME_COVERS,
     getBggArt: () => BGG_ART,
     getGamePreloadState,
+    getStartGameRequestPending: () => startGameRequestPending,
     getRoomSettingDefinitions,
     getRoomSettingValues,
     renderSharedRoomSettings,
@@ -625,6 +535,7 @@ function enterWaitingRoom() {
     roomViewEl.style.display = 'block';
     roomMount.style.display = 'block';
     gameMount.style.display = 'none';
+    setStartGameRequestPending(false);
     destroyGameClient();
     renderWaitingRoomPanel();
     if (currentRoom?.gameType) {
@@ -657,20 +568,32 @@ function buildGameEntryGroups(roomElement) {
     return gameEntryTransition.buildGroups(roomElement);
 }
 
-function playGameEntryTransition(gameType) {
-    return gameEntryTransition.play(gameType);
+function playGameEntryTransition(gameType, entryTransition = null, options = {}) {
+    return gameEntryTransition.play(gameType, entryTransition, options);
 }
 
 async function startGameEntry(type, data) {
     await loadGameModule(type);
     await prepareGameClient(type);
-    currentGameClient?.handleMessage(data);
-    updateStudyControls(data.state);
-    await playGameEntryTransition(type);
+    await playGameEntryTransition(type, data.entryTransition || data.room?.entryTransition, { openView: false });
+}
+
+async function showGameStarting(data) {
+    const type = data.gameType || currentRoom?.gameType;
+    if (!type) return;
+    if (!gameEntryTransitionPromise) gameEntryTransitionPromise = startGameEntry(type, data);
+    const pendingTransition = gameEntryTransitionPromise;
+    try {
+        await pendingTransition;
+    } finally {
+        if (gameEntryTransitionPromise === pendingTransition) gameEntryTransitionPromise = null;
+    }
 }
 
 function returnToLobby() {
     cancelGameEntryTransition();
+    roomInfo.close();
+    setStartGameRequestPending(false);
     waitingRoomScene?.reset();
     setRoomConnectionState(null);
     document.body.classList.remove('is-game-view', 'is-waiting-room-view');
@@ -690,18 +613,29 @@ function returnToLobby() {
 
 async function showGameMessage(data) {
     const type = data.gameType || currentRoom?.gameType;
-    const isInitialGameStart = data.type === 'gameStarted' && document.body.classList.contains('is-waiting-room-view');
     try {
-        if (isInitialGameStart || gameEntryTransitionPromise) {
-            if (!gameEntryTransitionPromise) gameEntryTransitionPromise = startGameEntry(type, data);
+        if (data.type === 'gameStarted' && gameEntryTransitionPromise) {
             const pendingTransition = gameEntryTransitionPromise;
-            await pendingTransition;
-            if (gameEntryTransitionPromise === pendingTransition) gameEntryTransitionPromise = null;
-            if (!isInitialGameStart) currentGameClient?.handleMessage(data);
+            try {
+                await pendingTransition;
+            } finally {
+                if (gameEntryTransitionPromise === pendingTransition) gameEntryTransitionPromise = null;
+            }
+        }
+        // `gameStarting` owns the shared entry transition.  The transport
+        // serializes `gameStarted` behind it, so replaying a transition here
+        // would reset the server deadline and make everyone watch it twice.
+        // A `gameStarted` snapshot received without `gameStarting` is still
+        // valid (for example after reconnect), and is handled by the normal
+        // game hydration path below without replaying the animation.
+        await loadGameModule(type);
+        if (data.type === 'gameStarted') {
+            await prepareGameClient(type);
+            currentGameClient?.handleMessage(data);
             updateStudyControls(data.state);
+            openGameView();
             return;
         }
-        await loadGameModule(type);
         openGameView();
         await prepareGameClient(type);
         currentGameClient?.handleMessage(data);
@@ -749,13 +683,13 @@ function currentGameStudySeatCount() { return studyControls.getSeatCount(); }
 function refreshStudyControlSelection() { studyControls.refreshSelection(); }
 function destroyGameClient() { currentGameClient?.destroy?.(); currentGameClient = null; destroyGameArtwork(); gameMount.removeAttribute('data-game-type'); gameMount.innerHTML = ''; }
 
-function joinRoom(roomId) { const normalized = String(roomId || '').trim(); if (!/^\d{6}$/.test(normalized)) return addLog('请输入6位房间号', 'error'); if (!isConnected) return addLog('未连接到服务器', 'error'); if (currentRoomId) return addLog('请先离开当前房间', 'error'); send({ type: 'joinRoom', roomId: normalized }); }
+function joinRoom(roomId) { const normalized = String(roomId || '').trim(); if (!/^\d{6}$/.test(normalized)) return addLog('请输入完整的 6 位房间号', 'error'); if (!isConnected) return addLog('未连接到服务器', 'error'); if (currentRoomId) return addLog('请先离开当前房间', 'error'); send({ type: 'joinRoom', roomId: normalized }); }
 function joinByCode() { joinRoom(roomCodeInput?.value || ''); }
 function setJoinLobbyPending(pending, error = '') {
     joinLobbyJoinPending = Boolean(pending);
     if (joinLobbyCodeBtn) {
         joinLobbyCodeBtn.disabled = joinLobbyJoinPending;
-        joinLobbyCodeBtn.innerHTML = joinLobbyJoinPending ? '正在进入…' : '进入房间 <span>→</span>';
+        joinLobbyCodeBtn.innerHTML = joinLobbyJoinPending ? '正在加入…' : '加入房间 <span>→</span>';
     }
     if (joinLobbyCodeError) joinLobbyCodeError.textContent = error;
 }
@@ -787,10 +721,8 @@ function setReconnectError(message) {
 }
 function syncEntryIdentity() {
     const name = entryNameInput.value.trim() || myName;
-    myName = name;
     entryNameInput.value = name;
     nameInput.value = name;
-    localStorage.setItem('jsgames.playerName', name);
     updateProfileAvatar();
     if (isConnected) send({ type: 'setName', name });
 }
@@ -884,7 +816,7 @@ function joinFromJoinLobby(event) {
     resetReconnectForm();
     syncEntryIdentity();
     setJoinLobbyPending(true);
-    send({ type: 'joinRoom', roomId });
+    const inviteToken = pendingUrlRoom === roomId ? pendingUrlInviteToken : ''; send({ type: 'joinRoom', roomId, ...(inviteToken ? { inviteToken } : {}) });
 }
 function joinPublicRoom(roomId) {
     const normalized = String(roomId || '').trim();
@@ -902,40 +834,59 @@ function createRoom(payload) { if (currentRoomId) return addLog('请先离开当
 function handleWaitingStartAction() {
     const waiting = getWaitingRoomState();
     if (!waiting) return;
-    if (!waiting.isHost) return showRoomFeedback('等待房主开启游戏', 'info');
+    if (waiting.startGameRequestPending || currentRoom?.status === 'starting') return;
+    if (!waiting.isHost) return showRoomFeedback('等待房主开始游戏', 'info');
     if (waiting.needsConfiguration) return showRoomFeedback('请先完成房间设置', 'warning');
     const requiredPlayers = waiting.fixedPlayerCount ? waiting.targetPlayers : waiting.minPlayers;
-    const missing = Math.max(0, requiredPlayers - waiting.players.length);
-    if (missing > 0) return showRoomFeedback(`房间人数不够，还差 ${missing} 人`, 'warning');
+    const missing = Math.max(0, requiredPlayers - waiting.connectedPlayers.length);
+    if (missing > 0) return showRoomFeedback(`还需 ${missing} 名玩家加入`, 'warning');
     if (!waiting.allPlayersReady) return showRoomFeedback(`请等待所有成员准备（${waiting.readyCount}/${waiting.memberPlayers.length}）`, 'warning');
     if (waiting.preload.status === 'error') return showRoomFeedback('游戏资源加载失败，请先重新加载', 'warning');
-    if (waiting.preload.status !== 'ready') return showRoomFeedback('游戏资源仍在准备，请稍候', 'info');
+    if (waiting.preload.status !== 'ready') return showRoomFeedback('正在加载游戏资源，请稍候', 'info');
     startGame();
 }
 function startGame() {
     if (!currentRoomId || !currentRoom) return;
+    if (startGameRequestPending || currentRoom.status === 'starting') return;
     const target = Number(currentRoom.targetPlayers || 0);
-    const count = currentRoom.players?.length || 0;
+    const count = (currentRoom.players || []).filter(player => player.isOnline !== false).length;
     if (currentRoom.configurationRequired && !currentRoom.configurationConfirmed) { showRoomFeedback('请先完成房间设置', 'warning'); return addLog('请先确认房间设置', 'error'); }
-    if (target && count !== target) { showRoomFeedback(`房间人数不够，还差 ${Math.max(0, target - count)} 人`, 'warning'); return addLog(`需要 ${target} 名玩家全部到齐（当前 ${count}/${target}）`, 'error'); }
-    if (!target && count < Number(currentRoom.minPlayers || 0)) { showRoomFeedback(`房间人数不够，还差 ${Math.max(0, Number(currentRoom.minPlayers || 0) - count)} 人`, 'warning'); return addLog('房间人数不足，无法开始游戏', 'error'); }
+    if (target && count !== target) { showRoomFeedback(`还需 ${Math.max(0, target - count)} 名玩家加入`, 'warning'); return addLog(`需要 ${target} 名玩家全部到齐（当前 ${count}/${target}）`, 'error'); }
+    if (!target && count < Number(currentRoom.minPlayers || 0)) { showRoomFeedback(`还需 ${Math.max(0, Number(currentRoom.minPlayers || 0) - count)} 名玩家加入`, 'warning'); return addLog('房间人数不足，无法开始游戏', 'error'); }
     const connectedPlayers = (currentRoom.players || []).filter(player => player.isOnline !== false && player.id !== currentRoom.hostId);
     const readyCount = connectedPlayers.filter(player => player.ready === true).length;
     if (currentRoom.readyCheckEnabled && readyCount < connectedPlayers.length) { showRoomFeedback(`请等待所有成员准备（${readyCount}/${connectedPlayers.length}）`, 'warning'); return addLog('请等待所有成员准备', 'error'); }
+    setStartGameRequestPending(true);
+    renderWaitingRoomPanel();
     send({ type: 'startGame' });
 }
+
+function setStartGameRequestPending(pending) {
+    startGameRequestPending = Boolean(pending);
+    if (!pending) {
+        startGameBtn.disabled = false;
+        lobbyStartGameBtn.disabled = false;
+    } else {
+        startGameBtn.disabled = true;
+        lobbyStartGameBtn.disabled = true;
+    }
+}
 function sendChat() { const message = chatInput.value.trim(); if (!message) return; if (!isConnected) return addLog('未连接到服务器', 'error'); send({ type: 'chat', message }); chatInput.value = ''; }
-function setName() { const name = nameInput.value.trim(); if (!name) return; myName = name; entryNameInput.value = name; localStorage.setItem('jsgames.playerName', name); updateProfileAvatar(); if (isConnected) send({ type: 'setName', name }); addLog(`已改名为 ${name}`, 'system'); }
+function setName() { const name = nameInput.value.trim(); if (!name) return; if (isConnected) send({ type: 'setName', name }); }
+function applyServerName(name, rejected = false) { const accepted = String(name || '').trim(); if (!accepted) return; myName = accepted; nameInput.value = accepted; entryNameInput.value = accepted; localStorage.setItem('jsgames.playerName', accepted); updateProfileAvatar(); if (!rejected) addLog(`当前名字：${accepted}`, 'system'); }
 function send(payload) { transport.send(payload); }
 function addLog(message, type = 'chat') { const placeholder = logEl.querySelector('.log-placeholder'); placeholder?.remove(); const div = document.createElement('div'); div.className = `log-entry log-${type}`; div.innerHTML = `<span class="log-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><span>${escapeHtml(message)}</span>`; logEl.appendChild(div); logEl.scrollTop = logEl.scrollHeight; }
 function updateProfileAvatar() { const name = entryNameInput?.value || nameInput.value || myName || '玩'; profileAvatar.textContent = name.slice(0, 1); if (entryAvatar) entryAvatar.textContent = name.slice(0, 1); }
 function updateInviteLink() {
     const invite = document.getElementById('ipDisplay');
     if (!invite) return;
-    const awaitingConfiguration = Boolean(currentRoomId && currentRoom?.configurationRequired && !currentRoom.configurationConfirmed);
-    const url = currentRoomId && !awaitingConfiguration ? `${location.origin}${location.pathname}?room=${encodeURIComponent(currentRoomId)}` : '';
-    invite.textContent = awaitingConfiguration ? '确认房间设置后生成邀请链接' : url || '先创建或加入房间';
-    invite.dataset.inviteUrl = url;
+    const awaitingConfiguration = Boolean(currentRoomId && currentRoom?.configurationRequired && !currentRoom.configurationConfirmed); let url = '';
+    if (currentRoomId && !awaitingConfiguration) {
+        const params = new URLSearchParams({ room: currentRoomId });
+        if (currentRoom?.isPublic === false && currentRoom?.inviteToken) params.set('invite', currentRoom.inviteToken); url = `${location.origin}${location.pathname}?${params}`;
+    }
+    const inviteCard = document.getElementById('inviteLink'); if (inviteCard) inviteCard.hidden = !currentRoomId;
+    invite.textContent = awaitingConfiguration ? '确认房间设置后生成邀请链接' : url || ''; invite.dataset.inviteUrl = url;
 }
 function setConnectionStatus(text, className) {
     statusEl.textContent = text;
@@ -950,149 +901,47 @@ function setConnectionStatus(text, className) {
 }
 function isInRoom(roomId) { return currentRoomId === roomId; }
 function roomStatusText(status) { return status === 'playing' ? '游戏中' : status === 'ended' ? '已结束' : '等待中'; }
-function openMobileRooms() { if (!mobileRoomsDrawer) return; mobileRoomsDrawer.hidden = false; mobileRoomsDrawer.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-mobile-drawer'); mobileRoomsDrawer.querySelector('section [data-close-mobile-rooms]')?.focus(); }
-function closeMobileRooms() { if (!mobileRoomsDrawer || mobileRoomsDrawer.hidden) return; mobileRoomsDrawer.hidden = true; mobileRoomsDrawer.setAttribute('aria-hidden', 'true'); document.body.classList.remove('has-mobile-drawer'); openMobileRoomsBtn?.focus(); }
-
-entryStartBtn?.addEventListener('click', enterGameCatalog);
-entryJoinBtn?.addEventListener('click', () => showJoinLobby());
-brandLinks.forEach(link => link.addEventListener('click', returnHomeFromBrand));
-joinLobbyBackBtn?.addEventListener('click', () => showEntryGateway({ replayAnimation: false, animateReturn: true }));
-joinLobbyStartBtn?.addEventListener('click', enterGameCatalog);
-joinLobbyFooterStartBtn?.addEventListener('click', enterGameCatalog);
-joinLobbyCodeForm?.addEventListener('submit', joinFromJoinLobby);
-joinLobbyCodeInput?.addEventListener('input', () => { joinLobbyCodeInput.value = joinLobbyCodeInput.value.replace(/\D/g, '').slice(0, 6); if (joinLobbyCodeError) joinLobbyCodeError.textContent = ''; });
-reconnectBtn?.addEventListener('click', reconnectRoom);
-reconnectPlayerIdInput?.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); reconnectRoom(); } });
-joinLobbyGameFilterEl?.addEventListener('change', () => { selectedJoinRoomFilter = joinLobbyGameFilterEl.value; renderJoinLobbyRooms(); });
-entryNameInput?.addEventListener('input', updateProfileAvatar);
-leaveRoomBtn?.addEventListener('click', leaveRoom); startGameBtn?.addEventListener('click', startGame); lobbyStartGameBtn?.addEventListener('click', startGame); lobbyLeaveRoomBtn?.addEventListener('click', leaveRoom); sendChatBtn?.addEventListener('click', sendChat); setNameBtn?.addEventListener('click', setName); joinCodeBtn?.addEventListener('click', joinByCode); roomCodeInput?.addEventListener('keydown', event => { if (event.key === 'Enter') joinByCode(); }); roomListEl?.addEventListener('click', event => { const button = event.target.closest('[data-room-id]'); if (button) joinRoom(button.dataset.roomId); }); chatInput?.addEventListener('keydown', event => { if (event.key === 'Enter') sendChat(); }); nameInput?.addEventListener('keydown', event => { if (event.key === 'Enter') setName(); }); nameInput?.addEventListener('input', updateProfileAvatar);
-joinLobbyRoomListEl?.addEventListener('click', event => { const button = event.target.closest('[data-room-id]'); if (button) joinPublicRoom(button.dataset.roomId); });
-openMobileRoomsBtn?.addEventListener('click', openMobileRooms);
-mobileRoomsDrawer?.addEventListener('click', event => { if (event.target.closest('[data-close-mobile-rooms]')) closeMobileRooms(); });
-mobileRoomListEl?.addEventListener('click', event => { const button = event.target.closest('[data-room-id]'); if (!button) return; closeMobileRooms(); joinRoom(button.dataset.roomId); });
-gameMount?.addEventListener('click', event => {
-    if (!studyControlsEl || studyControlsEl.hidden || !currentRoom?.studyMode) return;
-    const button = event.target.closest('[data-study-switch]');
-    const seatIndex = Number(currentGameStudySeatIndex());
-    const seatCount = Number(currentGameStudySeatCount());
-    if ((!button && !event.target.closest('[data-study-place-type]') && !event.target.closest('[data-study-reset], [data-study-clear], [data-study-remove], [data-study-confirm]')) || !Number.isInteger(seatIndex) || !seatCount) return;
-    const placeType = event.target.closest('[data-study-place-type]')?.dataset.studyPlaceType;
-    if (placeType) {
-        studyControlsEl.dataset.studyPlacementType = placeType;
-        studyControlsEl.dataset.studyRemoveMode = '';
-        currentGameClient?.setStudyPlacement?.({ type: placeType, remove: false });
-        refreshStudyControlSelection();
-        return;
-    }
-    const setupAction = event.target.closest('[data-study-reset], [data-study-clear], [data-study-remove], [data-study-confirm]');
-    if (setupAction) {
-        if (setupAction.hasAttribute('data-study-reset')) { currentGameClient?.setStudyPlacement?.(null); send({ type: 'gameAction', action: { kind: 'studySetup', op: 'reset' } }); }
-        else if (setupAction.hasAttribute('data-study-clear')) { currentGameClient?.setStudyPlacement?.(null); send({ type: 'gameAction', action: { kind: 'studySetup', op: 'clear' } }); }
-        else if (setupAction.hasAttribute('data-study-remove')) { const remove = studyControlsEl.dataset.studyRemoveMode !== 'true'; studyControlsEl.dataset.studyRemoveMode = remove ? 'true' : ''; studyControlsEl.dataset.studyPlacementType = ''; currentGameClient?.setStudyPlacement?.(remove ? { remove: true } : null); refreshStudyControlSelection(); }
-        else { currentGameClient?.setStudyPlacement?.(null); send({ type: 'gameAction', action: { kind: 'studyConfirmSetup' } }); }
-        return;
-    }
-    currentGameClient?.setStudyPlacement?.(null);
-    studyControlsEl.dataset.studyPlacementType = '';
-    studyControlsEl.dataset.studyRemoveMode = '';
-    refreshStudyControlSelection();
-    send({ type: 'gameAction', action: { kind: 'studySwitchSeat', seatIndex: (seatIndex + 1) % seatCount } });
+function openMobileRooms() {
+    if (!mobileRoomsDrawer) return;
+    mobileRoomsDrawer.hidden = false;
+    mobileRoomsDrawer.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('has-mobile-drawer');
+    mobileRoomsDrawer.querySelector('section [data-close-mobile-rooms]')?.focus();
+}
+function closeMobileRooms() {
+    if (!mobileRoomsDrawer || mobileRoomsDrawer.hidden) return;
+    mobileRoomsDrawer.hidden = true;
+    mobileRoomsDrawer.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('has-mobile-drawer');
+    openMobileRoomsBtn?.focus();
+}
+bindLobbyEvents({
+    elements: {
+        entryStartBtn, entryJoinBtn, brandLinks, joinLobbyBackBtn, joinLobbyStartBtn, joinLobbyFooterStartBtn,
+        joinLobbyCodeForm, joinLobbyCodeInput, joinLobbyCodeError, reconnectBtn, reconnectPlayerIdInput,
+        joinLobbyGameFilterEl, entryNameInput, leaveRoomBtn, startGameBtn, lobbyStartGameBtn, lobbyLeaveRoomBtn,
+        roomInfoBtn, roomInfoDialog, roomInfoClose, roomInfoCopyRoom,
+        sendChatBtn, setNameBtn, joinCodeBtn, roomCodeInput, roomListEl, chatInput, nameInput,
+        joinLobbyRoomListEl, openMobileRoomsBtn, mobileRoomsDrawer, mobileRoomListEl, gameMount, roomMount,
+        createRoomNextBtn, createRoomBackBtn, createRoomCancelBtn, createRoomDialogClose, createRoomForm,
+        createRoomDialog, currentRoomPanel, gameFilterEl,
+    },
+    state: messageState,
+    actions: {
+        enterGameCatalog, showJoinLobby, returnHomeFromBrand, showEntryGateway, joinFromJoinLobby,
+        reconnectRoom, renderJoinLobbyRooms, updateProfileAvatar, leaveRoom, startGame, sendChat, setName,
+        joinByCode, joinRoom, joinPublicRoom, openMobileRooms, closeMobileRooms, handleWaitingStartAction,
+        preloadGameClient, addLog, collectRoomSettingValues, refreshStudyControlSelection, send,
+        showCreateRoomSettings, showCreateRoomRules, closeCreateRoomDialog, submitCreateRoom,
+        renderWaitingRoomPanel, applyGameFilter, showRoomFeedback, openRoomInfo: roomInfo.open, closeRoomInfo: roomInfo.close,
+        isRoomInfoOpen: roomInfo.isOpen, trapRoomInfoFocus: roomInfo.trapFocus,
+        getStudyControlsElement: () => studyControlsEl,
+        getStudySeatIndex: currentGameStudySeatIndex,
+        getStudySeatCount: currentGameStudySeatCount,
+        getGameClient: () => currentGameClient,
+        scheduleWaitingRoomRender: () => waitingRoomScene?.scheduleRender(),
+    },
 });
-gameMount?.addEventListener('click', event => {
-    if (!studyControlsEl || studyControlsEl.hidden || studyControlsEl.dataset.studyPhase !== 'setup' || event.target.closest('.study-controls')) return;
-    const square = event.target.closest('[data-x][data-y], [data-board-square]');
-    if (!square) return;
-    const x = Number(square.dataset.x); const y = Number(square.dataset.y);
-    if (!Number.isInteger(x) || !Number.isInteger(y)) return;
-    const remove = studyControlsEl.dataset.studyRemoveMode === 'true';
-    const type = studyControlsEl.dataset.studyPlacementType;
-    if (!remove && !type) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if (remove) send({ type: 'gameAction', action: { kind: 'studySetup', op: 'remove', x, y } });
-    else send({ type: 'gameAction', action: { kind: 'studySetup', op: 'place', x, y, pieceType: type, color: gameMount.dataset.studySide } });
-    currentGameClient?.setStudyPlacement?.(null);
-    studyControlsEl.dataset.studyPlacementType = '';
-    studyControlsEl.dataset.studyRemoveMode = '';
-}, true);
-roomMount?.addEventListener('click', async event => {
-    if (event.target.closest('[data-start-game]')) { handleWaitingStartAction(); return; }
-    if (event.target.closest('[data-toggle-ready]')) {
-        const player = currentRoom?.players?.find(item => item.id === myId);
-        send({ type: 'setReady', ready: player?.ready !== true });
-        return;
-    }
-    const kick = event.target.closest('[data-kick-player]');
-    if (kick) {
-        const target = currentRoom?.players?.find(player => player.id === kick.dataset.kickPlayer);
-        if (target && window.confirm(`确定将 ${target.name} 移出房间吗？`)) send({ type: 'kickPlayer', playerId: target.id });
-        return;
-    }
-    if (event.target.closest('[data-confirm-room-configuration]')) {
-        const settings = collectRoomSettingValues(roomMount, currentRoom);
-        pendingRoomSettings = { ...pendingRoomSettings, ...settings };
-        send({ type: 'configureRoom', settings });
-        return;
-    }
-    if (event.target.closest('[data-save-room-settings]')) {
-        const settings = collectRoomSettingValues(roomMount, currentRoom);
-        pendingRoomSettings = { ...pendingRoomSettings, ...settings };
-        send({ type: 'updateRoomSettings', settings });
-        return;
-    }
-    if (event.target.closest('[data-retry-preload]')) { preloadGameClient(currentRoom?.gameType, true).catch(error => addLog(`资源预加载失败：${error.message}`, 'error')); return; }
-    if (event.target.closest('[data-copy-room-code]')) {
-        try { await navigator.clipboard.writeText(currentRoomId); addLog(`房间号 ${currentRoomId} 已复制`, 'system'); }
-        catch { addLog(`房间号：${currentRoomId}`, 'system'); }
-    }
-});
-roomMount?.addEventListener('change', event => {
-    const input = event.target.closest('[data-room-setting-input]');
-    if (!input) return;
-    const key = input.dataset.roomSettingKey;
-    pendingRoomSettings[key] = input.type === 'checkbox' ? input.checked : input.value;
-    if (key === 'playerCount') pendingRoomPlayerCount = Number(input.value);
-    if (key === 'encryptorMode') pendingEncryptorMode = input.value;
-});
-window.addEventListener('resize', () => {
-    waitingRoomScene.scheduleRender();
-});
-createRoomNextBtn?.addEventListener('click', showCreateRoomSettings);
-createRoomBackBtn?.addEventListener('click', showCreateRoomRules);
-createRoomCancelBtn?.addEventListener('click', () => closeCreateRoomDialog());
-createRoomDialogClose?.addEventListener('click', () => closeCreateRoomDialog());
-createRoomForm?.addEventListener('submit', submitCreateRoom);
-createRoomDialog?.addEventListener('click', event => { if (event.target === createRoomDialog) closeCreateRoomDialog(); });
-document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && mobileRoomsDrawer && !mobileRoomsDrawer.hidden) { event.preventDefault(); closeMobileRooms(); return; }
-    if (!createRoomDialog || createRoomDialog.hidden) return;
-    if (event.key === 'Escape') {
-        event.preventDefault();
-        closeCreateRoomDialog();
-        return;
-    }
-    if (event.key !== 'Tab') return;
-    const activeStep = createRoomDialog.classList.contains('is-settings') ? createRoomForm : createRoomDialog.querySelector('.game-rules-step');
-    const focusable = [createRoomDialogClose, ...activeStep.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')].filter(element => !element.hidden && !element.closest('[hidden]'));
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-});
-currentRoomPanel?.addEventListener('click', event => {
-    const option = event.target.closest('[data-room-player-count]');
-    if (option) { pendingRoomPlayerCount = Number(option.dataset.roomPlayerCount); renderWaitingRoomPanel(); return; }
-    const mode = event.target.closest('[data-encryptor-mode]');
-    if (mode) { pendingEncryptorMode = mode.dataset.encryptorMode; renderWaitingRoomPanel(); return; }
-    if (event.target.closest('[data-confirm-room-configuration]')) send(currentRoom?.gameType === 'decrypto' ? { type: 'configureRoom', encryptorMode: pendingEncryptorMode } : { type: 'configureRoom', playerCount: pendingRoomPlayerCount });
-});
-gameFilterEl?.addEventListener('change', () => { selectedGameFilter = gameFilterEl.value; applyGameFilter(); });
-document.addEventListener('click', async event => { const copy = event.target.closest('[data-copy-invite]'); if (!copy) return; const invite = document.getElementById('ipDisplay'); const text = invite?.dataset.inviteUrl || invite?.textContent || ''; if (!text || text.includes('先创建')) return addLog('请先创建或加入房间', 'error'); try { await navigator.clipboard.writeText(text); addLog('邀请链接已复制', 'system'); copy.textContent = '已复制'; setTimeout(() => { copy.textContent = '复制'; }, 1400); } catch { addLog('复制失败，请手动复制邀请链接', 'error'); } });
-document.addEventListener('click', async event => { const copy = event.target.closest('[data-copy-player-id]'); if (!copy) return; if (!myId) return addLog('玩家 ID 尚未生成', 'error'); try { await navigator.clipboard.writeText(myId); showRoomFeedback(`玩家 ID ${myId} 已复制`, 'info'); } catch { addLog(`玩家 ID：${myId}`, 'system'); } });
-document.addEventListener('click', event => { if (event.target.closest('[data-dismiss-fatal]')) document.getElementById('fatalErrorBox')?.style.setProperty('display', 'none'); });
-
-
 const savedName = localStorage.getItem('jsgames.playerName');
 if (savedName) myName = savedName;
 nameInput.value = myName; entryNameInput.value = myName; updateProfileAvatar(); updateInviteLink();

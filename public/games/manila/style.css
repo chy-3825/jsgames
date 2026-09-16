@@ -213,15 +213,13 @@
 .mn-paper-title small { color: #8f7d65; font-size: 9px; }
 .mn-paper-title b { color: #97603e; font: 800 16px Georgia, serif; }
 .mn-master { background: linear-gradient(135deg, #ecd6a6, #f5e9cd); }
-.mn-master > div { position: relative; z-index: 1; display: flex; align-items: center; gap: 9px; margin-top: 8px; }
-.mn-master > div > i, .mn-player > i { display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--player); font-style: normal; font-weight: 900; box-shadow: inset 0 0 0 2px rgba(255,255,255,.45); }
-.mn-master > div > i { width: 36px; height: 36px; }
+.mn-master > div { position: relative; z-index: 1; display: flex; align-items: center; gap: 9px; margin-top: 8px; padding-left: 9px; border-left: 4px solid var(--player); }
 .mn-master strong, .mn-master small { display: block; }
 .mn-master strong { font: 900 15px "Songti SC", SimSun, serif; }
 .mn-master small { margin-top: 3px; color: #897456; font-size: 9px; }
-.mn-player { position: relative; z-index: 1; display: grid; grid-template-columns: 29px 1fr auto; align-items: center; gap: 7px; min-width: 0; padding: 7px 4px; border-bottom: 1px solid rgba(109,80,46,.13); }
+.mn-player { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px; min-width: 0; padding: 7px 4px 7px 8px; border-bottom: 1px solid rgba(109,80,46,.13); }
 .mn-player:last-child { border: 0; }
-.mn-player > i { width: 27px; height: 27px; font-size: 9px; }
+.mn-player::before { position: absolute; inset: 7px auto 7px 0; width: 3px; border-radius: 2px; background: var(--player); content: ""; }
 .mn-player > div { min-width: 0; }
 .mn-player strong, .mn-player small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mn-player strong { font-size: 11px; }
@@ -298,7 +296,8 @@
 .mn-presentation-layer.is-danger .mn-scene-heading > span { color: #a84c3f; }
 .mn-scene-note, .mn-live-payout, .mn-final-winner { margin: 9px 0 0; color: #78654b; font-size: 10px; font-weight: 700; line-height: 1.5; text-align: center; }
 .mn-scene-good, .mn-scene-player { display: inline-grid; grid-template-columns: 34px auto; grid-template-rows: auto auto; align-items: center; gap: 1px 8px; margin: 4px; padding: 6px 9px; border: 1px solid rgba(107,76,39,.18); border-radius: 8px; background: rgba(255,250,232,.64); vertical-align: middle; }
-.mn-scene-good > i, .mn-scene-player > i { grid-row: 1 / 3; display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; color: #fff8df; background: var(--good, var(--player)); font: 900 15px "Songti SC", SimSun, serif; box-shadow: inset 0 0 0 3px rgba(255,255,255,.17); }
+.mn-scene-player { grid-template-columns: auto; grid-template-rows: auto auto; padding-left: 8px; border-left: 3px solid var(--player); }
+.mn-scene-good > i { grid-row: 1 / 3; display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; color: #fff8df; background: var(--good, var(--player)); font: 900 15px "Songti SC", SimSun, serif; box-shadow: inset 0 0 0 3px rgba(255,255,255,.17); }
 .mn-scene-good > b, .mn-scene-player > b { font-size: 11px; }
 .mn-scene-good > small, .mn-scene-player > small { color: #8e7759; font-size: 8px; }
 .mn-scene-fleet, .mn-scene-people { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
@@ -488,4 +487,276 @@
     .mn-chart {
         grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr);
     }
+}
+/* A continuous chart and a compact merchant's desk. */
+.manila-app { padding: 24px clamp(16px, 3vw, 48px) 40px; background: radial-gradient(ellipse at 40% 0, #244e50, transparent 65%), #102f32; color: #f0e6cc; }
+.mn-header, .mn-layout { width: min(1560px, 100%); }
+.mn-header { margin-bottom: 24px; }
+.mn-brand h1 { font-size: 32px; letter-spacing: .18em; }
+.mn-brand small { font-size: 11px; }
+.mn-layout { grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; }
+.mn-chart { display: flex; flex-direction: column; align-items: stretch; gap: 18px; }
+.mn-ledger { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.mn-ledger > .mn-command { grid-column: 1 / -1; }
+.mn-status { min-height: 70px; padding: 0 0 16px; border: 0; border-bottom: 1px solid #b6c3a52b; border-radius: 0; background: none; box-shadow: none; }
+.mn-status::before { display: none; }
+.mn-status h2 { font-size: 22px; line-height: 1.5; }
+.mn-status p, .mn-self-summary span { font-size: 11px; }
+.mn-market { grid-template-columns: 100px 1fr; border-radius: 3px; background: #e4d7b5; box-shadow: 0 4px 10px #0002; }
+.mn-market-item { padding: 13px 10px; grid-template-columns: 28px 1fr auto; }
+.mn-market-item strong { font-size: 12px; }
+.mn-market-item small, .mn-market > header small { font-size: 10px; }
+.mn-market-item > b { font-size: 24px; }
+.mn-harbor-board { position: relative; overflow: hidden; padding: 24px; border: 1px solid #a6b99965; border-radius: 5px; background: radial-gradient(ellipse at 15% 30%, #9bc0a71c, transparent 55%), repeating-radial-gradient(ellipse at 110% 40%, transparent 0 44px, #afd6bb0b 45px 46px, transparent 47px 74px), linear-gradient(120deg, #285b60, #19494e 65%, #386665); box-shadow: inset 0 0 70px #082d3866, 0 18px 40px #00141930; }
+.mn-harbor-board::before { content: ''; position: absolute; inset: 8px; border: 1px solid #c6d2ab33; pointer-events: none; }
+.mn-map-title { position: relative; display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.mn-map-title small { color: #bfd0b4; font-size: 11px; letter-spacing: .25em; }
+.mn-map-title h2 { margin: 8px 0 0; font: 500 36px 'Songti SC', SimSun, serif; letter-spacing: .18em; color: #ece4c4; }
+.mn-map-title > span { width: 58px; height: 74px; text-align: center; color: #d5c593; font: 15px Georgia, serif; line-height: 24px; }
+.mn-routes, .mn-docks { position: relative; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.mn-section-heading { margin-bottom: 16px; }
+.mn-section-heading span { font-size: 15px; }
+.mn-section-heading small { color: #b0c8bd; font-size: 11px; line-height: 1.5; }
+.mn-section-heading > b { color: #d4ddc7; font-size: 11px; }
+.mn-routes > div:last-child { gap: 0; }
+.mn-route-row { position: relative; grid-template-columns: 112px minmax(0, 1fr); min-height: 142px; padding: 10px 0 15px; overflow: visible; border: 0; border-bottom: 1px solid #bdd4bd33; border-radius: 0; background: none; }
+.mn-route-row > header { padding: 0 10px 0 0; grid-template-columns: 1fr; gap: 6px; }
+.mn-route-row > header > i { display: none; }
+.mn-route-row > header strong { font: 700 16px 'Songti SC', SimSun, serif; color: #f1e5c8; }
+.mn-route-row > header small { color: #b2cbbf; font-size: 11px; }
+.mn-route-row > header > b { grid-column: auto; margin: 0; padding: 0; font-size: 14px; }
+.mn-waterway { height: 88px; padding: 14px 12px 19px; border: 0; background: linear-gradient(0deg, #91c2bb0c, transparent 65%); }
+.mn-river-track::before { height: 1px; background: #c5d7b480; bottom: 10px; }
+.mn-river-cell { height: 20px; border-color: #c1d8bd35; }
+.mn-river-cell > b { bottom: -16px; color: #b5cbbc; font-size: 10px; font-weight: 400; }
+.mn-river-cell.is-pirate { background: #b8796430; }
+.mn-river-cell.is-harbor { background: repeating-linear-gradient(0deg, #977b50 0 5px, #69553b 6px 7px); border-color: #d4b77b; height: 40px; }
+.mn-river-cell.is-harbor > b { bottom: 12px; }
+.mn-route-row > footer { grid-column: 2; display: flex; justify-content: flex-start; padding: 8px 12px 0; gap: 10px; }
+.mn-route-row > footer > span, .mn-route-row > footer > small { font-size: 11px; color: #b8ccbd; }
+.mn-route-row > footer > small { margin-left: auto; }
+.mn-stake { width: 23px; height: 23px; border-color: #c5d5bd70; background: #082c3433; }
+.mn-stake.is-filled { box-shadow: inset 0 2px 2px #fff5, inset 0 -3px 3px #0005, 0 3px 3px #001b2c66; }
+.mn-ship, .mn-moving-ship { width: 66px; height: 58px; filter: drop-shadow(0 7px 3px #092f3970); }
+.mn-ship > i, .mn-moving-ship > i { height: 15px; background: linear-gradient(#e5bf76 0 25%, #755033 28% 60%, #ba864b 63%); clip-path: polygon(0 0, 100% 12%, 82% 90%, 26% 100%, 11% 65%); }
+.mn-ship > b, .mn-moving-ship > b { left: 30px; bottom: 12px; height: 45px; width: 3px; background: #e2caa0; }
+.mn-ship > em, .mn-moving-ship > em { left: 34px; bottom: 20px; width: 29px; height: 36px; clip-path: polygon(0 0, 84% 15%, 96% 78%, 0 100%, 10% 48%); background: repeating-linear-gradient(0deg, #1a302325 0 1px, transparent 2px 8px), linear-gradient(90deg, var(--good), color-mix(in srgb, var(--good) 60%, #ffe5b0)); }
+.mn-ship::after, .mn-moving-ship::after { content: ''; position: absolute; left: 6px; bottom: 21px; width: 22px; height: 27px; background: linear-gradient(100deg, #b8b18a, #eee1b5); clip-path: polygon(100% 0, 100% 100%, 0 88%, 15% 23%); }
+.mn-docks { margin-top: 25px; padding-top: 19px; border-top: 3px double #c6bd8966; }
+.mn-docks > [data-role="locations"] { grid-template-columns: 1fr 1fr 1.15fr; gap: 12px; }
+.mn-location-group { border: 1px solid #d3be843d; border-radius: 2px; background: #122f3070; }
+.mn-location-group > header { padding: 12px 10px; border-bottom: 2px solid #ab8b55; background: #bda37515; flex-wrap: wrap; }
+.mn-location-group > header strong { font: 700 15px 'Songti SC', SimSun, serif; }
+.mn-location-group > header small { color: #aabfb0; font-size: 10px; }
+.mn-location-card { min-height: 62px; padding: 10px; }
+.mn-location-card strong { font-size: 12px; }
+.mn-location-card small { font-size: 10px; color: #b3c5b6; line-height: 1.5; }
+.mn-location-card .mn-stake { width: 21px; height: 21px; }
+.mn-command { min-height: 0; padding: 20px; border: 1px solid #ddc99b; border-top: 4px solid #c29955; border-radius: 3px; background: #f0e4c8; box-shadow: 0 8px 20px #001a2426; }
+.mn-command .mn-kicker, .mn-paper .mn-kicker { color: #8a6734; }
+.mn-command h3 { font-size: 22px; line-height: 1.4; }
+.mn-command > header { flex-wrap: wrap; }
+.mn-command > p { font-size: 12px; line-height: 1.75; margin: 12px 0 18px; }
+.mn-command button, .mn-command input, .mn-command select { min-height: 42px; font-size: 12px; }
+.mn-sail-board, .mn-boat-planner, .mn-pilot-planner { grid-template-columns: 1fr; }
+.mn-sail-board > button { min-height: 70px; }
+.mn-sail-board b { font-size: 13px; }
+.mn-sail-board small { font-size: 11px; }
+.mn-placement-choices, .mn-good-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 300px; }
+.mn-placement-choices b { font-size: 12px; }
+.mn-placement-choices small { font-size: 10px; }
+.mn-confirm { flex-wrap: wrap; }
+.mn-confirm > div:last-child { margin-left: auto; }
+.mn-paper { padding: 16px; border: 1px solid #c0c8ac33; border-radius: 3px; color: #e2dfc7; background: #102e3099; box-shadow: none; }
+.mn-paper::after { display: none; }
+.mn-paper-title { border-color: #b5c4a52b; }
+.mn-paper-title span { font-size: 14px; }
+.mn-paper-title small, .mn-player small, .mn-master small, .mn-vault > p, .mn-log p { color: #aebeb0; font-size: 11px; }
+.mn-master { background: #b5b1890d; }
+.mn-master .mn-kicker { color: #d0b978; }
+.mn-master strong { font-size: 17px; }
+.mn-player { padding-top: 12px; padding-bottom: 12px; border-color: #b5c4a526; }
+.mn-player strong { font-size: 13px; }
+.mn-player > b, .mn-paper-title b { color: #e0be7d; font-size: 19px; }
+.mn-player.is-me { background: #91b69914; }
+.mn-log { max-height: 150px; }
+.mn-log p.is-latest { color: #e1cc9f; }
+.mn-share { border-radius: 2px; }
+.mn-share > header { font-size: 9px; }
+.mn-share > div strong { font-size: 13px; }
+.mn-share > div small, .mn-share > footer { font-size: 10px; }
+.manila-app button { transition: border-color .16s, background-color .16s, box-shadow .16s; }
+.mn-command button:not(:disabled):hover { border-color: #997039; box-shadow: 0 2px 7px #6a512126; }
+@media (max-width: 1150px) {
+    .manila-app { padding: 18px; }
+    .mn-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; }
+    .mn-harbor-board { padding: 18px; }
+    .mn-route-row { grid-template-columns: 92px minmax(0, 1fr); }
+    .mn-market { grid-template-columns: 1fr; }
+    .mn-market > header { display: flex; justify-content: space-between; border-right: 0; border-bottom: 1px solid #89754e30; }
+    .mn-market-item { grid-template-columns: 1fr auto; }
+    .mn-market-item > i { display: none; }
+    .mn-docks > [data-role="locations"] { grid-template-columns: 1fr 1fr; }
+    .mn-location-group:last-child { grid-column: 1 / -1; }
+    .mn-location-group:last-child > div { grid-template-columns: 1fr 1fr; }
+    .mn-route-row > footer > small { display: none; }
+}
+@media (max-width: 850px) {
+    .mn-layout { grid-template-columns: 1fr; }
+    .mn-ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mn-command { grid-column: 1 / -1; grid-row: 1; }
+    .mn-sail-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .mn-status { flex-wrap: wrap; gap: 10px; }
+    .mn-status > aside { justify-items: start; }
+    .mn-self-summary { justify-content: flex-start; }
+}
+@media (max-width: 560px) {
+    .manila-app { padding: 14px 10px 24px; }
+    .mn-header { gap: 12px; margin-bottom: 18px; }
+    .mn-brand h1 { font-size: 27px; }
+    .mn-status h2 { font-size: 20px; }
+    .mn-map-title h2 { font-size: 30px; }
+    .mn-market > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mn-market-item { grid-template-columns: 29px 1fr auto; }
+    .mn-market-item > i { display: grid; }
+    .mn-harbor-board { padding: 18px 12px; }
+    .mn-section-heading { align-items: flex-start; gap: 5px; }
+    .mn-section-heading > b { padding: 4px; font-size: 10px; white-space: nowrap; }
+    .mn-route-row { grid-template-columns: minmax(0, 1fr); padding-top: 16px; }
+    .mn-route-row > header { grid-template-columns: 1fr auto; padding: 0 8px; }
+    .mn-route-row > header > b { grid-column: 2; }
+    .mn-route-row > header > div { display: flex; align-items: baseline; gap: 10px; }
+    .mn-waterway { height: 98px; padding-right: 14px; padding-left: 14px; }
+    .mn-route-row > footer { grid-column: 1; }
+    .mn-river-cell > b { visibility: visible; font-size: 9px; }
+    .mn-docks > [data-role="locations"] { gap: 8px; }
+    .mn-location-card { padding: 8px; }
+    .mn-location-group > header { padding: 10px 8px; }
+    .mn-location-group:last-child > div { grid-template-columns: 1fr; }
+    .mn-ledger, .mn-sail-board { grid-template-columns: 1fr; }
+    .mn-command { padding: 18px; }
+}
+/* Short landscape screens retain access to the entire board and ledger. */
+@media (max-width: 1050px) and (orientation: landscape) and (max-height: 520px) {
+    body.is-manila-view { overflow: auto; }
+    .manila-app { height: auto; min-height: 100svh; overflow: visible; }
+    .mn-layout { display: grid; height: auto; }
+    .mn-chart { display: flex; height: auto; overflow: visible; }
+    .mn-routes, .mn-command { height: auto; overflow: visible; }
+    .mn-docks { display: block; }
+    .mn-ledger { display: grid; }
+    .mn-voyage { grid-column: auto; grid-row: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .manila-app button { transition: none; } }
+@media (max-width: 850px) {
+    .mn-layout { grid-template-columns: minmax(0, 1fr); }
+    .mn-layout > .mn-chart, .mn-layout > .mn-ledger { display: contents; }
+    .mn-status { grid-row: 1; }
+    .mn-market { grid-row: 2; }
+    .mn-ledger > .mn-command { grid-row: 3; }
+    .mn-harbor-board { grid-row: 4; }
+}
+
+/* Keep the three essential Manila controls in one short-landscape viewport.
+ * The regular mobile layout intentionally stacks the full board and ledger,
+ * but a 667×375/844×390 viewport needs a compact two-column workspace. */
+@media (max-width: 1050px) and (orientation: landscape) and (max-height: 520px) {
+    body.is-manila-view { overflow: hidden; }
+    .manila-app {
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        overflow: hidden;
+        padding: 6px 8px;
+    }
+    .mn-header {
+        grid-template-columns: minmax(145px, 1fr) auto;
+        min-height: 38px;
+        gap: 7px;
+        margin-bottom: 4px;
+    }
+    .mn-seal { display: none; }
+    .mn-brand h1 { font-size: 18px; }
+    .mn-brand small { font-size: 9px; }
+    .mn-voyage { grid-column: auto; grid-row: auto; padding: 5px 8px; font-size: 9px; }
+    .mn-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.12fr) minmax(250px, .88fr);
+        grid-template-rows: auto auto minmax(0, 1fr);
+        height: calc(100svh - var(--game-shell-offset, 48px) - 48px);
+        min-height: 0;
+        gap: 4px 7px;
+        overflow: hidden;
+    }
+    .mn-layout > .mn-chart,
+    .mn-layout > .mn-ledger { display: contents; }
+    .mn-status {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        min-height: 34px;
+        padding: 3px 0 5px;
+        overflow: hidden;
+    }
+    .mn-status h2 { font-size: 13px; line-height: 1.2; }
+    .mn-status p { max-width: none; padding: 2px 5px; font-size: 8px; }
+    .mn-self-summary { gap: 3px; }
+    .mn-self-summary span { padding: 2px 3px; font-size: 8px; }
+    .mn-market {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        min-height: 30px;
+        overflow: hidden;
+    }
+    .mn-market > header { padding: 3px 7px; }
+    .mn-market > header span { font-size: 9px; }
+    .mn-market > header small { display: none; }
+    .mn-market > div { min-height: 30px; }
+    .mn-market-item { padding: 3px 6px; grid-template-columns: 1fr auto; }
+    .mn-market-item > i,
+    .mn-market-item small,
+    .mn-market-item > span { display: none; }
+    .mn-market-item strong { font-size: 9px; }
+    .mn-market-item > b { font-size: 14px; }
+    .mn-harbor-board {
+        display: flex;
+        flex-direction: column;
+        grid-column: 1;
+        grid-row: 3;
+        min-height: 0;
+        height: 100%;
+        overflow: hidden;
+        padding: 7px 8px;
+    }
+    .mn-map-title { margin-bottom: 5px; }
+    .mn-map-title small { font-size: 8px; }
+    .mn-map-title h2 { margin-top: 2px; font-size: 18px; }
+    .mn-map-title > span { width: 30px; height: 36px; font-size: 9px; line-height: 12px; }
+    .mn-routes { min-height: 0; height: auto; flex: 1 1 auto; overflow: auto; }
+    .mn-section-heading { margin-bottom: 4px; }
+    .mn-section-heading span { font-size: 9px; }
+    .mn-section-heading small { font-size: 8px; }
+    .mn-route-row { grid-template-columns: 72px minmax(0, 1fr); min-height: 52px; padding: 3px 0 5px; }
+    .mn-route-row > header { padding: 0 5px 0 0; gap: 2px; }
+    .mn-route-row > header strong { font-size: 9px; }
+    .mn-route-row > header small { font-size: 7px; }
+    .mn-route-row > header > b { font-size: 8px; }
+    .mn-waterway { height: 38px; padding: 4px 5px 8px; }
+    .mn-ship, .mn-moving-ship { width: 34px; height: 29px; }
+    .mn-ship > b, .mn-moving-ship > b { left: 15px; bottom: 6px; height: 22px; width: 2px; }
+    .mn-ship > em, .mn-moving-ship > em { left: 17px; bottom: 10px; width: 15px; height: 18px; }
+    .mn-route-row > footer { padding: 3px 5px 0; gap: 4px; }
+    .mn-route-row > footer > span,
+    .mn-route-row > footer > small { font-size: 7px; }
+    .mn-docks { display: none; }
+    .mn-ledger > .mn-command {
+        grid-column: 2;
+        grid-row: 3;
+        min-height: 0;
+        height: 100%;
+        overflow: auto;
+        padding: 8px;
+    }
+    .mn-command h3 { font-size: 14px; }
+    .mn-command > p { margin: 4px 0 7px; font-size: 8px; line-height: 1.35; }
+    .mn-command button, .mn-command input, .mn-command select { min-height: 29px; font-size: 9px; }
+    .mn-ledger > .mn-paper { display: none; }
 }

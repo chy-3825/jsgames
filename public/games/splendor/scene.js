@@ -1,5 +1,6 @@
 import { COLOR_LABELS, TIER_LABELS } from './constants.js';
 import { cardBackMarkup, escapeHtml, eventGems, noblePortraitMarkup, paymentGems, presentationCardMarkup } from './cards.js';
+import { beginPresentationFade, clearPresentationFade, PRESENTATION_FADE_MS } from '../common/presentation-fade.js';
 
 /** Transaction and finale presentation queue for 璀璨宝石. */
 export function createSplendorScene({ mount, model, getElement, windowRef = globalThis.window || globalThis }) {
@@ -22,6 +23,7 @@ export function createSplendorScene({ mount, model, getElement, windowRef = glob
 
     function showPresentation(kind, html) {
         const layer = $('presentationLayer');
+        clearPresentationFade(layer);
         layer.hidden = false;
         layer.setAttribute('aria-hidden', 'false');
         layer.className = `sp-presentation-layer is-active is-${kind}`;
@@ -41,12 +43,21 @@ export function createSplendorScene({ mount, model, getElement, windowRef = glob
 
     function hidePresentation() {
         const layer = $('presentationLayer');
+        clearPresentationFade(layer);
         clearPresentationMarks();
         clearActionLine();
         layer.className = 'sp-presentation-layer';
         layer.setAttribute('aria-hidden', 'true');
         layer.hidden = true;
         $('transactionStage').innerHTML = '';
+    }
+
+    async function fadeThenHide(token) {
+        const layer = $('presentationLayer');
+        beginPresentationFade(layer);
+        if (!await presentationDelay(PRESENTATION_FADE_MS, token)) return false;
+        hidePresentation();
+        return true;
     }
 
     function playerAnchor(playerId) {
@@ -218,14 +229,13 @@ export function createSplendorScene({ mount, model, getElement, windowRef = glob
                 if (event.kind === 'buyCard') await playBuyPresentation(event, token);
                 if (event.kind === 'nobleVisit') await playNoblePresentation(event, token);
                 if (token !== model.presentationToken) break;
-                hidePresentation();
-                if (!await presentationDelay(90, token)) break;
+                if (!await fadeThenHide(token)) break;
             }
             if (token !== model.presentationToken) continue;
             if (item.batch?.finalRoundStarted && !item.batch?.ended) await playFinalRoundPresentation(item.batch, token);
             if (token !== model.presentationToken) continue;
             if (item.batch?.ended || item.finaleOnly) await playFinalePresentation(item.batch, token);
-            if (token === model.presentationToken) hidePresentation();
+            if (token === model.presentationToken && !await fadeThenHide(token)) break;
         }
         hidePresentation();
         model.presentationPlaying = false;

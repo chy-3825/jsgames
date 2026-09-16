@@ -2,7 +2,7 @@
 
 > 盘点日期：2026-08-29
 > 盘点范围：`/home/chy/桌面/jsgames`，不包含可由 `npm install` 重新生成的 `node_modules/`，也不包含 `.git/`。  
-> 当前共有 676 个项目文件（不含 `node_modules/`、`.git/`、被忽略的 `tmp/` 和按需生成的 `TEST_REPORTS/artifacts/*.json`）；另保留 1 份正在使用的 `tmp/junqi-v5-final-prompts.md`。
+> 当前共有 707 个项目文件（686 个已跟踪文件 + 21 个本轮新增文件；不含 `node_modules/`、`.git/`、被忽略的 `tmp/`、覆盖率输出和按需生成的 `TEST_REPORTS/artifacts/*.json`）；另保留 1 份正在使用的 `tmp/junqi-v5-final-prompts.md`。
 
 ## 1. 状态说明
 
@@ -42,11 +42,14 @@
 | 文件 | 状态 | 用途 |
 | --- | --- | --- |
 | `public/index.html` | 运行必需 | 正式大厅 HTML；包含玩家名、游戏目录、房间、聊天和游戏挂载容器。 |
-| `public/script.js` | 运行必需 | 大厅组合入口；串联会话、房间协议、游戏加载和页面状态，不再承载目录、传输、弹层和等待桌的实现细节。 |
+| `public/script.js` | 运行必需 | 大厅组合入口；只串联会话、房间协议、游戏加载和页面状态。消息处理、DOM 事件绑定等实现位于 `public/lobby/`。 |
 | `public/game-details.js` | 运行必需 | 28 款游戏的玩家向规则摘要，供“规则说明 → 房间设置”双页创建浮窗使用。 |
 | `public/assets/covers/*.webp` | 运行必需 | 与注册表一一对应的 28 张现行高清横版封面，供创建房间规则浮窗使用。 |
 | `public/assets/covers/thumbs/*.webp` | 运行必需 | 与高清封面同名的 28 张大厅缩略图。 |
-| `public/style.css` | 运行必需 | 正式大厅、游戏卡片、双页创建浮窗和通用游戏外壳的基础样式；等待房间层见 `public/lobby/waiting-room.css`。 |
+| `public/style.css` | 运行必需 | 正式大厅、游戏卡片和双页创建浮窗的基础样式；游戏壳层、工具原语和响应式规则按顺序加载独立文件。 |
+| `public/lobby/game-shell.css` | 运行必需 | 等待房间与游戏视图的通用壳层、导航和预备桌布局。 |
+| `public/lobby/utilities.css` | 运行必需 | 移动端动作条、抽屉、棋盘视口、错误提示和房间色调等共享原语。 |
+| `public/lobby/responsive.css` | 运行必需 | 大厅入口、目录、等待桌和游戏壳层的断点及减少动效覆盖。 |
 | `public/lobby/waiting-room.css` | 运行必需 | 等待房间控制、座位火焰、入场转场、魔法阵和移动端覆盖层；由大厅入口紧随全局样式加载。 |
 | `public/lobby/catalog-data.js` | 前端必需 | 大厅游戏、分组、模式与美术元数据的单一来源。 |
 | `public/lobby/catalog-view.js` | 前端必需 | 游戏目录、公开房间、筛选和卡片事件的视图层；通过状态访问器与协议解耦。 |
@@ -57,13 +60,18 @@
 | `public/lobby/waiting-room-scene.js` | 前端必需 | 等待房间状态派生、座位几何、准备状态和桌面魔法阵渲染。 |
 | `public/lobby/game-entry-transition.js` | 前端必需 | 等待桌到游戏桌的座位分组、能量汇聚和转场生命周期。 |
 | `public/lobby/study-controls.js` | 前端必需 | 棋谱模式的执棋方切换、公开摆棋和确认控件。 |
+| `public/lobby/message-handler.js` | 前端必需 | 将 WebSocket 协议消息转换为大厅状态更新、游戏消息和反馈动作。 |
+| `public/lobby/event-bindings.js` | 前端必需 | 集中绑定入口、目录、房间、棋谱和创建弹层的 DOM 事件。 |
 
 ## 4. 通用服务端
 
 | 文件 | 状态 | 用途 |
 | --- | --- | --- |
-| `server/room.js` | 运行必需 | 通用房间生命周期；校验房间名称、可见性、人数上限与游戏专属设置，创建游戏会话、转发动作、系统 tick 和玩家视角状态。 |
-| `server/realtime/create-realtime-server.js` | 运行必需 | 可实例化的实时大厅服务；封装 WebSocket 协议、会话/重连、房间路由、广播和定时 tick，每个实例拥有独立状态。 |
+| `server/room.js` | 运行必需 | 通用房间状态与生命周期；校验名称、可见性、人数和设置，创建游戏会话、转发动作及玩家视角状态；棋谱职责由 `room-study.js` 注入。 |
+| `server/room-study.js` | 运行必需 | 棋谱模式的虚拟座位、摆棋编辑、视角切换和合法动作投影。 |
+| `server/realtime/create-realtime-server.js` | 运行必需 | 可实例化实时服务的依赖装配、协议入口、统计和边界函数；房间命令与 WebSocket 生命周期分别由独立模块承担。 |
+| `server/realtime/room-handlers.js` | 运行必需 | 创建/加入/重连、设置、准备、聊天、开局和游戏动作等房间命令处理。 |
+| `server/realtime/socket-lifecycle.js` | 运行必需 | WebSocket 建立、Origin/连接门禁、心跳、消息接收和关闭清理生命周期。 |
 | `server/realtime/protocol.js` | 运行必需 | 纯消息边界；归一化历史卡牌动作并把已验证的消息分派到实时服务处理器。 |
 | `server/realtime/broadcast.js` | 运行必需 | 实时广播边界；集中处理大厅/房间 JSON 编码和开放连接过滤。 |
 | `server/realtime/room-store.js` | 运行必需 | Map 形状的房间存储边界；默认进程内存实现，持久化/多实例适配器需另行满足原子写入和快照契约。 |
@@ -119,12 +127,21 @@
 | --- | --- | --- |
 | `public/games/common/grid-client.js` | 运行必需 | 斗兽棋等规则网格游戏可复用的浏览器棋盘组件。 |
 | `public/games/common/grid-client.css` | 运行必需 | 通用网格棋盘的布局和交互样式。 |
+| `public/games/common/presentation-fade.js` | 运行必需 | 全屏播报退出阶段的统一淡出时长、开始和中断清理辅助。 |
 | `public/games/chess/lobby-client.js` | 运行必需 | 国际象棋大厅桥接器；创建 iframe 并转发大厅消息。 |
 | `public/games/chess/room-frame.html` | 运行必需 | 国际象棋隔离运行文档，避免 Three.js/WebGL 受大厅布局影响。 |
 | `public/games/chess/client.js` | 运行必需 | iframe 内的国际象棋 2D/3D 渲染和交互。 |
 | `public/games/chess/chess3d.css` | 运行必需 | 国际象棋 2D/3D 棋室样式。 |
 | `public/games/chess/standalone.html` | 开发资料 | 不连接大厅的国际象棋独立视觉测试页。 |
 | `public/games/monopolydeal/choice.css` | 运行必需 | 大富翁纸牌颜色、支付和交换选择弹窗的补充样式。 |
+| `public/games/hanabi/table.css` | 运行必需 | 花火烟花、队友牌面、本人牌背和牌桌内容层。 |
+| `public/games/hanabi/actions.css` | 运行必需 | 花火提示、出牌/弃牌操作、侧栏和规则弹层。 |
+| `public/games/hanabi/responsive.css` | 运行必需 | 花火基础布局的桌面/平板响应式覆盖。 |
+| `public/games/hanabi/scenes.css` | 运行必需 | 花火提示传递、翻牌和终局演出层。 |
+| `public/games/hanabi/responsive-scenes.css` | 运行必需 | 花火演出及移动端后置响应式覆盖。 |
+| `public/games/monopolydeal/interactions.css` | 运行必需 | 大富翁纸牌行动目标、公共牌桌和回应交互层。 |
+| `public/games/monopolydeal/scenes.css` | 运行必需 | 大富翁纸牌接管、胜利和规则演出层。 |
+| `public/games/monopolydeal/responsive.css` | 运行必需 | 大富翁纸牌桌面、移动端和短横屏响应式覆盖。 |
 | `public/games/acquire/board.css` | 运行必需 | 并购地图、地块、集团标记和手牌层；按清单在基础样式后加载。 |
 | `public/games/acquire/rail.css` | 运行必需 | 并购股票、玩家侧栏和购买控件；按清单在版图层后加载。 |
 | `public/games/acquire/scenes.css` | 运行必需 | 并购规则弹层、行动演出和响应式覆盖；按清单最后加载。 |
@@ -183,6 +200,7 @@
 | --- | --- | --- |
 | `test/regression/*.test.js` | 测试必需 | 按核心协议与游戏域拆分的全项目综合回归；保留原有测试标题与断言。 |
 | `test/support/regression.helper` | 测试必需 | 综合回归共享夹具、引擎导入和通用推进辅助；使用无扩展名避免被 Node 测试发现器误当成测试文件。 |
+| `test/presentation-fade.test.js` | 测试必需 | 检查全屏播报统一淡出契约、减少动效规则和猎巫镇既有离场阶段。 |
 | `test/acquire-official.test.js` | 测试必需 | 并购设置、集团、股票、合并、红利和完整对局。 |
 | `test/avalon-official.test.js` | 测试必需 | 阿瓦隆人数、任务配置、身份隐私、刺杀和完整对局。 |
 | `test/camelup-official.test.js` | 测试必需 | 狂野骆驼堆叠、观众板、腿赛/终局下注和完整对局。 |
@@ -514,6 +532,14 @@
 - `public/assets/bgg/splendor/art-6.jpg` — 璀璨宝石的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/splendor/art-7.jpg` — 璀璨宝石的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
 - `public/assets/bgg/splendor/art-8.jpg` — 璀璨宝石的现行牌面、卡背、地形或插画素材；具体用途见第 12 节。
+- `public/assets/bgg/splendor/card-art-1.jpg` — 璀璨宝石统一 5:7 卡面使用的无白边裁切插画。
+- `public/assets/bgg/splendor/card-art-2.jpg` — 璀璨宝石统一 5:7 卡面使用的无白边裁切插画。
+- `public/assets/bgg/splendor/card-art-3.jpg` — 璀璨宝石统一 5:7 卡面使用的无白边裁切插画。
+- `public/assets/bgg/splendor/card-art-4.jpg` — 璀璨宝石统一 5:7 卡面使用的无白边裁切插画。
+- `public/assets/bgg/splendor/card-art-5.jpg` — 璀璨宝石统一 5:7 卡面使用的无白边裁切插画。
+- `public/assets/bgg/splendor/card-art-6.jpg` — 璀璨宝石统一 5:7 卡面使用的无白边裁切插画。
+- `public/assets/bgg/splendor/card-art-7.jpg` — 璀璨宝石统一 5:7 卡面使用的无白边裁切插画。
+- `public/assets/bgg/splendor/card-art-8.jpg` — 璀璨宝石统一 5:7 卡面使用的无白边裁切插画。
 - `public/assets/bgg/splendor/detail.jpg` — 璀璨宝石的 BGG 组件、牌面或实物参考图。
 - `public/assets/bgg/splendor/original-cover.jpg` — 璀璨宝石的大厅盒面/封面素材。
 - `public/assets/bgg/takefive/cover.jpg` — 牛头王的大厅盒面/封面素材。
@@ -595,7 +621,12 @@
 - `public/games/guessnumber/client.js` — 猜数字的浏览器客户端、渲染和交互。
 - `public/games/guessnumber/style.css` — 猜数字的专用界面样式。
 - `public/games/hanabi/client.js` — 花火的浏览器客户端、渲染和交互。
-- `public/games/hanabi/style.css` — 花火的专用界面样式。
+- `public/games/hanabi/style.css` — 花火主题、统一外壳和桌面布局骨架。
+- `public/games/hanabi/table.css` — 花火烟花、队友牌面、本人牌背和牌桌内容层。
+- `public/games/hanabi/actions.css` — 花火提示、出牌/弃牌操作、侧栏和规则弹层。
+- `public/games/hanabi/responsive.css` — 花火基础布局的桌面/平板响应式覆盖。
+- `public/games/hanabi/scenes.css` — 花火提示传递、翻牌和终局演出层。
+- `public/games/hanabi/responsive-scenes.css` — 花火演出及移动端后置响应式覆盖。
 - `public/games/jungle/client.js` — 斗兽棋的浏览器客户端、渲染和交互。
 - `public/games/jungle/style.css` — 斗兽棋的专用界面样式。
 - `public/games/junqi/client.js` — 军棋的浏览器客户端、渲染和交互。
@@ -604,7 +635,9 @@
 - `public/games/kingdomino/style.css` — 多米诺王国的专用界面样式。
 - `public/games/lasvegas/client.js` — 拉斯维加斯的浏览器客户端、渲染和交互。
 - `public/games/lasvegas/style.css` — 拉斯维加斯基础主题、赌场版图和操作区样式。
-- `public/games/lasvegas/scenes.css` — 拉斯维加斯演出、派奖结算和响应式后置覆盖；按资源清单在基础样式后加载。
+- `public/games/lasvegas/board.css` — 拉斯维加斯赌场版图、骰盘和桌面视觉层。
+- `public/games/lasvegas/responsive.css` — 拉斯维加斯断点、移动端和横屏布局层。
+- `public/games/lasvegas/scenes.css` — 拉斯维加斯演出、派奖结算和过渡效果；按资源清单最后加载。
 - `public/games/loveletter/client.js` — 情书的浏览器客户端、渲染和交互。
 - `public/games/loveletter/style.css` — 情书的专用界面样式。
 - `public/games/magicalathlete/client.js` — 胡闹运动会的浏览器客户端、渲染和交互。
@@ -617,24 +650,36 @@
 - `public/games/monopoly/style.css` — 环城大富翁的专用界面样式。
 - `public/games/monopolydeal/choice.css` — 大富翁纸牌颜色、交换和支付弹窗补充样式。
 - `public/games/monopolydeal/client.js` — 大富翁纸牌的浏览器客户端、渲染和交互。
-- `public/games/monopolydeal/style.css` — 大富翁纸牌的专用界面样式。
+- `public/games/monopolydeal/style.css` — 大富翁纸牌主题、牌桌、地产和手牌骨架。
+- `public/games/monopolydeal/interactions.css` — 大富翁纸牌行动目标、公共牌桌和回应交互层。
+- `public/games/monopolydeal/scenes.css` — 大富翁纸牌接管、胜利和规则演出层。
+- `public/games/monopolydeal/responsive.css` — 大富翁纸牌桌面、移动端和短横屏响应式覆盖。
 - `public/games/scout/client.js` — 马戏星探的浏览器客户端、渲染和交互。
 - `public/games/scout/style.css` — 马戏星探的专用界面样式。
 - `public/games/splendor/client.js` — 璀璨宝石的浏览器客户端、渲染和交互。
 - `public/games/splendor/style.css` — 璀璨宝石的专用界面样式。
+- `public/games/splendor/table.css` — 璀璨宝石牌桌、牌面信息层和行动面板样式。
+- `public/games/splendor/scenes.css` — 璀璨宝石交易演出与展示牌面样式。
+- `public/games/splendor/responsive.css` — 璀璨宝石桌面、移动端和短横屏布局覆盖。
 - `public/games/takefive/client.js` — 牛头王的浏览器客户端、渲染和交互。
 - `public/games/takefive/style.css` — 牛头王的专用界面样式。
 - `public/games/werewolf/client.js` — 狼人杀自动辅助的浏览器客户端、渲染和交互。
 - `public/games/werewolf/style.css` — 狼人杀自动辅助的专用界面样式。
 - `public/games/witchtown/client.js` — 猎巫镇的浏览器客户端、渲染和交互。
 - `public/games/witchtown/style.css` — 猎巫镇基础主题、审判桌和档案操作样式。
-- `public/games/witchtown/scenes.css` — 猎巫镇视觉重写、演出、结算和响应式后置覆盖；按资源清单在基础样式后加载。
+- `public/games/witchtown/table.css` — 猎巫镇审判桌、玩家席位和桌面断点布局层。
+- `public/games/witchtown/dossier.css` — 猎巫镇密封档案、公开证据和选择控件层。
+- `public/games/witchtown/scenes.css` — 猎巫镇场景演出、碎裂转场和关键帧效果。
+- `public/games/witchtown/responsive.css` — 猎巫镇窄屏、短横屏和减少动效覆盖层。
 - `public/games/xiangqi/client.js` — 中国象棋的浏览器客户端、渲染和交互。
 - `public/games/xiangqi/style.css` — 中国象棋的专用界面样式。
 - `public/index.html` — 正式大厅 HTML。
 - `public/game-details.js` — 28 款游戏在创建房间前展示的规则摘要。
 - `public/script.js` — 正式大厅组合入口，编排 WebSocket、双页创建浮窗、房间和动态游戏加载逻辑。
-- `public/style.css` — 正式大厅基础样式；等待房间覆盖层位于 `public/lobby/waiting-room.css`。
+- `public/style.css` — 正式大厅基础样式；游戏壳层、工具原语和响应式规则由 `public/lobby/*.css` 按序加载。
+- `public/lobby/game-shell.css` — 等待房间与游戏视图的通用壳层布局。
+- `public/lobby/utilities.css` — 移动端游戏共享原语和状态提示。
+- `public/lobby/responsive.css` — 大厅与游戏壳层断点覆盖。
 - `public/lobby/waiting-room.css` — 等待房间专用控制、座位、转场和移动端样式。
 - `public/lobby/catalog-data.js` — 大厅游戏、分组、模式与美术元数据。
 - `public/lobby/catalog-view.js` — 游戏目录、公开房间和筛选视图。
@@ -645,9 +690,14 @@
 - `public/lobby/waiting-room-scene.js` — 等待房间状态、座位几何和魔法阵渲染。
 - `public/lobby/game-entry-transition.js` — 等待桌到游戏桌的入场转场。
 - `public/lobby/study-controls.js` — 棋谱模式执棋方和公开摆棋控件。
+- `public/lobby/message-handler.js` — WebSocket 消息到大厅动作的转换。
+- `public/lobby/event-bindings.js` — 大厅 DOM 事件绑定。
 - `test/realtime-isolation.test.js` — 两个实时服务实例的房间、会话、编号和清理隔离验收。
 - `test/realtime-protocol.test.js` — 历史动作归一化和实时消息路由的纯单元验收。
 - `test/realtime-broadcast.test.js` — 大厅/房间广播的连接过滤和 JSON 编码验收。
+- `server/realtime/room-handlers.js` — 房间命令边界；由实时服务工厂注入依赖。
+- `server/realtime/socket-lifecycle.js` — WebSocket 生命周期、心跳和清理边界。
+- `server/room-study.js` — 棋谱模式控制器方法集合。
 - `test/realtime-room-store.test.js` — 默认房间存储和未来持久化适配器契约验收。
 - `scripts/checkers-acceptance.js` — 中国跳棋完整对局验收与复现数据生成脚本。
 - `scripts/gobang-acceptance.js` — 五子棋完整对局验收与复现数据生成脚本。
@@ -706,6 +756,9 @@
 - `server/games/monopoly/engine.js` — 环城大富翁的服务端权威规则引擎。
 - `server/games/monopoly/index.js` — 环城大富翁的大厅 metadata/create 适配层。
 - `server/games/monopolydeal/engine.js` — 大富翁纸牌的服务端权威规则引擎。
+- `server/games/monopolydeal/deck.js` — 大富翁纸牌的牌库定义、颜色组和租金数据，供规则引擎使用。
+- `public/games/monopolydeal/property-original.js` — 地产 BGG 原始扫描图的精确匹配、中文文字覆盖及缺图标记；不用于手牌。
+- `test/monopolydeal-cards.test.js` — 检查整副牌的前端覆盖、简洁地产手牌、金额一致性及未知牌回退。
 - `server/games/monopolydeal/index.js` — 大富翁纸牌的大厅 metadata/create 适配层。
 - `server/games/registry.js` — 28 个正式游戏的运行时注册表。
 - `server/games/scout/engine.js` — 马戏星探的服务端权威规则引擎。
@@ -744,3 +797,5 @@
 - `test/splendor-official.test.js` — 璀璨宝石专项自动化规则测试。
 - `test/takefive-official.test.js` — 牛头王专项自动化规则测试。
 - `test/witchtown-official.test.js` — 猎巫镇专项自动化规则测试。
+
+- `public/games/monopolydeal/property-wild-adapted.js`：黑绿与黑浅蓝万能地产的连续矢量改制卡面，消除拼接毛边。

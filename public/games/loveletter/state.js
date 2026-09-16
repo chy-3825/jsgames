@@ -4,13 +4,15 @@ export function createLoveLetterModel() {
     return {
         state: null,
         selectedCardIndex: null,
+        hoveredCardIndex: null,
         selectedTargetId: null,
         selectedGuess: null,
         guessOpen: false,
         pendingAction: false,
         acknowledgementActionId: null,
-        acknowledgementReadyAt: 0,
         acknowledgementDeadline: 0,
+        presentedSeatRevealIds: new Set(),
+        archiveKind: null,
     };
 }
 
@@ -40,6 +42,20 @@ export function favorScore(state, count) {
 
 export function shortEffect(id) {
     return CARD_RULES.find(rule => rule.value === Number(id))?.effect || '';
+}
+
+// Full rules stay in the rules dialog; hand cards only need a compact cue.
+export function compactEffect(id) {
+    return ({
+        1: '猜牌，猜中出局',
+        2: '秘密看牌',
+        3: '比牌，低点出局',
+        4: '保护自己一回合',
+        5: '弃牌并重新摸牌',
+        6: '交换手牌',
+        7: '必须打出',
+        8: '打出即出局',
+    })[Number(id)] || '';
 }
 
 export function mustPlayCountessNow(state) {
@@ -75,6 +91,7 @@ export function canPlaySelected(state, selectedCardIndex, selectedTargetId, sele
 
 export function clearSelection(model) {
     model.selectedCardIndex = null;
+    model.hoveredCardIndex = null;
     model.selectedTargetId = null;
     model.selectedGuess = null;
     model.guessOpen = false;
@@ -98,7 +115,9 @@ export function discardValue(finalState, playerId) {
 
 export function roundOutcome(next) {
     if (next.status !== 'round_end' && next.status !== 'ended') return null;
-    const winners = next.roundWinners?.length ? next.roundWinners : next.roundWinner ? [next.roundWinner] : [];
+    const winners = next.status === 'ended'
+        ? (next.winners?.length ? next.winners : next.winner ? [next.winner] : [])
+        : (next.roundWinners?.length ? next.roundWinners : next.roundWinner ? [next.roundWinner] : []);
     return { winners, gameEnded: next.status === 'ended', targetFavor: next.targetFavor, favorTokens: next.favorTokens || [] };
 }
 
@@ -111,17 +130,29 @@ function eliminationCard(next, playerId) {
 
 export function deriveScenes(previous, next) {
     if (!previous || !next || previous.round !== next.round) return [];
+    const serverTimeline = next.presentation;
+    if (!serverTimeline || serverTimeline.id === previous.presentation?.id) return [];
+    const remainingMs = Number(serverTimeline.endsAt) - Number(serverTimeline.serverNow || Date.now());
+    if (remainingMs <= 0) return [];
+    const timeline = { ...serverTimeline, endsAt: Date.now() + remainingMs };
     const wasOut = new Map((previous.players || []).map(player => [player.id, isOut(player)]));
     const newlyOut = (next.players || []).filter(player => !wasOut.get(player.id) && isOut(player));
     if (newlyOut.length) {
+        const outcome = roundOutcome(next);
+        const won = (timeline.winnerIds || []).includes(next.myId);
+        if (won) return [{ type: 'personalVictory', outcome, timeline }];
         return newlyOut.map(player => ({
-            type: 'elimination',
+            type: player.id === next.myId ? 'personalElimination' : 'elimination',
             player: { id: player.id, name: player.name },
             card: eliminationCard(next, player.id),
             reason: next.lastAction?.result?.message || `${player.name} 离开了本轮`,
-            outcome: roundOutcome(next),
+            outcome: player.id === next.myId ? null : outcome,
+            timeline,
         }));
     }
     const enteredRoundEnd = previous.status === 'playing' && (next.status === 'round_end' || next.status === 'ended');
-    return enteredRoundEnd && next.endReason === 'showdown' ? [{ type: 'showdown', state: next }] : [];
+    if (enteredRoundEnd && next.endReason === 'showdown') {
+        return [{ type: 'showdown', state: next, timeline }];
+    }
+    return [];
 }

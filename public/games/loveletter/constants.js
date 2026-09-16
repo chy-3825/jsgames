@@ -1,14 +1,14 @@
 export const CARD_NAMES = Object.freeze({ 1: '侍卫', 2: '牧师', 3: '男爵', 4: '侍女', 5: '王子', 6: '国王', 7: '伯爵夫人', 8: '公主' });
 
 export const CARD_ART = Object.freeze({
-    1: '/assets/bgg/loveletter/cards/guard.jpg',
-    2: '/assets/bgg/loveletter/cards/priest.jpg',
-    3: '/assets/bgg/loveletter/cards/baron.jpg',
-    4: '/assets/bgg/loveletter/cards/handmaid.jpg',
-    5: '/assets/bgg/loveletter/cards/prince.jpg',
-    6: '/assets/bgg/loveletter/cards/king.jpg',
-    7: '/assets/bgg/loveletter/cards/countess.jpg',
-    8: '/assets/bgg/loveletter/cards/princess.jpg',
+    1: '/assets/games/loveletter/cards-clean-zh/guard.png',
+    2: '/assets/games/loveletter/cards-clean-zh/priest.png',
+    3: '/assets/games/loveletter/cards-clean-zh/baron.png',
+    4: '/assets/games/loveletter/cards-clean-zh/handmaid.png',
+    5: '/assets/games/loveletter/cards-clean-zh/prince.png',
+    6: '/assets/games/loveletter/cards-clean-zh/king.png',
+    7: '/assets/games/loveletter/cards-clean-zh/countess.png',
+    8: '/assets/games/loveletter/cards-clean-zh/princess.png',
 });
 
 export const CARD_FOCUS = Object.freeze({
@@ -23,14 +23,14 @@ export const CARD_FOCUS = Object.freeze({
 });
 
 export const CARD_RULES = Object.freeze([
-    { value: 1, count: 5, name: '侍卫', effect: '猜一名玩家的手牌，猜中则对方出局。' },
-    { value: 2, count: 2, name: '牧师', effect: '查看一名玩家的手牌，只有你能看到。' },
-    { value: 3, count: 2, name: '男爵', effect: '和一名玩家比较手牌，点数低者出局。' },
-    { value: 4, count: 2, name: '侍女', effect: '保护自己到下一回合，期间不能被指定。' },
-    { value: 5, count: 2, name: '王子', effect: '指定一名玩家弃牌并重抽，可以指定自己。' },
-    { value: 6, count: 1, name: '国王', effect: '和一名玩家交换手牌。' },
-    { value: 7, count: 1, name: '伯爵夫人', effect: '若同时持有王子或国王，必须打出此牌。' },
-    { value: 8, count: 1, name: '公主', effect: '打出或弃掉公主会立刻出局。' },
+    { value: 1, count: 5, name: '侍卫', effect: '猜一名对手的手牌；猜中则对方出局。' },
+    { value: 2, count: 2, name: '牧师', effect: '秘密查看一名对手的手牌。' },
+    { value: 3, count: 2, name: '男爵', effect: '与一名对手比较手牌；点数较低者出局。' },
+    { value: 4, count: 2, name: '侍女', effect: '直到您的下个回合前，不会成为其他玩家的目标。' },
+    { value: 5, count: 2, name: '王子', effect: '令一名玩家弃掉手牌并重新摸牌，也可以选择自己。' },
+    { value: 6, count: 1, name: '国王', effect: '与一名对手交换手牌。' },
+    { value: 7, count: 1, name: '伯爵夫人', effect: '与国王或王子同时在手时，必须打出。' },
+    { value: 8, count: 1, name: '公主', effect: '一旦打出或弃掉，立即出局。' },
 ]);
 
 export const NEEDS_TARGET = new Set([1, 2, 3, 5, 6]);

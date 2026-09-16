@@ -50,3 +50,22 @@ test('狂野骆驼以全屏开赛赛况和明确的单人或共享冠军完成�
     assert.match(client, /赢得沙漠大赛/);
     assert.match(style, /\.cm-starting-stacks/);
 });
+
+test('狂野骆驼客户端消费服务器绝对时间并保留可见截止锁', () => {
+    assert.match(client, /localizePresentation/);
+    assert.match(client, /state\.presentations/);
+    assert.match(client, /sequence <= model\.lastPresentationSequence/);
+    assert.match(client, /scene\.enqueuePresentation\(localized\)/);
+    assert.doesNotMatch(client, /firstState/);
+    assert.match(client, /presentationLockedUntil/);
+    assert.match(client, /waitUntil/);
+    assert.match(client, /viewerVariant === 'personalVictory'/);
+});
+
+test('狂野骆驼跳过和减少动态不会缩短服务器播报时隙', () => {
+    assert.match(client, /function skipPresentation\(\)/);
+    assert.match(client, /model\.presentationPlaying = true;[\s\S]*holdPresentationLock/);
+    assert.match(client, /reducedMotion/);
+    assert.match(client, /currentEventDeadline/);
+    assert.match(client, /presentationLockedUntil/);
+});

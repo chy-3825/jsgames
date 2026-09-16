@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const Room = require('../server/room');
 const CamelUp = require('../server/games/camelup');
 const Engine = require('../server/games/camelup/engine');
 
@@ -197,4 +198,120 @@ test('Camel Up reveals terminal bets in placement order before publishing final 
     assert.equal(presentation.events[2].standings[0].id, 'camel0');
     assert.equal(presentation.events[2].standings[0].cash, 11);
     assert.deepEqual(presentation.events[2].winnerIds, ['camel0']);
+});
+
+test('Camel Up schedules public presentations on one absolute server timeline', () => {
+    const game = new Engine('camel-presentation-timeline', players(3), random(109));
+    assert.equal(game.start().success, true);
+    let state = game.getPublicState();
+    assert.ok(Number.isFinite(state.serverNow));
+    assert.equal(state.presentation.blocking, true);
+    assert.equal(state.presentation.durationMs, state.presentation.endsAt - state.presentation.startedAt);
+    assert.ok(state.presentation.events.every(event => event.endsAt > event.startedAt && event.durationMs === event.endsAt - event.startedAt));
+    assert.equal(state.presentation.events.at(-1).endsAt, state.presentation.endsAt);
+
+    const current = game.players[game.turnPlayerIndex];
+    assert.equal(game.handleAction(current.id, { kind: 'betLeg', camelId: 'red' }).success, true);
+    state = game.getPublicState();
+    assert.deepEqual(state.presentations.map(batch => batch.sequence), [1, 2]);
+    assert.equal(state.presentations[0].endsAt, state.presentations[1].startedAt);
+    assert.equal(state.presentations[1].events[0].startedAt, state.presentations[1].startedAt);
+});
+
+test('Camel Up room gate rejects actions until the authoritative presentation deadline', () => {
+    const room = new Room('camel-presentation-lock', 'camel0', '玩家1', 'camelup', {}, { readyCheckEnabled: true });
+    for (const player of players(3)) assert.equal(room.addPlayer(player).success, true);
+    assert.equal(room.startGame().success, true);
+    const locked = room.getPlayerGameState('camel0').presentation;
+    assert.equal(locked.blocking, true);
+    const rejected = room.handleGameAction('camel0', { kind: 'betLeg', camelId: 'red' });
+    assert.equal(rejected.success, false);
+    assert.match(rejected.message, /播报结束/);
+    const realNow = Date.now;
+    Date.now = () => Number(locked.endsAt) + 1;
+    try {
+        assert.equal(room.handleGameAction('camel0', { kind: 'betLeg', camelId: 'red' }).success, true);
+    } finally {
+        Date.now = realNow;
+    }
+});
+
+test('Camel Up projects sole and tied winners into the same final presentation slot', () => {
+    const sole = new Engine('camel-personal-winner', players(3), random(110));
+    sole.start();
+    sole.players[0].cash = 8;
+    sole._finishRace();
+    const publicSole = sole.getPublicState().presentations.flatMap(batch => batch.events).findLast(event => event.kind === 'finalSettlement');
+    const soleWinner = sole.getPlayerState('camel0').presentations.flatMap(batch => batch.events).find(event => event.kind === 'finalSettlement');
+    const soleOpponent = sole.getPlayerState('camel1').presentations.flatMap(batch => batch.events).find(event => event.kind === 'finalSettlement');
+    assert.equal(soleWinner.viewerVariant, 'personalVictory');
+    assert.equal(soleWinner.title, '您已获胜');
+    assert.equal(soleWinner.startedAt, publicSole.startedAt);
+    assert.equal(soleWinner.endsAt, publicSole.endsAt);
+    assert.equal(soleOpponent.viewerVariant, undefined);
+
+    const tie = new Engine('camel-personal-tie', players(3), random(111));
+    tie.start();
+    tie.players[0].cash = 8;
+    tie.players[1].cash = 8;
+    tie._finishRace();
+    for (const id of ['camel0', 'camel1']) {
+        const event = tie.getPlayerState(id).presentations.flatMap(batch => batch.events).find(item => item.kind === 'finalSettlement');
+        assert.equal(event.viewerVariant, 'personalVictory');
+        assert.equal(event.title, '您已获胜');
+    }
+    const spectator = tie.getPlayerState('camel2').presentations.flatMap(batch => batch.events).find(event => event.kind === 'finalSettlement');
+    assert.equal(spectator.viewerVariant, undefined);
+});
+
+test('Camel Up retains private overall bets in every queued batch', () => {
+    const game = new Engine('camel-private-queue', players(3), random(112));
+    game.start();
+    const red = game.players[0].raceCards.find(card => card.camelId === 'red');
+    const blue = game.players[1].raceCards.find(card => card.camelId === 'blue');
+    assert.equal(game.handleAction('camel0', { kind: 'betOverall', cardId: red.id, outcome: 'winner' }).success, true);
+    assert.equal(game.handleAction('camel1', { kind: 'betOverall', cardId: blue.id, outcome: 'loser' }).success, true);
+    const ownerEvents = game.getPlayerState('camel0').presentations.flatMap(batch => batch.events).filter(event => event.kind === 'overallBetPlaced');
+    const opponentEvents = game.getPlayerState('camel1').presentations.flatMap(batch => batch.events).filter(event => event.kind === 'overallBetPlaced');
+    const spectatorEvents = game.getPlayerState('camel2').presentations.flatMap(batch => batch.events).filter(event => event.kind === 'overallBetPlaced');
+    assert.deepEqual(ownerEvents.map(event => event.private?.camelId), ['red', undefined]);
+    assert.deepEqual(opponentEvents.map(event => event.private?.camelId), [undefined, 'blue']);
+    assert.equal(spectatorEvents.some(event => event.private), false);
+});
+
+test('Camel Up converts server presentation timestamps for a late or reconnecting viewer', async () => {
+    const { localizePresentation } = await import('../public/games/camelup/state.js');
+    const batch = {
+        sequence: 17,
+        serverNow: 10_000,
+        startedAt: 10_140,
+        endsAt: 11_000,
+        events: [{ kind: 'camelMoved', startedAt: 10_140, endsAt: 11_000 }],
+    };
+    const localized = localizePresentation(batch, 50_000);
+    assert.equal(localized.startedAt, 50_140);
+    assert.equal(localized.endsAt, 51_000);
+    assert.equal(localized.events[0].startedAt, 50_140);
+    assert.equal(localized.events[0].endsAt, 51_000);
+    assert.equal(localizePresentation({ ...batch, endsAt: 10_000 }, 50_000), null);
+});
+
+test('Camel Up ends the public race on departure and keeps the winner in the shared final slot', () => {
+    const game = new Engine('camel-departure-finale', players(3), random(113));
+    game.start();
+    game.players[0].cash = 9;
+    game.players[1].cash = 7;
+    game.players[2].cash = 1;
+    const result = game.handlePlayerLeave('camel2');
+    assert.equal(result.success, true);
+    assert.equal(result.ended, true);
+    assert.equal(game.status, 'ended');
+    assert.deepEqual(game.winners.map(player => player.id), ['camel0']);
+    const publicEvent = game.getPublicState().presentations.flatMap(batch => batch.events).findLast(event => event.kind === 'finalSettlement');
+    const winnerEvent = game.getPlayerState('camel0').presentations.flatMap(batch => batch.events).find(event => event.kind === 'finalSettlement');
+    assert.equal(publicEvent.viewerVariant, undefined);
+    assert.equal(winnerEvent.viewerVariant, 'personalVictory');
+    assert.equal(winnerEvent.title, '您已获胜');
+    assert.equal(winnerEvent.startedAt, publicEvent.startedAt);
+    assert.equal(winnerEvent.endsAt, publicEvent.endsAt);
 });

@@ -215,7 +215,7 @@ test('Witch Town completes a six-player game through night protection and final 
 
 test('Witch Town client seals private dossiers and uses moderator-free scene transitions', () => {
     const client = readWitchtownClient();
-    const style = ['public/games/witchtown/style.css', 'public/games/witchtown/scenes.css']
+    const style = ['public/games/witchtown/style.css', 'public/games/witchtown/table.css', 'public/games/witchtown/dossier.css', 'public/games/witchtown/scenes.css', 'public/games/witchtown/responsive.css']
         .map(file => fs.readFileSync(file, 'utf8')).join('\n');
     assert.match(client, /密封审判档案/);
     assert.match(client, /confirmDossier/);
@@ -238,7 +238,7 @@ test('Witch Town client seals private dossiers and uses moderator-free scene tra
     assert.doesNotMatch(client, /宣布天亮|<b>主持人<\/b>/);
     assert.match(style, /\.witchtown-scene\.is-shattering/);
     assert.match(style, /witchtown-fragment-wind/);
-    assert.match(style, /\.witchtown-seat-portrait[\s\S]*?aspect-ratio:\s*1/);
+    assert.match(style, /\.witchtown-seat-file\s*\{[\s\S]*?min-width:\s*0/);
     assert.match(style, /\.witchtown-hall-art[\s\S]*?aspect-ratio:\s*1/);
     assert.doesNotMatch(style, /\.witchtown-public-trials[^{}]*\{[^}]*display:\s*none/);
     assert.doesNotMatch(style, /\.witchtown-public-cards[^{}]*\{[^}]*display:\s*none/);

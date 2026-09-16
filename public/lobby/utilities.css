@@ -1,0 +1,55 @@
+/* Shared mobile game utilities and status surfaces. */
+
+/* 第二批游戏适配将使用这些共享原语；页面本身不承担横向滚动。 */
+.game-mobile-action-dock {
+    position: sticky;
+    z-index: 80;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 10px max(12px, var(--safe-area-right)) max(10px, var(--safe-area-bottom)) max(12px, var(--safe-area-left));
+    background: color-mix(in srgb, #10232c 92%, transparent);
+    box-shadow: 0 -12px 30px rgba(4, 14, 18, .2);
+    backdrop-filter: blur(16px);
+}
+.game-mobile-scroll-strip {
+    display: flex;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+}
+.game-mobile-scroll-strip > * { flex: 0 0 auto; scroll-snap-align: start; }
+.game-mobile-drawer {
+    position: fixed;
+    z-index: 9000;
+    top: var(--game-shell-offset);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow: auto;
+    padding: 16px max(12px, var(--safe-area-right)) max(16px, var(--safe-area-bottom)) max(12px, var(--safe-area-left));
+    overscroll-behavior: contain;
+    background: rgba(8, 18, 23, .94);
+}
+.game-mobile-drawer[hidden] { display: none !important; }
+.game-board-viewport {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    touch-action: pan-x pan-y pinch-zoom;
+}
+.game-board-viewport.is-camera-control,
+.game-board-viewport[data-camera-control="true"] { touch-action: none; }
+
+.fatal-error-box { position: fixed; z-index: 400; right: 20px; bottom: 20px; display: none; gap: 6px; width: min(360px, calc(100% - 40px)); padding: 15px; border: 1px solid #c76b61; border-radius: 12px; background: #fff0ed; color: #75423d; box-shadow: var(--shadow); }.fatal-error-box strong { color: #ae4f45; }.fatal-error-box span, .load-error { font-size: 11px; line-height: 1.5; word-break: break-word; }.fatal-error-box button { justify-self: end; margin-top: 4px; padding: 5px 10px; border: 1px solid #c76b61; border-radius: 999px; background: transparent; color: #9b4d46; cursor: pointer; font-size: 11px; }
+
+.room-tone-rose { --room-bg: #f2dede; --room-fg: #9c5861; }.room-tone-violet { --room-bg: #e3ddec; --room-fg: #765b8a; }.room-tone-green { --room-bg: #d9eadf; --room-fg: #4c8367; }.room-tone-teal { --room-bg: #d5e9e6; --room-fg: #43817c; }.room-tone-blue { --room-bg: #d9e6f1; --room-fg: #53769b; }.room-tone-wood { --room-bg: #eadfce; --room-fg: #8b6e4d; }.room-tone-vermilion { --room-bg: #f1ddd6; --room-fg: #a5574d; }.room-tone-forest { --room-bg: #dcebd5; --room-fg: #558257; }.room-tone-gold { --room-bg: #f0e2c5; --room-fg: #9d7332; }
+.room-tone-indigo { --room-bg: #dfe4f5; --room-fg: #5268a2; }
+.room-tone-gem { --room-bg: #e9def4; --room-fg: #765796; }
+.room-tone-kingdom { --room-bg: #dbe9df; --room-fg: #4f806a; }
+.room-tone-acquire { --room-bg: #eee0ce; --room-fg: #8e6242; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }::-webkit-scrollbar-track { background: transparent; }::-webkit-scrollbar-thumb { border-radius: 10px; background: rgba(88, 110, 105, .28); }

@@ -3,6 +3,7 @@
 const express = require('express');
 const path = require('path');
 const packageJson = require('./package.json');
+const { isDevelopmentPublicPath } = require('./server/public-files');
 
 const { getLanIp } = require('./server/realtime/lan-ip');
 const { createRealtimeServer } = require('./server/realtime/create-realtime-server');
@@ -33,7 +34,22 @@ app.use((req, res, next) => {
     }
     next();
 });
-app.use(express.static(path.join(__dirname, 'public')));
+const publicStaticOptions = process.env.NODE_ENV === 'production' ? {} : {
+    setHeaders(res, filePath) {
+        if (/\.(?:css|html?|js|mjs|json)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'no-store');
+        }
+    },
+};
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        let pathname;
+        try { pathname = decodeURIComponent(req.path); } catch { return res.sendStatus(400); }
+        if (isDevelopmentPublicPath(pathname)) return res.sendStatus(404);
+        next();
+    });
+}
+app.use(express.static(path.join(__dirname, 'public'), publicStaticOptions));
 app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules/three')));
 
 const realtime = createRealtimeServer();

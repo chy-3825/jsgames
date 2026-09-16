@@ -10,6 +10,7 @@ Group=jsgames
 WorkingDirectory=/opt/jsgames
 Environment=NODE_ENV=production
 Environment=PORT=3000
+Environment=JSGAMES_HOST=127.0.0.1
 # Room state is process-local by default; do not run replicas until a durable
 # room-store adapter and shared realtime routing have been accepted.
 # Replace with the public HTTPS origin before enabling the service.

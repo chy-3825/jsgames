@@ -18,6 +18,7 @@ const net = require('net');
 const { once } = require('events');
 const { performance } = require('perf_hooks');
 const WebSocket = require('ws');
+const { isDevelopmentPublicPath } = require('../server/public-files');
 
 const root = path.resolve(__dirname, '..');
 const HTTP_LATENCY_BUDGET_MS = Number(process.env.JSGAMES_HTTP_BUDGET_MS || 1500);
@@ -70,10 +71,11 @@ function readAssetBudgets() {
         measurements.push({ relative, bytes, limit });
         if (bytes > limit) failures.push(`${relative} ${bytes} bytes > ${limit} byte budget`);
     }
-    const sourceFiles = [...new Set(collectSourceFiles('public'))];
+    const sourceFiles = [...new Set(collectSourceFiles('public'))]
+        .filter(file => !isDevelopmentPublicPath(path.relative(path.join(root, 'public'), file)));
     const sourceBytes = sourceFiles.reduce((total, file) => total + fs.statSync(file).size, 0);
     const sourceLimit = Math.floor(3.6 * 1024 * 1024);
-    measurements.push({ relative: 'public first-party source', bytes: sourceBytes, limit: sourceLimit, count: sourceFiles.length });
+    measurements.push({ relative: 'production public first-party source', bytes: sourceBytes, limit: sourceLimit, count: sourceFiles.length });
     if (sourceBytes > sourceLimit) failures.push(`public first-party source ${sourceBytes} bytes > ${sourceLimit} byte budget`);
     return { failures, measurements };
 }
@@ -159,8 +161,28 @@ async function closeServer(server, wss) {
 async function runHttpBurst(baseUrl) {
     const paths = [
         '/',
-    '/script.js?v=20260829-architecture-1',
+        '/script.js?v=20260829-platform-split-1',
         '/style.css?v=20260827-seat-ring-v16',
+        '/lobby/game-shell.css?v=20260829-architecture-split-2',
+        '/lobby/utilities.css?v=20260829-architecture-split-2',
+        '/lobby/responsive.css?v=20260829-architecture-split-2',
+        '/games/hanabi/style.css?v=20260829-priority34-split-1',
+        '/games/hanabi/table.css?v=20260829-priority34-split-1',
+        '/games/hanabi/actions.css?v=20260829-priority34-split-1',
+        '/games/hanabi/responsive.css?v=20260829-priority34-split-1',
+        '/games/hanabi/scenes.css?v=20260829-priority34-split-1',
+        '/games/hanabi/responsive-scenes.css?v=20260829-priority34-split-1',
+        '/games/monopolydeal/style.css?v=20260901-code-health-1',
+        '/games/monopolydeal/choice.css?v=20260901-code-health-1',
+        '/games/monopolydeal/assets.css?v=20260901-code-health-1',
+        '/games/monopolydeal/interactions.css?v=20260901-code-health-1',
+        '/games/monopolydeal/scenes.css?v=20260901-code-health-1',
+        '/games/monopolydeal/responsive-scenes.css?v=20260901-code-health-1',
+        '/games/monopolydeal/responsive.css?v=20260901-code-health-1',
+        '/games/monopolydeal/table.css?v=20260901-code-health-1',
+        '/games/monopolydeal/records.css?v=20260901-code-health-1',
+        '/games/monopolydeal/stage.css?v=20260901-code-health-1',
+        '/games/monopolydeal/seats.css?v=20260901-code-health-1',
         '/games/gobang/client.js?v=performance-smoke',
         '/games/junqi/client.js?v=performance-smoke',
         '/vendor/three/build/three.module.js',

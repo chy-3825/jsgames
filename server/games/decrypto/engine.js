@@ -1,18 +1,50 @@
 const WORD_BANK = ['灯塔', '雨伞', '火车', '月亮', '蜂蜜', '钥匙', '钟表', '沙漠', '剧院', '面包', '雪山', '电话', '森林', '河流', '镜子', '邮票', '鲸鱼', '花园', '纸船', '风筝', '帽子', '咖啡', '城堡', '火柴', '地图', '鼓手', '海鸥', '电梯', '口袋', '相机', '蜡烛', '医院', '隧道', '苹果', '雨衣', '棋盘', '火山', '书店', '橡树', '船票', '望远镜', '丝带', '机场', '烟火', '冰箱', '画廊', '风暴', '邮轮', '手套', '钟声', '剧本', '雪橇', '沙漏', '贝壳', '桥梁', '果园', '信封', '罗盘', '台灯', '面具', '乐队', '鲸歌', '糖果', '药箱', '木琴', '树屋', '车站', '雨声', '云朵', '香料', '胶片', '水井', '钢琴', '鞋带', '船锚', '画笔', '火炉', '石桥', '风车', '纸箱', '木偶', '钟塔', '竹林', '雪花', '书签', '茶壶', '沙滩', '皮箱', '围巾', '唱片', '花瓶', '指南针', '木桥', '油灯', '口琴', '帆船', '灯笼', '陀螺', '信号'];
 
+// Public decryption announcements are scheduled once by the server.  The
+// browser renders the visual layer, but every viewer receives the same
+// absolute slot and the same fade allowance.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    encryptorElectionStarted: 900,
+    keysSealed: 900,
+    transmissionOpened: 1050,
+    transmissionResolved: 1300,
+    tiebreakStarted: 1050,
+    finalSettlement: 1500,
+};
+
+function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'transmissionResolved' && data.outcome === 'interception') return 1450;
+    if (kind === 'finalSettlement' && data.draw) return 1350;
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 900;
+}
+
 function shuffle(values, random = Math.random) { const result = values.slice(); for (let index = result.length - 1; index > 0; index -= 1) { const other = Math.floor(random() * (index + 1)); [result[index], result[other]] = [result[other], result[index]]; } return result; }
 function buildCodeDeck() { const deck = []; for (let first = 1; first <= 4; first += 1) for (let second = 1; second <= 4; second += 1) for (let third = 1; third <= 4; third += 1) if (new Set([first, second, third]).size === 3) deck.push([first, second, third]); return deck; }
 
 class DecryptoEngine {
-    constructor(roomId, players, random = Math.random, options = {}) {
-        this.roomId = roomId; this.random = random;
-        this.encryptorMode = ['fixed_vote', 'rotation', 'random'].includes(options.encryptorMode) ? options.encryptorMode : 'rotation';
+    constructor(roomId, players, randomOrOptions = Math.random, extraOptions = {}) {
+        const suppliedOptions = typeof randomOrOptions === 'function' ? extraOptions : (randomOrOptions || {});
+        const random = typeof randomOrOptions === 'function' ? randomOrOptions : (suppliedOptions.random || Math.random);
+        this.roomId = roomId;
+        this.random = typeof random === 'function' ? random : Math.random;
+        this.options = { ...suppliedOptions };
+        this.now = typeof suppliedOptions.now === 'function' ? suppliedOptions.now : () => Date.now();
+        this.encryptorMode = ['fixed_vote', 'rotation', 'random'].includes(suppliedOptions.encryptorMode) ? suppliedOptions.encryptorMode : 'rotation';
         const input = Array.isArray(players) ? players : [];
         this.isThreePlayer = input.length === 3;
         this.players = input.map((player, index) => ({ id: player.id, name: player.name, seat: index + 1, team: this.isThreePlayer ? (index < 2 ? 0 : 1) : index % 2, isOnline: true }));
         this.playerMap = Object.fromEntries(this.players.map(player => [player.id, player]));
         this.teams = [{ id: 0, name: '红队', members: [], keywords: [], encryptorIndex: 0, miscommunications: 0, interceptions: 0 }, { id: 1, name: '蓝队', members: [], keywords: [], encryptorIndex: 0, miscommunications: 0, interceptions: 0 }];
         this.status = 'waiting'; this.phase = 'waiting'; this.round = 0; this.activeTeam = 0; this.currentTurn = null; this.roundTurns = [null, null]; this.history = []; this.lastResult = null; this.actionLog = []; this.winner = null; this.tiebreakGuesses = {}; this.codeDecks = [[], []]; this.usedClues = new Set(); this.keyConfirmed = {}; this.encryptorVotes = {}; this.fixedEncryptors = [null, null]; this.previousEncryptors = [null, null];
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.presentationEventSequence = 0;
     }
 
     start() {
@@ -23,6 +55,10 @@ class DecryptoEngine {
         this.teams.forEach(team => { team.members = this.players.filter(player => player.team === team.id).map(player => player.id); team.keywords = words.splice(0, 4); team.encryptorIndex = 0; team.miscommunications = 0; team.interceptions = 0; });
         this.players.forEach(player => { player.isOnline = true; });
         this.status = 'playing'; this.phase = 'keycheck'; this.round = 1; this.activeTeam = 0; this.currentTurn = null; this.roundTurns = [null, null]; this.history = []; this.lastResult = null; this.winner = null; this.tiebreakGuesses = {}; this.codeDecks = [buildCodeDeck(), buildCodeDeck()]; this.usedClues = new Set(); this.keyConfirmed = {}; this.encryptorVotes = {}; this.fixedEncryptors = [null, null]; this.previousEncryptors = [null, null]; this.actionLog = ['两队密钥已经下发，等待所有成员完成核对'];
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.presentationEventSequence = 0;
         return this._success('请查看并核对本队四个关键词');
     }
 
@@ -36,6 +72,129 @@ class DecryptoEngine {
     }
     _teamRepresentative(teamId) {
         return this._onlineTeamMembers(teamId)[0] || this.teams[teamId]?.members[0] || null;
+    }
+
+    _now() {
+        const value = Number(this.now?.());
+        return Number.isFinite(value) ? value : Date.now();
+    }
+
+    _playerSummary(playerId) {
+        const player = this.playerMap[playerId];
+        return player ? { id: player.id, name: player.name, seat: player.seat, team: player.team } : null;
+    }
+
+    _teamSummary(teamId) {
+        const team = this.teams[teamId];
+        return team ? { id: team.id, name: team.name } : null;
+    }
+
+    _encryptorSummaries() {
+        return this.roundTurns.filter(Boolean).map(turn => ({
+            teamId: turn.team,
+            teamName: this.teams[turn.team]?.name || null,
+            encryptorId: turn.encryptorId || null,
+            encryptorName: this.playerMap[turn.encryptorId]?.name || null,
+        }));
+    }
+
+    // ============ 服务端权威播报时间轴 ============
+
+    _startPresentation(actorId = null, action = 'system', data = {}, initialKind = 'keysSealed') {
+        if (this.presentation && !this.presentation.resolved) {
+            return this._appendPresentationEvent(initialKind, {
+                actorId: actorId || data.actorId || null,
+                actorName: this.playerMap[actorId]?.name || data.actorName || null,
+                ...clone(data),
+            });
+        }
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
+        const actor = this.playerMap[actorId];
+        this.presentation = {
+            sequence: ++this.presentationSequence,
+            transactionId: this.presentationSequence,
+            actorId: actorId || data.actorId || null,
+            actorName: actor?.name || data.actorName || null,
+            action,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
+            events: [],
+            resolved: false,
+            ended: false,
+            nextPhase: null,
+            nextTeamId: null,
+            winner: null,
+        };
+        this.presentationQueue.push(this.presentation);
+        return this._appendPresentationEvent(initialKind, {
+            actorId: actorId || data.actorId || null,
+            actorName: actor?.name || data.actorName || null,
+            ...clone(data),
+        });
+    }
+
+    _appendPresentationEvent(kind, data = {}) {
+        if (!this.presentation || this.presentation.resolved) {
+            return this._startPresentation(data.actorId || null, data.actionKind || kind, data, kind);
+        }
+        const now = this._now();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || now;
+        const startedAt = Math.max(now, previousEnd);
+        const contentDurationMs = presentationContentDuration(kind, data);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const eventId = ++this.presentationEventSequence;
+        const event = {
+            ...clone(data),
+            sequence: eventId,
+            eventId,
+            kind,
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
+        this.presentation.events.push(event);
+        this.presentation.endsAt = event.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        return event;
+    }
+
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this.presentation.resolved = true;
+        this.presentation.ended = this.status === 'ended';
+        this.presentation.nextPhase = this.phase;
+        this.presentation.nextTeamId = this.status === 'playing' ? this.activeTeam : null;
+        this.presentation.winner = clone(this.winner);
+    }
+
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        if (event.kind !== 'finalSettlement' || !player) return projected;
+        if (event.winnerTeamId !== null && Number(event.winnerTeamId) === Number(player.team)) {
+            projected.viewerVariant = 'personalVictory';
+            projected.title = '您已获胜';
+            projected.detail = '您的队伍赢得了谍报风云。';
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
     }
     _selectEncryptor(team, teamId) {
         const members = this._onlineTeamMembers(teamId);
@@ -78,7 +237,13 @@ class DecryptoEngine {
             this.fixedEncryptors[teamId] = candidates.slice().sort((a, b) => counts[b] - counts[a] || this.playerMap[a].seat - this.playerMap[b].seat)[0] || team.members[0];
             this._log(`${team.name}选出 ${this.playerMap[this.fixedEncryptors[teamId]]?.name || '在线代表'} 担任本局固定加密员`);
         }
+        this._startPresentation(null, 'encryptorVote', {
+            round: this.round,
+            reason: 'encryptorElectionResolved',
+            encryptors: this.fixedEncryptors.map((id, teamId) => ({ teamId, teamName: this.teams[teamId]?.name || null, playerId: id, playerName: this.playerMap[id]?.name || null })),
+        }, 'keysSealed');
         this._beginClue();
+        this._finishPresentation();
         return this._success('固定加密员已确定，第一轮通信开始');
     }
     _beginClue() {
@@ -130,10 +295,14 @@ class DecryptoEngine {
         }
         if (this.encryptorMode === 'fixed_vote') {
             this._beginEncryptorVote();
+            this._startPresentation(null, 'encryptorVote', { round: this.round, reason: 'encryptorElectionStarted' }, 'encryptorElectionStarted');
+            this._finishPresentation();
             return this._success('密钥核对完成，请各队选出本局固定加密员');
         }
         this._log('所有成员已完成密钥核对，第1轮加密频道建立');
+        this._startPresentation(null, 'keysSealed', { round: this.round, reason: 'keycheckComplete' }, 'keysSealed');
         this._beginClue();
+        this._finishPresentation();
         return this._success('密钥核对完成，第一轮通信开始');
     }
 
@@ -156,8 +325,16 @@ class DecryptoEngine {
             // The official 3-player variant has no second encryptor: the
             // lone interceptor never draws a code or gives clues.
             this.phase = 'guessing';
+            this._startPresentation(this.currentTurn.encryptorId, 'transmission', {
+                round: this.round,
+                teamId: this.currentTurn.team,
+                teamName: this.teams[this.currentTurn.team]?.name || null,
+                clues: this.currentTurn.clues.slice(),
+                firstRound: this.round === 1,
+            }, 'transmissionOpened');
             const automatic = this._autoResolveUnavailableGuess();
             if (automatic) return automatic;
+            this._finishPresentation();
             return this._success('线索已公开，请在线下讨论并封存答案');
         }
         const otherTeam = 1 - this.currentTurn.team;
@@ -172,8 +349,16 @@ class DecryptoEngine {
         this.currentTurn = this.roundTurns[0];
         this.activeTeam = 0;
         this.phase = 'guessing';
+        this._startPresentation(this.currentTurn.encryptorId, 'transmission', {
+            round: this.round,
+            teamId: this.currentTurn.team,
+            teamName: this.teams[this.currentTurn.team]?.name || null,
+            clues: this.currentTurn.clues.slice(),
+            firstRound: this.round === 1,
+        }, 'transmissionOpened');
         const automatic = this._autoResolveUnavailableGuess();
         if (automatic) return automatic;
+        this._finishPresentation();
         return this._success('双方电报已封存，红队公开频道接入');
     }
 
@@ -216,6 +401,25 @@ class DecryptoEngine {
 
     _completeTeamTurn() {
         const turn = this.currentTurn;
+        const ownGuess = turn.ownGuess ? { by: turn.ownGuess.by, code: turn.ownGuess.code.slice(), correct: Boolean(turn.ownGuess.correct), playerName: this.playerMap[turn.ownGuess.by]?.name || null } : null;
+        const intercept = turn.interceptGuess ? { by: turn.interceptGuess.by, correct: Boolean(turn.interceptGuess.correct), playerName: this.playerMap[turn.interceptGuess.by]?.name || null } : null;
+        this._appendPresentationEvent('transmissionResolved', {
+            actorId: turn.encryptorId,
+            actorName: this.playerMap[turn.encryptorId]?.name || null,
+            round: this.round,
+            teamId: this.activeTeam,
+            teamName: this.teams[this.activeTeam]?.name || null,
+            clues: turn.clues.slice(),
+            code: turn.code.slice(),
+            ownGuess,
+            intercept,
+            ownGuessCorrect: Boolean(turn.ownGuess?.correct),
+            interceptCorrect: turn.interceptGuess ? Boolean(turn.interceptGuess.correct) : null,
+            outcome: turn.interceptGuess?.correct ? 'interception' : turn.ownGuess?.correct ? 'decoded' : 'mistake',
+            firstRound: this.round === 1,
+            interceptions: this.teams[1 - this.activeTeam]?.interceptions || 0,
+            miscommunications: this.teams[this.activeTeam]?.miscommunications || 0,
+        });
         this.history.push({ round: this.round, team: this.activeTeam, teamName: this.teams[this.activeTeam].name, clues: turn.clues.slice(), code: turn.code.slice(), ownGuess: { ...turn.ownGuess }, intercept: turn.interceptGuess ? { by: turn.interceptGuess.by, correct: turn.interceptGuess.correct } : null });
         if (this.isThreePlayer) {
             const roundResult = this._checkRoundEnd();
@@ -223,12 +427,14 @@ class DecryptoEngine {
             if (this.encryptorMode === 'rotation') this.teams[0].encryptorIndex = (this.teams[0].encryptorIndex + 1) % this.teams[0].members.length;
             this.round += 1;
             this._beginClue();
+            this._finishPresentation();
             return this._success('第 ' + this.round + ' 轮开始');
         }
         if (this.activeTeam === 0) {
             this.activeTeam = 1; this.currentTurn = this.roundTurns[1]; this.phase = 'guessing';
             const automatic = this._autoResolveUnavailableGuess();
             if (automatic) return automatic;
+            this._finishPresentation();
             return this._success('红队电报已归档，蓝队公开频道接入');
         }
         const roundResult = this._checkRoundEnd();
@@ -237,7 +443,7 @@ class DecryptoEngine {
             this.teams[0].encryptorIndex = (this.teams[0].encryptorIndex + 1) % this.teams[0].members.length;
             this.teams[1].encryptorIndex = (this.teams[1].encryptorIndex + 1) % this.teams[1].members.length;
         }
-        this.activeTeam = 0; this.round += 1; this._beginClue(); return this._success('第 ' + this.round + ' 轮开始');
+        this.activeTeam = 0; this.round += 1; this._beginClue(); this._finishPresentation(); return this._success('第 ' + this.round + ' 轮开始');
     }
 
     _checkRoundEnd() {
@@ -262,7 +468,12 @@ class DecryptoEngine {
         this.phase = 'tiebreak'; this.tiebreakGuesses = {};
         this.teams.forEach((team, teamId) => { if (!this._onlineTeamMembers(teamId).length) this.tiebreakGuesses[team.id] = []; });
         this._log('进入终局平局判定：双方猜测对方四张关键词');
+        this._appendPresentationEvent('tiebreakStarted', {
+            round: this.round,
+            scores: this.teams.map(team => ({ teamId: team.id, teamName: team.name, interceptions: team.interceptions, miscommunications: team.miscommunications })),
+        });
         if (this.tiebreakGuesses[0] && this.tiebreakGuesses[1]) return this._resolveTiebreak();
+        this._finishPresentation();
         return this._success('进入终局平局判定');
     }
 
@@ -296,16 +507,36 @@ class DecryptoEngine {
             const target = this.teams[1 - index].keywords;
             return [...new Set(this.tiebreakGuesses[index])].filter(word => target.includes(word)).length;
         });
-        if (scores[0] === scores[1]) { this.status = 'ended'; this.phase = 'ended'; this.winner = { teamId: null, teamName: '平局（双方共享胜利）' }; this._log('终局猜词仍然平局，双方共享胜利'); return this._success('终局平局'); }
+        if (scores[0] === scores[1]) {
+            this.status = 'ended'; this.phase = 'ended'; this.winner = { teamId: null, teamName: '平局（双方共享胜利）' }; this._log('终局猜词仍然平局，双方共享胜利');
+            this._appendPresentationEvent('finalSettlement', { winnerTeamId: null, winnerTeamName: '双方共享胜利', draw: true, scores, reason: 'tiebreakDraw' });
+            this._finishPresentation();
+            return this._success('终局平局');
+        }
         return this._finish(scores[0] > scores[1] ? 0 : 1, `终局猜词 ${scores[0]} 比 ${scores[1]}`);
     }
 
     _scoreWinner() { const points = this.teams.map(team => team.interceptions - team.miscommunications); return points[0] === points[1] ? null : (points[0] > points[1] ? 0 : 1); }
-    _finish(teamId, message) { this.status = 'ended'; this.phase = 'ended'; this.winner = { teamId, teamName: this.teams[teamId].name }; this.lastResult = { teamId, message }; this._log(`${message}，${this.winner.teamName}获胜`); return this._success(message); }
+    _finish(teamId, message) {
+        this.status = 'ended'; this.phase = 'ended'; this.winner = { teamId, teamName: this.teams[teamId].name }; this.lastResult = { teamId, message }; this._log(`${message}，${this.winner.teamName}获胜`);
+        this._appendPresentationEvent('finalSettlement', {
+            winnerTeamId: teamId,
+            winnerTeamName: this.winner.teamName,
+            draw: false,
+            scores: this.teams.map(team => ({ teamId: team.id, teamName: team.name, interceptions: team.interceptions, miscommunications: team.miscommunications })),
+            reason: 'normalSettlement',
+        });
+        this._finishPresentation();
+        return this._success(message);
+    }
     getPublicState() {
         const current = this.currentTurn;
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         return {
             roomId: this.roomId,
+            serverNow,
             status: this.status,
             phase: this.phase,
             round: this.round,
@@ -327,6 +558,8 @@ class DecryptoEngine {
             lastResult: this.lastResult,
             actionLog: this.actionLog.slice(-20),
             winner: this.winner,
+            presentations,
+            presentation,
         };
     }
     getPlayerState(playerId) {
@@ -349,6 +582,8 @@ class DecryptoEngine {
             submitIntercept: this.phase === 'guessing' && this.round > 1 && !this.currentTurn?.interceptGuess && player?.team !== this.activeTeam,
             tiebreakGuess: this.phase === 'tiebreak' && player && this._teamRepresentative(player.team) === playerId,
         };
+        state.presentation = this._projectPresentation(state.presentation, player);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, player));
         return state;
     }
     _fallbackCode(code) {
@@ -417,3 +652,5 @@ class DecryptoEngine {
 module.exports = DecryptoEngine;
 module.exports.WORD_BANK = WORD_BANK;
 module.exports.buildCodeDeck = buildCodeDeck;
+module.exports.PRESENTATION_FADE_MS = PRESENTATION_FADE_MS;
+module.exports.PRESENTATION_CONTENT_DURATIONS = PRESENTATION_CONTENT_DURATIONS;

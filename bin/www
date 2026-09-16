@@ -26,7 +26,8 @@ app.startWebSocketServer(server);
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port);
+var host = process.env.JSGAMES_HOST || (process.env.NODE_ENV === 'production' ? '127.0.0.1' : undefined);
+server.listen(port, host);
 server.on('error', onError);
 server.on('listening', onListening);
 

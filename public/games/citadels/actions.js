@@ -4,9 +4,13 @@ import { escapeHtml } from './constants.js';
 export function createCitadelsActions({ mount, model, renderer, scene, send, rulesModal }) {
     const $ = role => mount.querySelector(`[data-role="${role}"]`);
     const state = () => model.state;
+    function skipPresentation() {
+        if (typeof scene?.skipPresentation === 'function') return scene.skipPresentation();
+        return scene?.stopPresentation?.();
+    }
 
     function sendAction(action) {
-        if (model.actionPending) return false;
+        if (model.actionPending || scene?.isPlaying?.()) return false;
         model.actionPending = true;
         renderer.clearError();
         send({ type: 'gameAction', action });
@@ -16,9 +20,10 @@ export function createCitadelsActions({ mount, model, renderer, scene, send, rul
 
     function handleClick(event) {
         const skipButton = event.target.closest('[data-action="skipPresentation"]');
-        if (skipButton) { scene.stopPresentation(); return; }
+        if (skipButton) { skipPresentation(); return; }
         const uiButton = event.target.closest('[data-ui]');
         if (uiButton) {
+            if (scene.isPlaying()) return;
             if (uiButton.dataset.ui === 'rules') rulesModal.setOpen(true);
             if (uiButton.dataset.ui === 'closeRules') rulesModal.setOpen(false);
             return;
@@ -73,7 +78,7 @@ export function createCitadelsActions({ mount, model, renderer, scene, send, rul
         if (rulesModal.trapFocus(event)) return;
         if (event.key === 'Escape' && rulesModal.isOpen()) rulesModal.setOpen(false);
         else if (event.key === 'Escape' && model.pendingDecision) { model.pendingDecision = null; renderer.render(); }
-        else if (event.key === 'Escape' && scene.isPlaying()) scene.stopPresentation();
+        else if (event.key === 'Escape' && scene.isPlaying()) skipPresentation();
     }
 
     return { handleClick, handleKeydown, sendAction };

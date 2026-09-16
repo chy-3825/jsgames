@@ -4,10 +4,14 @@ import { cardMatchesClue, currentTarget, normalizeClueValue } from './state.js';
 export function createHanabiActions({ mount, model, scene, renderer, send, rulesModal, getElement }) {
     const $ = getElement || (role => mount.querySelector(`[data-role="${role}"]`));
 
+    function presentationLocked() {
+        const view = scene.getViewState();
+        return Boolean(view.presentationPlaying || view.presentationQueue?.length || Date.now() < Number(view.presentationLockedUntil || 0));
+    }
+
     function handleClick(event) {
-        const sceneState = scene.getViewState();
-        if (sceneState.presentationPlaying) {
-            if (event.target.closest('[data-action="skipPresentation"]')) scene.stopPresentation();
+        if (presentationLocked()) {
+            if (event.target.closest('[data-action="skipPresentation"]')) scene.skipPresentation();
             return;
         }
         const target = event.target.closest('[data-target-id]');
@@ -91,8 +95,8 @@ export function createHanabiActions({ mount, model, scene, renderer, send, rules
     }
 
     function handleKeydown(event) {
-        if (event.key === 'Escape' && scene.getViewState().presentationPlaying) {
-            scene.stopPresentation();
+        if (event.key === 'Escape' && scene.isPlaying?.()) {
+            scene.skipPresentation();
             return;
         }
         if (rulesModal.trapFocus(event)) return;

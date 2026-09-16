@@ -77,3 +77,20 @@
 - 物业接管成功时增加约 1.1 秒的全屏播报，公开转出方、接管方、地产颜色、牌数以及附属建筑随组转移的结果。
 - 物业接管直接完成第三组时，场景队列保证先播放接管结算，再播放“地产帝国落成”，不会互相覆盖。
 - 胜利画面增加“致胜行动”，区分直接放置、物业接管、强制交易、盗取和资产支付取得第三组的情况。
+
+## 服务端时间轴、统一队列与个人终局（2026-08-31）
+
+- 服务端为牌局开始、摸牌、出牌、地产调整、行动回应、支付/资产转移、地产组完成、轮转、离场和最终结算生成唯一 `transactionId/eventId`，并提供 `serverNow`、绝对 `startedAt/endsAt`、`durationMs`、`contentDurationMs` 与 `blocking`。
+- 同一行动的多个播报事件连续排期，新的操作只能排在上一批次结束之后；`Room` 在服务端 `endsAt` 前拒绝下一步操作，客户端只消费服务器队列，不再从状态差异本地猜测动画。
+- 客户端按服务端时间偏移追赶、按事件 ID 去重；刷新、重连或错过首包时仍可从尚未结束的状态快照继续当前播报。减少动态和“跳过”只隐藏画面，仍保持原服务器锁定时长。
+- 连线动画与公开事件共用同一事件槽；所有牌桌成员看到相同开始/结束边界。行动选择、支付、颜色选择和规则浮层在共享播报期间锁定，保留终局跳过按钮但不会提前解锁。
+- 获胜者的 `finalSettlement` 投影为“您已获胜”，离场者投影为“您已离开本局”；个人文案替换内容而不改变时间槽，其他玩家继续看到公共结果。
+- 离场会取消相关待回应/待支付队列，跳过离线目标并移交当前回合；在线玩家不足时生成同批次最终结算，正常结束后离场不会改写冠军。
+- 新增专项 `test/monopolydeal-presentation.test.js`：服务器时间轴/FIFO、房间锁、赢家个人投影、离场终局与悬挂回应共 4 项；更新前端队列断言和 18 游戏播报契约。
+
+### 本轮验收命令
+
+- `node --test test/monopolydeal-official.test.js test/regression/monopolydeal.test.js test/monopolydeal-presentation.test.js test/monopolydeal-frontend.test.js test/presentation-event-contract.test.js`：36/36 通过。
+- `node scripts/presentation-event-audit.js`：18/18 游戏契约通过，Monopoly Deal 19 种服务端事件全部有场景分发。
+- `npm test`：653/653 通过；`npm run test:syntax`（409 个文件）、`npm run test:lint`、`npm run test:type`、`npm run test:release` 均通过。
+- `npm run test:browser`：本游戏已完成模块导入（28/28）及通用大厅/重连生命周期；整套浏览器烟测仍在既有 Coup 身份隔离夹具处失败（`holdCount=0`），与大富翁纸牌无关，因此不将该全局门禁标记为全绿。

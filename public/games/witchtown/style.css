@@ -468,22 +468,6 @@ body.witchtown-rules-open {
     font-variant-numeric: tabular-nums;
 }
 
-.witchtown-avatar,
-.witchtown-ledger-avatar {
-    position: relative;
-    display: grid;
-    width: 27px;
-    height: 27px;
-    flex: 0 0 auto;
-    place-items: center;
-    border: 1px solid #63756b;
-    border-radius: 50%;
-    background: #2d3a35;
-    color: var(--paper);
-    font-family: Georgia, serif;
-    font-size: 13px;
-}
-
 .witchtown-seat-name {
     display: grid;
     width: 0;
@@ -1207,12 +1191,6 @@ body.witchtown-rules-open {
 
 .witchtown-ledger-row.is-dead {
     opacity: .58;
-}
-
-.witchtown-ledger-avatar {
-    width: 25px;
-    height: 25px;
-    font-size: 11px;
 }
 
 .witchtown-ledger-row > div {

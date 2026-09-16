@@ -9,7 +9,9 @@ const fixture = ['public/__game_shell_visual_test.html', 'public/visual-fixtures
     .map(file => fs.readFileSync(file, 'utf8')).join('\n');
 
 test('现代艺术提交后保留报价或作品方案并锁定全部控件', () => {
-    assert.match(client, /if \(model\.actionPending \|\| model\.presentationPlaying\) return/);
+    assert.match(client, /function presentationLocked\(\)/);
+    assert.match(client, /if \(model\.actionPending \|\| presentationLocked\(\)\) return/);
+    assert.match(client, /presentationLockedUntil/);
     assert.match(client, /model\.actionPending = true;\s*renderer\.clearError\(\);\s*send\([\s\S]*?renderer\.render\(\)/);
     assert.match(client, /button:not\(\[data-ui="skipPresentation"\]\), input, select/);
     assert.match(client, /aria-busy/);
@@ -45,8 +47,9 @@ test('现代艺术播报覆盖第一季开幕并在终局标题写明冠军', ()
     assert.match(client, /现代艺术拍卖季开幕/);
     assert.match(client, /本局启用神秘作品席位/);
     assert.match(client, /具体手牌与现金保持私密/);
-    assert.match(client, /const winnerNames = .*filter\(player => winners\.has\(player\.id\)\)/);
+    assert.match(client, /const winnerNames = .*filter\(player => winners\.has\(String\(player\.id\)\)\)/);
     assert.match(client, /赢得现代艺术拍卖季/);
     assert.match(client, /共享年度收藏家桂冠/);
+    assert.match(client, /svg\.classList\.add\('is-visible'\)/);
     assert.match(style, /\.art-season-hands/);
 });

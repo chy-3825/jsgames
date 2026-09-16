@@ -14,7 +14,7 @@ export function createJungleRenderer({ model, actionLock, getElement }) {
     function renderPlayers() {
         const state = model.state;
         playersEl.innerHTML = (state.players || []).map((player, index) => `<article class="jungle-player ${player.color} ${player.isCurrentTurn ? 'is-current' : ''} ${player.id === state.myId ? 'is-me' : ''}">
-            <span class="jungle-player-stamp">${player.color === 'red' ? '红' : '蓝'}</span><span class="jungle-player-avatar">${escapeHtml(player.name.slice(0, 1))}</span><span><strong>${escapeHtml(player.name)}${player.id === state.myId ? ' · 我' : ''}</strong><small>${player.isCurrentTurn ? '正在行棋' : player.isOnline === false ? '已离线' : `座位 ${index + 1}`}</small></span>
+            <span class="jungle-player-stamp">${player.color === 'red' ? '红' : '蓝'}</span><span><strong>${escapeHtml(player.name)}${player.id === state.myId ? ' · 我' : ''}</strong><small>${player.isCurrentTurn ? '正在行棋' : player.isOnline === false ? '已离线' : `座位 ${index + 1}`}</small></span>
         </article>`).join('');
     }
 

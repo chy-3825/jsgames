@@ -10,6 +10,40 @@ const START_CASH = 100;
 const ROUNDS = 4;
 const DEALS = { 3: [10, 6, 6, 0], 4: [9, 4, 4, 0], 5: [8, 3, 3, 0] };
 
+// The browser draws the presentation, but the server owns every public
+// slot.  Keeping the fade inside the slot means all viewers share the same
+// start/end deadline even when a client uses reduced motion or reconnects.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    seasonStarted: 760,
+    paintingPresented: 980,
+    auctionOpened: 520,
+    doubleOfferStarted: 700,
+    doubleOfferPassed: 420,
+    doubleOfferContinues: 560,
+    secondPaintingOffered: 900,
+    doubleOfferFailed: 780,
+    mysteryOfferStarted: 620,
+    mysterySkipped: 420,
+    mysteryRevealed: 950,
+    bidPlaced: 650,
+    bidPassed: 420,
+    sealedBidSubmitted: 650,
+    fixedPriceAccepted: 700,
+    fixedPriceBuyback: 700,
+    auctionResolved: 1170,
+    sellerTurnStarted: 560,
+    seasonTriggered: 950,
+    seasonSettlement: 1800,
+    finalSettlement: 2700,
+    playerLeft: 900,
+};
+
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'seasonStarted' && data.seasonOpening) return 1050;
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 820;
+}
+
 function shuffle(values, random = Math.random) {
     const result = values.slice();
     for (let index = result.length - 1; index > 0; index -= 1) {
@@ -25,24 +59,25 @@ class ModernArtEngine {
         const suppliedOptions = typeof randomOrOptions === 'function' ? extraOptions : (randomOrOptions || {});
         const random = typeof randomOrOptions === 'function' ? randomOrOptions : (suppliedOptions.random || Math.random);
         this.roomId = roomId;
-        this.random = random;
+        this.random = typeof random === 'function' ? random : Math.random;
         this.options = { ...suppliedOptions };
+        this.now = typeof suppliedOptions.now === 'function' ? suppliedOptions.now : () => Date.now();
         const playerColors = ['#d45f54', '#4d82a6', '#bf8b3e', '#6d9466', '#80699b'];
         // Keep the complete room roster so start() can reject unsupported
         // player counts instead of silently truncating a six-player room.
         this.players = players.map((player, index) => ({ id: player.id, name: player.name, color: playerColors[index] || '#777777', cash: START_CASH, hand: [], collection: [], isOnline: true }));
         this.playerMap = Object.fromEntries(this.players.map(player => [player.id, player]));
         this.deck = []; this.round = 0; this.roundSales = []; this.market = []; this.artistValues = Object.fromEntries(ARTISTS.map(artist => [artist.id, 0]));
-        this.currentSellerIndex = 0; this.phase = 'waiting'; this.status = 'waiting'; this.auction = null; this.pendingDouble = null; this.mysteryEnabled = Boolean(this.options.mysteryPlayer && this.players.length === 3); this.mysteryHand = []; this.mysteryPendingPlayerId = null; this.history = []; this.actionLog = []; this.winner = null; this.winners = []; this.finalStandings = [];
-        this.presentation = null; this.presentationSequence = 0; this.presentationEventSequence = 0; this.seasonPrivateResults = {};
+        this.currentSellerIndex = 0; this.phase = 'waiting'; this.status = 'waiting'; this.auction = null; this.pendingDouble = null; this.mysteryEnabled = Boolean(this.options.mysteryPlayer && this.players.length === 3); this.mysteryHand = []; this.mysteryPendingPlayerId = null; this.history = []; this.actionLog = []; this.winner = null; this.winners = []; this.finalStandings = []; this.endReason = null; this.outcome = null;
+        this.presentation = null; this.presentationQueue = []; this.presentationSequence = 0; this.presentationEventSequence = 0; this.seasonPrivateResults = {};
     }
 
     start() {
         if (this.status !== 'waiting') return { success: false, message: '游戏已经开始或已经结束' };
         if (this.players.length < 3 || this.players.length > 5) return { success: false, message: '现代艺术需要 3–5 名玩家' };
         this.players.forEach(player => { player.cash = START_CASH; player.hand = []; player.collection = []; player.isOnline = true; });
-        this.round = 1; this.status = 'playing'; this.phase = 'waiting'; this.actionLog = []; this.history = []; this.pendingDouble = null; this.mysteryPendingPlayerId = null; this.mysteryEnabled = Boolean(this.options.mysteryPlayer && this.players.length === 3); this.mysteryHand = []; this.currentSellerIndex = 0; this.winner = null; this.winners = []; this.finalStandings = [];
-        this.presentation = null; this.presentationSequence = 0; this.presentationEventSequence = 0; this.seasonPrivateResults = {};
+        this.round = 1; this.status = 'playing'; this.phase = 'waiting'; this.actionLog = []; this.history = []; this.pendingDouble = null; this.mysteryPendingPlayerId = null; this.mysteryEnabled = Boolean(this.options.mysteryPlayer && this.players.length === 3); this.mysteryHand = []; this.currentSellerIndex = 0; this.winner = null; this.winners = []; this.finalStandings = []; this.endReason = null; this.outcome = null;
+        this.presentation = null; this.presentationQueue = []; this.presentationSequence = 0; this.presentationEventSequence = 0; this.seasonPrivateResults = {};
         this.artistValues = Object.fromEntries(ARTISTS.map(artist => [artist.id, 0]));
         this.deck = shuffle(this._buildDeck(), this.random); this._dealRound(); this._beginAuction();
         this._appendPresentationEvent({
@@ -71,10 +106,25 @@ class ModernArtEngine {
     _dealRound() {
         const dealCount = DEALS[this.mysteryEnabled ? 4 : this.players.length]?.[this.round - 1] || 0;
         for (let index = 0; index < dealCount; index += 1) {
-            this.players.forEach(player => { const card = this.deck.pop(); if (card) player.hand.push(card); });
+            this._onlinePlayers().forEach(player => { const card = this.deck.pop(); if (card) player.hand.push(card); });
             if (this.mysteryEnabled) { const card = this.deck.pop(); if (card) this.mysteryHand.push(card); }
         }
         this.roundSales = []; this.market = [];
+    }
+
+    _now() {
+        const value = Number(this.now?.());
+        return Number.isFinite(value) ? value : Date.now();
+    }
+    _onlinePlayers() { return this.players.filter(player => player.isOnline); }
+    _onlineCount() { return this.players.filter(player => player.isOnline).length; }
+    _nextOnlineIndex(startIndex, predicate = () => true) {
+        for (let offset = 0; offset < this.players.length; offset += 1) {
+            const index = (startIndex + offset + this.players.length) % this.players.length;
+            const player = this.players[index];
+            if (player?.isOnline && predicate(player, index)) return index;
+        }
+        return null;
     }
 
     _beginAuction() {
@@ -86,11 +136,7 @@ class ModernArtEngine {
     }
 
     _nextSellerWithCards(startIndex) {
-        for (let offset = 0; offset < this.players.length; offset += 1) {
-            const index = (startIndex + offset) % this.players.length;
-            if (this.players[index].hand.length) return index;
-        }
-        return null;
+        return this._nextOnlineIndex(startIndex, player => player.hand.length > 0);
     }
 
     handleAction(playerId, action = {}) {
@@ -120,12 +166,12 @@ class ModernArtEngine {
         if (type === 'fixed' && (!Number.isInteger(Number(action.amount)) || Number(action.amount) <= 0 || Number(action.amount) > player.cash)) return { success: false, message: '定价拍卖必须设置不超过卖家现金的正整数价格', state: this.getPlayerState(player.id) };
         // When the last painting in a round is reached before an artist's
         // fifth card, the official rules leave that final painting unsold.
-        const cardsRemaining = this.players.reduce((sum, item) => sum + item.hand.length, 0);
+        const cardsRemaining = this._onlinePlayers().reduce((sum, item) => sum + item.hand.length, 0);
         const appearance = this.roundSales.filter(item => item.artistId === card.artistId).length + 1;
         this._startPresentation(player.id, 'startAuction', { kind: 'paintingPresented', actorId: player.id, actorName: player.name, sellerId: player.id, sellerName: player.name, card: this._publicCard(card), auctionType: type, auctionTypeName: this._auctionName(type), appearance, endsSeason: cardsRemaining === 1 || appearance >= 5, endReason: cardsRemaining === 1 ? 'lastPainting' : appearance >= 5 ? 'fifthPainting' : null });
         if (cardsRemaining === 1) {
             this._removeHandCard(player, cardIndex); this._recordOffer(card, player.id);
-            this.currentSellerIndex = (this.players.indexOf(player) + 1) % this.players.length;
+            this.currentSellerIndex = this._nextOnlineIndex(this.players.indexOf(player) + 1) ?? this.players.indexOf(player);
             this._log(`${card.artistName} 是本季最后一幅作品，本幅作品不拍卖`);
             this._finishRound({ kind: 'lastPainting', card: this._publicCard(card), sellerId: player.id, sellerName: player.name });
             this._finishPresentation();
@@ -135,7 +181,7 @@ class ModernArtEngine {
             const first = card;
             this._removeHandCard(player, cardIndex);
             this._recordOffer(first, player.id);
-            if (this._roundReached(first.artistId)) { this.currentSellerIndex = (this.players.indexOf(player) + 1) % this.players.length; this._log(`${first.artistName} 是本季第五幅作品，双重拍卖未开始`); this._finishRound({ kind: 'fifthPainting', card: this._publicCard(first), sellerId: player.id, sellerName: player.name, doubleAuction: true }); this._finishPresentation(); return this._success('本季结束'); }
+            if (this._roundReached(first.artistId)) { this.currentSellerIndex = this._nextOnlineIndex(this.players.indexOf(player) + 1) ?? this.players.indexOf(player); this._log(`${first.artistName} 是本季第五幅作品，双重拍卖未开始`); this._finishRound({ kind: 'fifthPainting', card: this._publicCard(first), sellerId: player.id, sellerName: player.name, doubleAuction: true }); this._finishPresentation(); return this._success('本季结束'); }
             this.pendingDouble = { first, originalSellerId: player.id, currentPlayerIndex: this.players.indexOf(player), passed: new Set() };
             const requestedSecondIndex = Number(action.secondCardIndex);
             const secondIndex = requestedSecondIndex > cardIndex ? requestedSecondIndex - 1 : requestedSecondIndex;
@@ -148,7 +194,7 @@ class ModernArtEngine {
             return this._success('请选择双重拍卖的第二幅作品');
         }
         this._removeHandCard(player, cardIndex); this._recordOffer(card, player.id);
-        if (this._roundReached(card.artistId)) { this.currentSellerIndex = (this.players.indexOf(player) + 1) % this.players.length; this._log(`${card.artistName} 成为本季第五幅作品，本幅作品不拍卖`); this._finishRound({ kind: 'fifthPainting', card: this._publicCard(card), sellerId: player.id, sellerName: player.name }); this._finishPresentation(); return this._success('本季结束'); }
+        if (this._roundReached(card.artistId)) { this.currentSellerIndex = this._nextOnlineIndex(this.players.indexOf(player) + 1) ?? this.players.indexOf(player); this._log(`${card.artistName} 成为本季第五幅作品，本幅作品不拍卖`); this._finishRound({ kind: 'fifthPainting', card: this._publicCard(card), sellerId: player.id, sellerName: player.name }); this._finishPresentation(); return this._success('本季结束'); }
         this._openAuction([card], player, type, type === 'fixed' ? Number(action.amount) : null); this._finishPresentation(); return this._success('拍卖开始');
     }
 
@@ -167,17 +213,12 @@ class ModernArtEngine {
         if (action.kind !== 'passSecond') return { success: false, message: '请选择第二幅作品或跳过', state: this.getPlayerState(player.id) };
         this._startPresentation(player.id, 'doubleOffer', { kind: 'doubleOfferPassed', actorId: player.id, actorName: player.name, card: this._publicCard(pending.first), passedCount: pending.passed.size + 1 });
         pending.passed.add(player.id);
-        if (pending.passed.size >= this.players.length) {
-            const seller = this.playerMap[pending.originalSellerId];
-            seller.collection.push(pending.first); this._markOffer(pending.first.id, { buyerId: seller.id, price: 0, sellerId: seller.id });
-            this.currentSellerIndex = (this.players.indexOf(seller) + 1) % this.players.length;
-            this.pendingDouble = null; this.phase = 'auction';
-            this._appendPresentationEvent({ kind: 'doubleOfferFailed', card: this._publicCard(pending.first), sellerId: seller.id, sellerName: seller.name, nextSellerId: this.players[this.currentSellerIndex]?.id || null, nextSellerName: this.players[this.currentSellerIndex]?.name || null });
-            this._log(`${seller.name} 没有找到同艺术家第二幅作品，免费收下双重作品`);
+        if (pending.passed.size >= this._onlineCount()) {
+            this._finishDoubleOffer(pending);
             this._finishPresentation();
             return this._success('双重作品免费归入卖家');
         }
-        pending.currentPlayerIndex = (pending.currentPlayerIndex + 1) % this.players.length;
+        pending.currentPlayerIndex = this._nextOnlineIndex(pending.currentPlayerIndex + 1) ?? pending.currentPlayerIndex;
         this._appendPresentationEvent({ kind: 'doubleOfferContinues', playerId: this.players[pending.currentPlayerIndex].id, playerName: this.players[pending.currentPlayerIndex].name });
         this._log(`${this.players[pending.currentPlayerIndex].name} 决定是否提供第二幅作品`);
         this._finishPresentation();
@@ -191,7 +232,7 @@ class ModernArtEngine {
         this._recordOffer(second, player.id);
         this._appendPresentationEvent({ kind: 'secondPaintingOffered', actorId: player.id, actorName: player.name, originalSellerId: pending.originalSellerId, originalSellerName: this.playerMap[pending.originalSellerId]?.name || '', firstCard: this._publicCard(pending.first), secondCard: this._publicCard(second), auctionType: this._cardType(second, requestedType), appearance: this.roundSales.filter(item => item.artistId === second.artistId).length });
         if (this._roundReached(second.artistId)) {
-            this.currentSellerIndex = (this.players.indexOf(player) + 1) % this.players.length;
+            this.currentSellerIndex = this._nextOnlineIndex(this.players.indexOf(player) + 1) ?? this.players.indexOf(player);
             this.pendingDouble = null;
             this._log(`${second.artistName} 成为本季第五幅作品，双重拍卖的两幅作品均未成交`);
             this._finishRound({ kind: 'fifthPainting', card: this._publicCard(second), sellerId: player.id, sellerName: player.name, doubleAuction: true, firstCard: this._publicCard(pending.first) });
@@ -204,8 +245,8 @@ class ModernArtEngine {
 
     _queueMysteryChoice(seller, nextSellerIndex) {
         const availableSeller = this._nextSellerWithCards(nextSellerIndex);
-        this.currentSellerIndex = availableSeller === null ? nextSellerIndex : availableSeller;
-        if (this.mysteryEnabled && this.mysteryHand.length) {
+        this.currentSellerIndex = availableSeller === null ? (this._nextOnlineIndex(nextSellerIndex) ?? nextSellerIndex) : availableSeller;
+        if (this.mysteryEnabled && this.mysteryHand.length && seller?.isOnline) {
             this.mysteryPendingPlayerId = seller.id;
             this.phase = 'mystery_offer';
             this._appendPresentationEvent({ kind: 'mysteryOfferStarted', playerId: seller.id, playerName: seller.name, remaining: this.mysteryHand.length });
@@ -224,7 +265,9 @@ class ModernArtEngine {
         if (action.kind === 'skipMystery') {
             this._startPresentation(player.id, 'mystery', { kind: 'mysterySkipped', actorId: player.id, actorName: player.name, remaining: this.mysteryHand.length });
             this.mysteryPendingPlayerId = null;
-            if (this._nextSellerWithCards(this.currentSellerIndex) === null) { this._finishRound({ kind: 'handsExhausted' }); this._finishPresentation(); return this._success('本季结束'); }
+            const availableSeller = this._nextSellerWithCards(this.currentSellerIndex);
+            if (availableSeller === null) { this._finishRound({ kind: 'handsExhausted' }); this._finishPresentation(); return this._success('本季结束'); }
+            this.currentSellerIndex = availableSeller;
             this.phase = 'auction';
             this._appendPresentationEvent({ kind: 'sellerTurnStarted', playerId: this.players[this.currentSellerIndex].id, playerName: this.players[this.currentSellerIndex].name, round: this.round });
             this._log(`${player.name} 跳过神秘作品；${this.players[this.currentSellerIndex].name} 选择下一件作品`);
@@ -238,13 +281,15 @@ class ModernArtEngine {
         this._recordOffer(card, null);
         this.mysteryPendingPlayerId = null;
         if (this._roundReached(card.artistId)) {
-            this.currentSellerIndex = (this.players.indexOf(player) + 1) % this.players.length;
+            this.currentSellerIndex = this._nextOnlineIndex(this.players.indexOf(player) + 1) ?? this.players.indexOf(player);
             this._log(`神秘作品 ${card.artistName} 成为本季第五幅作品，本季结束`);
             this._finishRound({ kind: 'fifthPainting', card: this._publicCard(card), mystery: true });
             this._finishPresentation();
             return this._success('神秘作品结束本季');
         }
-        if (this._nextSellerWithCards(this.currentSellerIndex) === null) { this._finishRound({ kind: 'handsExhausted' }); this._finishPresentation(); return this._success('本季结束'); }
+        const availableSeller = this._nextSellerWithCards(this.currentSellerIndex);
+        if (availableSeller === null) { this._finishRound({ kind: 'handsExhausted' }); this._finishPresentation(); return this._success('本季结束'); }
+        this.currentSellerIndex = availableSeller;
         this.phase = 'auction';
         this._appendPresentationEvent({ kind: 'sellerTurnStarted', playerId: this.players[this.currentSellerIndex].id, playerName: this.players[this.currentSellerIndex].name, round: this.round });
         this._log(`神秘作品 ${card.artistName} 已翻开但不拍卖；${this.players[this.currentSellerIndex].name} 选择下一件作品`);
@@ -253,7 +298,8 @@ class ModernArtEngine {
     }
 
     _openAuction(cards, seller, type, fixedPrice = null) {
-        this.auction = { cards, card: cards[0], sellerId: seller.id, type, fixedPrice, currentBidderIndex: (this.players.indexOf(seller) + 1) % this.players.length, highestBid: 0, highestBidder: null, passed: new Set(), bids: [], sealedBids: [], turns: 0 };
+        const firstBidderIndex = this._nextOnlineIndex(this.players.indexOf(seller) + 1) ?? this.players.indexOf(seller);
+        this.auction = { cards, card: cards[0], sellerId: seller.id, type, fixedPrice, currentBidderIndex: firstBidderIndex, highestBid: 0, highestBidder: null, passed: new Set(), acted: new Set(), bids: [], sealedBids: [], turns: 0 };
         this._appendPresentationEvent({ kind: 'auctionOpened', sellerId: seller.id, sellerName: seller.name, cards: cards.map(card => this._publicCard(card)), auctionType: type, auctionTypeName: this._auctionName(type), fixedPrice, firstBidderId: this.players[this.auction.currentBidderIndex]?.id || null, firstBidderName: this.players[this.auction.currentBidderIndex]?.name || null });
         this.phase = 'bidding'; this._log(`${seller.name} 拍卖 ${cards.map(item => item.artistName).join('、')}（${this._auctionName(type)}）`);
     }
@@ -261,15 +307,18 @@ class ModernArtEngine {
     _bid(player, action) {
         const auction = this.auction; const current = this.players[auction?.currentBidderIndex];
         if (!auction || !current || current.id !== player.id) return { success: false, message: '等待其他玩家出价', state: this.getPlayerState(player.id) };
+        auction.acted ||= new Set();
         const amount = Number(action.amount);
         if (!Number.isInteger(amount) || amount < 0 || amount > player.cash) return { success: false, message: '出价必须为现金范围内的整数', state: this.getPlayerState(player.id) };
         if (auction.type !== 'sealed' && auction.type !== 'fixed' && amount > 0 && amount <= auction.highestBid) return { success: false, message: '出价必须高于当前报价', state: this.getPlayerState(player.id) };
         if (auction.type === 'fixed' && amount !== 0 && amount !== auction.fixedPrice) return { success: false, message: `定价拍卖只能接受 ${auction.fixedPrice} 元或放弃`, state: this.getPlayerState(player.id) };
         this._startPresentation(player.id, 'bid');
+        auction.acted.add(player.id);
         if (auction.type === 'sealed') {
             auction.sealedBids.push({ playerId: player.id, amount }); auction.bids.push({ playerId: player.id, amount }); auction.turns += 1;
-            this._appendPresentationEvent({ kind: 'sealedBidSubmitted', actorId: player.id, actorName: player.name, submitted: auction.sealedBids.length, required: this.players.length, cards: auction.cards.map(card => this._publicCard(card)), sellerId: auction.sellerId, sellerName: this.playerMap[auction.sellerId]?.name || '' });
-            if (auction.sealedBids.length >= this.players.length) this._resolveAuction(); else this._advanceBidding();
+            const required = this._onlineCount();
+            this._appendPresentationEvent({ kind: 'sealedBidSubmitted', actorId: player.id, actorName: player.name, submitted: auction.sealedBids.length, required, cards: auction.cards.map(card => this._publicCard(card)), sellerId: auction.sellerId, sellerName: this.playerMap[auction.sellerId]?.name || '' });
+            if (auction.sealedBids.length >= required) this._resolveAuction(); else this._advanceBidding();
             this._finishPresentation(); return this._success('秘密报价已提交');
         }
         if (auction.type === 'fixed') {
@@ -286,14 +335,21 @@ class ModernArtEngine {
 
     _advanceBidding() {
         const auction = this.auction; if (!auction) return;
+        auction.acted ||= new Set();
         if (auction.type === 'open') {
-            const active = this.players.filter(player => !auction.passed.has(player.id));
+            const active = this._onlinePlayers().filter(player => !auction.passed.has(player.id));
             if (active.length === 0 || (auction.highestBidder && active.length === 1 && active[0].id === auction.highestBidder)) { this._resolveAuction(); return; }
-            do { auction.currentBidderIndex = (auction.currentBidderIndex + 1) % this.players.length; } while (auction.passed.has(this.players[auction.currentBidderIndex].id));
+            const next = this._nextOnlineIndex(auction.currentBidderIndex + 1, player => !auction.passed.has(player.id));
+            if (next === null) { this._resolveAuction(); return; }
+            auction.currentBidderIndex = next;
             return;
         }
-        if (auction.turns >= this.players.length) { this._resolveAuction(); return; }
-        auction.currentBidderIndex = (auction.currentBidderIndex + 1) % this.players.length;
+        const required = this._onlineCount();
+        const submitted = auction.type === 'sealed' ? auction.sealedBids.length : auction.acted.size;
+        if (submitted >= required) { this._resolveAuction(); return; }
+        const next = this._nextOnlineIndex(auction.currentBidderIndex + 1, player => !auction.acted.has(player.id));
+        if (next === null) { this._resolveAuction(); return; }
+        auction.currentBidderIndex = next;
     }
 
     _resolveAuction() {
@@ -311,7 +367,7 @@ class ModernArtEngine {
         auction.cards.forEach(card => { this._markOffer(card.id, { buyerId: winner.id, price, sellerId: seller.id }); this.market.push({ cardId: card.id, artistId: card.artistId, artistName: card.artistName, auctionType: card.auctionType, price, buyerId: winner.id, sellerId: seller.id }); });
         this._appendPresentationEvent({ kind: 'auctionResolved', cards: auction.cards.map(card => this._publicCard(card)), auctionType: auction.type, auctionTypeName: this._auctionName(auction.type), sellerId: seller.id, sellerName: seller.name, buyerId: winner.id, buyerName: winner.name, price, selfPurchase: winner.id === seller.id, sealedBids: auction.type === 'sealed' ? auction.sealedBids.map(bid => ({ playerId: bid.playerId, playerName: this.playerMap[bid.playerId]?.name || '', amount: bid.amount })).sort((a, b) => b.amount - a.amount || this._clockwiseDistance(seller.id, a.playerId) - this._clockwiseDistance(seller.id, b.playerId)) : null });
         this._log(`${winner.name} 以 ${price} 购买 ${auction.cards.map(card => card.artistName).join('、')}`);
-        const nextSellerIndex = (this.players.indexOf(seller) + 1) % this.players.length;
+        const nextSellerIndex = this._nextOnlineIndex(this.players.indexOf(seller) + 1) ?? this.players.indexOf(seller);
         this.auction = null;
         this._queueMysteryChoice(seller, nextSellerIndex);
     }
@@ -330,6 +386,13 @@ class ModernArtEngine {
         const privateResults = {};
         const playerSummaries = [];
         this.players.forEach(player => {
+            if (!player.isOnline) {
+                // A departed seat no longer participates in seasonal payouts
+                // or the final ranking.  Its private collection is discarded
+                // so it cannot influence a later active round.
+                player.collection = [];
+                return;
+            }
             // Only artists ranked in this round's top three have value now.
             // Their payout uses the cumulative value tiles; all other artists
             // are worthless this round even if they were valuable earlier.
@@ -353,41 +416,81 @@ class ModernArtEngine {
     }
 
     _finish() {
-        this.status = 'ended'; this.phase = 'ended';
-        const ranked = this.players.map(player => ({ player, fortune: player.cash })).sort((a, b) => b.fortune - a.fortune);
+        if (this.status === 'ended') return;
+        this.status = 'ended'; this.phase = 'ended'; this.endReason ||= 'seasons'; this.outcome ||= 'highestFortune';
+        const ranked = this._onlinePlayers().map(player => ({ player, fortune: player.cash })).sort((a, b) => b.fortune - a.fortune);
         this.winner = ranked[0]?.player || null;
         this.winners = ranked.filter(item => item.fortune === (ranked[0]?.fortune ?? 0)).map(item => item.player);
         this.finalStandings = ranked.map((item, index) => ({ rank: index + 1, id: item.player.id, name: item.player.name, color: item.player.color, fortune: item.fortune }));
-        this._appendPresentationEvent({ kind: 'finalSettlement', standings: clone(this.finalStandings), winnerIds: this.winners.map(player => player.id), artistValues: { ...this.artistValues }, seasons: this.history.map(item => ({ round: item.round, ranking: clone(item.ranking), cumulativeValues: { ...item.cumulativeValues } })) });
+        this._appendPresentationEvent({ kind: 'finalSettlement', reason: this.endReason, outcome: this.outcome, standings: clone(this.finalStandings), winnerIds: this.winners.map(player => player.id), artistValues: { ...this.artistValues }, seasons: this.history.map(item => ({ round: item.round, ranking: clone(item.ranking), cumulativeValues: { ...item.cumulativeValues } })) });
         this._finishPresentation();
         this._log(`${this.winner?.name || '无人'} 以 ${ranked[0]?.fortune || 0} 元获胜`);
     }
     _auctionName(type) { return ({ open: '公开竞价', once: '一轮竞价', sealed: '秘密竞价', fixed: '定价拍卖', double: '双重拍卖' })[type] || type; }
 
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        const viewerId = String(player?.id ?? '');
+        if (event.kind === 'seasonSettlement') projected.ownResult = clone(this.seasonPrivateResults[event.round]?.[viewerId] || null);
+        if (event.kind === 'playerLeft' && String(event.playerId) === viewerId) {
+            projected.viewerVariant = 'personalDeparture';
+            projected.title = '您已离开本局';
+            projected.detail = '您的座位已退出，其他玩家将继续完成结算。';
+        }
+        if (event.kind === 'finalSettlement' && (event.winnerIds || []).map(String).includes(viewerId)) {
+            const tied = (event.winnerIds || []).length > 1;
+            projected.viewerVariant = 'personalVictory';
+            projected.title = tied ? '您已并列获胜' : '您已获胜';
+            projected.detail = tied ? '您与其他玩家共享本局年度收藏家桂冠。' : '您以最高财富赢得现代艺术拍卖季。';
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = (projected.events || []).map(event => this._projectPresentationEvent(event, player));
+        return projected;
+    }
+
     getPublicState() {
         const auction = this.auction;
-        const current = this.phase === 'auction' ? this.players[this.currentSellerIndex] : this.phase === 'double_offer' ? this.players[this.pendingDouble?.currentPlayerIndex] : this.phase === 'mystery_offer' ? this.playerMap[this.mysteryPendingPlayerId] : auction ? this.players[auction.currentBidderIndex] : null;
+        const rawCurrent = this.phase === 'auction' ? this.players[this.currentSellerIndex] : this.phase === 'double_offer' ? this.players[this.pendingDouble?.currentPlayerIndex] : this.phase === 'mystery_offer' ? this.playerMap[this.mysteryPendingPlayerId] : auction ? this.players[auction.currentBidderIndex] : null;
+        const current = rawCurrent?.isOnline ? rawCurrent : null;
         const sealed = auction?.type === 'sealed';
         const roundCounts = Object.fromEntries(ARTISTS.map(artist => [artist.id, this.roundSales.filter(item => item.artistId === artist.id).length]));
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         return {
             roomId: this.roomId,
             status: this.status,
             phase: this.phase,
             round: this.round,
             maxRounds: ROUNDS,
+            endReason: this.endReason || null,
+            outcome: this.outcome || null,
             rules: { players: '3–5', handSize: DEALS[this.mysteryEnabled ? 4 : this.players.length]?.[0], roundDeals: DEALS[this.mysteryEnabled ? 4 : this.players.length], rounds: 4, marketThreshold: 5, moneyHidden: true, mysteryPlayer: this.mysteryEnabled },
             currentTurn: current?.id || null,
             currentTurnName: current?.name || null,
             doubleOffer: this.pendingDouble ? { artist: this.pendingDouble.first.artistName, artistId: this.pendingDouble.first.artistId, originalSellerId: this.pendingDouble.originalSellerId, originalSellerName: this.playerMap[this.pendingDouble.originalSellerId]?.name || null, currentPlayerId: current?.id || null, currentPlayerName: current?.name || null, passed: [...this.pendingDouble.passed] } : null,
             mysteryOffer: this.phase === 'mystery_offer' ? { currentPlayerId: this.mysteryPendingPlayerId, currentPlayerName: this.playerMap[this.mysteryPendingPlayerId]?.name || null, remaining: this.mysteryHand.length } : null,
-            auction: auction ? { artist: auction.card.artistName, artistId: auction.card.artistId, artists: auction.cards.map(card => card.artistName), sellerId: auction.sellerId, sellerName: this.playerMap[auction.sellerId]?.name, type: auction.type, typeName: this._auctionName(auction.type), fixedPrice: auction.fixedPrice, highestBid: sealed ? 0 : auction.highestBid, highestBidder: sealed ? null : auction.highestBidder, passed: sealed ? [] : [...auction.passed], bidCount: sealed ? auction.sealedBids.length : undefined } : null,
+            auction: auction ? { artist: auction.card.artistName, artistId: auction.card.artistId, artists: auction.cards.map(card => card.artistName), sellerId: auction.sellerId, sellerName: this.playerMap[auction.sellerId]?.name, type: auction.type, typeName: this._auctionName(auction.type), fixedPrice: auction.fixedPrice, highestBid: sealed ? 0 : auction.highestBid, highestBidder: sealed ? null : auction.highestBidder, passed: sealed ? [] : [...auction.passed], bidCount: sealed ? auction.sealedBids.length : undefined, actedCount: auction.acted?.size || 0 } : null,
             market: this.market.map(item => ({ ...item })),
             roundCounts,
             artistValues: { ...this.artistValues },
             mysteryCount: this.mysteryEnabled ? this.mysteryHand.length : 0,
             players: this.players.map(player => ({ id: player.id, name: player.name, color: player.color, cash: null, handCount: player.hand.length, collectionCount: player.collection.length, isOnline: player.isOnline })),
             history: clone(this.history),
-            presentation: clone(this.presentation),
+            serverNow,
+            presentation,
+            presentations,
             finalStandings: clone(this.finalStandings),
             actionLog: this.actionLog.slice(-20),
             winner: this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash } : null,
@@ -397,25 +500,210 @@ class ModernArtEngine {
 
     getPlayerState(playerId) {
         const state = this.getPublicState(); const player = this.playerMap[playerId]; state.myId = playerId; state.myCash = player?.cash ?? null;
-        const publicPlayer = state.players.find(item => item.id === playerId); if (publicPlayer) publicPlayer.cash = player.cash;
+        const publicPlayer = state.players.find(item => item.id === playerId); if (publicPlayer && player) publicPlayer.cash = player.cash;
         state.myHand = player?.hand.map(card => ({ ...card })) || []; state.myCollection = player?.collection.map(card => ({ ...card })) || [];
-        if (state.presentation?.events?.length) state.presentation.events = state.presentation.events.map(event => event.kind === 'seasonSettlement' ? { ...event, ownResult: clone(this.seasonPrivateResults[event.round]?.[playerId] || null) } : event);
-        const isDoubleOffer = this.phase === 'double_offer' && this.pendingDouble?.currentPlayerIndex === this.players.findIndex(item => item.id === playerId);
-        const isMysteryOffer = this.phase === 'mystery_offer' && this.mysteryPendingPlayerId === playerId;
-        state.availableActions = { startAuction: this.phase === 'auction' && this.currentSellerIndex === this.players.findIndex(item => item.id === playerId), bid: this.phase === 'bidding' && this.auction && this.players[this.auction.currentBidderIndex]?.id === playerId, offerSecond: isDoubleOffer, passSecond: isDoubleOffer, secondArtistId: isDoubleOffer ? this.pendingDouble.first.artistId : null, revealMystery: isMysteryOffer, skipMystery: isMysteryOffer };
+        state.presentation = this._projectPresentation(state.presentation, player);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, player));
+        const playerIndex = this.players.findIndex(item => item.id === playerId);
+        const isOnline = Boolean(player?.isOnline);
+        const isDoubleOffer = isOnline && this.phase === 'double_offer' && this.pendingDouble?.currentPlayerIndex === playerIndex;
+        const isMysteryOffer = isOnline && this.phase === 'mystery_offer' && this.mysteryPendingPlayerId === playerId;
+        state.availableActions = { startAuction: isOnline && this.phase === 'auction' && this.currentSellerIndex === playerIndex, bid: isOnline && this.phase === 'bidding' && this.auction && this.players[this.auction.currentBidderIndex]?.id === playerId, offerSecond: isDoubleOffer, passSecond: isDoubleOffer, secondArtistId: isDoubleOffer ? this.pendingDouble.first.artistId : null, revealMystery: isMysteryOffer, skipMystery: isMysteryOffer };
         return state;
     }
 
-    handlePlayerLeave(playerId) { const player = this.playerMap[playerId]; if (!player || !player.isOnline) return { success: false, message: '玩家不存在' }; player.isOnline = false; if (this.players.filter(item => item.isOnline).length < 3) { this.status = 'ended'; this.phase = 'ended'; this.winner = this.players.find(item => item.isOnline) || null; } return this._success(`${player.name} 已离开`); }
-    _startPresentation(actorId, action, firstEvent) { this.presentation = { sequence: ++this.presentationSequence, actorId, action, resolved: false, events: [] }; if (firstEvent) this._appendPresentationEvent(firstEvent); }
-    _appendPresentationEvent(event) { if (!this.presentation || this.presentation.resolved) this._startPresentation(event.actorId || null, event.kind || 'system'); this.presentation.events.push({ sequence: ++this.presentationEventSequence, ...clone(event) }); }
-    _finishPresentation() { if (this.presentation) this.presentation.resolved = true; }
+    _currentPhasePlayerId() {
+        if (this.phase === 'auction') return this.players[this.currentSellerIndex]?.id || null;
+        if (this.phase === 'double_offer') return this.players[this.pendingDouble?.currentPlayerIndex]?.id || null;
+        if (this.phase === 'mystery_offer') return this.mysteryPendingPlayerId;
+        if (this.phase === 'bidding') return this.players[this.auction?.currentBidderIndex]?.id || null;
+        return null;
+    }
+
+    _recomputeOpenBid(auction) {
+        if (!auction) return;
+        const bids = (auction.bids || []).filter(bid => this.playerMap[bid.playerId]?.isOnline && Number.isInteger(Number(bid.amount)) && Number(bid.amount) > 0);
+        const highest = bids.slice().sort((a, b) => Number(b.amount) - Number(a.amount) || this._clockwiseDistance(auction.sellerId, a.playerId) - this._clockwiseDistance(auction.sellerId, b.playerId))[0];
+        auction.highestBidder = highest?.playerId || null;
+        auction.highestBid = highest ? Number(highest.amount) : 0;
+    }
+
+    _finishDoubleOffer(pending, reason = 'allPassed') {
+        if (!pending) return;
+        const seller = this.playerMap[pending.originalSellerId];
+        if (seller?.isOnline) seller.collection.push(pending.first);
+        this._markOffer(pending.first.id, { buyerId: seller?.id || null, price: 0, sellerId: seller?.id || null });
+        const sellerIndex = this.players.indexOf(seller);
+        this.pendingDouble = null;
+        this.phase = 'auction';
+        const nextSeller = this._nextSellerWithCards(sellerIndex + 1);
+        this.currentSellerIndex = nextSeller ?? (this._nextOnlineIndex(sellerIndex + 1) ?? sellerIndex);
+        this._appendPresentationEvent({ kind: 'doubleOfferFailed', card: this._publicCard(pending.first), sellerId: seller?.id || null, sellerName: seller?.name || '', nextSellerId: this.players[this.currentSellerIndex]?.id || null, nextSellerName: this.players[this.currentSellerIndex]?.name || null, reason });
+        this._log(`${seller?.name || '原卖家'} 没有找到同艺术家第二幅作品，免费收下双重作品`);
+        if (nextSeller === null) {
+            this._finishRound({ kind: 'handsExhausted' });
+            return;
+        }
+        this._appendPresentationEvent({ kind: 'sellerTurnStarted', playerId: this.players[this.currentSellerIndex].id, playerName: this.players[this.currentSellerIndex].name, round: this.round });
+    }
+
+    _continueAfterPlayerLeave(playerId, phaseBefore, wasCurrent) {
+        const playerIndex = this.players.findIndex(player => player.id === playerId);
+        if (phaseBefore === 'auction' && wasCurrent) {
+            const nextSeller = this._nextSellerWithCards(playerIndex + 1);
+            if (nextSeller === null) {
+                this._finishRound({ kind: 'handsExhausted' });
+                return;
+            }
+            this.currentSellerIndex = nextSeller;
+            this.phase = 'auction';
+            this._appendPresentationEvent({ kind: 'sellerTurnStarted', playerId: this.players[nextSeller].id, playerName: this.players[nextSeller].name, round: this.round });
+            this._log(`${this.players[nextSeller].name} 接替离场席位选择作品`);
+            return;
+        }
+
+        if (phaseBefore === 'double_offer' && this.pendingDouble) {
+            const pending = this.pendingDouble;
+            pending.passed.add(playerId);
+            if (pending.currentPlayerIndex === playerIndex) {
+                if (pending.passed.size >= this._onlineCount()) {
+                    this._finishDoubleOffer(pending, 'playerLeft');
+                    return;
+                }
+                const next = this._nextOnlineIndex(playerIndex + 1, candidate => !pending.passed.has(candidate.id));
+                if (next === null) {
+                    this._finishDoubleOffer(pending, 'playerLeft');
+                    return;
+                }
+                pending.currentPlayerIndex = next;
+                this._appendPresentationEvent({ kind: 'doubleOfferContinues', playerId: this.players[next].id, playerName: this.players[next].name, reason: 'playerLeft' });
+                this._log(`${this.players[next].name} 接替双重拍卖补画决定`);
+            }
+            return;
+        }
+
+        if (phaseBefore === 'mystery_offer' && this.mysteryPendingPlayerId === playerId) {
+            this.mysteryPendingPlayerId = null;
+            const nextSeller = this._nextSellerWithCards(this.currentSellerIndex);
+            if (nextSeller === null) {
+                this.phase = 'auction';
+                this._finishRound({ kind: 'handsExhausted' });
+                return;
+            }
+            this.currentSellerIndex = nextSeller;
+            this.phase = 'auction';
+            this._appendPresentationEvent({ kind: 'sellerTurnStarted', playerId: this.players[nextSeller].id, playerName: this.players[nextSeller].name, round: this.round, reason: 'playerLeft' });
+            this._log(`${this.players[nextSeller].name} 接替离场玩家选择作品`);
+            return;
+        }
+
+        if (phaseBefore === 'bidding' && this.auction) {
+            const auction = this.auction;
+            auction.passed?.delete(playerId);
+            auction.acted?.delete(playerId);
+            auction.bids = (auction.bids || []).filter(bid => bid.playerId !== playerId);
+            auction.sealedBids = (auction.sealedBids || []).filter(bid => bid.playerId !== playerId);
+            if (auction.type === 'open') this._recomputeOpenBid(auction);
+            const currentLeft = this.players[auction.currentBidderIndex]?.id === playerId;
+            const onlineCount = this._onlineCount();
+            const submitted = auction.type === 'sealed' ? auction.sealedBids.length : auction.acted?.size || 0;
+            const active = this._onlinePlayers().filter(candidate => !auction.passed.has(candidate.id));
+            if (auction.type === 'open' && (active.length === 0 || (auction.highestBidder && active.length === 1 && active[0].id === auction.highestBidder))) {
+                this._resolveAuction();
+            } else if (auction.type !== 'open' && submitted >= onlineCount) {
+                this._resolveAuction();
+            } else if (currentLeft) {
+                this._advanceBidding();
+            }
+        }
+    }
+
+    _finishByDeparture() {
+        if (this.status === 'ended') return;
+        this.status = 'ended'; this.phase = 'ended'; this.endReason = 'players'; this.outcome = 'lastPlayerStanding';
+        this.auction = null; this.pendingDouble = null; this.mysteryPendingPlayerId = null;
+        const ranked = this._onlinePlayers().map(player => ({ player, fortune: player.cash })).sort((a, b) => b.fortune - a.fortune);
+        this.winner = ranked[0]?.player || null;
+        this.winners = ranked.filter(item => item.fortune === (ranked[0]?.fortune ?? 0)).map(item => item.player);
+        this.finalStandings = ranked.map((item, index) => ({ rank: index + 1, id: item.player.id, name: item.player.name, color: item.player.color, fortune: item.fortune }));
+        this._appendPresentationEvent({ kind: 'finalSettlement', reason: this.endReason, outcome: this.outcome, standings: clone(this.finalStandings), winnerIds: this.winners.map(player => player.id), artistValues: { ...this.artistValues }, seasons: this.history.map(item => ({ round: item.round, ranking: clone(item.ranking), cumulativeValues: { ...item.cumulativeValues } })), detail: '在线玩家不足三人，本局提前结束。' });
+        this._log(`${this.winners.map(player => player.name).join('、') || '无人'} 在离场收束中获胜`);
+    }
+
+    handlePlayerLeave(playerId) {
+        const player = this.playerMap[playerId];
+        if (!player || !player.isOnline) return { success: false, message: '玩家不存在' };
+        if (this.status === 'ended') {
+            player.isOnline = false;
+            return this._success(`${player.name} 已离开`);
+        }
+        const phaseBefore = this.phase;
+        const wasCurrent = this._currentPhasePlayerId() === playerId;
+        player.isOnline = false;
+        // Unplayed private cards and already collected works belong to the
+        // departed seat and must not affect the remaining active players.
+        player.hand = [];
+        player.collection = [];
+        this._log(`${player.name} 离开了现代艺术拍卖季`);
+        if (this.status !== 'playing') return this._success(`${player.name} 已离开`);
+        this._startPresentation(player.id, 'playerLeave');
+        this._appendPresentationEvent({ kind: 'playerLeft', playerId: player.id, playerName: player.name, phase: phaseBefore, wasCurrent, remainingPlayerCount: this._onlineCount() });
+        if (this._onlineCount() < 3) {
+            this._finishByDeparture();
+            this._finishPresentation();
+            return this._success(`${player.name} 离开后，本局结束`);
+        }
+        this._continueAfterPlayerLeave(playerId, phaseBefore, wasCurrent);
+        this._finishPresentation();
+        return this._success(`${player.name} 已离开`);
+    }
+
+    _startPresentation(actorId, action, firstEvent) {
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
+        this.presentation = { sequence: ++this.presentationSequence, transactionId: this.presentationSequence, actorId, action, startedAt, endsAt: startedAt, durationMs: 0, blocking: true, events: [], resolved: false, ended: false, endReason: null, outcome: null, nextPhase: null, nextPlayerId: null, winner: null };
+        this.presentationQueue.push(this.presentation);
+        if (firstEvent) this._appendPresentationEvent(firstEvent);
+        return this.presentation;
+    }
+
+    _appendPresentationEvent(event) {
+        if (!this.presentation || this.presentation.resolved) this._startPresentation(event.actorId || null, event.kind || 'system');
+        const now = this._now();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.startedAt) || now;
+        const startedAt = Math.max(now, previousEnd);
+        const contentDurationMs = presentationContentDuration(event.kind, event);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const sequence = ++this.presentationEventSequence;
+        const entry = { ...clone(event), sequence, eventId: sequence, startedAt, endsAt: startedAt + durationMs, durationMs, contentDurationMs };
+        this.presentation.events.push(entry);
+        this.presentation.endsAt = entry.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        return entry;
+    }
+
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this.presentation.resolved = true;
+        this.presentation.ended = this.status === 'ended';
+        this.presentation.endReason = this.endReason || null;
+        this.presentation.outcome = this.outcome || null;
+        this.presentation.nextPhase = this.phase;
+        const nextPlayer = this.phase === 'auction' ? this.players[this.currentSellerIndex] : this.phase === 'double_offer' ? this.players[this.pendingDouble?.currentPlayerIndex] : this.phase === 'mystery_offer' ? this.playerMap[this.mysteryPendingPlayerId] : this.auction ? this.players[this.auction.currentBidderIndex] : null;
+        this.presentation.nextPlayerId = this.status === 'playing' && nextPlayer?.isOnline ? nextPlayer.id : null;
+        this.presentation.winner = this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash } : null;
+    }
+
     _log(message) { this.actionLog.push(message); }
-    _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null }; }
-    getWinner() { return this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash } : null; }
+    _success(message) { return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended', winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name })) }; }
+    getWinner() { return this.winner ? { id: this.winner.id, name: this.winner.name, cash: this.winner.cash, shared: this.winners.length > 1, winners: this.winners.map(player => ({ id: player.id, name: player.name, cash: player.cash })) } : null; }
 }
 
 module.exports = ModernArtEngine;
 module.exports.ARTISTS = ARTISTS;
 module.exports.AUCTION_TYPES = AUCTION_TYPES;
 module.exports.DEALS = DEALS;
+module.exports.PRESENTATION_FADE_MS = PRESENTATION_FADE_MS;
+module.exports.PRESENTATION_CONTENT_DURATIONS = PRESENTATION_CONTENT_DURATIONS;

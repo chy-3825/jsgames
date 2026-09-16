@@ -1103,7 +1103,7 @@ body.is-citadels-view {
 
 .citadels-player {
     display: grid;
-    grid-template-columns: 18px 28px minmax(0, 1fr) auto;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
     align-items: center;
     gap: 7px;
     min-width: 0;
@@ -1131,32 +1131,17 @@ body.is-citadels-view {
     font-variant-numeric: tabular-nums;
 }
 
-.citadels-avatar {
-    position: relative;
-    display: grid;
-    width: 28px;
-    height: 28px;
-    place-items: center;
-    border: 1px solid #64776d;
-    border-radius: 50%;
-    color: var(--paper);
-    font-family: Georgia, serif;
-    font-size: 12px;
-}
-
-.citadels-avatar i {
-    position: absolute;
-    right: -5px;
-    bottom: -4px;
-    color: var(--gold-bright);
-    font-size: 11px;
-    font-style: normal;
-}
-
 .citadels-player-copy {
     display: grid;
     min-width: 0;
     gap: 3px;
+}
+
+.citadels-player-crown {
+    margin-left: 5px;
+    color: var(--gold-bright);
+    font-size: 10px;
+    font-style: normal;
 }
 
 .citadels-player-copy strong {

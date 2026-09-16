@@ -15,7 +15,7 @@ export function createCheckersRenderer({ model, actionLock, scene, getElement, w
 
     function renderPlayers() {
         const state = model.state;
-        playersEl.innerHTML = (state.players || []).map((player, index) => '<article class="checkers-player ' + player.color + (player.isCurrentTurn ? ' is-current' : '') + (player.id === state.myId ? ' is-me' : '') + '"><span class="checkers-player-stone"></span><span><strong>' + escapeHtml(player.name) + (player.id === state.myId ? ' · 我' : '') + '</strong><small>' + (player.isCurrentTurn ? '正在行棋' : (player.pieceCount || 0) + '/10 枚在场') + '</small></span><i>' + (index + 1) + '</i></article>').join('');
+        playersEl.innerHTML = (state.players || []).map(player => '<article class="checkers-player ' + player.color + (player.isCurrentTurn ? ' is-current' : '') + (player.id === state.myId ? ' is-me' : '') + '"><span class="checkers-player-stone"></span><span><strong>' + escapeHtml(player.name) + (player.id === state.myId ? ' · 我' : '') + '</strong></span></article>').join('');
     }
 
     function labelForCell(cell, piece, canSelect, isSelected, isStep, isJump) {
@@ -98,14 +98,12 @@ export function createCheckersRenderer({ model, actionLock, scene, getElement, w
         if (!state) return;
         const current = (state.players || []).find(player => player.id === state.currentTurn);
         const ended = state.status === 'ended';
-        const pending = state.pendingMove;
         const selected = state.selectedPiece;
-        const turnDetail = pending?.jumpCount > 0 ? '连续跳跃 ' + pending.jumpCount + ' 次' : selected ? '已选中棋子，可选择落点' : '选择棋子开始移动';
         turnEl.innerHTML = ended
-            ? '<i class="checkers-live-dot ended"></i>' + escapeHtml(state.winner?.name || '棋局结束') + '<small>' + (state.winner ? '全部棋子进入目标角' : '对局已结束') + '</small>'
-            : '<i class="checkers-live-dot"></i>' + (state.myIsCurrentTurn ? '你的回合' : escapeHtml(current?.name || '对手') + '的回合') + '<small>' + turnDetail + '</small>';
+            ? escapeHtml(state.winner?.name || '棋局结束') + (state.winner ? ' 获胜' : '')
+            : (state.myIsCurrentTurn ? '你的回合' : escapeHtml(current?.name || '对手') + '的回合');
         statusEl.textContent = ended ? '已结束' : '对局中';
-        hintEl.textContent = ended ? (state.winner ? escapeHtml(state.winner.name) + ' 获胜' : '棋局结束') : selected ? (state.availableActions?.canEndMove ? '可继续跳跃，也可以结束这次移动' : '选择高亮落点；点击其他棋子可换选，再点当前棋子可取消') : state.myIsCurrentTurn ? '选择自己的棋子' : '等待 ' + escapeHtml(state.currentTurnName || '对手') + ' 行棋';
+        hintEl.textContent = ended || !state.myIsCurrentTurn ? '' : selected ? (state.availableActions?.canEndMove ? '继续跳跃，或结束' : '选择高亮落点') : '选择棋子';
         resultEl.textContent = state.lastMove?.to ? '最后移动 · 棋位 ' + (Number(state.lastMove.to.x) + 1) + '·' + (Number(state.lastMove.to.y) + 1) : '等待第一步';
         endMoveButton.hidden = !(state.availableActions?.canEndMove);
         endMoveButton.disabled = interactionLocked(model, actionLock);

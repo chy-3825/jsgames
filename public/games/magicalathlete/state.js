@@ -1,5 +1,46 @@
 export function createMagicalAthleteModel() {
-    return { state: null, interactionSignature: '', pendingAction: null, actionPending: false, previousFocus: null, presentationQueue: [], presentationPlaying: false, presentationToken: 0, presentationTimer: null, presentationRelease: null, lastPresentationSequence: null, acknowledgementTimer: null, acknowledgementId: null, latestPresentationState: null };
+    return {
+        state: null,
+        interactionSignature: '',
+        pendingAction: null,
+        actionPending: false,
+        previousFocus: null,
+        presentationQueue: [],
+        presentationPlaying: false,
+        presentationToken: 0,
+        presentationTimer: null,
+        presentationRelease: null,
+        presentationWaiters: new Set(),
+        lastPresentationSequence: 0,
+        presentationEventIds: new Set(),
+        presentationLockedUntil: 0,
+        presentationEvent: null,
+        acknowledgementTimer: null,
+        acknowledgementId: null,
+        acknowledgementDeadline: 0,
+    };
+}
+
+/** Translate server absolute timestamps to this browser's clock. */
+export function localizePresentation(batch, localNow = Date.now()) {
+    if (!batch?.events?.length) return null;
+    const serverNow = Number(batch.serverNow);
+    const batchEnd = Number(batch.endsAt);
+    if (!Number.isFinite(serverNow) || !Number.isFinite(batchEnd)) return batch;
+    if (batchEnd <= serverNow) return null;
+    const toLocalTime = value => Number.isFinite(Number(value))
+        ? localNow + (Number(value) - serverNow)
+        : value;
+    return {
+        ...batch,
+        startedAt: toLocalTime(batch.startedAt),
+        endsAt: toLocalTime(batch.endsAt),
+        events: batch.events.map(event => ({
+            ...event,
+            startedAt: toLocalTime(event.startedAt),
+            endsAt: toLocalTime(event.endsAt),
+        })),
+    };
 }
 export function playerName(state, id) { return state?.players?.find(player => player.id === id)?.name || id; }
 export function playerColor(state, id) { return state?.players?.find(player => player.id === id)?.color || '#fff'; }

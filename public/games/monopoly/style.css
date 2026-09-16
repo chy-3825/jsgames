@@ -61,11 +61,11 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
 .is-monopoly-view .back-button { color: #aebbb0 !important; }
 
 .mono-topbar {
-    position: sticky;
+    position: relative;
     z-index: 30;
-    top: 70px;
+    top: auto;
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(205px, auto) auto auto;
+    grid-template-columns: minmax(220px, 1fr) auto auto;
     align-items: center;
     gap: 22px;
     min-height: 72px;
@@ -173,16 +173,14 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
 .mono-board-center-art, .mono-board-art-frame { position: absolute; display: block; pointer-events: none; user-select: none; }
 .mono-board-center-art { z-index: 0; top: 14.194577%; left: 15.789474%; width: 68.102073%; height: 71.770335%; object-fit: cover; object-position: center; }
 .mono-board-art-frame { z-index: 1; inset: 0; width: 100%; height: 100%; object-fit: fill; }
-.mono-center { position: absolute; z-index: 2; inset: 16.028708% 16.108453% 15.948963% 15.789474%; display: grid; align-content: center; justify-items: center; gap: 7px; margin: 13px; padding: clamp(12px, 2.2vw, 27px); color: #4e4939; }
-.mono-center-meta, .mono-center-foot { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; color: #8a744c; font-size: 8px; }
-.mono-center-meta { border-bottom: 1px solid rgba(126, 97, 52, .24); padding-bottom: 7px; font-family: Georgia, serif; letter-spacing: .1em; }
-.mono-center-foot { border-top: 1px solid rgba(126, 97, 52, .24); padding-top: 7px; font-size: 8px; }
-.mono-center-foot span:last-child { color: #9a8052; text-align: right; }
-.mono-center-seal, .mono-center > strong, .mono-center > small { display: none; }
-.mono-event-card { display: grid; width: min(100%, 270px); gap: 3px; margin: 5px 0 2px; padding: 9px 12px; border: 1px solid rgba(151, 107, 64, .4); background: rgba(255, 246, 215, .43); text-align: center; }
-.mono-event-card > span { color: #a06c45; font-size: 8px; font-weight: 800; letter-spacing: .14em; }
-.mono-event-card strong { overflow: hidden; color: #66553c; font-family: "Noto Serif SC", "Songti SC", serif; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.mono-event-card p { overflow: hidden; margin: 0; color: #8c7957; font-size: 8px; line-height: 1.45; text-overflow: ellipsis; white-space: nowrap; }
+.mono-status-panel { display: grid; min-width: 0; gap: 12px; margin-bottom: 18px; padding: 14px; border: 1px solid rgba(212, 170, 97, .45); border-radius: 6px; background: linear-gradient(145deg, #f4e8c9, #e7d5ae); color: #4e4939; }
+.mono-status-meta, .mono-status-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; color: #75603f; font-size: 11px; line-height: 1.5; }
+.mono-status-meta { border-bottom: 1px solid rgba(126, 97, 52, .24); padding-bottom: 9px; }
+.mono-status-foot { border-top: 1px solid rgba(126, 97, 52, .24); padding-top: 9px; }
+.mono-event-card { display: grid; min-width: 0; gap: 6px; text-align: left; }
+.mono-event-card > span { color: #885936; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+.mono-event-card strong { color: #59482f; font-family: "Noto Serif SC", "Songti SC", serif; font-size: 15px; overflow-wrap: anywhere; }
+.mono-event-card p { margin: 0; color: #75603f; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .mono-dice-tray { display: flex; align-items: center; gap: 7px; min-height: 32px; color: #88734e; font: 700 11px Georgia, serif; transition: filter .18s ease; }
 .mono-dice-tray.is-rolling { filter: brightness(1.08); }
 .mono-dice-tray.is-preview .mono-die { opacity: .82; }
@@ -218,7 +216,18 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
 .mono-house { display: block; width: 5px; height: 5px; background: #5f966d; }
 .mono-hotel { display: grid; width: 13px; height: 10px; place-items: center; background: #a85f4d; color: #fff2d5; font: 700 7px Georgia, serif; }
 .mono-owner-mark { position: absolute; top: 2px; right: 2px; display: grid; width: 12px; height: 12px; place-items: center; border: 1px solid #fff4d5; border-radius: 50%; background: var(--token); color: #fff; font: 700 7px "Noto Sans SC", sans-serif; box-shadow: 0 1px 3px rgba(38, 24, 15, .38); }
-.mono-tokens { display: flex; align-items: center; justify-content: center; max-width: 100%; min-height: 31px; margin-top: auto; }
+/* Keep pieces on the outer lane, independent of labels and buildings. */
+.mono-tokens { position: absolute; left: var(--mono-token-x, 50%); top: var(--mono-token-y, 50%); display: flex; align-items: center; justify-content: center; width: max-content; margin: 0; transform: translate(-50%, -50%); pointer-events: none; }
+.mono-tile[data-edge="bottom"] { --mono-token-y: 72%; }
+.mono-tile[data-edge="top"] { --mono-token-y: 28%; }
+.mono-tile[data-edge="left"] { --mono-token-x: 28%; }
+.mono-tile[data-edge="right"] { --mono-token-x: 72%; }
+.mono-tile[data-index="0"] { --mono-token-x: 76%; --mono-token-y: 76%; }
+.mono-tile[data-index="10"] { --mono-token-x: 24%; --mono-token-y: 76%; }
+.mono-tile[data-index="20"] { --mono-token-x: 24%; --mono-token-y: 24%; }
+.mono-tile[data-index="30"] { --mono-token-x: 76%; --mono-token-y: 24%; }
+.mono-tile[data-edge="left"] .mono-tokens, .mono-tile[data-edge="right"] .mono-tokens { flex-direction: column; }
+.mono-tile[data-edge="left"] .mono-token-piece + .mono-token-piece, .mono-tile[data-edge="right"] .mono-token-piece + .mono-token-piece { margin-left: 0; margin-top: -5px; }
 .mono-token-piece, .mono-token-more { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border: 0; border-radius: 0; color: #fff; font: 700 7px "Noto Sans SC", sans-serif; }
 .mono-token-piece { position: relative; overflow: visible; background: transparent; font-style: normal; isolation: isolate; }
 .mono-token-piece::before { position: absolute; z-index: -1; bottom: 0; left: 50%; width: 23px; height: 6px; border-radius: 50%; background: var(--token, #d1a85f); box-shadow: 0 2px 4px rgba(46, 29, 17, .48); content: ""; opacity: .86; transform: translateX(-50%); }
@@ -252,6 +261,13 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
 .mono-action-asset { border-color: rgba(112, 162, 125, .28); background: rgba(87, 137, 102, .1); }
 .mono-action-asset.is-highlighted { border-color: rgba(222, 188, 112, .72); }
 .mono-management { padding-top: 11px; border-top: 1px solid var(--mono-line); }
+.mono-trade-offers { padding-top: 11px; border-top: 1px solid var(--mono-line); }
+.mono-trade-offer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid rgba(216, 190, 135, .22); background: rgba(240, 225, 187, .05); color: #d9cfb7; font-size: 9px; }
+.mono-trade-offer + .mono-trade-offer { margin-top: 5px; }
+.mono-trade-offer > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mono-trade-offer > div { display: flex; gap: 5px; }
+.mono-trade-offer button { min-height: 28px; padding: 3px 8px; border: 1px solid rgba(216, 190, 135, .3); border-radius: 4px; background: rgba(240, 225, 187, .08); color: #e8ddc4; cursor: pointer; font-size: 8px; }
+.mono-trade-offer button.mono-action-primary { background: #8f4d43; color: #fff1d0; }
 .mono-waiting-note { display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 10px; border: 1px dashed rgba(214, 183, 119, .28); color: #9cab9f; }
 .mono-waiting-note > div { display: grid; min-width: 0; gap: 3px; }
 .mono-waiting-note strong { color: #d7cfb9; font-size: 10px; }
@@ -305,6 +321,11 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
 .mono-inspector-stats small { color: #809187; font-size: 7px; }
 .mono-inspector-stats b { overflow: hidden; color: #e8c982; font: 700 10px Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
 .mono-inspector-note { margin: 9px 0 0; color: #9da99d; font-size: 8px; line-height: 1.55; }
+.mono-rent-ladder { display: grid; gap: 3px; margin-top: 9px; padding: 8px; border-top: 1px solid var(--mono-line); background: rgba(239, 225, 188, .035); }
+.mono-rent-ladder header { display: flex; justify-content: space-between; gap: 8px; color: #d8bd79; font-size: 8px; font-weight: 800; }
+.mono-rent-ladder header small { overflow: hidden; color: #82948a; font-size: 7px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.mono-rent-ladder > div { display: flex; justify-content: space-between; gap: 8px; color: #94a69b; font-size: 8px; }
+.mono-rent-ladder > div b { color: #ebce8b; font: 700 9px Georgia, serif; }
 .mono-special-tile { display: flex; align-items: center; gap: 11px; margin-top: 18px; padding: 12px; border: 1px solid rgba(224, 193, 129, .2); background: rgba(240, 224, 183, .06); }
 .mono-special-tile > strong { color: #d9ad61; font: 700 25px Georgia, serif; }
 .mono-special-tile div { display: grid; gap: 3px; }
@@ -321,8 +342,28 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
 .mono-overlay { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 22px; background: rgba(6, 12, 13, .78); backdrop-filter: blur(10px); }
 .mono-overlay.is-hidden { display: none; }
 .mono-rules { position: relative; width: min(680px, 100%); max-height: min(88vh, 760px); overflow: auto; padding: 29px; border: 1px solid rgba(220, 181, 104, .64); background: linear-gradient(145deg, #f3e7c9, #d9c59a); color: #4b493d; box-shadow: 0 30px 90px rgba(0, 0, 0, .56); }
+.mono-trade { position: relative; width: min(760px, 100%); max-height: min(88vh, 820px); overflow: auto; padding: 29px; border: 1px solid rgba(220, 181, 104, .64); background: linear-gradient(145deg, #f3e7c9, #d9c59a); color: #4b493d; box-shadow: 0 30px 90px rgba(0, 0, 0, .56); }
 .mono-rules .mono-kicker { color: #9b6b41; }
 .mono-rules h2 { margin-bottom: 20px; color: #4d4332; font-size: 28px; }
+.mono-trade .mono-kicker { color: #9b6b41; }
+.mono-trade h2 { margin: 3px 0 5px; color: #4d4332; font-size: 28px; }
+.mono-trade-intro { margin: 0 0 16px; color: #685e4d; font-size: 10px; line-height: 1.6; }
+.mono-trade-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px; }
+.mono-trade-field { display: grid; gap: 4px; min-width: 0; }
+.mono-trade-field > span, .mono-trade-columns h3 { color: #8b5c38; font-size: 10px; font-weight: 800; }
+.mono-trade-field input, .mono-trade-field select { min-width: 0; min-height: 34px; padding: 0 8px; border: 1px solid rgba(110, 83, 45, .3); border-radius: 4px; background: rgba(255, 249, 227, .58); color: #4b493d; font-size: 10px; }
+.mono-trade-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 17px; }
+.mono-trade-columns section { min-width: 0; padding: 10px; border: 1px solid rgba(110, 83, 45, .22); background: rgba(255, 249, 227, .3); }
+.mono-trade-columns h3 { margin: 0 0 7px; }
+.mono-trade-check { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 6px 0; border-top: 1px solid rgba(110, 83, 45, .13); cursor: pointer; }
+.mono-trade-check input { flex: 0 0 auto; accent-color: #a85e4c; }
+.mono-trade-check span { display: grid; min-width: 0; gap: 2px; }
+.mono-trade-check strong { overflow: hidden; color: #5d503d; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.mono-trade-check small, .mono-trade-empty { overflow: hidden; color: #88795f; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.mono-trade-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.mono-trade-actions button { min-height: 35px; padding: 0 13px; border: 1px solid rgba(110, 83, 45, .28); border-radius: 4px; cursor: pointer; font-size: 9px; }
+.mono-trade-actions .mono-action-primary { border-color: rgba(151, 74, 58, .75); color: #fff1d0; }
+.mono-trade-actions .mono-action-quiet { background: rgba(91, 69, 42, .08); color: #6e5a42; }
 .mono-dialog-close { position: absolute; top: 12px; right: 12px; display: grid; width: 31px; height: 31px; place-items: center; border: 1px solid rgba(72, 59, 39, .28); border-radius: 50%; background: transparent; color: #5b4b39; cursor: pointer; font-size: 20px; }
 .mono-rule-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .mono-rule-grid section, .mono-rule-route { padding: 13px; border: 1px solid rgba(110, 83, 45, .22); background: rgba(255, 249, 227, .3); }
@@ -340,13 +381,14 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
 }
 
 @media (min-width: 1250px) {
-    .mono-table { grid-template-columns: minmax(0, 1fr) 250px; align-items: start; }
+    .mono-table { grid-template-columns: minmax(0, 1fr); align-items: start; }
     .mono-table-head { grid-column: 1 / -1; }
     .mono-board-frame { grid-column: 1; }
-    .mono-command { position: sticky; top: 160px; grid-column: 2; grid-row: 2; max-height: calc(100dvh - 180px); overflow: auto; }
+    .mono-command { position: static; }
     .mono-action-grid { grid-template-columns: 1fr; }
     .mono-auction-card { grid-template-columns: 1fr; align-items: start; }
     .mono-auction-copy, .mono-bid-field, .mono-auction-actions { min-width: 0; }
+    .mono-auction-actions { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 1120px) {
@@ -380,17 +422,7 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
     .mono-skin-menu { width: min(316px, calc(100vw - 34px)); }
     .mono-board-frame { padding: 5px; }
     .mono-board { border-width: 5px; }
-    .mono-center { gap: 4px; margin: 6px; padding: 8px; }
-    .mono-center-meta, .mono-center-foot { font-size: 6px; }
-    .mono-center > strong { font-size: clamp(18px, 6vw, 28px); }
-    .mono-center > small { font-size: 7px; }
-    .mono-event-card { width: 93%; margin: 2px 0; padding: 6px 7px; }
-    .mono-event-card > span { font-size: 6px; }
-    .mono-event-card strong { font-size: 9px; }
-    .mono-event-card p { font-size: 6px; }
-    .mono-dice-tray { gap: 4px; min-height: 24px; font-size: 8px; }
-    .mono-die { width: 22px; height: 22px; padding: 3px; }
-    .mono-die i { width: 3px; height: 3px; }
+    .mono-status-panel { gap: 10px; margin-bottom: 14px; padding: 12px; }
     .mono-board-caption { display: none; }
     .mono-tile { gap: 1px; padding: 2px 1px; }
     .mono-tile-band { height: 4px; flex-basis: 4px; }
@@ -401,7 +433,6 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
     .mono-house { width: 3px; height: 3px; }
     .mono-hotel { width: 9px; height: 7px; font-size: 5px; }
     .mono-owner-mark { width: 9px; height: 9px; font-size: 5px; }
-    .mono-tokens { min-height: 19px; }
     .mono-token-piece, .mono-token-more { width: 21px; height: 21px; flex-basis: 21px; font-size: 5px; }
     .mono-token-piece::before { width: 16px; height: 4px; }
     .mono-token-piece + .mono-token-piece { margin-left: -3px; }
@@ -436,13 +467,15 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
     .mono-action small { font-size: 7px; }
     .mono-auction-card { grid-template-columns: 1fr 1fr; align-items: start; gap: 10px; }
     .mono-auction-copy { grid-column: 1 / -1; }
-    .mono-auction-actions { align-self: end; }
+    .mono-auction-actions { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); align-self: end; }
     .mono-side { grid-template-columns: 1fr; }
     .mono-log-panel { grid-column: auto; }
     .mono-side > .mono-inspector { display: none; }
-    .mono-rules { padding: 24px 16px 18px; }
+    .mono-rules, .mono-trade { padding: 24px 16px 18px; }
     .mono-rules h2 { font-size: 24px; }
+    .mono-trade h2 { font-size: 24px; }
     .mono-rule-grid { grid-template-columns: 1fr; }
+    .mono-trade-grid, .mono-trade-columns { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) and (max-height: 500px) {
@@ -464,3 +497,107 @@ body.is-monopoly-view { background: var(--mono-deep) !important; }
 }
 
 @media (prefers-reduced-motion: reduce) { .mono-game * { animation: none !important; transition: none !important; } }
+
+/* Quiet surfaces and consistent reading alignment. */
+.mono-game [hidden] { display: none !important; }
+.mono-layout { grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; padding-top: 20px; }
+.mono-panel, .mono-command { border: 1px solid rgba(202, 217, 203, .12); border-radius: 10px; background: #192d28; box-shadow: none; }
+.mono-board-frame { border-radius: 10px; padding: 8px; box-shadow: none; }
+.mono-table-head h2 { font-size: 17px; }
+.mono-status-panel { padding: 0 0 16px; margin: 0 0 16px; border: 0; border-bottom: 1px solid var(--mono-line); border-radius: 0; background: none; color: #e8dec5; }
+.mono-status-meta { border: 0; padding: 0; color: #a5b5aa; font-size: 12px; }
+.mono-event-card > span { color: #9eafa3; font-size: 11px; }
+.mono-event-card strong { color: #e8dec5; font-size: 14px; line-height: 1.6; }
+.mono-event-card p { color: #a5b5aa; }
+.mono-event-card p:empty { display: none; }
+.mono-dice-tray { justify-content: center; gap: 20px; min-height: 96px; padding: 12px 0; color: #e0c893; }
+.mono-die { width: 64px; height: 64px; flex: 0 0 64px; padding: 9px; border-radius: 12px; box-shadow: 0 4px 0 #ac8b5c, 0 8px 14px rgba(0, 0, 0, .2); }
+.mono-die i { width: 9px; height: 9px; }
+.mono-bank-details { color: #a5b5aa; font-size: 12px; line-height: 1.8; }
+.mono-bank-details summary, .mono-log-panel summary { cursor: pointer; }
+.mono-bank-details > span { display: block; padding-top: 5px; }
+.mono-command-state { border: 0; padding: 5px 0; font: inherit; font-size: 11px; letter-spacing: 0; }
+.mono-command-hint { font-size: 12px; line-height: 1.6; }
+.mono-action strong { font-size: 13px; }
+.mono-action small { font-size: 11px; white-space: normal; line-height: 1.5; }
+.mono-action-group-label { font-size: 11px; letter-spacing: 0; }
+.mono-action-mark { border: 0; border-radius: 5px; }
+.mono-action-primary { background: #916044; border-color: #b17e52; }
+.mono-panel-head { align-items: center; padding: 16px; }
+.mono-panel-head h2, .mono-command h2 { font-size: 17px; }
+.mono-panel-head > span { font-size: 11px; }
+.mono-player { border-color: transparent; border-radius: 6px; padding: 10px 8px; background: none; }
+.mono-player-copy strong { font-size: 13px; }
+.mono-player-copy small, .mono-player-copy span { font-size: 11px; }
+.mono-player-cash b { font-size: 14px; font-variant-numeric: tabular-nums; }
+.mono-player-cash small { font-size: 10px; }
+.mono-inspector { padding: 16px; }
+.mono-inspector-heading { display: grid; gap: 6px; }
+.mono-inspector-owner { max-width: none; text-align: left; font-size: 12px; }
+.mono-deed-strip { border: 0; border-radius: 4px; }
+.mono-deed-strip strong, .mono-deed-strip small { font-size: 12px; }
+.mono-inspector-stats { gap: 12px; margin-top: 12px; }
+.mono-inspector-stats div { padding: 10px 0; text-align: left; }
+.mono-inspector-stats small { font-size: 11px; }
+.mono-inspector-stats b { font-size: 13px; }
+.mono-rent-ladder { padding: 12px 0 0; gap: 0; background: none; }
+.mono-rent-ladder header { display: grid; gap: 5px; padding-bottom: 10px; font-size: 12px; }
+.mono-rent-ladder header small { font-size: 11px; white-space: normal; }
+.mono-rent-ladder > div { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 16px; padding: 7px 0; border-bottom: 1px solid rgba(202, 217, 203, .07); text-align: left; font-size: 12px; }
+.mono-rent-ladder > div b { text-align: left; font-size: 13px; font-variant-numeric: tabular-nums; }
+.mono-inspector-note, .mono-special-tile small { font-size: 12px; line-height: 1.7; }
+.mono-log-panel summary { display: list-item; margin-left: 16px; padding-left: 0; color: #c4cebf; font-size: 13px; }
+.mono-log-entry { font-size: 12px; line-height: 1.7; }
+@media (max-width: 1120px) { .mono-layout { grid-template-columns: minmax(0, 1fr) 320px; } }
+@media (max-width: 920px) {
+    .mono-layout, .mono-side { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px), (max-width: 900px) and (max-height: 500px) {
+    .mono-table-head { display: flex; align-items: center; }
+    .mono-table-tools { width: auto; }
+    .mono-table { grid-template-columns: minmax(0, 1fr); }
+    .mono-board-frame, .mono-mobile-navigator, .mono-command { grid-column: auto; grid-row: auto; }
+    .mono-command { padding: 16px; }
+    .mono-command-hint { display: block; }
+    .mono-table-head h2 { font-size: 14px; }
+}
+
+.mono-dice-tray { width: 100%; border: 0; border-radius: 12px; background: transparent; cursor: pointer; }
+.mono-dice-tray:disabled { cursor: default; }
+.mono-dice-tray:not(:disabled):hover { background: rgba(232, 206, 153, .08); }
+.mono-dice-tray:not(:disabled) .mono-die { outline: 2px solid rgba(234, 203, 137, .55); outline-offset: 4px; }
+.mono-landing-dialog { position: fixed; width: min(380px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; margin: auto; padding: 32px 24px 24px; border: 1px solid #9f885e; border-radius: 14px; background: #192d28; color: #e8dec5; box-shadow: 0 20px 80px #0008; }
+.mono-landing-dialog::backdrop { background: #07151180; }
+.mono-landing-dialog .mono-event-card { margin: 10px 0 20px; }
+.mono-landing-dialog .mono-event-card strong { font-size: 22px; }
+.mono-landing-dialog .mono-event-card p { font-size: 15px; }
+.mono-landing-dialog .mono-dialog-close { color: #e8dec5; border-color: #a18a5d; }
+
+/* Keep the sidebar quiet; property details belong to the selected tile. */
+.mono-side { gap: 0; border-radius: 12px; background: #192d28; }
+.mono-side > .mono-command, .mono-side > .mono-panel { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.mono-side > .mono-panel { border-top: 1px solid rgba(202, 217, 203, .12); }
+.mono-side .mono-panel-head { border-bottom: 0; }
+.mono-property-dialog .mono-inspector { min-height: 0; padding: 12px 0 0; }
+
+/* The whole player card opens their portfolio. */
+.mono-players { gap: 8px; padding: 4px 12px 14px; }
+.mono-player { width: 100%; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; min-height: 68px; padding: 12px; border: 0; border-radius: 12px; background: rgba(222, 233, 215, .035); text-align: left; cursor: pointer; transition: background .18s ease; }
+.mono-player:hover { background: rgba(222, 233, 215, .09); }
+.mono-player.is-current { background: rgba(212, 170, 97, .1); box-shadow: inset 0 0 0 2px #d4aa61; }
+.mono-player .mono-avatar { width: 40px; height: 40px; border: 0; border-radius: 10px; background: rgba(230, 234, 213, .07); box-shadow: none; }
+.mono-player.is-current .mono-avatar { box-shadow: none; }
+.mono-player-copy strong { font-size: 14px; }
+.mono-player-cash b { font-size: 17px; font-weight: 500; }
+.mono-assets-dialog { width: min(460px, calc(100vw - 32px)); }
+.mono-assets-dialog h2 { margin: 10px 30px 8px 0; font-size: 21px; }
+.mono-asset-summary { color: #acbcaf; font-size: 13px; line-height: 1.6; }
+.mono-asset-group { margin-top: 22px; }
+.mono-asset-group h3 { display: flex; align-items: center; gap: 12px; margin: 0 0 9px; font-size: 14px; }
+.mono-asset-group h3 small { color: #a6b8a7; font-size: 11px; font-weight: 400; }
+.mono-asset-property { display: grid; grid-template-columns: minmax(0, 1fr) auto 10px; align-items: center; gap: 12px; width: 100%; min-height: 60px; margin-top: 6px; padding: 10px 12px; border: 0; border-left: 5px solid var(--asset-color); border-radius: 5px; background: #ffffff08; color: #dfd9c5; text-align: left; cursor: pointer; }
+.mono-asset-property:hover { background: #ffffff12; }
+.mono-asset-property strong, .mono-asset-property small { display: block; }
+.mono-asset-property strong { font-size: 13px; }
+.mono-asset-property small { margin-top: 4px; color: #9db1a2; font-size: 11px; }
+.mono-asset-property > span:nth-child(2) { font-size: 12px; color: #dbc38f; }

@@ -1,0 +1,245 @@
+/* Public action presentation: clues travel between players while played cards
+   reveal in the shared centre before resolving into a table destination. */
+.hb-app.is-action-presenting > :not(.hb-presentation-layer):not(.hb-overlay) { pointer-events: none; }
+.hb-presentation-layer[hidden] { display: none; }
+.hb-presentation-layer {
+    position: fixed;
+    z-index: 110;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    pointer-events: none;
+}
+.hb-action-lines { position: fixed; z-index: 1; inset: 0; width: 100vw; height: 100dvh; overflow: visible; pointer-events: none; }
+.hb-action-lines path[data-role="actionPath"] {
+    fill: none;
+    stroke: #76cfdd;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 11 8;
+    opacity: 0;
+    filter: url(#hbLineGlow);
+    marker-end: url(#hbLineArrow);
+}
+.hb-action-lines path[data-role="actionPath"].is-visible { opacity: .95; animation: hb-line-travel .75s linear infinite; }
+.hb-action-lines path.tone-play { stroke: #e4b95c; }
+.hb-action-lines path.tone-discard { stroke: #9aa5a8; }
+.hb-action-lines path.tone-success,
+.hb-action-lines path.tone-green { stroke: #65c98f; }
+.hb-action-lines path.tone-misfire,
+.hb-action-lines path.tone-red { stroke: #e35f66; }
+.hb-action-lines path.tone-yellow { stroke: #f1c94e; }
+.hb-action-lines path.tone-blue { stroke: #54a6ea; }
+.hb-action-lines path.tone-white { stroke: #eee9db; }
+.hb-action-lines path.tone-value { stroke: #d7a9ff; }
+.hb-action-lines marker path { fill: context-stroke; }
+.hb-action-stage {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    min-width: min(500px, 88vw);
+    min-height: 300px;
+    place-items: center;
+    color: var(--hb-paper);
+    text-align: center;
+}
+.hb-event-kicker {
+    color: var(--hb-gold);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .16em !important;
+    text-transform: uppercase;
+}
+.hb-clue-event,
+.hb-card-event,
+.hb-final-round-cue,
+.hb-finale-scene { display: grid; justify-items: center; gap: 9px; }
+.hb-clue-event,
+.hb-card-event {
+    min-width: min(430px, 88vw);
+    padding: 19px 26px;
+    border: 1px solid rgba(228, 185, 92, .25);
+    background: rgba(8, 11, 24, .9);
+    box-shadow: 0 24px 65px rgba(0, 0, 0, .52), inset 0 0 45px rgba(100, 183, 200, .055);
+    backdrop-filter: blur(10px);
+}
+.hb-clue-event h2,
+.hb-final-round-cue h2,
+.hb-finale-scene h2 { margin: 0; font: 800 clamp(25px, 4vw, 44px) "Noto Serif SC", "Songti SC", serif; }
+.hb-clue-event p,
+.hb-final-round-cue p,
+.hb-finale-scene p { margin: 0; color: #aeb6b7; font-size: 11px; }
+.hb-clue-token {
+    --spark: #76cfdd;
+    --spark-rgb: 118, 207, 221;
+    position: relative;
+    display: grid;
+    width: 112px;
+    height: 112px;
+    margin: 5px 0;
+    place-items: center;
+    border: 2px solid var(--spark);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--spark-rgb), .28), rgba(8, 11, 24, .95) 68%);
+    box-shadow: 0 0 0 7px rgba(var(--spark-rgb), .09), 0 0 42px rgba(var(--spark-rgb), .28);
+    transform: scale(.72);
+    opacity: .25;
+    transition: transform .35s ease, opacity .35s ease, box-shadow .35s ease;
+}
+.hb-clue-token.tone-red { --spark: #e65b53; --spark-rgb: 230, 91, 83; }
+.hb-clue-token.tone-yellow { --spark: #efc84b; --spark-rgb: 239, 200, 75; }
+.hb-clue-token.tone-green { --spark: #56b77d; --spark-rgb: 86, 183, 125; }
+.hb-clue-token.tone-blue { --spark: #4da0e9; --spark-rgb: 77, 160, 233; }
+.hb-clue-token.tone-white { --spark: #eee9db; --spark-rgb: 238, 233, 219; }
+.hb-clue-token.tone-value { --spark: #d7a9ff; --spark-rgb: 215, 169, 255; }
+.hb-clue-token > i { position: absolute; inset: 12px; border: 1px dashed rgba(var(--spark-rgb), .52); border-radius: 50%; }
+.hb-clue-token strong { max-width: 80px; color: var(--spark); font: 900 19px "Noto Serif SC", serif; }
+.hb-presentation-layer.is-transmitting .hb-clue-token { opacity: 1; transform: scale(1); animation: hb-clue-breathe 1s ease-in-out infinite; }
+.hb-presentation-layer.is-settled .hb-clue-token { box-shadow: 0 0 0 12px rgba(var(--spark-rgb), 0), 0 0 50px rgba(var(--spark-rgb), .2); }
+
+.hb-teammate-card-wrap,
+.hb-hidden-card { transition: opacity .24s ease, filter .24s ease, transform .24s ease; }
+.hb-teammate-card-wrap.is-event-match,
+.hb-hidden-card.is-event-match { z-index: 5; filter: none; opacity: 1; transform: translateY(-8px) scale(1.045); }
+.hb-teammate-card-wrap.is-event-match .hb-public-card,
+.hb-hidden-card.is-event-match .hb-card-back {
+    border-color: var(--hb-gold);
+    box-shadow: 0 0 0 4px rgba(228, 185, 92, .2), 0 0 34px rgba(228, 185, 92, .36), 3px 6px 0 rgba(0, 0, 0, .35);
+    animation: hb-card-clue-pulse .82s ease-in-out 2;
+}
+.hb-teammate-card-wrap.is-event-dim,
+.hb-hidden-card.is-event-dim { filter: saturate(.15) brightness(.42); opacity: .3; transform: scale(.97); }
+
+.hb-card-event { min-height: 330px; }
+.hb-stage-card-motion {
+    --hb-from-x: 0px;
+    --hb-from-y: 90px;
+    --hb-to-x: 0px;
+    --hb-to-y: 0px;
+    width: 128px;
+    height: 190px;
+    perspective: 950px;
+    opacity: .45;
+    transform: translate(var(--hb-from-x), var(--hb-from-y)) scale(.52) rotate(-7deg);
+    transition: transform .44s cubic-bezier(.2, .78, .2, 1), opacity .28s ease, filter .35s ease;
+}
+.hb-presentation-layer.is-centered .hb-stage-card-motion { opacity: 1; transform: translate(0, 0) scale(1) rotate(0); }
+.hb-stage-card-flip { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
+.hb-stage-card-side {
+    position: absolute;
+    inset: 0;
+    opacity: 1;
+    backface-visibility: hidden;
+    transform: rotateY(0);
+    transition: opacity .12s linear .18s, transform .42s cubic-bezier(.2, .74, .2, 1);
+}
+.hb-stage-card-side.is-front { opacity: 0; transform: rotateY(-90deg); transition-delay: 0s; }
+.hb-presentation-layer.is-revealed .hb-stage-card-side.is-back { opacity: 0; transform: rotateY(90deg); transition-delay: 0s; }
+.hb-presentation-layer.is-revealed .hb-stage-card-side.is-front { opacity: 1; transform: rotateY(0); transition-delay: .2s; }
+.hb-stage-card-side .hb-public-card { width: 128px; height: 190px; border-width: 2px; border-radius: 7px; box-shadow: 0 18px 42px rgba(0, 0, 0, .58); }
+.hb-stage-card-side .hb-card-burst { top: 26px; left: 13px; width: 100px; height: 100px; }
+.hb-stage-card-side .hb-public-card > strong { font-size: 57px; }
+.hb-stage-card-side .hb-public-card > small { font-size: 10px; }
+.hb-stage-card-side .hb-card-corner { font-size: 12px; }
+.hb-card-event-result { display: grid; min-height: 40px; gap: 3px; opacity: 0; transform: translateY(9px); transition: opacity .28s ease, transform .28s ease; }
+.hb-card-event-result strong { color: #e9e4d8; font: 800 16px "Noto Serif SC", serif; }
+.hb-card-event-result small { color: #8f9999; font-size: 9px; }
+.hb-presentation-layer.is-resolved .hb-card-event-result { opacity: 1; transform: none; }
+.hb-presentation-layer.is-success .hb-card-event-result strong { color: #77dca0; }
+.hb-presentation-layer.is-misfire .hb-card-event-result strong { color: #f0787d; }
+.hb-presentation-layer.is-discard .hb-card-event-result strong { color: #c4cbca; }
+.hb-presentation-layer.is-resolved .hb-stage-card-motion {
+    opacity: .42;
+    transform: translate(var(--hb-to-x), var(--hb-to-y)) scale(.38) rotate(5deg);
+    filter: drop-shadow(0 0 18px currentColor);
+}
+.hb-presentation-layer.is-success .hb-stage-card-motion { color: #65c98f; }
+.hb-presentation-layer.is-misfire .hb-stage-card-motion { color: #e35f66; }
+.hb-presentation-layer.is-discard .hb-stage-card-motion { color: #a2aaab; }
+.hb-firework.is-event-impact,
+.hb-resource.is-event-impact,
+.hb-discard-panel.is-event-impact { animation: hb-impact-ring .78s ease-out 2; }
+
+.hb-presentation-layer.is-final-round { align-items: start; padding-top: max(140px, 18dvh); }
+.hb-final-round-cue {
+    min-width: min(520px, 90vw);
+    padding: 20px 28px;
+    border-top: 3px solid var(--hb-gold);
+    border-bottom: 1px solid rgba(228, 185, 92, .38);
+    background: rgba(8, 11, 24, .94);
+    box-shadow: 0 18px 52px rgba(0, 0, 0, .5);
+    opacity: 0;
+    transform: translateY(-24px);
+    transition: opacity .4s ease, transform .4s ease;
+}
+.hb-presentation-layer.is-final-round.is-revealed .hb-final-round-cue { opacity: 1; transform: none; }
+.hb-final-deck { position: relative; width: 62px; height: 34px; }
+.hb-final-deck i { position: absolute; top: 0; left: 50%; width: 27px; height: 34px; border: 1px solid rgba(228, 185, 92, .55); background: #182339; transform: translateX(-50%) rotate(calc((var(--i, 0) - 1) * 8deg)); }
+.hb-final-deck i:nth-child(1) { --i: 0; opacity: .25; }
+.hb-final-deck i:nth-child(2) { --i: 1; opacity: .55; }
+.hb-final-deck i:nth-child(3) { --i: 2; }
+
+.hb-presentation-layer.is-finale {
+    z-index: 120;
+    background: radial-gradient(circle at 50% 42%, rgba(74, 101, 164, .18), transparent 34%), rgba(5, 7, 15, .9);
+    backdrop-filter: blur(13px) brightness(.52);
+    pointer-events: auto;
+}
+.hb-presentation-layer.is-finale.finale-fuses { background: radial-gradient(circle at 50% 42%, rgba(188, 54, 59, .22), transparent 36%), rgba(8, 5, 10, .92); }
+.hb-finale-scene { min-width: min(700px, 92vw); opacity: 0; transform: translateY(18px) scale(.96); transition: opacity .55s ease, transform .55s cubic-bezier(.2, .78, .2, 1); }
+.hb-presentation-layer.is-finale.is-revealed .hb-finale-scene { opacity: 1; transform: none; }
+.hb-finale-fireworks { display: flex; align-items: end; justify-content: center; gap: clamp(9px, 2vw, 22px); min-height: 126px; margin: 5px 0 2px; }
+.hb-finale-fireworks > span {
+    --spark: #ddd;
+    --spark-rgb: 221, 221, 221;
+    position: relative;
+    display: grid;
+    width: clamp(54px, 8vw, 88px);
+    height: clamp(54px, 8vw, 88px);
+    place-items: center;
+    border-radius: 50%;
+    color: var(--spark);
+    transform: scale(.2) rotate(-18deg);
+    transition: transform .52s cubic-bezier(.16, .85, .24, 1);
+}
+.hb-finale-fireworks > span::before,
+.hb-finale-fireworks > span::after,
+.hb-finale-fireworks > span i { position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from 2deg, var(--spark) 0 2deg, transparent 2deg 17deg); content: ""; mask: radial-gradient(circle, transparent 0 27%, #000 29% 62%, transparent 64%); }
+.hb-finale-fireworks > span::after { inset: 12%; opacity: .52; transform: rotate(9deg); }
+.hb-finale-fireworks > span i { inset: 24%; opacity: .6; transform: rotate(-8deg); }
+.hb-finale-fireworks b { position: relative; z-index: 2; display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #0b1020; font: 900 17px Georgia, serif; }
+.hb-presentation-layer.is-revealed .hb-finale-fireworks > span { transform: scale(1) rotate(0); }
+.hb-presentation-layer.is-revealed .hb-finale-fireworks > span:nth-child(2) { transition-delay: .08s; }
+.hb-presentation-layer.is-revealed .hb-finale-fireworks > span:nth-child(3) { transition-delay: .16s; }
+.hb-presentation-layer.is-revealed .hb-finale-fireworks > span:nth-child(4) { transition-delay: .24s; }
+.hb-presentation-layer.is-revealed .hb-finale-fireworks > span:nth-child(5) { transition-delay: .32s; }
+.hb-presentation-layer.finale-fuses .hb-finale-fireworks { filter: grayscale(.86) brightness(.52); }
+.hb-presentation-layer.finale-fuses .hb-finale-fireworks > span { transform: scale(.72); }
+.hb-finale-score { display: flex; align-items: baseline; gap: 7px; }
+.hb-finale-score strong { color: var(--hb-gold); font: 900 clamp(54px, 9vw, 92px) Georgia, serif; line-height: 1; }
+.hb-finale-score span { color: #858d91; font: 700 18px Georgia, serif; }
+.hb-presentation-skip {
+    position: fixed;
+    z-index: 4;
+    right: 22px;
+    bottom: 22px;
+    display: none;
+    padding: 8px 14px;
+    border: 1px solid rgba(228, 185, 92, .42);
+    background: rgba(8, 11, 24, .62);
+    color: #c7c2b7;
+    cursor: pointer;
+    pointer-events: auto;
+    font-size: 9px;
+}
+.hb-presentation-layer.is-active .hb-presentation-skip { display: block; }
+.hb-presentation-skip:hover { border-color: var(--hb-gold); color: #fff1d4; }
+
+@keyframes hb-line-travel { to { stroke-dashoffset: -38; } }
+@keyframes hb-clue-breathe { 50% { transform: scale(1.06); } }
+@keyframes hb-card-clue-pulse { 50% { filter: brightness(1.3); transform: translateY(-2px); } }
+@keyframes hb-impact-ring {
+    0% { box-shadow: 0 0 0 0 rgba(228, 185, 92, .5); }
+    100% { box-shadow: 0 0 0 16px rgba(228, 185, 92, 0); }
+}

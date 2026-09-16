@@ -1,0 +1,243 @@
+/* Splendor responsive layer. Keep the public market readable at every width. */
+
+@media (max-width: 1180px) {
+    .sp-app { --sp-card-max-width: 140px; }
+    .sp-layout { grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 460px); width: min(1120px, calc(100% - 28px)); }
+    .sp-tier { grid-template-columns: 96px minmax(0, 1fr); }
+    .sp-market-cards {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: 100%;
+        max-width: none;
+        margin-inline: 0;
+        justify-content: initial;
+        gap: 8px;
+        padding-left: 10px;
+    }
+    .sp-market-cards .sp-dev-card { max-width: 140px; justify-self: center; }
+}
+
+/* Keep the outer layout deterministic through the old 1040px transition.
+   The legacy stylesheet used single-column areas here while the table layer
+   restored two columns, leaving an empty second track at tablet widths. */
+@media (max-width: 1040px) {
+    .sp-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "market" "command" "guild" "rail";
+        width: min(880px, calc(100% - 24px));
+    }
+    .sp-command-column {
+        position: static;
+        grid-template-columns: minmax(0, 1fr) 290px;
+    }
+}
+
+@media (max-width: 920px) {
+    .sp-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "market" "command" "guild" "rail";
+        width: min(880px, calc(100% - 24px));
+        padding-top: 12px;
+    }
+    .sp-command-column {
+        position: static;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 290px;
+        gap: 12px;
+    }
+    .sp-command-panel { min-height: 0; }
+    .sp-market-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .sp-market-cards .sp-dev-card { max-width: 152px; justify-self: center; }
+    .sp-table-rail { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
+}
+
+@media (max-width: 720px) {
+    .sp-app { --sp-card-max-width: none; }
+    .sp-header {
+        height: auto;
+        min-height: 52px;
+        padding: 7px 12px;
+    }
+    .sp-turn { width: 100%; padding: 8px 10px; font-size: 10px; }
+    .sp-header-score { display: grid; }
+    .sp-layout {
+        grid-template-areas: "market" "command" "nobles" "guild" "rail";
+        width: calc(100% - 16px);
+        gap: 10px;
+    }
+    .sp-command-column { display: contents; }
+    .sp-command-panel { grid-area: command; }
+    .sp-nobles-panel { grid-area: nobles; }
+    .sp-tier-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px;
+        margin: 0 0 8px;
+        padding: 3px;
+        border: 1px solid var(--sp-line);
+        border-radius: 8px;
+        background: rgba(8, 13, 15, .35);
+    }
+    .sp-tier-tab {
+        display: grid;
+        min-height: 38px;
+        align-content: center;
+        gap: 2px;
+        padding: 4px 5px;
+        border: 1px solid transparent;
+        border-radius: 5px;
+        background: transparent;
+        color: #8e9791;
+        font-size: 9px;
+        font-weight: 900;
+    }
+    .sp-tier-tab small { color: #68736e; font-size: 6px; font-weight: 700; }
+    .sp-tier-tab.is-active,
+    .sp-tier-tab:hover { border-color: rgba(212, 173, 84, .44); background: rgba(212, 173, 84, .13); color: var(--sp-paper); }
+    .sp-tier-tab.is-active small { color: var(--sp-gold); }
+    .sp-tier:not(.is-active-tier) { display: none; }
+    .sp-tier.is-active-tier {
+        display: block;
+        padding: 9px;
+    }
+    .sp-tier > header {
+        display: grid;
+        grid-template-columns: 31px minmax(0, 1fr) auto;
+        align-items: center;
+        padding: 0 0 8px;
+        border-right: 0;
+        border-bottom: 1px solid var(--sp-line);
+    }
+    .sp-tier > header > div { grid-column: 2; grid-row: 1; }
+    .sp-tier > header .sp-deck-reserve { grid-column: 3; grid-row: 1; }
+    .sp-market-cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 9px 0 1px;
+        overflow: visible;
+    }
+    .sp-market-cards .sp-dev-card { width: 100%; max-width: 152px; justify-self: center; }
+    .sp-card-face > header { padding: 8px; }
+    .sp-card-costs { gap: 3px; }
+    .sp-command-panel { position: static; z-index: auto; box-shadow: none; }
+    .sp-table-rail { grid-template-columns: minmax(0, 1fr); }
+    .sp-guild-grid { grid-template-columns: minmax(0, 1fr); }
+    .sp-guild-assets { padding-right: 0; padding-bottom: 13px; border-right: 0; border-bottom: 1px solid var(--sp-line); }
+    .sp-discounts { grid-template-columns: repeat(5, minmax(68px, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+    .sp-wallet { grid-template-columns: repeat(6, minmax(58px, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+    .sp-reserved { min-height: 158px; }
+}
+
+@media (max-width: 520px) {
+    .sp-header { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .sp-header-meta { gap: 7px; }
+    .sp-header-score { padding-left: 7px; }
+    .sp-header-score strong { font-size: 18px; }
+    .sp-header-score span { display: none; }
+    .sp-quick-summary { grid-template-columns: auto minmax(0, 1fr) auto; gap: 7px; }
+    .sp-summary-score { grid-column: 1; grid-row: 1; }
+    .sp-summary-discounts { justify-content: start; grid-column: 1 / -1; grid-row: 2; }
+    .sp-summary-tokens { grid-column: 2; grid-row: 1; }
+    .sp-summary-reserve { grid-column: 3; grid-row: 1; justify-self: end; }
+    .sp-section-header h2 { font-size: 14px; }
+    .sp-section-header > span { font-size: 8px; }
+    .sp-tier > header h3 { font-size: 10px; }
+    .sp-market-cards .sp-dev-card { max-width: 136px; }
+    .sp-card-face > header > strong { min-width: 28px; height: 28px; font-size: 16px; }
+    .sp-bonus-gem { width: 28px; height: 28px; }
+    .sp-cost > small { font-size: 5px; }
+    .sp-command-panel { padding: 12px; }
+}
+
+/* Short landscape used by phones/tablets: expose only one tier at a time,
+   while keeping the rest of the table below the fold instead of clipping it. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .sp-app {
+        display: block;
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        max-height: calc(100svh - var(--game-shell-offset, 48px));
+        overflow-x: clip !important;
+        overflow-y: auto !important;
+    }
+    .sp-header {
+        position: sticky;
+        top: 0;
+        height: 46px;
+        min-height: 46px;
+        padding: 4px 9px;
+    }
+    .sp-turn { padding: 6px 9px; font-size: 9px; }
+    .sp-header-score { display: grid; }
+    .sp-layout {
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+        grid-template-areas: "market command" "guild rail";
+        height: auto !important;
+        align-items: start;
+        width: calc(100% - 12px);
+        gap: 8px;
+        padding: 8px 0 0;
+        overflow: visible;
+    }
+    .sp-command-column { position: sticky; top: 54px; display: block; align-self: start; }
+    .sp-market-stage { height: auto !important; min-height: 0; overflow: visible !important; }
+    .sp-market { height: auto !important; gap: 4px; }
+    .sp-command-panel { height: auto !important; max-height: calc(100svh - var(--game-shell-offset, 48px) - 54px); position: static; padding: 9px; overflow: auto; }
+    .sp-nobles-panel { margin-top: 8px; }
+    .sp-section-header { min-height: 26px; margin-bottom: 4px; padding-bottom: 4px; }
+    .sp-section-header h2 { font-size: 11px; }
+    .sp-section-header small,
+    .sp-section-header > span { font-size: 6px; }
+    .sp-quick-summary { display: none; }
+    .sp-tier-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 28px; margin-bottom: 4px; gap: 3px; }
+    .sp-tier-tab { min-height: 26px; padding: 2px 4px; font-size: 7px; }
+    .sp-tier-tab small { display: none; }
+    .sp-tier:not(.is-active-tier) { display: none; }
+    .sp-tier.is-active-tier { display: block; height: auto; padding: 6px; }
+    .sp-tier > header { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; height: auto; gap: 3px; padding: 2px 4px 4px 0; }
+    .sp-tier > header > div { grid-column: 2; grid-row: 1; }
+    .sp-tier > header .sp-deck-reserve { grid-column: 3; grid-row: 1; }
+    .sp-tier > header { padding-bottom: 5px; }
+    .sp-tier > header small { display: none; }
+    .sp-tier-number { font-size: 19px; }
+    .sp-tier > header h3 { font-size: 8px; }
+    .sp-deck-reserve { min-height: 27px; padding: 3px 5px; }
+    .sp-deck-reserve > span:last-child { display: none; }
+    .sp-deck-stack { width: 24px; height: 24px; }
+    .sp-deck-stack > .sp-card-back { width: 16px; height: 23px; }
+    .sp-market-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 106px)); justify-content: space-between; gap: 8px; padding: 6px 0 0; }
+    .sp-market-cards .sp-dev-card { width: 100%; max-width: 106px; flex: none; aspect-ratio: 5 / 7; }
+    .sp-card-face > header { padding: 5px; }
+    .sp-card-face > header > strong { min-width: 22px; height: 22px; font-size: 12px; }
+    .sp-bonus-gem { width: 22px; height: 22px; border-width: 1px; }
+    .sp-bonus-gem i { width: 9px; height: 9px; }
+    .sp-bonus-gem small { font-size: 4px; }
+    .sp-card-costs { right: 4px; bottom: 5px; left: 4px; gap: 2px; }
+    .sp-cost { grid-template-columns: 7px auto; min-height: 15px; padding: 1px 2px; gap: 2px; }
+    .sp-cost > i { width: 6px; height: 6px; }
+    .sp-cost > b { font-size: 7px; }
+    .sp-cost > small { display: none; }
+    .sp-card-level { right: 5px; bottom: 5px; font-size: 5px; }
+    .sp-card-state { right: 4px; bottom: 4px; padding: 2px 3px; font-size: 5px; }
+    .sp-quick-summary { min-height: 31px; margin-bottom: 5px; padding: 4px 6px; }
+    .sp-summary-score b { font-size: 14px; }
+    .sp-summary-discounts { gap: 3px; }
+    .sp-summary-discounts .sp-gem { width: 8px; height: 8px; }
+    .sp-summary-discounts b { font-size: 8px; }
+    .sp-summary-tokens b, .sp-summary-reserve b { font-size: 10px; }
+    .sp-summary-score small, .sp-summary-tokens small, .sp-summary-reserve small { font-size: 5px; }
+    .sp-guild, .sp-table-rail { margin-top: 0; }
+    .sp-guild, .sp-table-rail, .sp-nobles-panel { display: block; }
+}
+
+@media (max-width: 620px) and (orientation: landscape) and (max-height: 520px) {
+    .sp-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "market" "command" "guild" "rail"; }
+    .sp-command-column { position: static; display: contents; }
+    .sp-command-panel { grid-area: command; }
+    .sp-nobles-panel { grid-area: nobles; }
+}
+
+@media (min-width: 621px) and (max-width: 720px) and (orientation: landscape) and (max-height: 520px) {
+    .sp-market-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .sp-market-cards .sp-dev-card { max-width: none; }
+}

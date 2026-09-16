@@ -32,6 +32,13 @@ export function createGameClient({ mount, send, addLog }) {
         windowRef,
         fallbackFocus: () => mount.querySelector('[data-action="rules"]'),
     });
+    const archiveModal = createModalController({
+        root: app,
+        overlay: getElement('archiveOverlay'),
+        documentRef,
+        windowRef,
+        fallbackFocus: () => mount.querySelector('[data-action="open-archive"]'),
+    });
 
     let renderCallback = null;
     const scene = createLoveLetterScene({
@@ -44,9 +51,11 @@ export function createGameClient({ mount, send, addLog }) {
     });
     const renderer = createLoveLetterRenderer({ mount, model, scene, getElement });
     renderCallback = renderer.render;
-    const actions = createLoveLetterActions({ mount, model, scene, renderer, send, rulesModal, getElement, documentRef, windowRef });
+    const actions = createLoveLetterActions({ mount, model, scene, renderer, send, rulesModal, archiveModal, getElement, documentRef, windowRef });
 
     mount.addEventListener('click', actions.handleClick, { signal: scope.signal });
+    mount.addEventListener('mouseover', actions.handlePointerOver, { signal: scope.signal });
+    mount.addEventListener('mouseout', actions.handlePointerOut, { signal: scope.signal });
     mount.addEventListener('keydown', actions.handleKeydown, { signal: scope.signal });
     windowRef.addEventListener('resize', scene.scheduleActionPresentation, { signal: scope.signal });
     mount.addEventListener('scroll', scene.scheduleActionPresentation, { capture: true, signal: scope.signal });
@@ -59,11 +68,9 @@ export function createGameClient({ mount, send, addLog }) {
             model.state = message.state;
             if (model.state.pendingAction && model.state.pendingAction.actionId !== model.acknowledgementActionId) {
                 model.acknowledgementActionId = model.state.pendingAction.actionId;
-                model.acknowledgementReadyAt = Date.now() + Math.max(0, Number(model.state.pendingAction.remainingReadyMs ?? 900));
                 model.acknowledgementDeadline = Date.now() + Math.max(0, Number(model.state.pendingAction.remainingMs ?? 4000));
             } else if (!model.state.pendingAction) {
                 model.acknowledgementActionId = null;
-                model.acknowledgementReadyAt = 0;
                 model.acknowledgementDeadline = 0;
             }
             const currentTurn = `${model.state.round}:${model.state.currentTurn}`;
@@ -72,8 +79,10 @@ export function createGameClient({ mount, send, addLog }) {
             if (previousTurn !== currentTurn || !model.state.myIsCurrentTurn || model.state.pendingAction) actions.clearSelection();
             model.pendingAction = false;
             normalizeSelection(model);
-            renderer.render();
             scene.enqueueScenes(deriveScenes(previousState, model.state));
+            renderer.render();
+            if (archiveModal.isOpen() && model.archiveKind) renderer.renderArchive(model.archiveKind);
+            scene.scheduleAcknowledgement();
         }
         if (message.type === 'error') {
             model.pendingAction = false;
@@ -89,6 +98,7 @@ export function createGameClient({ mount, send, addLog }) {
         destroy() {
             scene.destroy();
             rulesModal.destroy();
+            archiveModal.destroy();
             scope.destroy();
             documentRef.body.classList.remove('is-loveletter-view');
             styleHandle.release();

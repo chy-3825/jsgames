@@ -1,0 +1,152 @@
+/* Shared waiting-room and game-shell layout. Loaded after style.css. */
+
+.room-view { min-height: 100dvh; background: var(--cream); }
+.room-page-header { display: flex; align-items: center; justify-content: space-between; min-height: 70px; padding: 0 clamp(20px, 5vw, 70px); border-bottom: 1px solid var(--line); background: rgba(255, 253, 248, .88); }
+.back-button { padding: 10px 0; background: transparent; color: #7c8d87; font-size: 11px; }.back-button:hover { color: var(--navy); }
+.room-page-title { display: grid; min-width: 0; justify-items: center; }.room-page-title span { overflow: hidden; max-width: 100%; color: var(--navy); font-family: "Songti SC", SimSun, serif; font-size: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.room-page-actions { display: flex; align-items: center; justify-self: end; gap: 8px; }
+.room-view #roomMount { width: min(900px, calc(100% - 44px)); margin: 0 auto; padding: 55px 0; }
+.room-waiting-card { max-width: 680px; margin: 0 auto; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: var(--shadow); }
+.mobile-open-rooms { display: none; }
+.mobile-rooms-drawer[hidden] { display: none; }
+.mobile-rooms-drawer { position: fixed; z-index: 180; inset: 0; }
+.mobile-rooms-backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(9, 22, 27, .58); backdrop-filter: blur(5px); }
+.mobile-rooms-drawer > section { position: absolute; right: 0; bottom: 0; left: 0; max-height: min(76dvh, 620px); overflow: hidden; border-radius: 24px 24px 0 0; background: #fffdf8; box-shadow: 0 -22px 60px rgba(12, 31, 38, .28); }
+.mobile-rooms-drawer header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 14px; border-bottom: 1px solid var(--line); }
+.mobile-rooms-drawer header span { color: var(--gold); font: 700 8px/1 Georgia, serif; letter-spacing: .16em; }
+.mobile-rooms-drawer header h2 { margin: 5px 0 0; color: var(--navy); font: 600 24px/1 "Songti SC", SimSun, serif; }
+.mobile-rooms-drawer header button { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: #edf0eb; color: var(--navy); font-size: 24px; }
+.mobile-room-list { max-height: calc(76dvh - 76px); padding: 8px 14px max(18px, env(safe-area-inset-bottom)); }
+.has-mobile-drawer { overflow: hidden; }
+
+body.is-waiting-room-view { overflow-x: hidden; background: #0b171d; }
+.is-waiting-room-view #appHeader,
+.is-waiting-room-view #lobbyView { display: none !important; }
+.is-waiting-room-view #roomView { display: block !important; background: #0b171d; }
+.is-waiting-room-view .room-page-header { position: fixed; z-index: 70; top: 0; right: 0; left: 0; border-color: rgba(255, 255, 255, .12); background: rgba(8, 18, 23, .78); color: #fff; backdrop-filter: blur(18px); }
+.is-waiting-room-view .room-page-title span { color: #f8f1df; }
+.is-waiting-room-view .back-button { color: #c5d0ce; }
+.is-waiting-room-view .back-button:hover { color: #fff; }
+.is-waiting-room-view #roomMount { width: 100%; margin: 0; padding: 0; }
+
+.pregame-room { position: relative; isolation: isolate; min-height: 100svh; overflow: hidden; padding: 82px clamp(18px, 3vw, 48px) 18px; color: #f6f1e8; background: #0c1b22; --seat-accent: var(--card-ink, #e7c886); }
+.pregame-backdrop { position: absolute; z-index: -2; inset: 0; background-image: var(--pregame-art); background-position: center; background-size: cover; filter: saturate(.76) contrast(1.04); transform: scale(1.025); }
+.pregame-room::before { position: absolute; z-index: -1; inset: 0; background: linear-gradient(180deg, rgba(5, 13, 17, .6), rgba(6, 17, 22, .79) 42%, rgba(4, 11, 15, .94)), radial-gradient(ellipse at 50% 48%, rgba(9, 25, 31, .18), rgba(2, 8, 11, .72) 72%); content: ''; }
+.pregame-room::after { position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px); background-size: 54px 54px; content: ''; mask-image: linear-gradient(180deg, transparent, #000 45%, #000); }
+.pregame-stage { position: relative; width: min(1280px, 100%); height: clamp(540px, calc(100svh - 164px), 760px); min-height: 0; margin: 0 auto; }
+.pregame-table { position: absolute; z-index: 1; left: 50%; top: 50%; display: grid; width: min(58%, 720px); height: min(48%, 350px); place-items: center; border: 2px solid color-mix(in srgb, var(--seat-accent) 55%, transparent); border-radius: 50%; background: radial-gradient(ellipse at 50% 37%, rgba(255,255,255,.08), transparent 38%), linear-gradient(155deg, rgba(34, 57, 61, .96), rgba(9, 24, 29, .98)); box-shadow: inset 0 0 0 10px rgba(2, 12, 15, .43), inset 0 0 80px rgba(0,0,0,.48), 0 35px 70px rgba(0,0,0,.52), 0 0 80px color-mix(in srgb, var(--seat-accent) 13%, transparent); transform: translate(-50%, -50%) perspective(900px) rotateX(3deg); }
+.pregame-table::before { position: absolute; inset: 9%; border: 1px solid color-mix(in srgb, var(--seat-accent) 20%, transparent); border-radius: inherit; content: ''; }
+.pregame-table-action { position: relative; z-index: 2; display: grid; justify-items: center; gap: 5px; text-align: center; }
+.pregame-table-action > strong { color: #fff4dc; font: 500 20px/1.2 "Songti SC", SimSun, serif; }
+.pregame-table-action > span { color: #9eb0ad; font-size: 10px; }
+.pregame-seats { position: absolute; z-index: 3; inset: 0; pointer-events: none; }
+.pregame-seat { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 9px; width: 154px; min-height: 58px; padding: 8px 9px; border: 1px solid rgba(255,255,255,.13); border-radius: 14px; background: rgba(8, 21, 27, .82); box-shadow: 0 13px 25px rgba(0,0,0,.32); backdrop-filter: blur(12px); transform: translate(-50%, -50%); transition: border-color .2s ease, background .2s ease, opacity .2s ease; }
+.pregame-stage[data-seat-count="9"] .pregame-seat,
+.pregame-stage[data-seat-count="10"] .pregame-seat,
+.pregame-stage[data-seat-count="11"] .pregame-seat,
+.pregame-stage[data-seat-count="12"] .pregame-seat { width: 132px; grid-template-columns: 35px minmax(0, 1fr); gap: 7px; }
+.pregame-stage[data-seat-count="9"] .pregame-seat > b,
+.pregame-stage[data-seat-count="10"] .pregame-seat > b,
+.pregame-stage[data-seat-count="11"] .pregame-seat > b,
+.pregame-stage[data-seat-count="12"] .pregame-seat > b { display: none; }
+.pregame-chair { position: absolute; z-index: -1; left: 50%; bottom: -9px; width: 58%; height: 13px; border: 1px solid rgba(255,255,255,.11); border-radius: 50%; background: rgba(3, 11, 14, .8); transform: translateX(-50%); }
+.pregame-avatar { position: relative; display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid color-mix(in srgb, var(--seat-accent) 44%, transparent); border-radius: 50%; background: var(--card-bg, #304850); color: var(--seat-accent); font: 600 16px/1 "Songti SC", SimSun, serif; }
+.pregame-stage[data-seat-count="9"] .pregame-avatar,
+.pregame-stage[data-seat-count="10"] .pregame-avatar,
+.pregame-stage[data-seat-count="11"] .pregame-avatar,
+.pregame-stage[data-seat-count="12"] .pregame-avatar { width: 34px; height: 34px; font-size: 13px; }
+.pregame-seat-copy { display: grid; min-width: 0; gap: 3px; }
+.pregame-seat-copy strong { overflow: hidden; color: #eef2ec; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.pregame-seat-copy small { color: #82928f; font-size: 8px; }
+.pregame-seat > b { color: #758986; font: 600 8px/1 Georgia, serif; }
+.pregame-seat.is-empty { border-style: dashed; opacity: .5; }
+.pregame-seat.is-empty .pregame-avatar { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.035); color: #6f8581; }
+.pregame-seat.is-me { opacity: 1; }
+.pregame-seat.is-not-ready .pregame-seat-fire { filter: grayscale(1) brightness(.62) saturate(.08) drop-shadow(0 7px 12px rgba(100, 111, 113, .24)) !important; opacity: .72 !important; }
+.pregame-seat.is-not-ready .pregame-seat-copy small { color: #a7aaa4; }
+.pregame-seat.is-host .pregame-avatar::after { position: absolute; top: -5px; left: 31px; display: grid; width: 17px; height: 17px; place-items: center; border-radius: 50%; background: #c59748; color: #15252b; content: '主'; font: 800 8px/1 sans-serif; }
+.pregame-room-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; width: min(1280px, 100%); margin: -2px auto 0; padding-top: 13px; border-top: 1px solid rgba(255,255,255,.1); }
+.pregame-room-footer > div { display: flex; align-items: center; gap: 10px; }
+.pregame-resource-state > span { display: grid; gap: 3px; color: #dce5df; font-size: 9px; }
+.pregame-resource-state small { color: #758986; font-size: 8px; }
+.pregame-load-dot { width: 9px; height: 9px; border: 2px solid rgba(255,255,255,.2); border-top-color: var(--seat-accent); border-radius: 50%; animation: pregameSpin .8s linear infinite; }
+.pregame-load-dot.is-ready { border: 0; background: #73b98b; box-shadow: 0 0 0 4px rgba(115,185,139,.12); animation: none; }
+.pregame-room-footer > div:last-child > span { color: #aebbb7; font-size: 9px; }
+.pregame-room-footer button,
+.pregame-retry { padding: 7px 10px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: rgba(255,255,255,.05); color: #d7c69f; font-size: 9px; }
+.pregame-room > .room-configuration { position: relative; z-index: 10; width: min(480px, calc(100% - 24px)); margin: -150px auto 70px; border-color: color-mix(in srgb, var(--seat-accent) 38%, transparent); background: rgba(248, 244, 233, .96); box-shadow: 0 25px 65px rgba(0,0,0,.45); }
+@keyframes pregameSpin { to { transform: rotate(360deg); } }
+@keyframes pregamePulse { 50% { opacity: .5; transform: scale(.82); } }
+
+body.is-game-view {
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+    background: #132731;
+}
+.is-game-view #appHeader,
+.is-game-view #lobbyView { display: none !important; }
+.is-game-view #roomView {
+    display: block !important;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-x: clip;
+    background: transparent;
+}
+.is-game-view .room-page-header {
+    position: fixed;
+    z-index: 10000;
+    top: 0;
+    right: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: 1fr minmax(0, auto) 1fr;
+    align-items: center;
+    height: var(--game-shell-offset);
+    min-height: var(--game-shell-offset);
+    padding: var(--safe-area-top) max(12px, var(--safe-area-right)) 0 max(12px, var(--safe-area-left));
+    border-color: rgba(255, 255, 255, .13);
+    background: rgba(16, 35, 44, .92);
+    color: #f8f1df;
+    box-shadow: 0 8px 28px rgba(3, 13, 17, .2);
+    backdrop-filter: blur(18px);
+}
+.is-game-view .room-page-title {
+    min-width: 0;
+    max-width: min(52vw, 460px);
+}
+.is-game-view .room-page-title span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.is-game-view .room-page-title span { color: #f8f1df; font-size: 15px; }
+.is-game-view .back-button {
+    display: inline-flex;
+    width: max-content;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    justify-self: start;
+    padding: 0 6px;
+    color: #c9d4d0;
+    touch-action: manipulation;
+}
+.is-game-view .back-button:hover { color: white; }
+.is-game-view #startGameBtn { justify-self: end; }
+.is-game-view #gameMount {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-x: clip;
+    padding-top: var(--game-shell-offset);
+    scroll-padding-top: var(--game-shell-offset);
+}
+.is-game-view #gameMount > :first-child { max-width: 100%; }
+.is-game-view #gameMount [data-ui="leave"],
+.is-game-view #gameMount [data-action="leave-room"] { display: none !important; }

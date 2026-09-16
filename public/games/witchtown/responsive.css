@@ -1,0 +1,124 @@
+/* Final compact, landscape and reduced-motion overrides. */
+
+@media (max-width: 620px) {
+    .witchtown-dossier-cover { min-height: 220px; }
+    .witchtown-dossier-ribbon { display: grid; }
+    .witchtown-dossier-ribbon small { text-align: left; }
+    .witchtown-dossier-actions { display: grid; }
+    .witchtown-special-choice { align-items: stretch; flex-direction: column; }
+    .witchtown-scene-copy h2 { letter-spacing: .08em; }
+}
+
+/* Compact landscape keeps the public role, private dossier, public tribunal
+   and current hand visible as separate, internally scrollable surfaces. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    body.is-game-view { overflow: hidden; }
+    .witchtown-app {
+        height: calc(100svh - var(--game-shell-offset, 48px));
+        min-height: 0;
+        overflow: hidden;
+        padding: 8px;
+    }
+    .witchtown-topbar { grid-template-columns: minmax(140px, 1fr) auto auto; height: 42px; min-height: 42px; gap: 8px; margin-bottom: 7px; padding-bottom: 7px; }
+    .witchtown-brand { gap: 7px; }
+    .witchtown-brand-mark { width: 30px; height: 38px; font-size: 16px; }
+    .witchtown-brand h1 { font-size: 17px; }
+    .witchtown-brand h1 small, .witchtown-brand p { display: none; }
+    .witchtown-eyebrow { font-size: 8px; }
+    .witchtown-top-stats { min-width: 0; }
+    .witchtown-stat { min-width: 42px; padding: 4px 6px; }
+    .witchtown-stat-turn { min-width: 76px; }
+    .witchtown-stat span, .witchtown-stat strong { font-size: 8px; }
+    .witchtown-header-actions { gap: 4px; }
+    .witchtown-room { display: none; }
+    .witchtown-quiet-button { min-height: 34px; padding: 5px 8px; font-size: 9px; }
+    .witchtown-shell { display: flex; height: calc(100% - 49px); min-height: 0; flex-direction: column; gap: 7px; overflow: hidden; }
+    .witchtown-command { flex: 0 0 106px; height: 106px; max-height: 106px; overflow: auto; padding: 8px 10px 7px; }
+    .witchtown-command-head { gap: 7px; }
+    .witchtown-command-head h2 { font-size: 14px; }
+    .witchtown-command-head p { margin-top: 3px; font-size: 8px; line-height: 1.35; }
+    .witchtown-status-badge { min-height: 24px; padding-inline: 7px; font-size: 8px; }
+    .witchtown-command-body { margin-top: 6px; }
+    .witchtown-command-footer { gap: 7px; margin-top: 5px; padding-top: 5px; font-size: 8px; }
+    .witchtown-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(150px, .5fr) minmax(190px, .72fr);
+        grid-template-rows: minmax(0, 1.16fr) minmax(0, .84fr);
+        height: 0;
+        min-height: 0;
+        flex: 1 1 0;
+        gap: 7px;
+        overflow: hidden;
+    }
+    .witchtown-table-panel { grid-column: 1; grid-row: 1 / 3; height: 100%; max-height: 100%; min-height: 0; overflow: hidden; padding: 8px; }
+    .witchtown-role-panel { display: block; grid-column: 2; grid-row: 1; height: 100%; max-height: 100%; min-height: 0; overflow: hidden; padding: 7px; }
+    .witchtown-private-panel { grid-column: 2; grid-row: 2; height: 100%; max-height: 100%; min-height: 0; overflow: auto; padding: 7px; }
+    .witchtown-private-panel > .witchtown-section-heading { display: none; }
+    .witchtown-private-panel > [data-role="private"] { min-height: 100%; }
+    .witchtown-hand-panel { grid-column: 3; grid-row: 1 / 3; min-height: 0; overflow: auto; padding: 7px; }
+    .witchtown-log-panel { display: none; }
+    .witchtown-section-heading { gap: 6px; }
+    .witchtown-section-heading h2 { font-size: 12px; }
+    .witchtown-section-meta, .witchtown-private-mark { font-size: 8px; }
+    .witchtown-tribunal-line { margin: 5px 0; }
+    .witchtown-player-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 0; height: calc(100% - 32px); overflow: auto; gap: 5px; margin-top: 6px; }
+    .witchtown-seat { grid-template-columns: minmax(0, 1fr); min-height: 92px; padding: 0; }
+    .witchtown-seat header { gap: 4px; }
+    .witchtown-seat-file { min-width: 0; padding: 6px; }
+    .witchtown-seat-name strong { font-size: 9px; }
+    .witchtown-seat-name small, .witchtown-seat-role span, .witchtown-seat-role b { font-size: 8px; }
+    .witchtown-seat-role { margin-top: 4px; padding-top: 4px; }
+    .witchtown-public-trials { min-height: 15px; margin-top: 4px; }
+    .witchtown-revealed-trial, .witchtown-public-trials > span, .witchtown-blue-chip, .witchtown-red-chip, .witchtown-exposed-chip, .witchtown-empty-chip { padding: 2px 3px; font-size: 7px; }
+    .witchtown-accusation-line { margin-top: 4px; gap: 4px; }
+    .witchtown-public-cards { max-height: 22px; margin-top: 4px; overflow: auto; }
+    .witchtown-seat-status { gap: 5px; margin-top: 4px; }
+    .witchtown-dossier-cover { min-height: 38px; height: auto; gap: 2px; padding: 4px; }
+    .witchtown-dossier-cover > span, .witchtown-dossier-cover > i, .witchtown-dossier-cover > small { display: none; }
+    .witchtown-dossier-cover strong { font-size: 10px; }
+    .witchtown-dossier-cover b { margin-top: 0; font-size: 7px; line-height: 1.2; }
+    .witchtown-dossier { gap: 5px; padding: 7px; }
+    .witchtown-trial-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+    .witchtown-trial-card { min-height: 54px; padding: 4px; }
+    .witchtown-trial-card strong, .witchtown-trial-card small { font-size: 8px; }
+    .witchtown-role-panel .witchtown-section-heading h2 { font-size: 10px; }
+    .witchtown-role-panel .witchtown-public-mark, .witchtown-role-panel .witchtown-kicker { display: none; }
+    .witchtown-role-panel .witchtown-hall { grid-template-columns: 54px minmax(0, 1fr); min-height: 54px; gap: 5px; margin-top: 5px; padding: 4px; }
+    .witchtown-role-panel .witchtown-hall-art { width: 54px; height: 54px; min-height: 54px; }
+    .witchtown-role-panel .witchtown-hall strong { font-size: 10px; }
+    .witchtown-role-panel .witchtown-hall p { margin-top: 1px; font-size: 7px; line-height: 1.25; }
+    .witchtown-role-panel .witchtown-hall > div > small { display: none; }
+    .witchtown-hand-note { gap: 5px; }
+    .witchtown-hand-note { margin-top: 5px; padding: 5px; }
+    .witchtown-hand-note small, .witchtown-hand-lock { font-size: 8px; }
+    .witchtown-card-grid { display: flex; min-width: 0; overflow-x: auto; gap: 4px; }
+    .witchtown-card { flex: 0 0 104px; min-height: 68px; padding: 6px; }
+    .witchtown-card-main strong { font-size: 9px; }
+    .witchtown-card-main small { display: none; }
+    .witchtown-button { min-height: 32px; padding: 5px 8px; font-size: 8px; }
+    .witchtown-action-card { padding: 7px; }
+    .witchtown-action-head { gap: 6px; }
+    .witchtown-action-head b { font-size: 9px; }
+    .witchtown-action-head small { font-size: 8px; line-height: 1.3; }
+    .witchtown-action-row { align-items: center; gap: 5px; }
+    .witchtown-select { min-width: 0; }
+    .witchtown-select span { font-size: 8px; }
+    .witchtown-select select { min-height: 30px; padding: 3px 5px; font-size: 8px; }
+    .witchtown-day-buttons { gap: 4px; }
+    .witchtown-footer { display: none; }
+    .witchtown-overlay { position: fixed; inset: var(--game-shell-offset, 48px) 0 0; padding: 10px; }
+    .witchtown-rules { max-height: calc(100svh - var(--game-shell-offset, 48px) - 20px); overflow: auto; padding: 15px; }
+    .witchtown-scene { position: fixed; inset: var(--game-shell-offset, 48px) 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .witchtown-app,
+    .witchtown-app *,
+    .witchtown-app *::before,
+    .witchtown-app *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: .01ms !important;
+    }
+}

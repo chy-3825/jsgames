@@ -2,12 +2,18 @@ import { ACTION_LABELS, COLORS, COLOR_LABELS, COLOR_SIZE, COUNTER_REACTION_MS, R
 
 export function createMonopolyDealModel() {
     return {
-        state: null, selected: null, targetId: null, targetColor: null, targetGroupId: null, targetPropertyId: null,
+        state: null, selected: null, hoveredCardIndex: null, targetId: null, targetColor: null, targetGroupId: null, targetPropertyId: null,
         ownColor: null, ownGroupId: null, ownPropertyId: null, paymentIds: [], moveCardId: null, moveFromColor: null,
-        moveFromGroupId: null, moveToColor: null, moveToGroupId: null, choiceMode: null, animateInteractionId: null,
+        discardIds: [], moveFromGroupId: null, moveToColor: null, moveToGroupId: null, choiceMode: null, archiveKind: null, animateInteractionId: null,
         decisionKey: null, decisionReadyAt: 0, decisionTimer: 0, actionLayoutFrame: 0, activeTransfer: null,
         transferTimer: 0, highlightedGroups: new Set(), groupHighlightTimer: 0, submissionPending: false,
+        collectedPlayKeys: new Set(), assetAnimationQueue: [], assetAnimationPlaying: false, turnToastTimer: 0,
         scenePlaying: false, sceneQueue: [], activeScene: null, victoryTimer: 0,
+        // Server-authoritative presentation state. Event IDs make replaying a
+        // reconnect snapshot harmless while deadlines keep all clients in sync.
+        presentationQueue: [], presentationPlaying: false, presentationToken: 0,
+        presentationEventIds: new Set(), presentationWaiters: new Set(), presentationLockedUntil: 0,
+        presentationEvent: null, lastPresentationSequence: 0, waitTimer: null, releaseWait: null,
     };
 }
 
@@ -28,8 +34,27 @@ export function completeGroupKeys(state) { const result = new Set(); (state?.pla
 export function transferKey(value) { const interaction = value?.interaction; if (!interaction?.transfer) return ''; return `${interaction.interactionId}:${interaction.results?.length || 0}:${interaction.payments?.length || 0}:${interaction.transfer.kind}:${(interaction.transfer.cardIds || []).join(',')}`; }
 export function currentDecisionKey(value) { const pending = value?.pendingAction; if (!pending || pending.responsePlayerId !== value.myId) return null; return `${value.interaction?.interactionId || 0}:${pending.targetId}:${pending.responsePlayerId}:${pending.noCount || 0}`; }
 export function victorySource(next) { const interaction = next.interaction; if (interaction?.type === 'dealBreaker') return '通过物业接管夺得第三组完整地产'; if (interaction?.type === 'forcedDeal') return '通过强制交易完成第三组地产'; if (interaction?.type === 'slyDeal') return '通过盗取完成第三组地产'; if (interaction?.transfer?.kind === 'payment') return '从资产支付中取得第三组地产'; return '放下第三组完整地产'; }
+/** Translate server absolute presentation deadlines to this browser clock. */
+export function localizePresentation(batch, localNow = Date.now()) {
+    if (!batch?.events?.length) return null;
+    const serverNow = Number(batch.serverNow);
+    const batchEnd = Number(batch.endsAt);
+    if (!Number.isFinite(serverNow) || !Number.isFinite(batchEnd)) return batch;
+    if (batchEnd <= serverNow) return null;
+    const toLocalTime = value => Number.isFinite(Number(value)) ? localNow + (Number(value) - serverNow) : value;
+    return {
+        ...batch,
+        startedAt: toLocalTime(batch.startedAt),
+        endsAt: toLocalTime(batch.endsAt),
+        events: batch.events.map(event => ({
+            ...event,
+            startedAt: toLocalTime(event.startedAt),
+            endsAt: toLocalTime(event.endsAt),
+        })),
+    };
+}
 export function actionName(type) { return type === 'rent' ? '租金' : (ACTION_LABELS[type] || '行动'); }
-export function actionHint(card) { if (card.kind === 'money') return '现金牌可以直接放入银行。'; if (card.kind === 'property') return '地产牌放入对应颜色，凑齐三组即可获胜。'; if (card.kind === 'property_wild') return '选择牌面允许的颜色放置；十色万能牌单独不能收租。'; if (card.kind === 'rent') return card.colors?.length ? '双色租金会向所有对手收取。' : '任何租金可指定一名玩家。'; if (card.action === 'dealBreaker') return '接管对手一整组完整地产，包含房子和酒店。'; if (card.action === 'slyDeal') return '从对手未成套地产中盗取一张。'; if (card.action === 'forcedDeal') return '用自己一张未成套地产与对手强制交易。'; if (card.action === 'debtCollector') return '指定一名玩家支付 5M。'; if (card.action === 'birthday') return '所有其他玩家各支付 2M。'; if (card.action === 'passGo') return '摸两张牌。'; if (card.action === 'doubleRent') return '必须和租金牌连续使用，可连续两张形成四倍租金。'; if (card.action === 'house' || card.action === 'hotel') return '为完整彩色地产组增加租金，铁路和公用事业不能加建。'; return '等待对手行动时使用“做出反对”。'; }
+export function actionHint(card) { if (card.kind === 'money') return '现金牌可以直接放入银行。'; if (card.kind === 'property') return '地产牌放入对应颜色，凑齐三组即可获胜。'; if (card.kind === 'property_wild') return '选择牌面允许的颜色放置；十色万能牌单独不能收租。'; if (card.kind === 'rent') return card.colors?.length ? '选择牌面的一种颜色，按对应地产组租金向所有其他玩家收费。' : '选择任意一组地产，指定一名玩家支付当前租金。'; if (card.action === 'dealBreaker') return '接管对手一整组完整地产，房子和酒店一并转移。'; if (card.action === 'slyDeal') return '从对手未成套地产中盗取一张，不能选择完整地产组。'; if (card.action === 'forcedDeal') return '选择双方各一张未成套地产并进行交换。'; if (card.action === 'debtCollector') return '指定一名玩家支付 5M，可用银行资金或地产支付。'; if (card.action === 'birthday') return '所有其他玩家各向您支付 2M。'; if (card.action === 'passGo') return '从摸牌堆摸取两张牌。'; if (card.action === 'doubleRent') return '必须紧接租金牌使用；可连续使用两张，使租金变为四倍。'; if (card.action === 'house') return '放在完整彩色地产组上，使租金增加 3M；每组最多一栋，铁路和公用事业不能建设。'; if (card.action === 'hotel') return '放在已有房子的完整彩色地产组上，使租金再增加 4M；每组最多一座，铁路和公用事业不能建设。'; return '取消针对您的行动；也可以反制另一张“做出反对”。'; }
 export function targetPlayers(state) { return (state.players || []).filter(player => player.id !== state.myId && player.isOnline !== false); }
 export function needsPlayerTarget(card) { return Boolean(card && (card.kind === 'rent' && !(Array.isArray(card.colors) && card.colors.length) || ['dealBreaker', 'debtCollector', 'slyDeal', 'forcedDeal'].includes(card?.action))); }
 export function targetCompleteGroups(state, model) { const target = state.players.find(player => player.id === model.targetId); return playerGroups(state, target).filter(group => group.isComplete ?? completeGroup(state, group.cards, group.color)); }
@@ -44,10 +69,15 @@ export function updateDecisionWindow(model, previous, next, render) {
     if (!nextKey) { model.decisionKey = null; model.decisionReadyAt = 0; clearTimeout(model.decisionTimer); return; }
     if (nextKey === model.decisionKey) return;
     model.decisionKey = nextKey; const delay = next.pendingAction?.noCount ? COUNTER_REACTION_MS : RESPONSE_REACTION_MS;
-    model.decisionReadyAt = previous ? Date.now() + delay : 0; clearTimeout(model.decisionTimer);
-    if (model.decisionReadyAt) model.decisionTimer = setTimeout(() => { if (currentDecisionKey(model.state) === model.decisionKey) render(); }, delay + 20);
+    const unlockDelay = delay;
+    model.decisionReadyAt = previous ? Date.now() + unlockDelay : 0; clearTimeout(model.decisionTimer);
+    if (model.decisionReadyAt) model.decisionTimer = setTimeout(() => { if (currentDecisionKey(model.state) === model.decisionKey) render(); }, unlockDelay + 20);
 }
-export function decisionReady(model, state) { return !currentDecisionKey(state) || Date.now() >= model.decisionReadyAt; }
+export function decisionReady(model, state) {
+    const lockedUntil = Number(model.presentationLockedUntil || 0);
+    return (!currentDecisionKey(state) || Date.now() >= model.decisionReadyAt)
+        && Date.now() >= lockedUntil;
+}
 export function updateTransferPresentation(model, previous, next, windowRef, renderEvent, schedule) {
     const nextKey = transferKey(next); if (!nextKey || nextKey === transferKey(previous)) return;
     model.activeTransfer = { ...next.interaction.transfer, key: nextKey }; clearTimeout(model.transferTimer);

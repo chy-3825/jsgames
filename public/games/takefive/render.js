@@ -87,7 +87,6 @@ export function createTakeFiveRenderer({ mount, model, scene, getElement }) {
         const activePlayerId = sceneState.activeStep?.playerId || (sceneState.presentationPhase === 'choice' ? sceneState.currentResolution?.pendingRowChoice?.playerId : null);
         $('players').innerHTML = players.map((player, index) => `<article class="tf-player ${player.id === state.myId ? 'is-me' : ''} ${player.hasSelected ? 'is-ready' : ''} ${player.isOnline === false ? 'is-offline' : ''} ${activePlayerId === player.id ? 'is-resolving' : ''}" data-player-id="${escapeHtml(player.id)}">
             <span class="tf-player-index">${String(index + 1).padStart(2, '0')}</span>
-            <span class="tf-avatar">${escapeHtml(player.name.slice(0, 1))}</span>
             <span class="tf-player-copy"><strong>${escapeHtml(player.name)}${player.id === state.myId ? '<em>我</em>' : ''}</strong><small>${escapeHtml(getPlayerStatus(state, player))}</small></span>
             <span class="tf-player-score"><b>${Number(player.score) || 0}</b><small>累计</small></span>
         </article>`).join('');

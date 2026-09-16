@@ -9,6 +9,7 @@ export function createSplendorActions({ mount, model, scene, renderer, send, rul
     function chooseTakeToken(color) {
         const current = state();
         if (!COLORS.includes(color) || !current?.availableActions?.canAct || model.actionPending) return;
+        model.commandMode = 'tokens';
         const amount = Number(current.tokens?.[color]) || 0;
         const selected = model.tokenChoice.filter(item => item === color).length;
         if (!amount || selected >= amount) return;
@@ -61,19 +62,42 @@ export function createSplendorActions({ mount, model, scene, renderer, send, rul
             return;
         }
         const card = event.target.closest('[data-card-select]');
-        if (card && state()?.availableActions?.canAct && !model.actionPending) {
+        if (card && state() && !model.actionPending) {
             const next = { id: card.dataset.cardSelect, source: card.dataset.cardSource };
             model.selectedCard = model.selectedCard?.id === next.id && model.selectedCard?.source === next.source ? null : next;
             model.tokenChoice = [];
+            model.commandMode = model.selectedCard ? 'card' : 'tokens';
             renderer.renderMarket();
             renderer.renderGuild();
             renderer.renderCommand();
+            return;
+        }
+        const tierTab = event.target.closest('[data-tier-tab]');
+        if (tierTab && !tierTab.disabled) {
+            model.activeTier = Number(tierTab.dataset.tierTab) || 3;
+            renderer.renderMarket();
+            tierTab.focus();
             return;
         }
         const action = event.target.closest('[data-action]');
         if (action && !action.disabled) {
             if (action.dataset.action === 'clearTokens') {
                 model.tokenChoice = [];
+                renderer.renderCommand();
+            }
+            if (action.dataset.action === 'clearCard') {
+                model.selectedCard = null;
+                model.commandMode = 'tokens';
+                renderer.renderMarket();
+                renderer.renderGuild();
+                renderer.renderCommand();
+            }
+            if (action.dataset.action === 'showTokenAction') {
+                model.commandMode = 'tokens';
+                renderer.renderCommand();
+            }
+            if (action.dataset.action === 'showCardAction' && model.selectedCard) {
+                model.commandMode = 'card';
                 renderer.renderCommand();
             }
             if (action.dataset.action === 'takeTokens' && validTakeChoice(state(), model)) {

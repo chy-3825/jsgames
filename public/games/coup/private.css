@@ -1,10 +1,14 @@
 /* Private influence and card controls. Loaded after style.css. */
 .cp-private {
+    position: relative;
     display: grid;
-    grid-template-rows: auto 1fr;
+    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    align-items: center;
+    gap: 18px;
     min-width: 0;
     padding-right: clamp(18px, 3vw, 32px);
-    border-right: 1px solid rgba(222, 198, 151, .18);
+    border-right: 0;
 }
 
 .cp-private > header,
@@ -14,6 +18,32 @@
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 9px;
+}
+
+.cp-private > header.cp-self-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    width: 210px;
+    min-height: 58px;
+    margin: 0;
+    padding: 7px 9px;
+    border: 1px solid rgba(224, 204, 162, .14);
+    border-radius: 6px;
+    background: rgba(15, 20, 26, .34);
+}
+
+@media (min-width: 901px) {
+    .cp-private {
+        grid-template-columns: 224px minmax(0, 1fr);
+        gap: 24px;
+        padding-right: 0;
+        transform: translate(12px, 8px);
+    }
+
+    .cp-private > header.cp-self-summary { transform: none; }
+
+    .cp-private-identity { transform: translateX(4px); }
 }
 
 .cp-private > header > div:first-child,
@@ -37,11 +67,6 @@
     font-size: 16px;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.cp-private header small {
-    color: #92968d;
-    font-size: 9px;
 }
 
 .cp-wallet {
@@ -102,7 +127,7 @@
 
 .cp-influence.is-face {
     border-color: var(--cp-role, #bfa064);
-    box-shadow: 0 0 0 2px rgba(var(--cp-role-rgb, 191, 160, 100), .12), 5px 9px 18px rgba(0, 0, 0, .32);
+    box-shadow: 5px 9px 18px rgba(0, 0, 0, .32);
 }
 
 .cp-private-card-secret,
@@ -309,15 +334,20 @@ button.cp-influence {
 
 .cp-influence.is-selectable {
     border-color: #e0bb6d;
-    box-shadow: 0 0 0 3px rgba(224, 187, 109, .16), 5px 10px 20px rgba(0, 0, 0, .34);
+    box-shadow: 5px 10px 20px rgba(0, 0, 0, .34);
     transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
 
 .cp-influence.is-selectable:hover,
 .cp-influence.is-selected {
     border-color: #f1d18a;
-    box-shadow: 0 0 0 4px rgba(224, 187, 109, .28), 7px 13px 24px rgba(0, 0, 0, .4);
+    box-shadow: 0 0 12px rgba(224, 187, 109, .16), 7px 13px 24px rgba(0, 0, 0, .4);
     transform: translateY(-5px);
+}
+
+.cp-influence.is-exchange.is-selected {
+    border: 3px solid #f2c861;
+    box-shadow: 0 0 0 1px rgba(255, 231, 166, .42), 0 0 18px rgba(226, 177, 70, .34), 7px 13px 24px rgba(0, 0, 0, .4);
 }
 
 .cp-private-choice-row {
@@ -363,4 +393,3 @@ button.cp-influence {
     border-width: 1px;
     font-size: 7px;
 }
-

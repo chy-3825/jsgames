@@ -3,7 +3,8 @@ const metadata = { type: 'monopolydeal', name: '大富翁纸牌', minPlayers: 2,
 class MonopolyDealSession {
     constructor(roomId, players, options = {}) {
         const random = typeof options === 'function' ? options : options?.random;
-        this.engine = new MonopolyDealEngine(roomId, players, random);
+        const engineOptions = typeof options === 'function' ? { random } : options;
+        this.engine = new MonopolyDealEngine(roomId, players, engineOptions);
         this.started = false;
     }
     start() { if (this.started) return { success: false, message: '游戏已经开始' }; const result = this.engine.start(); if (result.success) this.started = true; return result; }

@@ -117,6 +117,8 @@
 .dc-scene-transition::before { background: repeating-linear-gradient(0deg, transparent 0 8px, #9ed6dc12 9px 10px), linear-gradient(90deg, transparent, #d6eff122, transparent); transform: translateY(-16%); animation: dcSceneScan 1.15s linear infinite; }
 .dc-scene-transition::after { background: radial-gradient(circle, transparent 0 30%, #6bb5bf13 31% 31.5%, transparent 32% 48%, #d9c37210 49% 49.5%, transparent 50%); animation: dcScenePulse 2.2s ease-in-out infinite; }
 .dc-scene-transition > div { position: relative; z-index: 2; width: min(760px, 100%); text-align: center; text-shadow: 0 0 20px #d8bb6055; animation: dcSceneCopy 2.9s ease both; }
+.dc-scene-skip { margin: 28px auto 0; padding: 7px 12px; border: 1px solid #819b9c; border-radius: 999px; background: #0b1b20aa; color: #b9ceca; cursor: pointer; font-size: 8px; letter-spacing: .08em; }
+.dc-scene-skip:hover, .dc-scene-skip:focus-visible { border-color: #e7d27d; color: #f3dc94; }
 .dc-scene-transition small, .dc-scene-transition strong, .dc-scene-transition span { display: block; }
 .dc-scene-transition small { margin-bottom: 12px; color: #88a9ac; font-size: clamp(9px, 1.2vw, 13px); font-weight: 900; letter-spacing: .34em; }
 .dc-scene-transition strong { color: #eed886; font: 900 clamp(34px, 6vw, 72px)/1.12 "Songti SC", SimSun, serif; letter-spacing: .12em; }

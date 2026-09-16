@@ -1,0 +1,127 @@
+@media (max-width: 1280px) {
+    .hb-teammates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hb-teammate-card-wrap { flex-basis: 64px; }
+    .hb-public-card { width: 64px; height: 94px; }
+    .hb-card-burst { top: 14px; left: 7px; width: 50px; height: 50px; }
+    .hb-public-card > strong { font-size: 31px; }
+}
+
+@media (max-width: 1180px) {
+    .hb-header { grid-template-columns: minmax(210px, 1fr) minmax(220px, auto) auto; gap: 15px; }
+    .hb-header-score { display: none; }
+    .hb-layout { grid-template-columns: minmax(560px, 1fr) 285px; }
+    .hb-teammate-card-wrap { flex-basis: 58px; }
+    .hb-public-card { width: 58px; height: 88px; }
+    .hb-card-burst { left: 5px; width: 48px; height: 48px; }
+    .hb-hidden-card { width: 100px; flex-basis: 100px; }
+    .hb-card-back { min-height: 154px; }
+}
+
+@media (max-width: 980px) {
+    .hb-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "sky"
+            "team"
+            "hand"
+            "command"
+            "rail";
+        width: min(100% - 24px, 860px);
+        gap: 12px;
+        padding-top: 13px;
+    }
+    .hb-command-panel { position: static; min-height: 0; }
+    .hb-action-options { grid-template-columns: repeat(3, 1fr); }
+    .hb-action-options > div { min-width: 0; }
+    .hb-table-rail { grid-template-columns: .8fr 1.2fr 1fr; align-items: start; }
+    .hb-teammate-card-wrap { flex-basis: 64px; }
+    .hb-public-card { width: 64px; height: 94px; }
+    .hb-card-burst { top: 14px; left: 7px; width: 50px; height: 50px; }
+}
+
+@media (max-width: 680px) {
+    .hb-header {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px 12px;
+        padding: 8px 12px 10px;
+    }
+    .hb-brand-mark { width: 38px; height: 38px; flex-basis: 38px; }
+    .hb-brand h1 { font-size: 18px; }
+    .hb-brand small { font-size: 7px; }
+    .hb-turn { grid-column: 1 / -1; grid-row: 2; min-width: 0; width: 100%; padding: 7px 9px; white-space: normal; }
+    .hb-header-actions { grid-column: 2; grid-row: 1; }
+    .hb-leave-button { display: none; }
+    .hb-layout { width: calc(100% - 16px); }
+    .hb-sky,
+    .hb-teammates-section,
+    .hb-my-hand { padding: 10px 8px 12px; }
+    .hb-fireworks { grid-template-columns: repeat(5, minmax(58px, 1fr)); gap: 4px; overflow-x: auto; }
+    .hb-firework { min-height: 112px; padding: 6px 4px; }
+    .hb-firework > header { justify-content: center; }
+    .hb-firework > header .hb-color-mark { width: 6px; height: 6px; flex-basis: 6px; }
+    .hb-firework > header strong { font-size: 7px; }
+    .hb-firework > header small { display: none; }
+    .hb-firework-burst { width: 48px; height: 48px; }
+    .hb-firework-burst > b { width: 25px; height: 25px; font-size: 15px; }
+    .hb-firework > footer { gap: 1px; }
+    .hb-firework > footer i { height: 13px; font-size: 5px; }
+    .hb-resources { grid-template-columns: 1fr 1fr; }
+    .hb-deck-resource { grid-column: 1 / -1; }
+    .hb-resource { grid-template-columns: auto minmax(55px, 1fr) auto; padding-inline: 7px; }
+    .hb-clue-resource > div { gap: 2px; }
+    .hb-clue-resource > div i { width: 9px; height: 9px; }
+    .hb-teammates { grid-template-columns: minmax(0, 1fr); }
+    .hb-visible-cards { justify-content: flex-start; }
+    .hb-hand { min-height: 176px; }
+    .hb-hidden-card { width: 96px; flex-basis: 96px; }
+    .hb-card-back { min-height: 148px; }
+    .hb-hand-action-bar { flex-wrap: wrap; }
+    .hb-selected-actions { width: 100%; margin-left: 41px; }
+    .hb-selected-actions button { min-width: 0; }
+    .hb-action-options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+    .hb-action-options > div {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+        justify-items: center;
+        min-height: 82px;
+        padding: 7px 3px;
+        text-align: center;
+    }
+    .hb-action-options > div > span { grid-row: auto; }
+    .hb-action-options small { line-height: 1.35; }
+    .hb-table-rail { grid-template-columns: minmax(0, 1fr); }
+    .hb-clue-preview small { white-space: normal; }
+    .hb-rules { display: block; }
+    .hb-rules-art { min-height: 185px; max-height: 210px; }
+    .hb-rules-card + .hb-rules-card { margin-left: -18px; }
+    .hb-rules-card { width: 44px; height: 68px; }
+    .hb-rules-card .hb-card-burst { top: 10px; left: 4px; width: 36px; height: 36px; }
+    .hb-rules-card > strong { font-size: 21px; }
+    .hb-rules-card > small { display: none; }
+    .hb-rules-card .hb-card-corner { font-size: 5px; }
+    .hb-rules-card:nth-child(1),
+    .hb-rules-card:nth-child(6) { transform: translateY(15px) rotate(-13deg); }
+    .hb-rules-card:nth-child(6) { transform: translateY(15px) rotate(13deg); }
+    .hb-rules-card:nth-child(2),
+    .hb-rules-card:nth-child(5) { transform: translateY(6px) rotate(-8deg); }
+    .hb-rules-card:nth-child(5) { transform: translateY(6px) rotate(8deg); }
+    .hb-rules-art > span { font-size: 31px; }
+    .hb-rules-copy { padding: 24px 18px 20px; }
+    .hb-rules-copy h2 { margin-right: 40px; font-size: 22px; }
+    .hb-rules-copy li { grid-template-columns: 74px minmax(0, 1fr); }
+    .hb-close-button { background: var(--hb-paper); }
+}
+
+@media (max-width: 390px) {
+    .hb-fireworks { grid-template-columns: repeat(5, minmax(55px, 1fr)); }
+    .hb-firework-burst { width: 43px; height: 43px; }
+    .hb-firework-burst > b { width: 23px; height: 23px; }
+    .hb-public-card { width: 60px; height: 90px; }
+    .hb-teammate-card-wrap { flex-basis: 60px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hb-app *,
+    .hb-app *::before,
+    .hb-app *::after { animation: none !important; transition: none !important; }
+}

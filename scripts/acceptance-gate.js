@@ -12,6 +12,7 @@ const gates = [
     ['syntax', ['run', 'test:syntax']],
     ['lint', ['run', 'test:lint']],
     ['type check', ['run', 'test:type']],
+    ['presentation event audit', ['run', 'test:presentation']],
     ['complexity ratchet', ['run', 'test:complexity']],
     ['regression', ['test']],
     ['coverage', ['run', 'test:coverage']],

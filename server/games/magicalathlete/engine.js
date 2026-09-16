@@ -12,6 +12,7 @@ const { RACES, TRACK_LENGTH, GOLD_POINTS, SILVER_POINTS, SECOND_CORNER, TRACK_SP
 const { resolveStartOfTurn, resolvePrompt, afterRollPrompt, rerollMainMove, continueTurn, startMainMove, finalizeRoll, applyMainMove, finishRace } = require('./turn-resolution');
 const { moveRacer, resolvePassing, resolveStops, moveByPower, warpTo, powerEvent } = require('./movement');
 const { getPublicState, getPlayerState, getWinner } = require('./state');
+const { PRESENTATION_FADE_MS, PRESENTATION_CONTENT_DURATIONS, presentationMethods } = require('./presentation');
 
 const clone = value => value == null ? value : JSON.parse(JSON.stringify(value));
 
@@ -31,6 +32,7 @@ class MagicalAthleteEngine {
         this.roomId = roomId;
         this.random = random;
         this.options = { ...suppliedOptions };
+        this.now = typeof suppliedOptions.now === 'function' ? suppliedOptions.now : () => Date.now();
         // Keep the full roster so an invalid room is rejected explicitly by
         // start(), instead of silently dropping players above the official cap.
         this.players = players.map((player, index) => ({ id: player.id, name: player.name, color: COLORS[index] || '#777777', team: [], usedAthletes: [], score: 0, bronze: 0, isOnline: true }));
@@ -60,6 +62,7 @@ class MagicalAthleteEngine {
         this.winner = null;
         this.winners = [];
         this.presentation = null;
+        this.presentationQueue = [];
         this.presentationSequence = 0;
         this.presentationEventSequence = 0;
         this.presentationPrivate = {};
@@ -88,6 +91,7 @@ class MagicalAthleteEngine {
         this.winners = [];
         this.pending = null;
         this.presentation = null;
+        this.presentationQueue = [];
         this.presentationSequence = 0;
         this.presentationEventSequence = 0;
         this.presentationPrivate = {};
@@ -112,7 +116,7 @@ class MagicalAthleteEngine {
         // Every subsequent snake round starts one seat to the left of the
         // previous round's start player (the first round starts at the roll-off
         // winner), not at absolute player index zero.
-        const order = Array.from({ length: this.players.length }, (_, offset) => (this.startPlayerIndex + this.draftRound + offset) % this.players.length);
+        const order = this._onlineOrder(this.startPlayerIndex + this.draftRound).map(player => this.players.indexOf(player));
         const reverse = order.slice().reverse();
         const snake = [...order, ...reverse];
         this.draftQueue = (this.players.length === 2 ? [...snake, ...snake] : snake).map(index => this.players[index].id);
@@ -163,8 +167,9 @@ class MagicalAthleteEngine {
             this.raceStartRolled = true;
         }
         this.trackSide = this.match % 2 === 0 ? 'wild' : 'mild';
+        const activePlayers = this._onlineOrder(this.startPlayerIndex);
         this.raceSelections = Object.fromEntries(this.players.map(player => [player.id, []]));
-        this.raceSelectionQueue = this.players.map((_, index) => this.players[(this.startPlayerIndex + index) % this.players.length].id);
+        this.raceSelectionQueue = activePlayers.map(player => player.id);
         this.raceSelectionIndex = 0;
         this.currentTurnIndex = this.players.findIndex(player => player.id === this.raceSelectionQueue[0]);
         this.racers = [];
@@ -232,7 +237,8 @@ class MagicalAthleteEngine {
                 _turnStartPos: 0,
             });
         }));
-        this.currentTurnIndex = this.startPlayerIndex;
+        const starter = this._onlinePlayerAtOrAfter(this.startPlayerIndex);
+        this.currentTurnIndex = starter ? this.players.indexOf(starter) : 0;
         this.pending = null;
         this.deferredPrompt = null;
         this.skipperPending = false;
@@ -335,7 +341,10 @@ class MagicalAthleteEngine {
         if (this.status !== 'playing') return { success: false, message: '游戏尚未开始或已经结束', state: this.getPlayerState(playerId) };
 
         const previousPresentation = this.presentation;
-        const previousPrivate = this.presentationPrivate;
+        const previousPresentationQueue = this.presentationQueue.slice();
+        const previousPrivate = clone(this.presentationPrivate);
+        const previousPresentationSequence = this.presentationSequence;
+        const previousEventSequence = this.presentationEventSequence;
         this._startPresentation(player.id, action.kind || 'unknown');
         let result;
         if (this.phase === 'draft' && action.kind === 'chooseAthlete') result = this._chooseDraftAthlete(player, action.athleteId);
@@ -349,7 +358,10 @@ class MagicalAthleteEngine {
 
         if (!result.success) {
             this.presentation = previousPresentation;
+            this.presentationQueue = previousPresentationQueue;
             this.presentationPrivate = previousPrivate;
+            this.presentationSequence = previousPresentationSequence;
+            this.presentationEventSequence = previousEventSequence;
             result.state = this.getPlayerState(playerId);
             return result;
         }
@@ -362,16 +374,26 @@ class MagicalAthleteEngine {
         const acknowledgement = this.pendingAcknowledgements[0];
         if (!acknowledgement || acknowledgement.playerId !== player.id) return { success: false, message: '当前不需要你确认淘汰', state: this.getPlayerState(player.id) };
         if (action.acknowledgementId && action.acknowledgementId !== acknowledgement.id) return { success: false, message: '淘汰确认已经更新，请重新确认', state: this.getPlayerState(player.id) };
+        if (Number.isFinite(Number(acknowledgement.deadlineAt)) && Number(acknowledgement.deadlineAt) <= this._now()) {
+            return this._resolveEliminationAcknowledgement(player.id, acknowledgement.id, true);
+        }
+        return this._resolveEliminationAcknowledgement(player.id, acknowledgement.id, false);
+    }
+
+    _resolveEliminationAcknowledgement(playerId, acknowledgementId, automatic = false) {
+        const acknowledgement = this.pendingAcknowledgements[0];
+        if (!acknowledgement || acknowledgement.id !== acknowledgementId || acknowledgement.playerId !== playerId) return { success: false, message: '淘汰确认已经更新，请重新确认', state: this.getPlayerState(playerId) };
         this.pendingAcknowledgements.shift();
-        this._startPresentation(player.id, 'acknowledgeElimination');
+        this._startPresentation(playerId, automatic ? 'eliminationAutoAcknowledged' : 'acknowledgeElimination');
         const victim = this.racers.find(racer => racer.id === acknowledgement.racerId);
         const source = this.racers.find(racer => racer.id === acknowledgement.sourceRacerId);
         this._appendPresentationEvent({
             kind: 'racerEliminated', victim: victim ? this._publicRacer(victim) : clone(acknowledgement),
             source: source ? this._publicRacer(source) : null, position: acknowledgement.position,
-            acknowledgedBy: player.id,
+            acknowledgedBy: automatic ? null : playerId,
         });
-        this._log(`${player.name} 已确认 ${acknowledgement.athleteName} 从本场淘汰`);
+        const player = this.playerMap[playerId];
+        this._log(`${player?.name || acknowledgement.playerName} ${automatic ? '未在时限内确认，系统自动确认' : '已确认'} ${acknowledgement.athleteName} 从本场淘汰`);
         if (!this.pendingAcknowledgements.length && this.deferredAfterAcknowledgement) {
             const continuation = this.deferredAfterAcknowledgement;
             this.deferredAfterAcknowledgement = null;
@@ -379,7 +401,20 @@ class MagicalAthleteEngine {
             if (racer) this._resumeAfterAcknowledgement(racer, continuation.mode);
         }
         this._finishPresentation();
-        return this._success('已确认淘汰，比赛继续');
+        return this._success(automatic ? '淘汰确认超时，系统已自动处理' : '已确认淘汰，比赛继续');
+    }
+
+    handleSystemTick() {
+        if (this.status !== 'playing') return null;
+        let result = null;
+        let guard = 0;
+        while (this.pendingAcknowledgements.length && guard++ < 16) {
+            const acknowledgement = this.pendingAcknowledgements[0];
+            if (!Number.isFinite(Number(acknowledgement.deadlineAt)) || Number(acknowledgement.deadlineAt) > this._now()) break;
+            result = this._resolveEliminationAcknowledgement(acknowledgement.playerId, acknowledgement.id, true);
+            if (!result?.success) break;
+        }
+        return result;
     }
 
     _resumeAfterAcknowledgement(racer, mode) {
@@ -491,7 +526,7 @@ class MagicalAthleteEngine {
     }
 
     _advanceTurn() {
-        const currentPlayer = this.players[this.currentTurnIndex];
+        const currentPlayer = this.players[this.currentTurnIndex]?.isOnline === false ? null : this.players[this.currentTurnIndex];
         // Team variant: the same player keeps their turn until all racers moved.
         const hasMore = currentPlayer && this.racers.some(racer => racer.playerId === currentPlayer.id && racer.finishOrder == null && !racer.eliminated && !racer.turnDoneThisRound);
         if (hasMore) {
@@ -505,7 +540,7 @@ class MagicalAthleteEngine {
             if (skipperPlayer) nextIndex = this.players.findIndex(player => player.id === skipperPlayer);
         }
         let attempts = 0;
-        while (attempts <= this.players.length && !this._playerHasActiveRacer(this.players[nextIndex].id)) {
+        while (attempts <= this.players.length && (!this.players[nextIndex] || !this._playerHasActiveRacer(this.players[nextIndex].id))) {
             nextIndex = (nextIndex + 1) % this.players.length;
             attempts += 1;
         }
@@ -516,7 +551,7 @@ class MagicalAthleteEngine {
     }
 
     _playerHasActiveRacer(playerId) {
-        return this.racers.some(racer => racer.playerId === playerId && racer.finishOrder == null && !racer.eliminated);
+        return this.playerMap[playerId]?.isOnline !== false && this.racers.some(racer => racer.playerId === playerId && racer.finishOrder == null && !racer.eliminated);
     }
 
     _checkRaceEnd() {
@@ -536,15 +571,16 @@ class MagicalAthleteEngine {
             // off among the tied players.
             const points = Object.fromEntries(this.players.map(player => [player.id, 0]));
             previous.ranking.forEach(rank => { points[rank.playerId] = (points[rank.playerId] || 0) + (rank.gold || 0) + (rank.silver || 0); });
-            const low = Math.min(...this.players.map(player => points[player.id] || 0));
-            const candidates = this.players.map((player, index) => ({ player, index })).filter(item => (points[item.player.id] || 0) === low).map(item => item.index);
+            const eligible = this._activePlayers();
+            const low = Math.min(...eligible.map(player => points[player.id] || 0));
+            const candidates = eligible.filter(player => (points[player.id] || 0) === low).map(player => this.players.indexOf(player));
             return candidates.length === 1 ? candidates[0] : this._rollOffPlayerIndex(candidates);
         }
         // In the standard game the first eliminated racer, if any, determines
         // the next start; otherwise use the racer farthest behind.
         const eliminated = this.racers.filter(racer => racer.eliminated).sort((a, b) => (a.eliminationOrder || 0) - (b.eliminationOrder || 0))[0];
         const last = eliminated || this.racers.filter(racer => racer.finishOrder == null && !racer.eliminated).sort((a, b) => a.position - b.position)[0];
-        const index = this.players.findIndex(player => player.id === last?.playerId);
+        const index = this.players.findIndex(player => player.id === last?.playerId && player.isOnline !== false);
         return index >= 0 ? index : this.startPlayerIndex;
     }
 
@@ -555,8 +591,29 @@ class MagicalAthleteEngine {
 
     // ==================== HELPERS ====================
 
+    _activePlayers() { return this.players.filter(player => player.isOnline !== false); }
+    _onlinePlayerAtOrAfter(index = 0) {
+        if (!this.players.length) return null;
+        for (let offset = 0; offset < this.players.length; offset += 1) {
+            const player = this.players[(Number(index) + offset + this.players.length) % this.players.length];
+            if (player?.isOnline !== false) return player;
+        }
+        return null;
+    }
+    _onlineOrder(index = 0) {
+        const result = [];
+        const seen = new Set();
+        for (let offset = 0; offset < this.players.length; offset += 1) {
+            const player = this.players[(Number(index) + offset + this.players.length * 2) % this.players.length];
+            if (player?.isOnline !== false && !seen.has(player.id)) {
+                result.push(player);
+                seen.add(player.id);
+            }
+        }
+        return result;
+    }
     _finishedCount() { return this.racers.filter(racer => racer.finishOrder != null).length; }
-    _activeRacers() { return this.racers.filter(racer => racer.finishOrder == null && !racer.eliminated); }
+    _activeRacers() { return this.racers.filter(racer => racer.finishOrder == null && !racer.eliminated && this.playerMap[racer.playerId]?.isOnline !== false); }
     _countOn(position) { return this._activeRacers().filter(racer => racer.position === position).length; }
     _racerName(racer) { const athlete = this._athlete(racer.athleteId); return `${this.playerMap[racer.playerId]?.name || ''}·${athlete?.name || ''}`; }
     _publicRacer(racer) {
@@ -647,18 +704,6 @@ class MagicalAthleteEngine {
         }
         return Math.min(...contenders);
     }
-    _startPresentation(actorId, action) {
-        this.presentation = { sequence: ++this.presentationSequence, actorId, action, resolved: false, events: [] };
-        this.presentationPrivate = {};
-    }
-    _appendPresentationEvent(event, privateByPlayer = null) {
-        if (!this.presentation || this.presentation.resolved) this._startPresentation(event.actorId || null, event.kind || 'system');
-        const entry = { sequence: ++this.presentationEventSequence, ...clone(event) };
-        this.presentation.events.push(entry);
-        if (privateByPlayer && Object.keys(privateByPlayer).length) this.presentationPrivate[entry.sequence] = clone(privateByPlayer);
-        return entry;
-    }
-    _finishPresentation() { if (this.presentation) this.presentation.resolved = true; }
     _log(message) { this.actionLog.push(message); }
 
     // ==================== STATE ====================
@@ -666,38 +711,151 @@ class MagicalAthleteEngine {
     _success(message) {
         return { success: true, message, state: this.getPublicState(), ended: this.status === 'ended' && !this.pendingAcknowledgements.length, winner: this.winner ? { id: this.winner.id, name: this.winner.name } : null, winners: this.winners.map(player => ({ id: player.id, name: player.name, score: player.score })) };
     }
+    _removePlayerFromTurnQueue(queueName, indexName, playerId) {
+        const queue = Array.isArray(this[queueName]) ? this[queueName] : [];
+        const index = Number(this[indexName]) || 0;
+        const removedBefore = queue.slice(0, index).filter(id => id === playerId).length;
+        const next = queue.filter(id => id !== playerId);
+        this[queueName] = next;
+        this[indexName] = Math.max(0, Math.min(next.length, index - removedBefore));
+        return { hadCurrent: queue[index] === playerId, exhausted: this[indexName] >= next.length };
+    }
 
-
+    _finishByDeparture() {
+        const active = this._activePlayers();
+        const sorted = active.slice().sort((left, right) => right.score - left.score || right.bronze - left.bronze || left.id.localeCompare(right.id));
+        const high = sorted[0]?.score ?? 0;
+        this.winners = sorted.filter(player => player.score === high);
+        this.winner = this.winners[0] || null;
+        this.finalStandings = sorted.map((player, index) => ({
+            rank: index + 1,
+            playerId: player.id,
+            playerName: player.name,
+            color: player.color,
+            score: player.score,
+            bronze: player.bronze || 0,
+        }));
+        this.status = 'ended';
+        this.phase = 'ended';
+        this.endReason = 'players';
+        this.outcome = 'lastPlayerStanding';
+        this.pending = null;
+        this.deferredPrompt = null;
+        this.pendingAcknowledgements = [];
+        this.deferredAfterAcknowledgement = null;
+        this._appendPresentationEvent({
+            kind: 'finalSettlement',
+            forced: true,
+            reason: 'players',
+            outcome: 'lastPlayerStanding',
+            standings: clone(this.finalStandings),
+            winnerIds: this.winners.map(player => player.id),
+        });
+        this._log(`${this.winners.map(player => player.name).join('、') || '无人'} 在离场收束中获胜`);
+    }
 
     handlePlayerLeave(playerId) {
         const player = this.playerMap[playerId];
-        if (!player || !player.isOnline) return { success: false, message: '玩家不存在' };
+        if (!player || player.isOnline === false) return { success: false, message: '玩家不存在' };
+        const wasPlaying = this.status === 'playing';
+        const phaseBefore = this.phase;
+        const wasCurrent = this.players[this.currentTurnIndex]?.id === playerId;
         player.isOnline = false;
+        // A natural final result is immutable.  Leaving an already finished
+        // room only changes the roster/connection flag and never recalculates
+        // the winner or emits a second finale.
+        if (!wasPlaying) return this._success(`${player.name} 已离开赛场`);
+
+        this._startPresentation(playerId, 'playerLeave');
+        this._appendPresentationEvent({
+            kind: 'playerLeft',
+            playerId,
+            playerName: player.name,
+            phase: phaseBefore,
+            wasCurrent,
+            remainingPlayerCount: this._activePlayers().length,
+        });
+
+        // Remove the departed seat from serial decision queues.  The current
+        // queue index is kept stable so already completed picks are not replayed.
+        if (phaseBefore === 'draft') {
+            const queueResult = this._removePlayerFromTurnQueue('draftQueue', 'draftQueueIndex', playerId);
+            if (queueResult.exhausted) {
+                this.draftRound += 1;
+                if (this.draftRound < this._draftRounds()) this._openDraftRound();
+                else if (this._activePlayers().every(item => item.team.length >= this.teamSize)) { this.match = 1; this._beginRaceSelection(); }
+                else this._openDraftRound();
+            } else {
+                const nextId = this.draftQueue[this.draftQueueIndex];
+                this.currentTurnIndex = this.players.findIndex(item => item.id === nextId);
+            }
+        } else if (phaseBefore === 'race_select') {
+            const queueResult = this._removePlayerFromTurnQueue('raceSelectionQueue', 'raceSelectionIndex', playerId);
+            if (queueResult.exhausted) this._startRace();
+            else {
+                const nextId = this.raceSelectionQueue[this.raceSelectionIndex];
+                this.currentTurnIndex = this.players.findIndex(item => item.id === nextId);
+            }
+        }
+
+        // A departed racer can never remain active or become the next turn.
+        for (const racer of this.racers.filter(item => item.playerId === playerId && !item.eliminated && item.finishOrder == null)) {
+            racer.eliminated = true;
+            racer.eliminationOrder = ++this.eliminationCounter;
+        }
+
+        // Resolve a pending acknowledgement owned by the departed player.  It
+        // follows the same event path as the timeout, but is immediate because
+        // the player can no longer acknowledge it.
         const droppedAcknowledgement = this.pendingAcknowledgements.find(item => item.playerId === playerId);
-        this.pendingAcknowledgements = this.pendingAcknowledgements.filter(item => item.playerId !== playerId);
-        if (droppedAcknowledgement && !this.pendingAcknowledgements.length && this.deferredAfterAcknowledgement) {
-            this._startPresentation(playerId, 'eliminationAutoAcknowledged');
+        if (droppedAcknowledgement) {
+            this.pendingAcknowledgements = this.pendingAcknowledgements.filter(item => item.id !== droppedAcknowledgement.id);
             const victim = this.racers.find(racer => racer.id === droppedAcknowledgement.racerId);
             const source = this.racers.find(racer => racer.id === droppedAcknowledgement.sourceRacerId);
-            this._appendPresentationEvent({ kind: 'racerEliminated', victim: victim ? this._publicRacer(victim) : clone(droppedAcknowledgement), source: source ? this._publicRacer(source) : null, position: droppedAcknowledgement.position, acknowledgedBy: null });
-            const continuation = this.deferredAfterAcknowledgement;
-            this.deferredAfterAcknowledgement = null;
-            const racer = this.racers.find(item => item.id === continuation.racerId);
-            if (racer) this._resumeAfterAcknowledgement(racer, continuation.mode);
-            this._finishPresentation();
+            this._appendPresentationEvent({ kind: 'racerEliminated', victim: victim ? this._publicRacer(victim) : clone(droppedAcknowledgement), source: source ? this._publicRacer(source) : null, position: droppedAcknowledgement.position, acknowledgedBy: null, automatic: true });
+            if (!this.pendingAcknowledgements.length && this.deferredAfterAcknowledgement) {
+                const continuation = this.deferredAfterAcknowledgement;
+                this.deferredAfterAcknowledgement = null;
+                const racer = this.racers.find(item => item.id === continuation.racerId);
+                if (racer && racer.playerId !== playerId && !racer.eliminated) this._resumeAfterAcknowledgement(racer, continuation.mode);
+            }
         }
-        if (this.players.filter(item => item.isOnline).length < 2) {
-            this.status = 'ended';
-            this.phase = 'ended';
+
+        // Any prompt whose owner or target was the departed seat is cancelled
+        // with the least-surprising default (do not use the optional power),
+        // then the interrupted turn continues for an online racer.
+        const pending = this.pending;
+        const pendingRacer = pending?.racerId ? this.racers.find(item => item.id === pending.racerId) : null;
+        const pendingTouchesDeparture = pending && (pending.playerId === playerId || pendingRacer?.playerId === playerId || pending.targetRacerId?.startsWith?.(`${playerId}:`));
+        if (pendingTouchesDeparture) {
             this.pending = null;
-            this.winner = this.players.find(item => item.isOnline) || null;
+            if (pendingRacer?.playerId === playerId) pendingRacer.beforeRacePending = false;
+            if (pendingRacer && pendingRacer.playerId !== playerId && !pendingRacer.eliminated) {
+                const interrupted = pending.interruptRacerId ? this.racers.find(item => item.id === pending.interruptRacerId) : pendingRacer;
+                if (pending.kind === 'duel' || pending.kind === 'suckerfish') this._afterRacerTurn(interrupted || pendingRacer);
+                else this._continueTurn(pendingRacer);
+            } else if (pending?.kind === 'eggPick' || pending?.kind === 'twinPick') this._openBeforeRacePrompt();
         }
+        if (this.deferredPrompt && (this.deferredPrompt.playerId === playerId || this.deferredPrompt.racerId?.startsWith?.(`${playerId}:`) || this.deferredPrompt.targetRacerId?.startsWith?.(`${playerId}:`))) this.deferredPrompt = null;
+        if (this.deferredAfterAcknowledgement?.racerId?.startsWith?.(`${playerId}:`)) this.deferredAfterAcknowledgement = null;
+
+        if (this._activePlayers().length < 2) {
+            this._finishByDeparture();
+            this._finishPresentation();
+            return this._success(`${player.name} 离开后，比赛结束`);
+        }
+        if (this.phase === 'race') {
+            if (!this._playerHasActiveRacer(this.players[this.currentTurnIndex]?.id)) this._advanceTurn();
+            this._checkRaceEnd();
+        }
+        if (this.status === 'playing') this._finishPresentation();
         return this._success(`${player.name} 已离开赛场`);
     }
 
 }
 
 Object.assign(MagicalAthleteEngine.prototype, {
+    ...presentationMethods,
     _resolveStartOfTurn: resolveStartOfTurn,
     _resolvePrompt: resolvePrompt,
     _afterRollPrompt: afterRollPrompt,
@@ -725,3 +883,5 @@ module.exports.GOLD_POINTS = GOLD_POINTS;
 module.exports.SILVER_POINTS = SILVER_POINTS;
 module.exports.TRACK_SPECIALS = TRACK_SPECIALS;
 module.exports.TRACK_LENGTH = TRACK_LENGTH;
+module.exports.PRESENTATION_FADE_MS = PRESENTATION_FADE_MS;
+module.exports.PRESENTATION_CONTENT_DURATIONS = PRESENTATION_CONTENT_DURATIONS;

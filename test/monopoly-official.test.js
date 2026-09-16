@@ -14,8 +14,8 @@ function random(seed) {
     };
 }
 
-test('Monopoly accepts the official 2-8 player lifecycle and resets the building bank only once', () => {
-    const session = Monopoly.create('monopoly-official-life', players(8), null, { random: random(1406) });
+test('Monopoly accepts the official 2-6 player lifecycle and resets the building bank only once', () => {
+    const session = Monopoly.create('monopoly-official-life', players(6), null, { random: random(1406) });
     assert.equal(session.start().success, true);
     const game = session.engine;
     const state = game.getPublicState();
@@ -29,7 +29,7 @@ test('Monopoly accepts the official 2-8 player lifecycle and resets the building
     assert.equal(session.start().success, false);
 
     assert.equal(Monopoly.create('monopoly-too-few', players(1)).start().success, false);
-    assert.equal(Monopoly.create('monopoly-too-many', players(9)).start().success, false);
+    assert.equal(Monopoly.create('monopoly-too-many', players(7)).start().success, false);
 });
 
 test('Monopoly enforces even building, bank inventories, building sales and mortgages', () => {
@@ -62,10 +62,10 @@ test('Monopoly enforces even building, bank inventories, building sales and mort
     assert.equal(game.housesAvailable, 28);
 
     game.phase = 'turn_complete';
-    assert.equal(session.handleAction(owner.id, { kind: 'sellBuilding', tileIndex: 1 }).success, false, '酒店不能先单独拆，必须均匀出售');
-    assert.equal(session.handleAction(owner.id, { kind: 'sellBuilding', tileIndex: 3 }).success, true);
-    assert.equal(game.board[3].houses, 3);
-    assert.equal(game.housesAvailable, 29);
+    assert.equal(session.handleAction(owner.id, { kind: 'sellBuilding', tileIndex: 1 }).success, true, '酒店可降级为四栋房屋');
+    assert.equal(game.board[1].houses, 4);
+    assert.equal(game.board[3].houses, 4);
+    assert.equal(game.housesAvailable, 24);
 
     game.board[1].houses = 0;
     game.board[3].houses = 0;
@@ -87,24 +87,72 @@ test('Monopoly enforces even building, bank inventories, building sales and mort
     game.board[3].ownerId = debtor.id;
     game.board[3].mortgaged = true;
     const creditorCash = owner.cash;
+    const debtorCash = debtor.cash;
     game._bankrupt(debtor, owner, '测试债务');
     assert.equal(game.board[1].ownerId, owner.id);
     assert.equal(game.board[1].houses, 0);
     assert.equal(game.board[1].mortgaged, false);
     assert.equal(game.board[3].ownerId, owner.id);
     assert.equal(game.board[3].mortgaged, true);
-    assert.equal(owner.cash, creditorCash - 3);
+    assert.equal(owner.cash, creditorCash + debtorCash + 25 - 3);
+});
+
+test('Monopoly auctions bank-bankruptcy properties before advancing the turn', () => {
+    const session = Monopoly.create('monopoly-bank-auction', players(3));
+    assert.equal(session.start().success, true);
+    const game = session.engine;
+    const debtor = game.players[0];
+    const bidder = game.players[1];
+    const secondBidder = game.players[2];
+    game.currentTurnIndex = 0;
+    game.phase = 'debt_resolution';
+    game.pendingDebt = { debtorId: debtor.id, creditorId: null, amountOriginal: 100, amountPaid: 0, amountRemaining: 100, reason: '税费', returnPhase: 'turn_complete', continuation: null };
+    debtor.cash = 0;
+    game.board[1].ownerId = debtor.id;
+    game.board[5].ownerId = debtor.id;
+
+    assert.equal(session.handleAction(debtor.id, { kind: 'declareBankruptcy' }).success, true);
+    assert.equal(debtor.isBankrupt, true);
+    assert.equal(game.phase, 'auction');
+    assert.equal(game.auction.bankruptcy, true);
+    assert.equal(game.board[1].ownerId, null);
+    assert.equal(session.handleAction(bidder.id, { kind: 'bidProperty', amount: 10 }).success, true);
+    assert.equal(session.handleAction(secondBidder.id, { kind: 'passAuction' }).success, true);
+    assert.equal(session.handleAction(bidder.id, { kind: 'passAuction' }).success, true);
+    assert.equal(game.board[1].ownerId, bidder.id);
+    assert.equal(game.phase, 'auction');
+    assert.equal(game.auction.tileIndex, 5);
+    assert.equal(session.handleAction(secondBidder.id, { kind: 'passAuction' }).success, true);
+    assert.equal(game.board[5].ownerId, null);
+    assert.equal(game.phase, 'await_roll');
+    assert.equal(game.currentTurnIndex, 1);
+});
+
+test('Monopoly keeps building inventory rules explicit when the bank is empty', () => {
+    const session = Monopoly.create('monopoly-building-bank', players(2));
+    assert.equal(session.start().success, true);
+    const game = session.engine;
+    const player = game.players[0];
+    game.currentTurnIndex = 0;
+    game.phase = 'turn_complete';
+    player.cash = 500;
+    game.board[1].ownerId = player.id;
+    game.board[3].ownerId = player.id;
+    game.housesAvailable = 0;
+    assert.equal(session.handleAction(player.id, { kind: 'buildHouse', tileIndex: 1 }).success, false);
+    assert.equal(game.phase, 'turn_complete');
+    assert.equal(game.auction, null);
 });
 
 test('Monopoly completes three maximum-seat games through the real action interface', () => {
     for (const seed of [8101, 8102, 8103]) {
-        const session = Monopoly.create(`monopoly-eight-${seed}`, players(8), null, { random: random(seed) });
+        const session = Monopoly.create(`monopoly-six-${seed}`, players(6), null, { random: random(seed) });
         assert.equal(session.start().success, true);
         const game = session.engine;
-        const winner = game.players[7];
+        const winner = game.players[5];
 
         // Give the first player a legal brown-group purchase/build sequence so
-        // the long 8-seat board is stress-tested without relying on an
+        // the six-seat board is stress-tested without relying on an
         // unbounded random game. Every state transition still goes through the
         // same public session actions as the browser client.
         const builder = game.players[0];
@@ -137,14 +185,15 @@ test('Monopoly completes three maximum-seat games through the real action interf
         // Let every other seat take at least one normal turn, then route each
         // debtor to the hotel rent through rollDice. This covers rent transfer,
         // bankruptcy, creditor ownership and the final winner transition.
-        for (let index = 0; index < 7; index += 1) {
+        for (let index = 0; index < 5; index += 1) {
             const debtor = game.players[index];
             game.currentTurnIndex = index;
             game.phase = 'await_roll';
             debtor.position = 39;
-            debtor.cash = 100;
+            debtor.cash = 0;
             game._rollDice = () => [1, 1];
             assert.equal(session.handleAction(debtor.id, { kind: 'rollDice' }).success, true);
+            if (game.phase === 'debt_resolution') assert.equal(session.handleAction(debtor.id, { kind: 'declareBankruptcy' }).success, true);
             assert.equal(debtor.isBankrupt, true);
         }
         // The final seat is the only survivor and therefore the winner.

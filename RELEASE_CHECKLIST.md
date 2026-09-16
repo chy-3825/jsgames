@@ -2,6 +2,17 @@
 
 这份清单是发布前的固定顺序。它只描述检查和可回滚动作，不包含直接修改生产服务器的命令。
 
+## 2026-09-15 当前验收状态
+
+- [x] 本机聚合门禁：`npm run test:acceptance` 通过；回归 733/733，Firefox 28/28 模块、96/96 视觉夹具，性能清理、报告、发布元数据、生产形态部署和差异检查通过。
+- [x] 展示层事件审计已接入聚合门禁和 GitHub Actions，并通过 17 个专项/通用路径检查。
+- [x] 入口资源版本、Manila 短横屏布局和 Acquire CSS 尾部空白已修复并复测。
+- [x] 已生成不发布的 634 文件预览包，并在独立目录完成 `npm ci --omit=dev --ignore-scripts`、依赖审计和生产 `/healthz` 烟测。
+- [ ] Chromium、Safari、真实 iOS/Android、目标服务器、HTTPS/安全组、弱网和发布后观察：未执行，不能标记为通过。
+- [ ] 素材许可证、规则矩阵未签署项、持久化/多实例、仅邀请访问控制和干净发布提交：仍需人工签字或后续开发。
+
+本状态只适用于当前工作树，版本仍为 `2.1.0`，没有创建新的 release commit/tag；因此整体发布结论仍为“有条件通过”，不是公开发布 GO。
+
 ## 1. 工作区与版本
 
 - [ ] 确认当前分支、目标提交和变更范围：`git status --short`、`git diff --stat`。
@@ -19,6 +30,7 @@ npm run test:audit
 npm run test:syntax
 npm run test:lint
 npm run test:type
+npm run test:presentation
 npm test
 npm run test:coverage
 npm run test:complexity
@@ -42,7 +54,7 @@ git diff --check
 `test:deploy` 以 `NODE_ENV=production` 启动真实 `bin/www`，检查 `/healthz`、安全响应头、一次 WebSocket 建房和 SIGTERM 优雅退出；它不能代替目标服务器上的 systemd、Nginx、HTTPS、DNS 或安全组检查。
 `test:lint`、`test:type` 和 `test:coverage` 分别执行 ESLint 正确性检查、渐进式 JavaScript 类型检查和覆盖率阈值检查；类型范围会随模块完成度逐批扩大，不能把未纳入范围误写成全项目类型安全。
 `test:complexity` 对大厅组合入口、实时服务、通用房间和两款高密度样式执行行数增长门禁；它是防回归的复杂度棘轮，不替代后续按职责继续拆分文件。
-`test:acceptance` 是本机最终验收聚合入口，会依次执行依赖、语法、lint、类型、回归、覆盖率、Firefox、性能/清理、报告、发布和生产形态部署门禁，并最后执行 `git diff --check`；它不自动执行 `npm ci`、Chromium 可选门禁或任何目标环境操作。
+`test:acceptance` 是本机最终验收聚合入口，会依次执行依赖、语法、lint、类型、展示层事件审计、复杂度、回归、覆盖率、Firefox、性能/清理、报告、发布和生产形态部署门禁，并最后执行 `git diff --check`；它不自动执行 `npm ci`、Chromium 可选门禁或任何目标环境操作。
 
 生产启动前至少设置 `JSGAMES_ALLOWED_ORIGINS=https://你的域名`；保持默认的 WebSocket 负载、JSON 结构、消息/聊天限流、心跳和重连令牌策略。只有在受控本地兼容测试时才允许设置 `JSGAMES_REQUIRE_RECONNECT_TOKEN=false`，不得带入公网环境。
 

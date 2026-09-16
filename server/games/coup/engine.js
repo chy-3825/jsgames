@@ -42,15 +42,62 @@ const ROLE_CLAIM_ACTIONS = {
     exchange: 'ambassador'
 };
 
+// The browser still draws the visuals, but every public slot is scheduled by
+// the engine so all viewers share one start/end deadline.  The fade is kept in
+// the slot duration rather than being an optional client-side delay.
+const PRESENTATION_FADE_MS = 360;
+const PRESENTATION_CONTENT_DURATIONS = {
+    actionDeclared: 1050,
+    actionResolved: 900,
+    challengeDeclared: 1050,
+    challengeResolved: 1050,
+    blockDeclared: 1050,
+    blockResolved: 1050,
+    influenceRevealed: 1050,
+    exchangeResolved: 1050,
+    playerEliminated: 1350,
+    finalSettlement: 1500,
+};
+
+// Coup benefits from showing the whole public exchange: the claimed action,
+// challenges, blocks, verdicts and influence changes all form one readable
+// sequence.  The server still schedules these slots so every viewer sees the
+// same broadcast and the same interaction lock.
+const PRESENTATION_EVENT_KINDS = new Set([
+    'actionDeclared',
+    'actionResolved',
+    'challengeDeclared',
+    'challengeResolved',
+    'blockDeclared',
+    'blockResolved',
+    'influenceRevealed',
+    'exchangeResolved',
+    'playerEliminated',
+    'finalSettlement',
+]);
+
+function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
+function presentationContentDuration(kind, data = {}) {
+    if (kind === 'finalSettlement' && data.reason === 'playerLeave') return 1500;
+    return PRESENTATION_CONTENT_DURATIONS[kind] || 820;
+}
+
 class CoupEngine {
     /**
      * @param {string} roomId - 房间ID
      * @param {Array} players - 玩家数组 [{ id, name }, ...]
      * @param {Function} random - 可注入的随机源（测试/回放用）
      */
-    constructor(roomId, players, random = Math.random) {
+    constructor(roomId, players, randomOrOptions = Math.random, extraOptions = {}) {
+        const suppliedOptions = typeof randomOrOptions === 'function' ? extraOptions : (randomOrOptions || {});
+        const random = typeof randomOrOptions === 'function' ? randomOrOptions : (suppliedOptions.random || Math.random);
         this.roomId = roomId;
         this.random = typeof random === 'function' ? random : Math.random;
+        this.options = { ...suppliedOptions };
+        this.now = typeof suppliedOptions.now === 'function' ? suppliedOptions.now : () => Date.now();
         this.players = players.map(p => ({
             id: p.id,
             name: p.name,
@@ -82,6 +129,10 @@ class CoupEngine {
         this.revealSequence = 0;
         this.interaction = null;
         this.lastReveal = null;
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.presentationEventSequence = 0;
 
         // 初始化牌堆
         this._initDeck();
@@ -138,6 +189,135 @@ class CoupEngine {
     _returnToDeck(cards) {
         this.deck.push(...cards);
         this._shuffleDeck();
+    }
+
+    _now() {
+        const value = Number(this.now?.());
+        return Number.isFinite(value) ? value : Date.now();
+    }
+
+    _playerSummary(player) {
+        return player ? { id: player.id, name: player.name } : null;
+    }
+
+    _actionName(kind) {
+        if (kind === 'foreign_aid') return '外援';
+        if (kind === 'assassinate') return '暗杀';
+        if (kind === 'exchange') return '交换';
+        if (kind === 'tax') return '征税';
+        if (kind === 'steal') return '偷窃';
+        if (kind === 'coup') return '政变';
+        return '收入';
+    }
+
+    // ============ 服务端权威播报时间轴 ============
+
+    _startPresentation(player, action, data = {}, initialKind = 'actionDeclared') {
+        if (!PRESENTATION_EVENT_KINDS.has(initialKind)) return null;
+        const now = this._now();
+        this.presentationQueue = this.presentationQueue.filter(batch => Number(batch.endsAt) > now);
+        const previousEnd = Number(this.presentationQueue.at(-1)?.endsAt) || 0;
+        const startedAt = Math.max(now, previousEnd);
+        this.presentation = {
+            sequence: ++this.presentationSequence,
+            transactionId: this.presentationSequence,
+            actorId: player?.id || data.actorId || null,
+            action,
+            startedAt,
+            endsAt: startedAt,
+            durationMs: 0,
+            blocking: true,
+            events: [],
+            resolved: false,
+            ended: false,
+            nextPhase: null,
+            nextPlayerId: null,
+            winner: null,
+        };
+        this.presentationQueue.push(this.presentation);
+        return this._appendPresentationEvent(player, initialKind, {
+            actionKind: action,
+            actorId: player?.id || data.actorId || null,
+            actorName: player?.name || data.actorName || null,
+            ...clone(data),
+        });
+    }
+
+    _appendPresentationEvent(player, kind, data = {}) {
+        if (!PRESENTATION_EVENT_KINDS.has(kind)) return null;
+        if (!this.presentation || this.presentation.resolved) {
+            // A late result (for example a leave notification) may be the
+            // first event in a new batch.  Pass its actual kind as the initial
+            // event kind so the fallback cannot create a duplicate declaration
+            // followed by a second copy of the same result.
+            return this._startPresentation(player, data.actionKind || kind, data, kind);
+        }
+        const now = this._now();
+        const previousEnd = Number(this.presentation.events.at(-1)?.endsAt || this.presentation.endsAt) || now;
+        const startedAt = Math.max(now, previousEnd);
+        const contentDurationMs = presentationContentDuration(kind, data);
+        const durationMs = contentDurationMs + PRESENTATION_FADE_MS;
+        const eventId = ++this.presentationEventSequence;
+        const event = {
+            ...clone(data),
+            sequence: eventId,
+            eventId,
+            kind,
+            playerId: data.playerId ?? player?.id ?? null,
+            playerName: data.playerName ?? player?.name ?? null,
+            startedAt,
+            endsAt: startedAt + durationMs,
+            durationMs,
+            contentDurationMs,
+        };
+        this.presentation.events.push(event);
+        this.presentation.endsAt = event.endsAt;
+        this.presentation.durationMs = this.presentation.endsAt - this.presentation.startedAt;
+        return event;
+    }
+
+    _finishPresentation() {
+        if (!this.presentation) return;
+        this.presentation.resolved = true;
+        this.presentation.ended = this.gameOver;
+        this.presentation.nextPhase = this.phase;
+        this.presentation.nextPlayerId = this.gameOver ? null : this._getNextPlayerId(this.currentTurnIndex);
+        this.presentation.winner = this.winner ? this._playerSummary(this._getPlayer(this.winner)) : null;
+    }
+
+    _presentationBatches(serverNow = this._now()) {
+        return this.presentationQueue
+            .filter(batch => Number(batch.endsAt) > serverNow && Array.isArray(batch.events) && batch.events.length)
+            .map(batch => ({ ...clone(batch), serverNow }));
+    }
+
+    _projectPresentationEvent(event, player) {
+        const projected = { ...event };
+        const viewerId = String(player?.id ?? '');
+        if (event.kind === 'playerEliminated' && String(event.playerId) === viewerId) {
+            projected.viewerVariant = 'personalElimination';
+            projected.title = '你已出局';
+            projected.detail = '你的两张影响力均已揭示，可以继续观战。';
+        }
+        if (event.kind === 'finalSettlement') {
+            if (String(event.winnerId) === viewerId) {
+                projected.viewerVariant = 'personalVictory';
+                projected.title = '你获胜了';
+                projected.detail = '你是最后仍有影响力的玩家。';
+            } else if (String(event.eliminatedPlayerId) === viewerId) {
+                projected.viewerVariant = 'personalElimination';
+                projected.title = '你已出局';
+                projected.detail = '你的最后一张影响力已揭示，游戏结束。';
+            }
+        }
+        return projected;
+    }
+
+    _projectPresentation(batch, player) {
+        if (!batch) return batch;
+        const projected = clone(batch);
+        projected.events = projected.events.map(event => this._projectPresentationEvent(event, player));
+        return projected;
     }
 
     // ==================== 工具方法 ====================
@@ -198,7 +378,11 @@ class CoupEngine {
         this.winner = null;
         this.interaction = null;
         this.lastReveal = null;
-        this.actionLog = ['游戏开始！'];
+        this.presentation = null;
+        this.presentationQueue = [];
+        this.presentationSequence = 0;
+        this.presentationEventSequence = 0;
+        this.actionLog = ['游戏开始'];
         return {
             success: true,
             message: '游戏已开始',
@@ -258,7 +442,7 @@ class CoupEngine {
 
         // 强制政变检测：玩家≥10块只能政变
         if (player.coins >= 10 && kind !== 'coup') {
-            return { success: false, message: '你拥有10枚或更多硬币，必须发动政变！' };
+            return { success: false, message: '金币达到 10 枚时必须发动政变。' };
         }
 
         switch (kind) {
@@ -297,12 +481,46 @@ class CoupEngine {
             verdict: null,
             outcome: null,
         };
+        this._startPresentation(player, kind, {
+            actionKind: kind,
+            targetId: targetId || null,
+            targetName: this._getPlayer(targetId)?.name || null,
+            claimedRole: claimedRole || null,
+            route: targetId ? { from: player.id, to: targetId, kind: 'action' } : null,
+            strong: ['coup', 'assassinate'].includes(kind),
+        });
         return this.interaction;
     }
 
     _updateInteraction(fields = {}) {
         if (this.interaction) Object.assign(this.interaction, fields);
         return this.interaction;
+    }
+
+    _currentActionKind(action = this.pendingAction) {
+        if (!action) return this.interaction?.kind || null;
+        return action.blockedAction?.kind || action.kind || this.interaction?.kind || null;
+    }
+
+    _appendActionResolved(action, data = {}) {
+        if (!action) return null;
+        const actor = this._getPlayer(action.playerId);
+        const target = this._getPlayer(action.targetId);
+        return this._appendPresentationEvent(actor, data.kind || 'actionResolved', {
+            actionId: this.interaction?.actionId || null,
+            actionKind: this._currentActionKind(action),
+            actorId: actor?.id || null,
+            actorName: actor?.name || null,
+            targetId: target?.id || action.targetId || null,
+            targetName: target?.name || null,
+            ...clone(data),
+        });
+    }
+
+    _finishPresentationIfSettled() {
+        if (this.gameOver || (this.phase === 'idle' && !this.pendingAction && !this.pendingInfluenceLoss && !this.pendingExchange)) {
+            this._finishPresentation();
+        }
     }
 
     _recordReveal(player, roles, reason) {
@@ -322,12 +540,13 @@ class CoupEngine {
     _actionIncome(player) {
         this._beginInteraction(player, 'income');
         player.coins += 1;
-        this.actionLog.push(`${player.name} 收入 +1💰`);
+        this.actionLog.push(`${player.name} 获得 1 枚金币`);
         this._updateInteraction({ stage: 'resolved', outcome: 'income' });
+        this._appendActionResolved({ kind: 'income', playerId: player.id }, { amount: 1 });
         this._endTurn();
         return {
             success: true,
-            message: `${player.name} 收入 1 硬币`,
+            message: `${player.name} 获得 1 枚金币`,
             state: this._getPublicState()
         };
     }
@@ -359,10 +578,10 @@ class CoupEngine {
 
         this.phase = 'block';
         this._updateInteraction({ stage: 'block_offer', blockRole: 'duke' });
-        this.actionLog.push(player.name + ' 申请外援，等待公爵阻挡...');
+        this.actionLog.push(player.name + ' 申请外援，等待公爵阻挡…');
         return {
             success: true,
-            message: player.name + ' 申请外援，请其他玩家决定是否用公爵阻挡',
+            message: player.name + ' 申请外援，请其他玩家决定是否阻挡',
             state: this._getPublicState()
         };
     }
@@ -374,14 +593,14 @@ class CoupEngine {
 
     _actionAssassinate(player, targetId) {
         if (player.coins < 3) {
-            return { success: false, message: '暗杀需要3枚硬币' };
+            return { success: false, message: '暗杀需要 3 枚金币' };
         }
         const target = this._getPlayer(targetId);
         if (!target || !this._isAlive(target)) {
             return { success: false, message: '目标玩家不存在或已出局' };
         }
         if (target.id === player.id) {
-            return { success: false, message: '不能暗杀自己' };
+            return { success: false, message: '不能以自己为目标' };
         }
         // The 3-coin assassination fee is paid when the action is announced,
         // before any challenge or block is resolved.
@@ -396,7 +615,7 @@ class CoupEngine {
             return { success: false, message: '目标玩家不存在或已出局' };
         }
         if (target.id === player.id) {
-            return { success: false, message: '不能偷自己' };
+            return { success: false, message: '不能以自己为目标' };
         }
         const claimedRole = 'captain';
         return this._startChallengePhase(player, 'steal', targetId, claimedRole);
@@ -411,37 +630,42 @@ class CoupEngine {
 
     _actionCoup(player, targetId) {
         if (player.coins < 7) {
-            return { success: false, message: '政变需要7枚硬币' };
+            return { success: false, message: '政变需要 7 枚金币' };
         }
         const target = this._getPlayer(targetId);
         if (!target || !this._isAlive(target)) {
             return { success: false, message: '目标玩家不存在或已出局' };
         }
         if (target.id === player.id) {
-            return { success: false, message: '不能政变自己' };
+            return { success: false, message: '不能以自己为目标' };
         }
 
         // 执行政变。失去哪一张影响力必须由目标玩家自己选择。
         this._beginInteraction(player, 'coup', target.id);
         player.coins -= 7;
-        this.actionLog.push(`${player.name} 政变 ${target.name}，等待对方选择失去的影响力`);
+        this.actionLog.push(`${player.name} 对 ${target.name} 发动政变，等待目标选择要揭示的影响力`);
+        this._appendActionResolved({ kind: 'coup', playerId: player.id, targetId: target.id }, {
+            outcome: 'coup',
+            awaitingPlayerId: target.id,
+            awaitingPlayerName: target.name,
+        });
         this.pendingInfluenceLoss = { playerId: target.id, reason: 'coup', continuation: 'coup', actorId: player.id };
         this.phase = 'influence_loss';
         this._updateInteraction({ stage: 'influence_loss', lossPlayerId: target.id, lossReason: 'coup' });
         return {
             success: true,
-            message: `${player.name} 政变 ${target.name}，请目标选择要揭示的影响力`,
+            message: `${player.name} 对 ${target.name} 发动政变，请目标选择要揭示的影响力`,
             state: this._getPublicState()
         };
     }
 
     _handleInfluenceLoss(playerId, action = {}) {
         const pending = this.pendingInfluenceLoss;
-        if (!pending || pending.playerId !== playerId) return { success: false, message: '请等待目标玩家选择影响力' };
+        if (!pending || pending.playerId !== playerId) return { success: false, message: '请等待目标选择要揭示的影响力' };
         const index = Number(action.influenceIndex);
         const player = this._getPlayer(playerId);
         if (action.kind !== 'influence_loss' || !Number.isInteger(index) || index < 0 || index >= player.influences.length || player.revealed[index]) {
-            return { success: false, message: '请选择一张仍在生效的影响力', state: this.getPlayerState(playerId) };
+            return { success: false, message: '请选择一张仍未揭示的影响力', state: this.getPlayerState(playerId) };
         }
         const revealedRole = player.influences[index];
         player.revealed[index] = true;
@@ -452,7 +676,38 @@ class CoupEngine {
 
         if (this.gameOver) {
             this._updateInteraction({ stage: 'resolved', outcome: 'game_over', lossPlayerId: player.id });
-            return { success: true, message: `${player.name} 已选择失去一张影响力`, state: this._getPublicState(), ended: true, winner: this.getWinner() };
+            this._appendPresentationEvent(player, 'finalSettlement', {
+                actionId: this.interaction?.actionId || null,
+                reason: pending.reason,
+                winnerId: this.winner,
+                winnerName: this._getPlayer(this.winner)?.name || null,
+                eliminatedPlayerId: player.id,
+                eliminatedPlayerName: player.name,
+                eliminatedRoles: player.influences.slice(),
+                final: true,
+            });
+            this._finishPresentation();
+            return { success: true, message: `${player.name} 已揭示一张影响力`, state: this._getPublicState(), ended: true, winner: this.getWinner() };
+        }
+
+        if (player.isAlive === false) {
+            this._appendPresentationEvent(player, 'playerEliminated', {
+                actionId: this.interaction?.actionId || null,
+                playerId: player.id,
+                playerName: player.name,
+                roles: player.influences.slice(),
+                reason: pending.reason,
+                actionKind: this._currentActionKind(this.pendingAction),
+            });
+        } else {
+            this._appendPresentationEvent(player, 'influenceRevealed', {
+                actionId: this.interaction?.actionId || null,
+                playerId: player.id,
+                playerName: player.name,
+                role: revealedRole,
+                reason: pending.reason,
+                actionKind: this._currentActionKind(this.pendingAction),
+            });
         }
 
         if (pending.continuation === 'challenge_failed') {
@@ -463,7 +718,7 @@ class CoupEngine {
                 this.pendingAction = null;
                 this._updateInteraction({ stage: 'resolved', outcome: 'target_eliminated', lossPlayerId: player.id });
                 this._endTurn();
-                result = { success: true, message: `${player.name} 已在质疑中出局，原行动无需继续结算`, state: this._getPublicState() };
+                result = { success: true, message: `${player.name} 已在质疑中出局，原行动不再结算`, state: this._getPublicState() };
             } else {
                 // 质疑失败只证明了原声明；暗杀和偷窃仍应给目标保留阻挡窗口。
                 result = this._afterChallenges();
@@ -471,7 +726,7 @@ class CoupEngine {
             return {
                 ...result,
                 success: true,
-                message: `${player.name} 已选择失去一张影响力，质疑失败的行动继续`,
+                message: `${player.name} 已揭示一张影响力，原行动继续`,
                 state: result.state || this._getPublicState(),
                 ended: this.gameOver,
                 winner: this.getWinner(),
@@ -486,7 +741,7 @@ class CoupEngine {
             return {
                 ...result,
                 success: true,
-                message: `${player.name} 已选择失去一张影响力，质疑成功`,
+                message: `${player.name} 已揭示一张影响力，阻挡声明未成立`,
                 state: result.state || this._getPublicState(),
                 ended: this.gameOver,
                 winner: this.getWinner(),
@@ -499,23 +754,23 @@ class CoupEngine {
             this.actionLog.push('质疑成功，原行动取消');
             this._updateInteraction({ stage: 'cancelled', outcome: 'claim_failed', lossPlayerId: player.id });
             this._endTurn();
-            return { success: true, message: `${player.name} 已选择失去一张影响力，原行动取消`, state: this._getPublicState(), ended: this.gameOver, winner: this.getWinner() };
+            return { success: true, message: `${player.name} 已揭示一张影响力，原行动取消`, state: this._getPublicState(), ended: this.gameOver, winner: this.getWinner() };
         }
 
         this._updateInteraction({ stage: 'resolved', outcome: pending.reason, lossPlayerId: player.id });
         this._endTurn();
-        return { success: true, message: `${player.name} 已选择失去一张影响力`, state: this._getPublicState(), ended: this.gameOver, winner: this.getWinner() };
+        return { success: true, message: `${player.name} 已揭示一张影响力`, state: this._getPublicState(), ended: this.gameOver, winner: this.getWinner() };
     }
 
     _handleExchangeAction(playerId, action = {}) {
         const pending = this.pendingExchange;
         if (!pending || pending.playerId !== playerId) return { success: false, message: '请等待大使交换完成' };
-        if (action.kind !== 'exchangeSelect' || !Array.isArray(action.keepIndices)) return { success: false, message: '请选择要保留的影响力', state: this.getPlayerState(playerId) };
+        if (action.kind !== 'exchangeSelect' || !Array.isArray(action.keepIndices)) return { success: false, message: '请选择要保留的牌', state: this.getPlayerState(playerId) };
         const player = this._getPlayer(playerId);
         const activeIndexes = player.influences.map((role, index) => (!player.revealed[index] ? index : -1)).filter(index => index >= 0);
         const options = [...activeIndexes.map(index => ({ source: 'hand', index, role: player.influences[index] })), ...pending.drawn.map((role, index) => ({ source: 'drawn', index, role }))];
         const keep = action.keepIndices.map(index => Number(index));
-        if (keep.length !== activeIndexes.length || new Set(keep).size !== keep.length || keep.some(index => !Number.isInteger(index) || !options[index])) return { success: false, message: `请选择恰好 ${activeIndexes.length} 张影响力`, state: this.getPlayerState(playerId) };
+        if (keep.length !== activeIndexes.length || new Set(keep).size !== keep.length || keep.some(index => !Number.isInteger(index) || !options[index])) return { success: false, message: `请选择恰好 ${activeIndexes.length} 张牌`, state: this.getPlayerState(playerId) };
         const keptRoles = keep.map(index => options[index].role);
         const returned = options.filter((_, index) => !keep.includes(index)).map(item => item.role);
         activeIndexes.forEach((slot, index) => { player.influences[slot] = keptRoles[index]; player.revealed[slot] = false; });
@@ -523,6 +778,13 @@ class CoupEngine {
         this.pendingExchange = null;
         this.actionLog.push(`${player.name} 完成大使交换`);
         this._updateInteraction({ stage: 'resolved', outcome: 'exchange' });
+        this._appendPresentationEvent(player, 'exchangeResolved', {
+            actionId: this.interaction?.actionId || null,
+            actionKind: 'exchange',
+            playerId: player.id,
+            playerName: player.name,
+            keptCount: keep.length,
+        });
         this._endTurn();
         return { success: true, message: `${player.name} 完成交换`, state: this._getPublicState() };
     }
@@ -536,7 +798,7 @@ class CoupEngine {
         this._updateInteraction({ stage: 'influence_loss', lossPlayerId: player.id, lossReason: reason });
         return {
             success: true,
-            message: `${player.name} 请选择要失去的影响力`,
+            message: `${player.name} 请选择要揭示的影响力`,
             state: this._getPublicState(),
         };
     }
@@ -571,11 +833,11 @@ class CoupEngine {
 
         this.phase = 'challenge';
         this._updateInteraction({ stage: 'challenge' });
-        this.actionLog.push(`${player.name} 声称 ${ROLE_NAMES[claimedRole]}，等待质疑...`);
+        this.actionLog.push(`${player.name} 声称${ROLE_NAMES[claimedRole]}，等待质疑…`);
 
         return {
             success: true,
-            message: `${player.name} 声称 ${ROLE_NAMES[claimedRole]}，请其他玩家决定是否质疑`,
+            message: `${player.name} 声称${ROLE_NAMES[claimedRole]}，请其他玩家决定是否质疑`,
             state: this._getPublicState(),
             challenge: {
                 phase: 'challenge',
@@ -604,7 +866,7 @@ class CoupEngine {
             if (target && this._isAlive(target)) {
                 this.phase = 'block'; this.claimedRole = blockerRole; this.challengeQueue = [target.id]; this.challengeIndex = 0; this.responderId = target.id;
                 this._updateInteraction({ stage: 'block_offer', blockRole: blockerRole });
-                this.actionLog.push(`${target.name} 可以用${blockerRole === 'contessa' ? '伯爵夫人' : '船长或大使'}阻挡 ${this._getPlayer(action.playerId)?.name || '玩家'} 的${action.kind === 'assassinate' ? '暗杀' : '偷窃'}`);
+                this.actionLog.push(`${target.name} 可以声称${blockerRole === 'contessa' ? '伯爵夫人' : '船长或大使'}，阻挡 ${this._getPlayer(action.playerId)?.name || '玩家'} 的${action.kind === 'assassinate' ? '暗杀' : '偷窃'}`);
                 return { success: true, message: '等待目标决定是否阻挡', state: this._getPublicState() };
             }
         }
@@ -662,6 +924,17 @@ class CoupEngine {
             }
             this.challengeIndex = 0;
 
+            this._appendPresentationEvent(blocker, 'blockDeclared', {
+                actionId: this.interaction?.actionId || null,
+                actionKind: pending?.kind || null,
+                actorId: blocker.id,
+                actorName: blocker.name,
+                targetId: requester?.id || null,
+                targetName: requester?.name || null,
+                claimedRole: blockRole,
+                route: requester ? { from: blocker.id, to: requester.id, kind: 'response' } : null,
+            });
+
             this.actionLog.push(`${blocker.name} 声称${blockRole === 'duke' ? '公爵' : blockRole === 'contessa' ? '伯爵夫人' : '船长或大使'}，阻挡了${requester ? requester.name : '玩家'}的行动，等待质疑`);
 
             if (this.challengeQueue.length === 0) {
@@ -675,7 +948,7 @@ class CoupEngine {
             };
         }
 
-        return { success: false, message: '无效操作，请选择阻挡或无视' };
+        return { success: false, message: '无效操作，请选择阻挡或不阻挡' };
     }
 
     _handleChallengeResponse(playerId, action) {
@@ -687,19 +960,19 @@ class CoupEngine {
         }
 
         if (kind === 'pass') {
-            // 无视
+            // 不质疑
             this.challengeIndex++;
-            this.actionLog.push(`${this._getPlayer(playerId).name} 选择无视`);
+            this.actionLog.push(`${this._getPlayer(playerId).name} 选择不质疑`);
 
             if (this.challengeIndex >= this.challengeQueue.length) {
-                // 所有人都无视，执行原行动
+                // 所有人都不质疑，执行原行动
                 this.actionLog.push('无人质疑，行动继续');
                 return this._afterChallenges();
             } else {
                 // 继续询问下一个玩家
                 return {
                     success: true,
-                    message: `${this._getPlayer(playerId).name} 无视了质疑`,
+                    message: `${this._getPlayer(playerId).name} 选择不质疑`,
                     state: this._getPublicState(),
                     challenge: {
                         phase: 'challenge',
@@ -715,11 +988,23 @@ class CoupEngine {
             this.challengerId = playerId;
             this.phase = 'respond';
             this._updateInteraction({ stage: 'challenged', challengerId: playerId });
-            this.actionLog.push(`${this._getPlayer(playerId).name} 发起质疑！`);
+            this.actionLog.push(`${this._getPlayer(playerId).name} 发起质疑`);
+            const challenger = this._getPlayer(playerId);
+            const responder = this._getPlayer(this.responderId);
+            this._appendPresentationEvent(challenger, 'challengeDeclared', {
+                actionId: this.interaction?.actionId || null,
+                actionKind: this._currentActionKind(this.pendingAction),
+                challengerId: challenger?.id || null,
+                challengerName: challenger?.name || null,
+                responderId: responder?.id || null,
+                responderName: responder?.name || null,
+                claimedRole: this.claimedRole,
+                route: responder ? { from: challenger?.id || null, to: responder.id, kind: 'response' } : null,
+            });
 
             return {
                 success: true,
-                message: `${this._getPlayer(playerId).name} 质疑了 ${this._getPlayer(this.responderId).name}！`,
+                message: `${this._getPlayer(playerId).name} 质疑了 ${this._getPlayer(this.responderId).name}`,
                 state: this._getPublicState(),
                 challenge: {
                     phase: 'respond',
@@ -730,7 +1015,7 @@ class CoupEngine {
                 }
             };
         } else {
-            return { success: false, message: '无效操作，请选择质疑或无视' };
+            return { success: false, message: '无效操作，请选择质疑或不质疑' };
         }
     }
 
@@ -755,7 +1040,7 @@ class CoupEngine {
 
             if (cardIndex === -1) {
                 // 没有对应的牌，不能出示，只能取消
-                return { success: false, message: '你没有对应的角色牌，不能出示，请选择取消', state: this.getPlayerState(playerId) };
+                return { success: false, message: '你没有对应的角色牌，无法证明声明', state: this.getPlayerState(playerId) };
             }
 
             // 出示成功：证明牌回到 Court，再补一张新牌。揭示的影响力
@@ -775,7 +1060,7 @@ class CoupEngine {
                 player.revealed[cardIndex] = true;
             }
 
-            this.actionLog.push(`${player.name} 出示了 ${shownRole}，质疑失败！`);
+            this.actionLog.push(`${player.name} 出示${shownRole}，质疑失败`);
             const wasBlockClaim = Boolean(this.pendingAction?.blockedAction);
             this._updateInteraction({
                 stage: 'verdict',
@@ -785,12 +1070,26 @@ class CoupEngine {
                 provedRole: claimedRole,
             });
 
+            this._appendPresentationEvent(player, 'challengeResolved', {
+                actionId: this.interaction?.actionId || null,
+                actionKind: this._currentActionKind(this.pendingAction),
+                verdict: wasBlockClaim ? 'block_proved' : 'claim_proved',
+                challengerId: this.challengerId,
+                challengerName: this._getPlayer(this.challengerId)?.name || null,
+                responderId: player.id,
+                responderName: player.name,
+                claimedRole,
+                provedRole: claimedRole,
+                claimantId: player.id,
+                claimantName: player.name,
+            });
+
             // 质疑失败：质疑者自己选择要失去的影响力。
             const challenger = this._getPlayer(this.challengerId);
             const loss = this._requestInfluenceLoss(challenger, 'challenge_failed', 'challenge_failed');
             return {
                 ...loss,
-                message: `${player.name} 出示了 ${shownRole}，质疑失败！请 ${challenger.name} 选择失去的影响力`,
+                message: `${player.name} 出示${shownRole}，质疑失败；请${challenger.name}揭示一张影响力`,
             };
         } else if (kind === 'cancel') {
             const player = this._getPlayer(playerId);
@@ -801,12 +1100,24 @@ class CoupEngine {
             const blockedAction = this.pendingAction?.blockedAction || null;
             const wasBlockClaim = Boolean(blockedAction);
 
-            this.actionLog.push(player.name + ' 取消，质疑成功');
+            this.actionLog.push(player.name + ' 无法证明声明，质疑成功');
             this._updateInteraction({
                 stage: 'verdict',
                 verdict: wasBlockClaim ? 'block_failed' : 'claim_failed',
                 failedById: player.id,
                 challengerId: this.challengerId,
+            });
+            this._appendPresentationEvent(player, 'challengeResolved', {
+                actionId: this.interaction?.actionId || null,
+                actionKind: this._currentActionKind(this.pendingAction),
+                verdict: wasBlockClaim ? 'block_failed' : 'claim_failed',
+                challengerId: this.challengerId,
+                challengerName: this._getPlayer(this.challengerId)?.name || null,
+                responderId: player.id,
+                responderName: player.name,
+                claimedRole: this.claimedRole,
+                failedById: player.id,
+                failedByName: player.name,
             });
             const loss = this._requestInfluenceLoss(
                 player,
@@ -815,10 +1126,10 @@ class CoupEngine {
             );
             return {
                 ...loss,
-                message: player.name + ' 取消，质疑成功，请选择要失去的影响力',
+                message: player.name + ' 无法证明声明，质疑成功；请选择要揭示的影响力',
             };
         } else {
-            return { success: false, message: '无效操作，请选择出示或取消' };
+            return { success: false, message: '无效操作，请选择出示或无法证明' };
         }
     }
 
@@ -850,22 +1161,35 @@ class CoupEngine {
                 const requester = this._getPlayer(blocked.playerId);
                 const roleName = action.claimedRole === 'duke' ? '公爵' : action.claimedRole === 'contessa' ? '伯爵夫人' : '船长或大使';
                 const actionName = blocked.kind === 'assassinate' ? '暗杀' : blocked.kind === 'steal' ? '偷窃' : '外援';
-                this.actionLog.push(`${player.name} 的${roleName}阻挡成立，${requester ? requester.name : '玩家'}的${actionName}失败`);
+                this.actionLog.push(`${player.name} 的${roleName}阻挡成立，${requester ? requester.name : '玩家'}的${actionName}未生效`);
                 this._updateInteraction({ stage: 'resolved', outcome: 'blocked', blockerId: player.id, blockRole: action.claimedRole });
-                result = { success: true, message: `${player.name} 阻挡${actionName}成功` };
+                this._appendPresentationEvent(player, 'blockResolved', {
+                    actionId: this.interaction?.actionId || null,
+                    actionKind: blocked.kind,
+                    actorId: player.id,
+                    actorName: player.name,
+                    targetId: requester?.id || null,
+                    targetName: requester?.name || null,
+                    claimedRole: action.claimedRole,
+                    blockedAction: blocked.kind,
+                    amount: 0,
+                });
+                result = { success: true, message: `${player.name} 成功阻挡${actionName}` };
                 break;
             }
             case 'foreign_aid':
                 player.coins += 2;
-                this.actionLog.push(player.name + ' 外援 +2');
+                this.actionLog.push(player.name + ' 获得 2 枚金币（外援）');
                 this._updateInteraction({ stage: 'resolved', outcome: 'foreign_aid' });
-                result = { success: true, message: player.name + ' 获得外援 2 硬币' };
+                this._appendActionResolved(action, { amount: 2 });
+                result = { success: true, message: player.name + ' 获得 2 枚金币（外援）' };
                 break;
             case 'tax':
                 player.coins += 3;
-                this.actionLog.push(`${player.name} 征税 +3💰`);
+                this.actionLog.push(`${player.name} 获得 3 枚金币（征税）`);
                 this._updateInteraction({ stage: 'resolved', outcome: 'tax' });
-                result = { success: true, message: `${player.name} 征税 3 硬币` };
+                this._appendActionResolved(action, { amount: 3 });
+                result = { success: true, message: `${player.name} 获得 3 枚金币（征税）` };
                 break;
             case 'assassinate':
                 if (player.coins < 0) {
@@ -877,13 +1201,19 @@ class CoupEngine {
                     this.pendingAction = null;
                     return { success: false, message: '目标已不存在' };
                 }
-                this.actionLog.push(`${player.name} 暗杀 ${assassinTarget.name}`);
+                this.actionLog.push(`${player.name} 暗杀 ${assassinTarget.name}，等待目标揭示影响力`);
                 this.pendingAction = null;
                 this._updateInteraction({ stage: 'influence_loss', outcome: 'assassination', lossPlayerId: assassinTarget.id, lossReason: 'assassination' });
+                this._appendActionResolved(action, {
+                    kind: 'actionResolved',
+                    outcome: 'assassination',
+                    awaitingPlayerId: assassinTarget.id,
+                    awaitingPlayerName: assassinTarget.name,
+                });
                 const assassinationLoss = this._requestInfluenceLoss(assassinTarget, 'assassination', 'assassination');
                 return {
                     ...assassinationLoss,
-                    message: `${player.name} 暗杀 ${assassinTarget.name}，请目标选择失去的影响力`,
+                    message: `${player.name} 暗杀 ${assassinTarget.name}，请目标选择要揭示的影响力`,
                 };
             case 'steal':
                 const stealTarget = this._getPlayer(targetId);
@@ -894,9 +1224,10 @@ class CoupEngine {
                 const stealAmount = Math.min(2, stealTarget.coins);
                 stealTarget.coins -= stealAmount;
                 player.coins += stealAmount;
-                this.actionLog.push(`${player.name} 从 ${stealTarget.name} 偷取 ${stealAmount}💰`);
+                this.actionLog.push(`${player.name} 从 ${stealTarget.name} 处拿走 ${stealAmount} 枚金币`);
                 this._updateInteraction({ stage: 'resolved', outcome: 'steal', amount: stealAmount });
-                result = { success: true, message: `${player.name} 从 ${stealTarget.name} 偷取 ${stealAmount} 硬币` };
+                this._appendActionResolved(action, { amount: stealAmount });
+                result = { success: true, message: `${player.name} 从 ${stealTarget.name} 处拿走 ${stealAmount} 枚金币` };
                 break;
             case 'exchange':
                 const exchangeDrawn = this._drawCards(2);
@@ -904,8 +1235,8 @@ class CoupEngine {
                 this.pendingExchange = { playerId: player.id, drawn: exchangeDrawn, keepCount: activeCount };
                 this.phase = 'exchange';
                 this._updateInteraction({ stage: 'exchange', outcome: 'exchange_pending' });
-                this.actionLog.push(`${player.name} 抽取了两张影响力，正在选择交换结果`);
-                return { success: true, message: `${player.name} 请从影响力中选择保留的牌`, state: this._getPublicState() };
+                this.actionLog.push(`${player.name} 抽取两张牌，正在选择保留的牌`);
+                return { success: true, message: `${player.name} 请选择要保留的牌`, state: this._getPublicState() };
             default:
                 this.pendingAction = null;
                 return { success: false, message: '未知行动' };
@@ -924,7 +1255,7 @@ class CoupEngine {
     _checkPlayerDeath(player) {
         if (!this._isAlive(player)) {
             player.isAlive = false;
-            this.actionLog.push(`${player.name} 出局！`);
+            this.actionLog.push(`${player.name} 出局`);
             this._checkGameOver();
         }
     }
@@ -944,7 +1275,7 @@ class CoupEngine {
             this.claimedRole = null;
             this.winner = alive.length === 1 ? alive[0].id : null;
             if (this.winner) {
-                this.actionLog.push(`${this._getPlayer(this.winner).name} 获胜！`);
+                this.actionLog.push(`${this._getPlayer(this.winner).name}获胜`);
             } else {
                 this.actionLog.push('游戏结束，无人获胜');
             }
@@ -959,6 +1290,17 @@ class CoupEngine {
             this.phase = 'ended';
             this.winner = null;
             this.actionLog.push('游戏结束');
+            this._appendPresentationEvent(null, 'finalSettlement', {
+                actionId: this.interaction?.actionId || null,
+                reason: 'noAlivePlayers',
+                winnerId: null,
+                winnerName: null,
+                eliminatedPlayerId: null,
+                eliminatedPlayerName: null,
+                eliminatedRoles: [],
+                final: true,
+            });
+            this._finishPresentation();
             return;
         }
         this.currentTurnIndex = nextIdx;
@@ -971,6 +1313,7 @@ class CoupEngine {
         this.challengerId = null;
         this.responderId = null;
         this.claimedRole = null;
+        this._finishPresentationIfSettled();
     }
 
     // ==================== 玩家退出 ====================
@@ -999,20 +1342,76 @@ class CoupEngine {
         }
         player.isAlive = false;
         player.isOnline = false;
-        this.actionLog.push(`${player.name} 离开了游戏，已出局`);
+        this.actionLog.push(`${player.name} 离开游戏，已出局`);
         this._recordReveal(player, newlyRevealed, 'left');
 
-        // 如果当前是退出玩家的回合，跳到下一位
+        // A leave can happen while a challenge, block, exchange, or influence
+        // choice is open.  Remove the departed seat from every pending queue
+        // and settle the active action before checking the winner; otherwise a
+        // room would remain locked on a decision that can never be answered.
         const currentPlayer = this.players[this.currentTurnIndex];
-        if (currentPlayer.id === playerId) {
+        const wasCurrent = currentPlayer?.id === playerId;
+        const actionActorId = this.pendingAction?.blockedAction?.playerId || this.pendingAction?.playerId || null;
+        const strandedAction = wasCurrent
+            || actionActorId === playerId
+            || this.pendingAction?.targetId === playerId
+            || this.pendingInfluenceLoss?.playerId === playerId
+            || this.pendingExchange?.playerId === playerId
+            || this.responderId === playerId
+            || this.challengerId === playerId
+            || this.challengeQueue.includes(playerId);
+
+        this.challengeQueue = this.challengeQueue.filter(id => id !== playerId);
+        this.challengeIndex = Math.min(this.challengeIndex, this.challengeQueue.length);
+        if (strandedAction && !this.gameOver) {
+            this.pendingAction = null;
+            this.pendingInfluenceLoss = null;
+            this.pendingExchange = null;
+            this.challengeQueue = [];
+            this.challengeIndex = 0;
+            this.challengerId = null;
+            this.responderId = null;
+            this.claimedRole = null;
+            this.phase = 'idle';
+            this._updateInteraction({ stage: 'resolved', outcome: 'player_left', lossPlayerId: playerId });
+            // _endTurn() skips offline seats and starts the next available
+            // player.  It also closes the preceding presentation batch.
             this._endTurn();
         }
 
         this._checkGameOver();
+
+        const alive = this._getAlivePlayers();
+        const final = this.gameOver;
+        const presentationData = {
+            actionId: this.interaction?.actionId || null,
+            reason: 'playerLeave',
+            playerId: player.id,
+            playerName: player.name,
+            eliminatedPlayerId: player.id,
+            eliminatedPlayerName: player.name,
+            eliminatedRoles: player.influences.slice(),
+            winnerId: final && alive.length === 1 ? alive[0].id : this.winner,
+            winnerName: final && alive.length === 1 ? alive[0].name : this._getPlayer(this.winner)?.name || null,
+            final,
+        };
+        // A terminal leave uses one final event.  The departing player should
+        // receive the same-duration personal result, without also seeing a
+        // public "X out" animation.  A non-terminal leave is a normal public
+        // elimination event, with the same viewer-specific substitution.
+        if (final) {
+            this._startPresentation(player, 'playerLeave', presentationData, 'finalSettlement');
+            this._finishPresentation();
+        } else {
+            this._startPresentation(player, 'playerLeave', presentationData, 'playerEliminated');
+            this._finishPresentation();
+        }
         return {
             success: true,
             message: `${player.name} 已出局`,
-            state: this._getPublicState()
+            state: this._getPublicState(),
+            ended: this.gameOver,
+            winner: this.getWinner(),
         };
     }
 
@@ -1125,11 +1524,20 @@ class CoupEngine {
         state.gameOver = this.gameOver;
         state.winner = this.winner;
         state.actionLog = this.actionLog.slice(-10); // 最近10条
+        state.presentation = this._projectPresentation(state.presentation, self);
+        state.presentations = (state.presentations || []).map(batch => this._projectPresentation(batch, self));
 
         return state;
     }
 
+    getPublicState() {
+        return this._getPublicState();
+    }
+
     _getPublicState() {
+        const serverNow = this._now();
+        const presentations = this._presentationBatches(serverNow);
+        const presentation = presentations.at(-1) || (this.presentation ? { ...clone(this.presentation), serverNow } : null);
         return {
             roomId: this.roomId,
             phase: this.phase,
@@ -1146,6 +1554,9 @@ class CoupEngine {
             winner: this.winner,
             interaction: this.interaction ? { ...this.interaction } : null,
             lastReveal: this.lastReveal ? { ...this.lastReveal, roles: [...this.lastReveal.roles] } : null,
+            serverNow,
+            presentations,
+            presentation,
         };
     }
 
