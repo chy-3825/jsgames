@@ -19,7 +19,7 @@ export function createCoupTemplate() {
                 <section class="cp-stage" aria-label="当前行动">
                     <div class="cp-stage-core">
                         <aside class="cp-supply" aria-label="影响力牌库与国库">
-                            <div class="cp-court-deck" aria-label="影响力牌库"><span class="cp-deck-stack"><span class="cp-card-back-art" role="img" aria-label="影响力牌背"><img src="/assets/bgg/coup/${CARD_BACK_ART}.jpg" alt=""></span></span><strong>牌库</strong></div>
+                            <div class="cp-court-deck" aria-label="影响力牌库"><span class="cp-deck-stack"><span class="cp-card-back-art" role="img" aria-label="影响力牌背"><img src="/assets/games/coup/art-deco-v2/${CARD_BACK_ART}.jpg" alt=""></span></span><strong>牌库</strong></div>
                             <div class="cp-treasury" data-role="treasury" aria-label="国库"><span><i></i><i></i><i></i></span><strong>国库</strong></div>
                         </aside>
                         <section class="cp-event" data-role="event" aria-live="polite"><div class="cp-event-sigil">政</div><div class="cp-event-copy"><span>当前行动</span><strong>等待第一项行动</strong><p>选择收入、角色行动或政变。</p></div></section>
@@ -56,7 +56,7 @@ export function createCoupTemplate() {
                 <button class="cp-dialog-close" data-action="close-roles" type="button" aria-label="关闭角色与能力">x</button>
                 <span class="cp-dialog-label">基础版 · 五种角色</span>
                 <h2 id="cp-roles-title">角色与能力</h2>
-                <div class="cp-role-grid">${Object.keys(ROLE_ART).map(role => `<article class="cp-role-entry is-role-${role}"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${ROLE_NAMES[role]}牌面"><div><header><i>${ROLE_MARKS[role]}</i><strong>${ROLE_NAMES[role]}</strong></header><p>${ROLE_EFFECTS[role]}</p><small>${ROLE_NOTES[role]}</small></div></article>`).join('')}</div>
+                <div class="cp-role-grid">${Object.keys(ROLE_ART).map(role => `<article class="cp-role-entry is-role-${role}"><img src="/assets/games/coup/art-deco-v2/${ROLE_ART[role]}.jpg" alt="${ROLE_NAMES[role]}牌面"><div><header><i>${ROLE_MARKS[role]}</i><strong>${ROLE_NAMES[role]}</strong></header><p>${ROLE_EFFECTS[role]}</p><small>${ROLE_NOTES[role]}</small></div></article>`).join('')}</div>
             </div>
         </div>
 

@@ -1,0 +1,5 @@
+# Morgana court v2
+
+Built-in image generation edit; target: morgana-court-v1.png. Output: morgana-court-v2.png. Previous version preserved.
+
+Use case: precise-object-edit. Edit this Morgana game card to FIX THE TWO HANDS AND THEIR ARM ANATOMY. Preserve face, hair, purple embroidered noble dress, mirror chamber, lighting, border and painterly style. Repaint the hand above the mirror with a natural relaxed wrist and thumb and index finger gently pinching the veil, other three fingers gently curled and individually coherent, no fused digits. Repaint lower hand as a clearly anatomical LEFT hand supporting the bottom of the mirror, thumb on front gold rim and four fingers curled behind it, natural wrist connected to the visible foreground sleeve. Upper hand belongs to her other arm; ensure plausible shoulder-elbow-wrist continuity underneath sleeves. Exactly two hands, five digits per hand including naturally occluded fingers, no duplicated thumbs, no backward palm or twisted wrist. Simplify the gripping poses instead of elaborate tangled fingers. Keep same portrait framing and all other elements as closely as possible. No text.

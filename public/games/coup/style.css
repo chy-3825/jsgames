@@ -31,28 +31,28 @@
 }
 
 .cp-app .is-role-duke {
-    --cp-role: #ee3d96;
-    --cp-role-rgb: 238, 61, 150;
+    --cp-role: #d3b16d;
+    --cp-role-rgb: 211, 177, 109;
 }
 
 .cp-app .is-role-assassin {
-    --cp-role: #91a7b7;
-    --cp-role-rgb: 145, 167, 183;
+    --cp-role: #b7aaa0;
+    --cp-role-rgb: 183, 170, 160;
 }
 
 .cp-app .is-role-captain {
-    --cp-role: #43b6ed;
-    --cp-role-rgb: 67, 182, 237;
+    --cp-role: #a8b3ae;
+    --cp-role-rgb: 168, 179, 174;
 }
 
 .cp-app .is-role-ambassador {
-    --cp-role: #bad62e;
-    --cp-role-rgb: 186, 214, 46;
+    --cp-role: #d9c8a3;
+    --cp-role-rgb: 217, 200, 163;
 }
 
 .cp-app .is-role-contessa {
-    --cp-role: #e54b42;
-    --cp-role-rgb: 229, 75, 66;
+    --cp-role: #c98673;
+    --cp-role-rgb: 201, 134, 115;
 }
 
 .cp-app button {

@@ -180,7 +180,7 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         }
 
         const visual = role
-            ? `<span class="cp-event-card is-role-${role}"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${ROLE_NAMES[role]}牌面"></span>`
+            ? `<span class="cp-event-card is-role-${role}"><img src="/assets/games/coup/art-deco-v2/${ROLE_ART[role]}.jpg" alt="${ROLE_NAMES[role]}牌面"></span>`
             : `<div class="cp-event-sigil">${escapeHtml(sigil)}</div>`;
         $('event').innerHTML = `${visual}<div class="cp-event-copy"><span>${escapeHtml(label)}</span><strong>${escapeHtml(title)}</strong><p>${escapeHtml(detail)}</p></div>`;
     }
@@ -190,7 +190,7 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         const target = model.selectedTarget ? getPlayer(state, model.selectedTarget) : null;
         const role = action?.role;
         const visual = role
-            ? `<span class="cp-event-card is-role-${role}" data-role-card="${role}"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}牌面"></span>`
+            ? `<span class="cp-event-card is-role-${role}" data-role-card="${role}"><img src="/assets/games/coup/art-deco-v2/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}牌面"></span>`
             : `<div class="cp-event-sigil">${escapeHtml(action?.icon || '!')}</div>`;
         const cost = action?.needCoins ? `支付 ${action.needCoins} 枚金币 · ` : '';
         const next = !locked ? '确认后提交行动。' : action?.needsTarget
@@ -208,7 +208,7 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
         const actionName = action?.name || getActionName(interaction.kind);
         const stageCopy = interactionStageCopy(interaction, actor, target, actionName);
         const mainCard = role && ROLE_ART[role]
-            ? `<span class="cp-event-card cp-declaration-card is-role-${role}" data-role="declaredCard" data-role-card="${role}" data-actor-id="${escapeHtml(interaction.actorId)}"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}声明牌"><b>声明</b></span>`
+            ? `<span class="cp-event-card cp-declaration-card is-role-${role}" data-role="declaredCard" data-role-card="${role}" data-actor-id="${escapeHtml(interaction.actorId)}"><img src="/assets/games/coup/art-deco-v2/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}声明牌"><b>声明</b></span>`
             : `<span class="cp-action-token ${interaction.kind === 'coup' ? 'is-coup' : ''}" data-role="declaredCard" data-actor-id="${escapeHtml(interaction.actorId)}"><i>${escapeHtml(action?.icon || '政')}</i><b>${escapeHtml(actionName)}</b></span>`;
         const blockCard = interaction.blockerId && interaction.blockRole ? renderBlockDeclaration(interaction.blockRole) : '';
         return `<div class="cp-public-interaction" data-interaction-id="${Number(interaction.actionId) || 0}">
@@ -496,7 +496,7 @@ export function createCoupRenderer({ mount, model, getElement, windowRef = globa
 
     function openRoleDetail(role) {
         if (!ROLE_ART[role]) return;
-        $('roleDetailDialog').innerHTML = `<button class="cp-dialog-close" data-action="close-role-detail" type="button" aria-label="关闭角色说明">x</button><span class="cp-dialog-label">角色能力</span><div class="cp-role-detail"><img src="/assets/bgg/coup/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}牌面"><div><span>${escapeHtml(ROLE_MARKS[role])} · 角色能力</span><h2 id="cp-role-detail-title">${escapeHtml(ROLE_NAMES[role])}</h2><p>${escapeHtml(ROLE_EFFECTS[role])}</p><small>${escapeHtml(ROLE_NOTES[role])}</small></div></div>`;
+        $('roleDetailDialog').innerHTML = `<button class="cp-dialog-close" data-action="close-role-detail" type="button" aria-label="关闭角色说明">x</button><span class="cp-dialog-label">角色能力</span><div class="cp-role-detail"><img src="/assets/games/coup/art-deco-v2/${ROLE_ART[role]}.jpg" alt="${escapeHtml(ROLE_NAMES[role])}牌面"><div><span>${escapeHtml(ROLE_MARKS[role])} · 角色能力</span><h2 id="cp-role-detail-title">${escapeHtml(ROLE_NAMES[role])}</h2><p>${escapeHtml(ROLE_EFFECTS[role])}</p><small>${escapeHtml(ROLE_NOTES[role])}</small></div></div>`;
         setOverlay($('roleDetailOverlay'), true);
     }
 

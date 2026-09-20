@@ -3,12 +3,12 @@ import { escapeHtml } from '../common/html.js';
 export { escapeHtml };
 
 export const ROLE = Object.freeze({
-    werewolf: { name: '狼人', image: 'langr.png', text: '与狼队在夜里投票，决定今夜的袭击目标。' },
-    seer: { name: '预言家', image: 'yyj.png', text: '每夜查验一名玩家，得知对方属于狼人或好人阵营。' },
-    witch: { name: '女巫', image: 'nw.png', text: '拥有一瓶解药和一瓶毒药，每晚最多使用一瓶；自救以房间规则为准。' },
-    hunter: { name: '猎人', image: 'lr.png', text: '并非被毒药带走时，可以开枪带走一名玩家。' },
-    guard: { name: '守卫', image: 'sw.png', text: '每夜可守护一名玩家或选择空守，但不能连续两夜守护同一个人。' },
-    villager: { name: '平民', image: 'pm.png', text: '从发言和投票中辨认真相，找出藏在人群中的狼人。' },
+    werewolf: { name: '狼人', image: 'werewolf-v2.png', text: '与狼队在夜里投票，决定今夜的袭击目标。' },
+    seer: { name: '预言家', image: 'seer-v3.png', text: '每夜查验一名玩家，得知对方属于狼人或好人阵营。' },
+    witch: { name: '女巫', image: 'witch-v3.png', text: '拥有一瓶解药和一瓶毒药，每晚最多使用一瓶；自救以房间规则为准。' },
+    hunter: { name: '猎人', image: 'hunter-v3.png', text: '并非被毒药带走时，可以开枪带走一名玩家。' },
+    guard: { name: '守卫', image: 'guard-v3.png', text: '每夜可守护一名玩家或选择空守，但不能连续两夜守护同一个人。' },
+    villager: { name: '平民', image: 'villager-v2.png', text: '从发言和投票中辨认真相，找出藏在人群中的狼人。' },
 });
 
 export function eliminationFragments() {

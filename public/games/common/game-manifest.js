@@ -88,7 +88,7 @@ export const GAME_ASSETS = Object.freeze({
         style('/games/splendor/responsive.css', '20260901-card-spacing-1'),
     ] }),
     takefive: freezeAssets({ clientPath: '/games/takefive/client.js', styles: [style('/games/takefive/style.css', '20260831-player-markers-1')] }),
-    werewolf: freezeAssets({ clientPath: '/games/werewolf/client.js', styles: [style('/games/werewolf/style.css', '20260830-werewolf-presentation-5')] }),
+    werewolf: freezeAssets({ clientPath: '/games/werewolf/client.js', styles: [style('/games/werewolf/style.css', '20260919-werewolf-art-2')] }),
     witchtown: freezeAssets({ clientPath: '/games/witchtown/client.js', styles: [
         style('/games/witchtown/style.css', '20260827-hold-identity-2'),
         style('/games/witchtown/table.css', '20260829-architecture-split-2'),

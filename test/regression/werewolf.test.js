@@ -1514,9 +1514,9 @@ test('Werewolf WebSocket lifecycle wires transient disconnect and resume hooks',
 test('Werewolf client uses player-facing copy, matching role art, and disposes click listeners', () => {
     const client = readFrontendSource('werewolf');
     const style = fs.readFileSync('public/games/werewolf/style.css', 'utf8');
-    assert.match(client, /werewolf: \{ name: '狼人', image: 'langr\.png'/);
-    assert.match(client, /hunter: \{ name: '猎人', image: 'lr\.png'/);
-    assert.match(client, /guard: \{ name: '守卫', image: 'sw\.png'/);
+    assert.match(client, /werewolf: \{ name: '狼人', image: 'werewolf-v2\.png'/);
+    assert.match(client, /hunter: \{ name: '猎人', image: 'hunter-v3\.png'/);
+    assert.match(client, /guard: \{ name: '守卫', image: 'guard-v3\.png'/);
     assert.match(client, /createClientScope\(/);
     assert.match(client, /scope\.destroy\(\)/);
     assert.match(client, /天黑请闭眼/);

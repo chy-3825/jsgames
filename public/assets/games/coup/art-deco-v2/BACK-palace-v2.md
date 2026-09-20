@@ -1,0 +1,11 @@
+# 宫殿与金币卡背 v2
+
+内置 imagegen 生成，参考 coup-v2.webp 封面。前景桌上金币、中景地毯、远景空王座，已接入游戏。
+
+## 提示词
+
+Use case: stylized-concept. Create one NEW portrait 2:3 card-back illustration for Coup. Attached cover is a STYLE reference only. Match its flat angular Art Deco political-noir poster style, matte black, antique gold, warm ivory and restrained deep red, subtle print grain. Moderate visual information, clear large shapes readable on a phone.
+Scene with physically coherent spatial logic: viewer stands at the near end of an actual dark council table inside a palace throne room, looking slightly down across the tabletop toward an empty throne in the distance. Lower third foreground: clearly visible horizontal tabletop and front edge; ON this table sit three small stacks of ordinary-sized gold coins and two loose coins. Coins have consistent diameters, flattened ellipses in perspective, visible stacked rims, simple blank faces. They look large in frame ONLY because they are close to viewer, not giant sculptures. All coins touch the same tabletop, no floating objects. Table occupies foreground only.
+Middle: clear floor space BEYOND the far edge of the table, with one deep-red carpet receding toward the throne. Carpet is on the floor, never on or through the table. Background upper third: one small but unmistakable empty angular gold-framed throne with dark red upholstery, resting on a low two-step dais. Two broad simplified palace pillars frame the scene on either side. A pale ivory wall behind throne provides contrast. Consistent single vanishing point, convincing overlap, normal relative sizes, no impossible architecture.
+Meaning: money laid out for bargaining in the seat of political power; absence of ruler suggests a contested throne. Composition organized into only three clear groups: coins on table, carpet, throne between pillars. Gold coins are brightest foreground focal point, throne secondary. Calm black negative spaces, approximately half image dark. No humans, no giant coin in middle of hall, no amphitheater, no circles around coins, no extra symbols, no crown emblem, no lettering, no numbers, no logos, no sunburst rays, no filigree, no decorative frame, no shiny CGI rendering. Full bleed finished artwork, not a photographed card.
+

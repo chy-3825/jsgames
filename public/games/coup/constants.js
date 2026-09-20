@@ -38,14 +38,14 @@ export const ROLE_NOTES = {
 };
 
 export const ROLE_ART = {
-    duke: 'modern-duke',
-    assassin: 'modern-assassin',
-    captain: 'modern-captain',
-    ambassador: 'modern-ambassador',
-    contessa: 'modern-contessa',
+    duke: 'duke',
+    assassin: 'assassin-v1',
+    captain: 'captain',
+    ambassador: 'ambassador-v4',
+    contessa: 'contessa',
 };
 
-export const CARD_BACK_ART = 'modern-back';
+export const CARD_BACK_ART = 'back-palace-v2';
 
 export const ACTIONS = [
     { id: 'income', name: '收入', group: 'public', desc: '从国库获得 1 枚金币', icon: '+1' },

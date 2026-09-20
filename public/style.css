@@ -61,7 +61,7 @@ a { color: inherit; text-decoration: none; }
 .entry-shell { display: grid; grid-template-columns: minmax(0, 1fr) minmax(410px, 520px); align-items: center; gap: clamp(50px, 8vw, 130px); width: min(1180px, 100%); min-height: calc(100dvh - 126px); margin: 0 auto; padding: clamp(44px, 7vh, 86px) 0; }
 .entry-intro { display: grid; align-content: center; }
 .entry-eyebrow { color: #d3aa61; font: 700 9px/1 Georgia, serif; letter-spacing: .27em; }
-.entry-intro h1 { margin: 20px 0 22px; color: #fff8e8; font: 600 clamp(44px, 5.6vw, 76px)/1.06 "Songti SC", SimSun, serif; letter-spacing: -.055em; text-shadow: 0 13px 35px rgba(0,0,0,.28); }
+.entry-intro h1 { margin: 20px 0 22px; color: #fff8e8; font: 600 clamp(44px, 5.6vw, 76px)/1.3 "Songti SC", SimSun, serif; letter-spacing: .01em; text-shadow: 0 13px 35px rgba(0,0,0,.28); }
 .entry-intro > p { max-width: 580px; color: #9bb0aa; font-size: 13px; line-height: 1.9; }
 .entry-identity { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 13px; max-width: 500px; margin-top: 36px; padding: 13px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 15px; background: rgba(6, 19, 24, .42); backdrop-filter: blur(12px); }
 .entry-avatar { display: grid; width: 46px; height: 46px; place-items: center; border: 1px solid rgba(228,191,122,.42); border-radius: 13px; background: rgba(228,191,122,.08); color: #e6c783; font: 500 19px/1 "Songti SC", SimSun, serif; }
@@ -144,7 +144,7 @@ body.is-entry-view.is-entry-returning .lobby-entry { animation: entryReturnIn .5
 .join-lobby-shell { width: min(1240px, calc(100% - 44px)); margin: 0 auto; padding: 67px 0 44px; }
 .join-lobby-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(390px, 480px); align-items: center; gap: clamp(40px, 8vw, 120px); padding-bottom: 65px; }
 .join-lobby-copy { max-width: 630px; }
-.join-lobby-copy h1 { margin: 14px 0 17px; color: var(--navy); font: 600 clamp(42px, 5.2vw, 68px)/1.08 "Songti SC", SimSun, serif; letter-spacing: -.055em; }
+.join-lobby-copy h1 { margin: 14px 0 17px; color: var(--navy); font: 600 clamp(42px, 5.2vw, 68px)/1.3 "Songti SC", SimSun, serif; letter-spacing: .01em; }
 .join-lobby-copy p { max-width: 520px; color: var(--ink-soft); font-size: 13px; line-height: 1.9; }
 .join-lobby-code-card { display: grid; gap: 9px; padding: 28px; border-radius: 21px; background: var(--navy); color: #f7f0de; box-shadow: 0 22px 55px rgba(29,45,50,.18); }
 .join-lobby-card-kicker { color: #d5ae67; font: 700 8px/1 Georgia, serif; letter-spacing: .2em; }
@@ -182,12 +182,12 @@ body.is-entry-view.is-entry-returning .lobby-entry { animation: entryReturnIn .5
 .join-room-list .room-item:hover { border-color: rgba(189,138,69,.42); box-shadow: 0 13px 34px rgba(35,52,54,.09); transform: translateY(-2px); }
 .join-room-list .room-item-art { grid-area: art; width: 62px; height: 88px; border-radius: 10px; }
 .join-room-list .room-item-art .room-mini-symbol { width: 37px; height: 37px; background: rgba(255,253,248,.78); color: var(--room-fg, #405b58); font-size: 18px; box-shadow: 0 5px 15px rgba(0,0,0,.14); }
-.join-room-list .room-info { align-self: end; padding-left: 9px; }
+.join-room-list .room-info { grid-area: info; align-self: end; }
 .join-room-list .room-info strong { font-size: 13px; }
 .join-room-list .room-info span { margin-top: 1px; font-size: 9px; line-height: 1.4; }
 .join-room-list .room-info small { overflow: hidden; margin-top: 2px; color: #9b8880; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.join-room-list .room-item-action { align-self: start; padding-left: 9px; }
-.join-room-list .join-button { padding: 6px 9px; }
+.join-room-list .room-item-action { grid-area: action; align-self: start; }
+.join-room-list .join-button { white-space: nowrap; line-height: 1.5; padding: 6px 9px; }
 .join-room-list .room-state { font-size: 9px; }
 .join-room-list .empty-state { grid-column: 1 / -1; min-height: 190px; border: 1px dashed rgba(32,51,59,.15); border-radius: 15px; background: rgba(255,253,248,.45); }
 .join-lobby-footer { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 36px; color: #9ba59e; font-size: 10px; }
@@ -227,7 +227,7 @@ body.is-entry-view.is-entry-returning .lobby-entry { animation: entryReturnIn .5
 .lobby-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; }
 .hero-copy { max-width: 680px; }
 .eyebrow { display: block; color: var(--gold); font-size: 9px; font-weight: 800; letter-spacing: .24em; }
-.hero-copy h1 { margin: 12px 0 10px; color: var(--navy); font-family: "Songti SC", SimSun, serif; font-size: clamp(36px, 5.4vw, 66px); font-weight: 700; letter-spacing: -.04em; line-height: 1.06; }
+.hero-copy h1 { margin: 12px 0 10px; color: var(--navy); font-family: "Songti SC", SimSun, serif; font-size: clamp(36px, 5.4vw, 66px); font-weight: 700; letter-spacing: .01em; line-height: 1.3; }
 .hero-copy h1 em { color: #ad7440; font-style: normal; }
 .hero-copy p { color: var(--ink-soft); font-size: 14px; letter-spacing: .03em; line-height: 1.7; }
 .hero-meta { display: flex; align-items: center; gap: 12px; margin-top: 24px; color: #85958f; font-size: 10px; }
@@ -261,7 +261,7 @@ body.is-entry-view.is-entry-returning .lobby-entry { animation: entryReturnIn .5
 .game-group[hidden] { display: none; }
 .game-group-header { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 11px; padding-bottom: 10px; border-bottom: 1px solid rgba(32, 51, 59, .12); }
 .game-group-header h3 { margin-top: 5px; color: var(--navy); font-family: "Songti SC", SimSun, serif; font-size: 20px; }
-.game-group-header p { margin-top: 3px; color: #92a09a; font-size: 9px; }
+.game-group-header p { line-height: 1.7; margin-top: 7px; color: #92a09a; font-size: 9px; }
 .game-group-count { flex: 0 0 auto; padding: 5px 8px; border: 1px solid rgba(189, 138, 69, .27); border-radius: 999px; color: #a17a45; font-size: 9px; white-space: nowrap; }
 .game-catalog { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .game-card { position: relative; overflow: hidden; min-width: 0; border: 1px solid rgba(32, 51, 59, .1); border-radius: 15px; background: var(--paper); box-shadow: 0 8px 22px rgba(30, 53, 57, .045); cursor: pointer; transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
@@ -423,11 +423,12 @@ body.is-entry-view.is-entry-returning .lobby-entry { animation: entryReturnIn .5
 .game-card-art[data-card-art].is-art-error::after { background: linear-gradient(135deg, rgba(255,255,255,.04), rgba(7,14,18,.25)); animation: none; }
 .game-card-body { padding: 14px 15px 13px; }
 .game-card-title { display: flex; justify-content: space-between; gap: 8px; }
-.game-card-title h3 { color: var(--navy); font-family: "Songti SC", SimSun, serif; font-size: 17px; }
-.game-card-title p { overflow: hidden; margin-top: 4px; color: #6f817b; font-size: 10px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
-.game-card-arrow { color: var(--gold); font-size: 17px; opacity: .65; transition: .2s ease; }
+.game-card-title > div { min-width: 0; }
+.game-card-title h3 { line-height: 1.5; overflow-wrap: anywhere; color: var(--navy); font-family: "Songti SC", SimSun, serif; font-size: 17px; }
+.game-card-title p { overflow: hidden; margin-top: 4px; color: #6f817b; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.game-card-arrow { flex: 0 0 auto; color: var(--gold); font-size: 17px; opacity: .65; transition: .2s ease; }
 .game-card:hover .game-card-arrow { opacity: 1; transform: translate(2px, -2px); }
-.game-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: #687a74; font-size: 10px; }
+.game-card-meta { display: flex; flex-wrap: wrap; line-height: 1.6; align-items: center; gap: 8px; margin-top: 12px; color: #687a74; font-size: 10px; }
 .game-card-meta i { width: 3px; height: 3px; border-radius: 50%; background: #c5b38d; }
 .game-mode-badge { display: inline-flex; margin-top: 9px; padding: 5px 8px; border-radius: 999px; background: rgba(189, 138, 69, .13); color: #7f5e2e; font-size: 9px; font-weight: 700; line-height: 1; }
 .game-mode-badge.mode-host-assist { background: rgba(118, 91, 138, .12); color: #765b8a; }
@@ -625,10 +626,10 @@ body.has-create-dialog { overflow: hidden; }
 .room-item { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 9px; align-items: center; padding: 10px 7px; border-bottom: 1px solid rgba(32, 51, 59, .08); }
 .room-item:last-child { border-bottom: 0; }
 .room-mini-symbol { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; background: var(--room-bg, #dce4e0); color: var(--room-fg, #405b58); font-family: "Songti SC", SimSun, serif; font-size: 14px; }
-.room-info { display: grid; gap: 4px; min-width: 0; }
+.room-info { display: grid; line-height: 1.65; gap: 6px; min-width: 0; }
 .room-info strong { overflow: hidden; color: var(--ink); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.room-info span { color: #71827c; font-size: 9px; }
-.join-button { padding: 7px 8px; border: 1px solid rgba(189, 138, 69, .33); border-radius: 7px; background: transparent; color: #a6783d; font-size: 9px; }
+.room-info span { overflow-wrap: anywhere; color: #71827c; font-size: 9px; }
+.join-button { white-space: nowrap; line-height: 1.5; padding: 7px 8px; border: 1px solid rgba(189, 138, 69, .33); border-radius: 7px; background: transparent; color: #a6783d; font-size: 9px; }
 .join-button:hover { background: var(--gold); color: white; }
 .join-button span { font-size: 13px; }
 .room-state { color: #7e8e88; font-size: 9px; }
@@ -662,3 +663,19 @@ body.has-create-dialog { overflow: hidden; }
 .tone-kingdom { --card-bg: linear-gradient(145deg, #456d62, #1c3438); --card-ink: #e8d38b; --room-bg: #dbe9df; --room-fg: #4f806a; }
 .tone-acquire { --card-bg: linear-gradient(145deg, #76533b, #282834); --card-ink: #f1d391; --room-bg: #eee0ce; --room-fg: #8e6242; }
 .tone-default { --card-bg: linear-gradient(145deg, #526266, #273b43); --card-ink: #e6dfc5; --room-bg: #e0e6e5; --room-fg: #5b7275; }
+
+/* Public room cards must not inherit the compact sidebar's scroll limit. */
+.join-room-list { max-height: none; overflow: visible; padding: 0; }
+.room-info small { font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; color: #71827c; }
+.entry-route > span:nth-child(2) { gap: 10px; min-width: 0; }
+.entry-route strong { line-height: 1.4; }
+.entry-route em { font-size: 12px; line-height: 1.7; }
+.entry-identity label { gap: 6px; }
+.entry-identity small { font-size: 11px; line-height: 1.6; }
+.game-card-body { padding: 18px; }
+.game-mode-badge { line-height: 1.5; }
+.join-room-list .room-info strong { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
+.join-room-list .room-info span { font-size: 11px; line-height: 1.7; }
+.join-room-list .room-info small { font-size: 11px; line-height: 1.6; }
+
+.entry-intro h1, .hero-copy h1, .join-lobby-copy h1 { text-wrap: balance; }

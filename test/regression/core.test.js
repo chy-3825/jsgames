@@ -614,7 +614,7 @@ test('Hand and response games keep the active decision inside short mobile viewp
 test('Hidden-information games keep private decisions inside short landscape viewports', () => {
     const games = ['werewolf', 'avalon', 'decrypto', 'witchtown'];
     const expectedAssetVersion = {
-        werewolf: '20260830-werewolf-presentation-5',
+        werewolf: '20260919-werewolf-art-2',
         avalon: '20260829-avalon-role-privacy-1',
         decrypto: '20260827-online-notebook-1',
         witchtown: '20260827-hold-identity-2'
@@ -773,7 +773,7 @@ test('The four newest games can each run from setup to a deterministic end state
     assert.equal(athlete.status, 'ended');
 });
 
-test('Social deduction games share a prominent responsive identity focus and Avalon uses local BGG role art', () => {
+test('Social deduction games share a prominent responsive identity focus and Avalon uses local role art', () => {
     const common = fs.readFileSync('public/games/common/hidden-role-focus.css', 'utf8');
     const avalonClient = readFrontendSource('avalon');
     const avalonStyle = readGameStyles('avalon');
@@ -792,11 +792,14 @@ test('Social deduction games share a prominent responsive identity focus and Ava
         assert.match(client, /social-role-focus/);
     }
     for (const role of roles) {
-        const file = `public/assets/bgg/avalon/roles/${role}.webp`;
+        const entry = avalonClient.match(new RegExp(`${role}: \\{[^\\n]+image: '([^']+)'`));
+        assert.ok(entry, `${role} 应配置角色卡面`);
+        const file = `public/assets/games/avalon/roles/${entry[1]}`;
         const bytes = fs.readFileSync(file);
-        assert.equal(bytes.subarray(0, 4).toString(), 'RIFF', `${role} 应为本地 WebP`);
+        const isPng = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+        const isWebp = bytes.subarray(0, 4).toString() === 'RIFF' && bytes.subarray(8, 12).toString() === 'WEBP';
+        assert.ok(isPng || isWebp, `${role} 应为本地 PNG 或 WebP`);
         assert.ok(bytes.length > 50_000, `${role} 角色裁图不应是空壳资源`);
-        assert.match(avalonClient, new RegExp(`${role}\\.webp`));
     }
     assert.match(avalonClient, /roleArtPreloads/);
     assert.match(avalonClient, /av-role-art social-role-focus-art/);

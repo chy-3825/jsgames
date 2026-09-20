@@ -103,3 +103,19 @@
     .game-card.is-revealing,
     [data-card-art].is-art-ready { opacity: 1; transform: none; filter: none; }
 }
+
+/* Keep the public pages readable between desktop and phone breakpoints. */
+@media (min-width: 761px) and (max-width: 1080px) {
+    .entry-shell, .join-lobby-hero { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
+    .join-room-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+    .entry-identity small { max-width: none; white-space: normal; }
+    .entry-route em { font-size: 12px; }
+    .game-card-body { padding: 16px; }
+    .game-card-title p { font-size: 12px; }
+    .game-catalog { grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 16px; }
+    .hero-copy, .join-lobby-copy { min-width: 0; }
+    .hero-meta { flex-wrap: wrap; row-gap: 8px; }
+    .join-lobby-table-count { flex-shrink: 0; }
+}

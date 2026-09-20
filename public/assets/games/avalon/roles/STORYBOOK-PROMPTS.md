@@ -1,0 +1,50 @@
+# 阿瓦隆角色卡面：独立场景版
+
+使用内置 image_gen 生成。风格参考：review/style-previews/avalon-merlin-halfbody-v2.png。保留梅林现有 merlin-v3.webp；其余七张使用本目录 *-storybook-v1.png 原始输出，无裁剪。旧卡面保留以便回退。
+
+## percival
+
+文件：percival-storybook-v1.png
+
+Use case: stylized-concept. ONE original Avalon character identity card illustration, portrait 4:5. Reference image is ONLY for matte hand-painted storybook gouache brushwork, restrained antique-gold edge ornament and character prominence. Invent a genuinely DIFFERENT background as specified below. Do NOT reuse reference's lake, castle, mountains, moon, constellation sky, top star or bottom crescent. Simple fine gold perimeter with role-specific small corner ornament only. Waist-up close view, character fills 80–90% height, face and two hands readable; painterly stylized, subdued colors, poetic medieval atmosphere. Keep scene low-detail and subordinate but recognizable. No text, watermark or UI. Percival: young clean-shaven knight with chestnut hair, ivory and muted teal tunic with light mail. UNIQUE POSE: sword held vertically in both hands near the chest, shoulders facing front but head turned sharply left in uncertain scrutiny; a faint divided shadow behind him hints at two possible guides. Composed searching expression. No raised spellcasting hand. REQUIRED UNIQUE BACKGROUND: Forked ancient stone gateway with two diverging paths, pale dawn, ivory and teal. No castle, lake, moon, stars or forest panorama.
+
+## assassin
+
+文件：assassin-storybook-v1.png
+
+Use case: stylized-concept. ONE original Avalon character identity card illustration, portrait 4:5. Reference image is ONLY for matte hand-painted storybook gouache brushwork, restrained antique-gold edge ornament and character prominence. Invent a genuinely DIFFERENT background as specified below. Do NOT reuse reference's lake, castle, mountains, moon, constellation sky, top star or bottom crescent. Simple fine gold perimeter with role-specific small corner ornament only. Waist-up close view, character fills 80–90% height, face and two hands readable; painterly stylized, subdued colors, poetic medieval atmosphere. Keep scene low-detail and subordinate but recognizable. No text, watermark or UI. Assassin: lean hooded woman, charcoal and muted wine-red leather. UNIQUE POSE: deep forward lean in profile facing right, shoulders low, one forearm crosses low across the waist concealing a short dagger held in reverse grip, other hand pulls cloak back; eyes glance sideways toward viewer. Taut stealthy diagonal silhouette, no magic. REQUIRED UNIQUE BACKGROUND: Narrow medieval alley with rough walls and a diagonal sliver of cold light, charcoal and wine red. No castle vista, lake, moon, stars or misty mountains.
+
+## morgana
+
+文件：morgana-storybook-v1.png
+
+Use case: stylized-concept. ONE original Avalon character identity card illustration, portrait 4:5. Reference image is ONLY for matte hand-painted storybook gouache brushwork, restrained antique-gold edge ornament and character prominence. Invent a genuinely DIFFERENT background as specified below. Do NOT reuse reference's lake, castle, mountains, moon, constellation sky, top star or bottom crescent. Simple fine gold perimeter with role-specific small corner ornament only. Waist-up close view, character fills 80–90% height, face and two hands readable; painterly stylized, subdued colors, poetic medieval atmosphere. Keep scene low-detail and subordinate but recognizable. No text, watermark or UI. Morgana: mature dark-haired enchantress in muted plum with antique gold embroidery. UNIQUE POSE: looking back over a bare-of-armor shoulder toward viewer, body turned away, holding a small antique oval mirror low near her opposite shoulder, the free hand lightly drawing a veil across the mirror. Knowing ambiguous expression, graceful twisting S silhouette. No staff, no orb, no floating star chart. REQUIRED UNIQUE BACKGROUND: Interior ruined mirror chamber, one broken arch and layered muted violet reflections, dim silver light. No castle vista, lake, moon, stars or forest.
+
+## mordred
+
+文件：mordred-storybook-v1.png
+
+Use case: stylized-concept. ONE original Avalon character identity card illustration, portrait 4:5. Reference image is ONLY for matte hand-painted storybook gouache brushwork, restrained antique-gold edge ornament and character prominence. Invent a genuinely DIFFERENT background as specified below. Do NOT reuse reference's lake, castle, mountains, moon, constellation sky, top star or bottom crescent. Simple fine gold perimeter with role-specific small corner ornament only. Waist-up close view, character fills 80–90% height, face and two hands readable; painterly stylized, subdued colors, poetic medieval atmosphere. Keep scene low-detail and subordinate but recognizable. No text, watermark or UI. Mordred: broad middle-aged dark knight with short black hair, restrained blackened plate and faded green-black cloak. UNIQUE POSE: chest turned three-quarters left, chin bowed and eyes looking up, one gauntleted forearm crossing high over chest to draw the cloak across the opposite shoulder, other hand low at belt. Imposing angular closed silhouette, face partially shadowed but readable. Thin fog dissolves one shoulder. No sword held in hands, no spellcasting, no horned helmet. REQUIRED UNIQUE BACKGROUND: Empty throne hall with massive dark pillars and a single faded banner, dark olive and bronze side light. No distant castle, lake, moon, stars or mountains.
+
+## oberon
+
+文件：oberon-storybook-v1.png
+
+Use case: stylized-concept. ONE original Avalon character identity card illustration, portrait 4:5. Reference image is ONLY for matte hand-painted storybook gouache brushwork, restrained antique-gold edge ornament and character prominence. Invent a genuinely DIFFERENT background as specified below. Do NOT reuse reference's lake, castle, mountains, moon, constellation sky, top star or bottom crescent. Simple fine gold perimeter with role-specific small corner ornament only. Waist-up close view, character fills 80–90% height, face and two hands readable; painterly stylized, subdued colors, poetic medieval atmosphere. Keep scene low-detail and subordinate but recognizable. No text, watermark or UI. Oberon: solitary wild older wanderer, tangled russet hair and short beard, weathered moss-brown layers with a few dried leaves. UNIQUE POSE: moving sideways left while turning face back right, left forearm lifted across brow pushing aside a hanging bare branch, right arm low reaching behind into mist; asymmetrical windswept silhouette. Lost and estranged, human rather than monster. No staff or sword. REQUIRED UNIQUE BACKGROUND: Tangled barren woodland close around the figure, bare branches and windblown russet leaves, earthy moss palette. No architecture, lake, moon, stars or distant castle.
+
+## minion
+
+文件：minion-storybook-v1.png
+
+Use case: stylized-concept. ONE original Avalon character identity card illustration, portrait 4:5. Reference image is ONLY for matte hand-painted storybook gouache brushwork, restrained antique-gold edge ornament and character prominence. Invent a genuinely DIFFERENT background as specified below. Do NOT reuse reference's lake, castle, mountains, moon, constellation sky, top star or bottom crescent. Simple fine gold perimeter with role-specific small corner ornament only. Waist-up close view, character fills 80–90% height, face and two hands readable; painterly stylized, subdued colors, poetic medieval atmosphere. Keep scene low-detail and subordinate but recognizable. No text, watermark or UI. Minion of Mordred: wiry middle-aged conspirator, cropped hair, narrow face, worn slate and burgundy court clothing. UNIQUE POSE: hunched torso in three-quarter view leaning toward viewer, extending one hand low forward offering a small sealed dark parchment, the other hand tucked tightly against chest under cloak. Suspicious upward glance and compact silhouette. No magical glow, no staff, no dagger. REQUIRED UNIQUE BACKGROUND: Small candlelit conspirators' chamber with rough tabletop at bottom and deep warm brown shadow, one modest candle at side. No castle, lake, moon, stars or outdoor landscape.
+
+## loyal
+
+文件：loyal-storybook-v1.png
+
+Use case: stylized-concept. ONE original Avalon character identity card illustration, portrait 4:5. Reference image is ONLY for matte hand-painted storybook gouache brushwork, restrained antique-gold edge ornament and character prominence. Invent a genuinely DIFFERENT background as specified below. Do NOT reuse reference's lake, castle, mountains, moon, constellation sky, top star or bottom crescent. Simple fine gold perimeter with role-specific small corner ornament only. Waist-up close view, character fills 80–90% height, face and two hands readable; painterly stylized, subdued colors, poetic medieval atmosphere. Keep scene low-detail and subordinate but recognizable. No text, watermark or UI. Loyal servant of Arthur: sturdy female knight, braided brown hair, pale blue mantle and simple worn mail. UNIQUE POSE: torso twisting left into a protective stance, one arm bracing a broad shield diagonally forward at the lower left, other fist pressed firmly over heart in oath; head looks right over shoulder as if guarding a companion. Open brave expression, strong wide silhouette. No raised weapon or magic. REQUIRED UNIQUE BACKGROUND: Dawn-lit stone gate interior with warm light crossing pale masonry, muted blue and warm ivory. No distant castle vista, lake, moon, stars or forest.
+
+## Oberon 局部修正
+
+Edit this Oberon card illustration: remove ONLY the extra small third hand and its stray arm at the far left edge around 70% down the image, behind the large foreground sleeve. Replace that extra hand with woodland branches and cloak/background texture. Keep exactly TWO hands: the raised hand at upper right gripping the overhead branch, and the large foreground hand at lower left extending from the main sleeve. Preserve the face, pose, woodland background, gold frame, colors, painterly brushwork and composition unchanged. No other changes.
+

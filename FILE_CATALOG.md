@@ -383,7 +383,7 @@
 
 | 文件 | 状态 | 用途 |
 | --- | --- | --- |
-| `public/assets/werewolf-netease/README.md` | 开发资料 | 角色图来源、下载日期和授权风险说明。 |
+| `public/assets/games/werewolf/README.md` | 开发资料 | 角色图来源、下载日期和授权风险说明。 |
 | `characters/langr.png` | 运行必需 | 狼人立绘。 |
 | `characters/yyj.png` | 运行必需 | 预言家立绘。 |
 | `characters/nw.png` | 运行必需 | 女巫立绘。 |
@@ -565,13 +565,13 @@
 - `public/assets/monopoly/tokens/3d-lantern.png` — 环城大富翁 3D 灯笼棋子。
 - `public/assets/monopoly/tokens/3d-taxi.png` — 环城大富翁 3D 的士棋子。
 - `public/assets/monopoly/tokens/3d-tram.png` — 环城大富翁 3D 电车棋子。
-- `public/assets/werewolf-netease/README.md` — 网易狼人杀角色图来源与授权风险说明。
-- `public/assets/werewolf-netease/characters/langr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/lr.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/nw.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/pm.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/sw.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
-- `public/assets/werewolf-netease/characters/yyj.png` — 网易狼人杀角色立绘；文件名与中文角色对应见第 15 节。
+- `public/assets/games/werewolf/README.md` — 狼人杀原创动漫立绘来源与提示词说明。
+- `public/assets/games/werewolf/werewolf-v2.png` — 原创动漫透明角色立绘；映射见 games/werewolf/constants.js。
+- `public/assets/games/werewolf/hunter-v3.png` — 原创动漫透明角色立绘；映射见 games/werewolf/constants.js。
+- `public/assets/games/werewolf/witch-v3.png` — 原创动漫透明角色立绘；映射见 games/werewolf/constants.js。
+- `public/assets/games/werewolf/villager-v2.png` — 原创动漫透明角色立绘；映射见 games/werewolf/constants.js。
+- `public/assets/games/werewolf/guard-v3.png` — 原创动漫透明角色立绘；映射见 games/werewolf/constants.js。
+- `public/assets/games/werewolf/seer-v3.png` — 原创动漫透明角色立绘；映射见 games/werewolf/constants.js。
 - `public/fonts/HanWangLiSu-NOTICE.txt` — 汉王中隶书字体说明。
 - `public/fonts/HanWangLiSuMedium.ttf` — 中国象棋棋子使用的隶书字体。
 - `public/fonts/ZhiMangXing-OFL.txt` — Zhi Mang Xing 字体 OFL 许可。

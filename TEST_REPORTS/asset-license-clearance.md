@@ -9,7 +9,7 @@
 | BGG 封面/组件图 | `public/assets/bgg/`、`public/assets/covers/` | 大厅封面、规则弹窗和组件视觉层 | [`SOURCES.md`](../public/assets/bgg/SOURCES.md)、[`BGG_CARD_RESOURCES.md`](../BGG_CARD_RESOURCES.md) | 仅有项目记录与用户确认；公开/商业再分发范围仍需保留书面许可 |
 | 情书牌面裁切 | `public/assets/bgg/loveletter/cards/` | 经典版 16 张牌面 | `SOURCES.md` 中的 `detail` 图片 ID 与裁切说明 | 同上；确认是否允许派生裁切文件随站点分发 |
 | 阿瓦隆角色 WebP | `public/assets/bgg/avalon/` | 8 张基础/可选角色牌 | `SOURCES.md` 中的 BGG 图片 ID、裁切尺寸和预加载说明 | 同上；需确认角色图派生作品许可 |
-| 网易狼人杀角色图 | `public/assets/werewolf-netease/` | 当前 6 张基础角色图 | [`README.md`](../public/assets/werewolf-netease/README.md) | 官网公开展示不等于再分发许可；公网/商业发布前必须获得权利人许可或替换素材 |
+| 狼人杀原创动漫立绘 | `public/assets/games/werewolf/` | 6 张基础角色透明立绘 | [`README.md`](../public/assets/games/werewolf/README.md)、`prompts.json` | 2026-09-19 使用内置 image_gen 重新生成，旧网易素材已移出公开资源目录 |
 | 本地字体 | `public/fonts/` | 3D 棋类和中文牌面 | [`FILE_CATALOG.md`](../FILE_CATALOG.md) 中的字体章节及目录内许可证文本 | 逐字体核对许可证、嵌入/子集化和商业条款 |
 | 原创 SVG/CSS/程序绘制 | 各游戏 `assets/`、`client.js`、`style.css` | 飞行棋棋子、牌面、图标、重绘组件 | 各游戏 `SOURCE.txt`/报告 | 由项目作者确认原创或获得可用授权；发布时保留作者与许可证记录 |
 

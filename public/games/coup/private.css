@@ -246,8 +246,8 @@ button.cp-influence {
     gap: 1px 7px;
     min-height: 61px;
     padding: 7px 8px 8px;
-    border-top: 2px solid var(--cp-role, #d1ae68);
-    background: linear-gradient(180deg, rgba(12, 16, 21, .88), rgba(9, 12, 16, .97));
+    border-top: 1px solid var(--cp-role, #d1ae68);
+    background: linear-gradient(180deg, rgba(24, 19, 14, .94), #100d0b);
     color: #f6e9cf;
     backdrop-filter: blur(3px);
 }
@@ -267,8 +267,8 @@ button.cp-influence {
 }
 
 .cp-card-copy > strong {
-    color: #f3f4f2;
-    font-family: "Noto Sans SC", sans-serif;
+    color: #f4e4bf;
+    font-family: "Noto Serif SC", "Songti SC", serif;
     font-size: 12px;
 }
 

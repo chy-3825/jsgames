@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>政变现代版卡面视觉验收</title>
+    <title>政变 · 黑金 Art Deco 卡面</title>
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/games/coup/style.css">
     <link rel="stylesheet" href="/games/coup/private.css?v=20260829-architecture-split-1">
@@ -16,9 +16,10 @@
         .review > section { padding: 18px; border: 1px solid #ffffff24; border-radius: 12px; background: #151a20; }
         .review h2 { margin: 0 0 14px; color: #f1e7d4; font-size: 16px; }
         .review-lobby .game-card { width: min(310px, 100%); }
+        .review-cover { display: block; width: 100%; max-height: 260px; object-fit: cover; object-position: center 45%; border-radius: 4px; }
         .review-coup.cp-app { display: block; min-height: 0; padding: 18px; overflow: visible; }
-        .review-cards { display: flex; align-items: flex-start; gap: 16px; overflow-x: auto; padding: 4px 3px 18px; }
-        .review-cards .cp-influence { flex: 0 0 150px; }
+        .review-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; padding: 4px 3px 18px; }
+        .review-cards .cp-influence { width: 100%; }
         .review-backs { display: flex; align-items: center; gap: 18px; }
         .review-back-large { width: 150px; }
         .review-mini-set { display: flex; align-items: center; }
@@ -26,16 +27,18 @@
         @media (max-width: 560px) {
             body { padding: 10px; }
             .review > section, .review-coup.cp-app { padding: 12px; }
-            .review-cards .cp-influence, .review-back-large { flex-basis: 126px; width: 126px; }
+            .review-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+            .review-back-large { width: 100px; }
         }
     </style>
 </head>
 <body>
 <main class="review">
     <section class="review-lobby">
-        <h2>大厅封面 · 完整盒面与横框背景</h2>
+        <h2>设计基准 · 黑金、暗红与象牙白</h2>
+        <img class="review-cover" src="/assets/covers/coup-v2.webp" alt="政变封面：黑金与暗红色的几何人物插画">
         <article class="game-card tone-violet" data-game-type="coup">
-            <div class="game-card-art" style="--card-art:url('/assets/bgg/coup/cover.jpg')" aria-hidden="true">
+            <div class="game-card-art" style="--card-art:url('/assets/covers/coup-v2.webp')" aria-hidden="true">
                 <span class="art-orbit"></span><span class="game-symbol">♜</span><span class="game-card-index">02</span><span class="game-art-label">COUP</span>
             </div>
             <div class="game-card-body"><div class="game-card-title"><div><h3>政变</h3><p>谎言、质疑与权力游戏</p></div><span class="game-card-arrow">↗</span></div><div class="game-card-meta"><span>2–6 人</span><i></i><span>20 分钟</span></div></div>
@@ -50,13 +53,17 @@
     <section class="cp-app review-coup">
         <h2>隐藏信息 · 卡背、牌库与对手缩略牌</h2>
         <div class="review-backs">
-            <article class="cp-influence review-back-large is-hidden" aria-label="隐藏的影响力牌"><span class="cp-card-back-art"><img src="/assets/bgg/coup/modern-back.jpg" alt=""></span></article>
-            <span class="cp-deck-stack"><span class="cp-card-back-art"><img src="/assets/bgg/coup/modern-back.jpg" alt=""></span></span>
-            <div class="review-mini-set"><article class="cp-influence is-mini is-hidden"><span class="cp-card-back-art"><img src="/assets/bgg/coup/modern-back.jpg" alt=""></span></article><article class="cp-influence is-mini is-hidden"><span class="cp-card-back-art"><img src="/assets/bgg/coup/modern-back.jpg" alt=""></span></article></div>
+            <article class="cp-influence review-back-large is-hidden" aria-label="隐藏的影响力牌"><span class="cp-card-back-art"><img src="/assets/games/coup/art-deco-v2/back.jpg" alt=""></span></article>
+            <span class="cp-deck-stack"><span class="cp-card-back-art"><img src="/assets/games/coup/art-deco-v2/back.jpg" alt=""></span></span>
+            <div class="review-mini-set"><article class="cp-influence is-mini is-hidden"><span class="cp-card-back-art"><img src="/assets/games/coup/art-deco-v2/back.jpg" alt=""></span></article><article class="cp-influence is-mini is-hidden"><span class="cp-card-back-art"><img src="/assets/games/coup/art-deco-v2/back.jpg" alt=""></span></article></div>
         </div>
     </section>
 </main>
-<script>
+<script type="module">
+    import { CARD_BACK_ART, ROLE_ART } from './games/coup/constants.js';
+    document.querySelectorAll('.cp-card-back-art img').forEach((img) => {
+        img.src = `/assets/games/coup/art-deco-v2/${CARD_BACK_ART}.jpg`;
+    });
     const roles = [
         ['duke', '公爵', '爵', '征税获得 3 枚金币；可以阻挡外援。'],
         ['assassin', '刺客', '刺', '支付 3 枚金币，暗杀一名玩家。'],
@@ -64,7 +71,7 @@
         ['ambassador', '大使', '使', '与宫廷牌库交换影响力。'],
         ['contessa', '伯爵夫人', '夫', '阻挡刺客的暗杀。'],
     ];
-    document.querySelector('#roleCards').innerHTML = roles.map(([role, name, mark, effect]) => `<article class="cp-influence is-face is-role-${role}"><img class="cp-card-art" src="/assets/bgg/coup/modern-${role}.jpg" alt="${name}牌面"><span class="cp-card-copy"><i>${mark}</i><strong>${name}</strong><small>${effect}</small></span></article>`).join('');
+    document.querySelector('#roleCards').innerHTML = roles.map(([role, name, mark, effect]) => `<article class="cp-influence is-face is-role-${role}"><img class="cp-card-art" src="/assets/games/coup/art-deco-v2/${ROLE_ART[role]}.jpg" alt="${name}牌面"><span class="cp-card-copy"><i>${mark}</i><strong>${name}</strong><small>${effect}</small></span></article>`).join('');
 </script>
 </body>
 </html>
